@@ -8,7 +8,7 @@ keeping the original card size and the original vector content.
 
 - [x] **Milestone 1 – PDF spike** (`crates/card-core`)
 - [x] **Milestone 2 – Tauri viewer** (open PDF, pdfium previews, thumbnails, page navigation)
-- [ ] Milestone 3 – Selection / zoom / pan (normalized coordinates)
+- [x] **Milestone 3 – Selection / zoom / pan** (draw, move, resize; normalized coordinates)
 - [ ] Milestone 4 – Grid UI
 - [ ] Milestone 5 – Spacing preview
 - [ ] Milestone 6 – Export wiring
@@ -55,3 +55,17 @@ pnpm tauri dev
 
 `cargo test` runs the pdfium render test only if the library is found
 (`PDFIUM_LIB_PATH=<dir>`); otherwise it is skipped.
+
+## Editor controls
+
+| Action | Input |
+| --- | --- |
+| Select / Pan tool | `V` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
+| Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear |
+| Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
+| Fit page | `0` |
+| Pan | wheel / trackpad scroll |
+| Pages | `PageUp`/`PageDown` or arrow keys |
+
+Geometry is stored normalized (0..1 of the page, top-left origin); all conversions live in
+`src/lib/coordinates.ts` and `src/lib/units.ts`. Frontend unit tests: `pnpm test`.

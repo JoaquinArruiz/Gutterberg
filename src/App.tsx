@@ -6,16 +6,30 @@ import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { StatusBar } from "./components/toolbar/StatusBar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./components/ui/resizable";
 import { useDocumentStore } from "./stores/document-store";
+import { useEditorStore } from "./stores/editor-store";
+import { zoomActions } from "./lib/zoom-actions";
 
 export default function App() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const s = useDocumentStore.getState();
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "o") {
+      const doc = useDocumentStore.getState();
+      const ed = useEditorStore.getState();
+      const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key.toLowerCase() === "o") {
         e.preventDefault();
-        void s.openDialog();
-      } else if (e.key === "PageDown" || e.key === "ArrowRight") s.setCurrentPage(s.currentPage + 1);
-      else if (e.key === "PageUp" || e.key === "ArrowLeft") s.setCurrentPage(s.currentPage - 1);
+        void doc.openDialog();
+        return;
+      }
+      if (mod || e.altKey || (e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName))) return;
+      switch (e.key) {
+        case "v": case "V": ed.setTool("select"); break;
+        case "h": case "H": ed.setTool("pan"); break;
+        case "+": case "=": zoomActions.zoomIn(); break;
+        case "-": zoomActions.zoomOut(); break;
+        case "0": zoomActions.fitPage(); break;
+        case "PageDown": case "ArrowRight": doc.setCurrentPage(doc.currentPage + 1); break;
+        case "PageUp": case "ArrowLeft": doc.setCurrentPage(doc.currentPage - 1); break;
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
