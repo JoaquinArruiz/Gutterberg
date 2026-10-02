@@ -17,10 +17,16 @@ impl AppState {
         if let Some(p) = slot.as_ref() {
             return Ok(p.clone());
         }
-        let bundled = app.path().resource_dir().ok().map(|d| d.join("resources").join("pdfium"));
-        let dev = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources").join("pdfium");
-        let dir = [bundled, Some(dev)].into_iter().flatten().find(|d| d.is_dir());
-        let p = Arc::new(card_core::render::bind_pdfium(dir.as_deref()).map_err(|e| e.to_string())?);
+        // Search every candidate: in `tauri dev` the (empty) resource dir under
+        // target/ exists, so the first existing directory is not necessarily the one
+        // that holds the library.
+        let mut dirs: Vec<PathBuf> = Vec::new();
+        if let Ok(d) = app.path().resource_dir() {
+            dirs.push(d.join("resources").join("pdfium"));
+            dirs.push(d.join("pdfium"));
+        }
+        dirs.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("resources").join("pdfium"));
+        let p = Arc::new(card_core::render::bind_pdfium(&dirs).map_err(|e| e.to_string())?);
         *slot = Some(p.clone());
         Ok(p)
     }

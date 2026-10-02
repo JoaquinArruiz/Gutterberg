@@ -18,13 +18,10 @@ fn pdfium_err(e: PdfiumError) -> Error {
     Error::Pdfium(e.to_string())
 }
 
-/// Bind to the pdfium shared library. Search order: `lib_dir` (if given), the
+/// Bind to the pdfium shared library. Search order: `lib_dirs` (in order), the
 /// `PDFIUM_LIB_PATH` env var, the executable's directory, then the system.
-pub fn bind_pdfium(lib_dir: Option<&Path>) -> Result<Pdfium> {
-    let mut dirs: Vec<std::path::PathBuf> = Vec::new();
-    if let Some(d) = lib_dir {
-        dirs.push(d.to_path_buf());
-    }
+pub fn bind_pdfium(lib_dirs: &[std::path::PathBuf]) -> Result<Pdfium> {
+    let mut dirs: Vec<std::path::PathBuf> = lib_dirs.to_vec();
     if let Ok(d) = std::env::var("PDFIUM_LIB_PATH") {
         dirs.push(d.into());
     }

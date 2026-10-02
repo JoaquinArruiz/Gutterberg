@@ -4,7 +4,7 @@ use card_core::sample::sample_pdf;
 
 #[test]
 fn info_and_png_preview() {
-    let Ok(pdfium) = bind_pdfium(None) else {
+    let Ok(pdfium) = bind_pdfium(&[]) else {
         eprintln!("SKIPPED: pdfium not available (set PDFIUM_LIB_PATH)");
         return;
     };
