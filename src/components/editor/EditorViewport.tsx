@@ -8,6 +8,7 @@ import { moveRect, rectFromPoints, resizeRect, type Handle } from "../../lib/sel
 import { PagePreview } from "./PagePreview";
 import { SelectionRect } from "./SelectionRect";
 import { GridOverlay } from "./GridOverlay";
+import { OutputPreview } from "./OutputPreview";
 import { useLayoutStore } from "../../stores/layout-store";
 
 type Drag =
@@ -20,8 +21,10 @@ const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 
 export function EditorViewport() {
   const { pages, currentPage, path, error, loading } = useDocumentStore();
-  const { viewport, tool, selection, fitMode } = useEditorStore();
-  const { rows, columns } = useLayoutStore();
+  const { viewport, tool, selection, fitMode, viewMode } = useEditorStore();
+  const { layoutError } = useLayoutStore();
+  const rows = useLayoutStore((s) => s.rows);
+  const columns = useLayoutStore((s) => s.columns);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
@@ -85,7 +88,8 @@ export function EditorViewport() {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
 
-  const panMode = tool === "pan" || spaceDown;
+  const output = viewMode === "output";
+  const panMode = output || tool === "pan" || spaceDown;
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page) return;
@@ -148,7 +152,7 @@ export function EditorViewport() {
         <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
       ) : page && pageRect ? (
         <>
-          <PagePreview screen={pageRect} />
+          {output ? <OutputPreview screen={pageRect} viewport={viewport} /> : <PagePreview screen={pageRect} />}
           <svg
             className="absolute inset-0 h-full w-full"
             style={{ cursor, touchAction: "none" }}
@@ -156,9 +160,14 @@ export function EditorViewport() {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
           >
-            {selection && <GridOverlay selection={selection} grid={{ rows, columns }} viewport={viewport} page={page} />}
-            {selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
+            {!output && selection && <GridOverlay selection={selection} grid={{ rows, columns }} viewport={viewport} page={page} />}
+            {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
           </svg>
+          {output && (!selection || layoutError) && (
+            <p className="pointer-events-none absolute inset-x-0 top-3 mx-auto w-fit max-w-[80%] rounded bg-black/70 px-3 py-1.5 text-center text-[var(--muted)]">
+              {layoutError ?? "Select the card region on the page to preview the output."}
+            </p>
+          )}
         </>
       ) : (
         <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">

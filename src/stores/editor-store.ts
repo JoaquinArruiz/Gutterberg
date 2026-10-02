@@ -6,12 +6,15 @@ import {
 import type { PageSize } from "../lib/tauri";
 
 export type Tool = "select" | "pan";
+/** "source" edits the card region; "output" previews the spaced-out page. */
+export type ViewMode = "source" | "output";
 
 type EditorState = {
   viewport: ViewportState;
   /** While true the page is re-fitted whenever the viewport/page changes. */
   fitMode: boolean;
   tool: Tool;
+  viewMode: ViewMode;
   /** Card region, normalized to the page. The same region applies to every page for now. */
   selection: NormalizedRect | null;
 
@@ -21,6 +24,7 @@ type EditorState = {
   panBy: (dx: number, dy: number) => void;
   setPan: (panX: number, panY: number) => void;
   setTool: (t: Tool) => void;
+  setViewMode: (m: ViewMode) => void;
   setSelection: (r: NormalizedRect | null) => void;
   reset: () => void;
 };
@@ -29,6 +33,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   viewport: { zoom: 1, panX: 0, panY: 0 },
   fitMode: true,
   tool: "select",
+  viewMode: "source",
   selection: null,
 
   fit: (box, page) => set({ viewport: fitViewport(box, page), fitMode: true }),
@@ -43,6 +48,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   setPan: (panX, panY) => set({ viewport: { ...get().viewport, panX, panY }, fitMode: false }),
   setTool: (tool) => set({ tool }),
+  setViewMode: (viewMode) => set({ viewMode }),
   setSelection: (selection) => set({ selection }),
   reset: () => set({ selection: null, fitMode: true }),
 }));

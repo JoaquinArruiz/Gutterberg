@@ -7,9 +7,11 @@ import { StatusBar } from "./components/toolbar/StatusBar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./components/ui/resizable";
 import { useDocumentStore } from "./stores/document-store";
 import { useEditorStore } from "./stores/editor-store";
+import { useLayoutSync } from "./lib/use-layout-sync";
 import { zoomActions } from "./lib/zoom-actions";
 
 export default function App() {
+  useLayoutSync();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const doc = useDocumentStore.getState();

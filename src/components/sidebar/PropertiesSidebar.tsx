@@ -1,6 +1,6 @@
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import { MAX_GAP_MM, useLayoutStore } from "../../stores/layout-store";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { ptToMm } from "../../lib/units";
 import { NumberField } from "../ui/NumberField";
@@ -15,7 +15,7 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 export function PropertiesSidebar() {
   const { pages, currentPage } = useDocumentStore();
   const { selection, setSelection } = useEditorStore();
-  const { rows, columns, setRows, setColumns } = useLayoutStore();
+  const { rows, columns, gapMm, setRows, setColumns, setGapMm, layoutError } = useLayoutStore();
   const page = pages[currentPage];
 
   if (!page) {
@@ -66,6 +66,11 @@ export function PropertiesSidebar() {
         {!selection && (
           <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>
         )}
+      </Section>
+
+      <Section title="Spacing">
+        <NumberField label="Gap" suffix="mm" decimals={2} step={0.5} min={0} max={MAX_GAP_MM} value={gapMm} onCommit={setGapMm} />
+        {layoutError && <p className="text-red-400">{layoutError}</p>}
       </Section>
 
       {selection && (
