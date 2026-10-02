@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
+import type { NormalizedRect } from "./coordinates";
 
 // Mirrors card_core::render::DocumentInfo (serde, snake_case).
 const PageSizeSchema = z.object({ width_pt: z.number(), height_pt: z.number() });
@@ -18,6 +19,20 @@ export async function pickPdf(): Promise<string | null> {
 
 export async function openPdf(path: string): Promise<DocumentInfo> {
   return DocumentInfoSchema.parse(await invoke("open_pdf", { path }));
+}
+
+export async function pickExportPath(inputPath: string): Promise<string | null> {
+  const name = inputPath.split(/[\\/]/).pop()?.replace(/\.pdf$/i, "") ?? "cards";
+  return save({ defaultPath: `${name}-spaced.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+}
+
+/** Exports every page with the given grid via the Rust exporter. Resolves to the page count. */
+export async function exportDocument(
+  grid: { bounds: NormalizedRect; rows: number; columns: number; gap_mm: number },
+  pageCount: number,
+  outputPath: string,
+): Promise<number> {
+  return invoke<number>("export_document", { grid, pageCount, outputPath });
 }
 
 /** Renders a page to a PNG blob URL. Caller owns the URL (revokeObjectURL). */

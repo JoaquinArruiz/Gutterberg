@@ -11,7 +11,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 3 – Selection / zoom / pan** (draw, move, resize; normalized coordinates)
 - [x] **Milestone 4 – Grid** (rows, columns, grid overlay, exact card size in mm)
 - [x] **Milestone 5 – Spacing preview** (gap in mm, Source/Output toggle driven by `compute_layout`)
-- [ ] Milestone 6 – Export wiring
+- [x] **Milestone 6 – Export wiring** (Export PDF button calls `export_document`)
 
 ## Architecture
 
