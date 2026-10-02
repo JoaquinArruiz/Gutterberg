@@ -7,6 +7,8 @@ import {
 import { moveRect, rectFromPoints, resizeRect, type Handle } from "../../lib/selection";
 import { PagePreview } from "./PagePreview";
 import { SelectionRect } from "./SelectionRect";
+import { GridOverlay } from "./GridOverlay";
+import { useLayoutStore } from "../../stores/layout-store";
 
 type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
@@ -19,6 +21,7 @@ const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 export function EditorViewport() {
   const { pages, currentPage, path, error, loading } = useDocumentStore();
   const { viewport, tool, selection, fitMode } = useEditorStore();
+  const { rows, columns } = useLayoutStore();
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
@@ -153,6 +156,7 @@ export function EditorViewport() {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
           >
+            {selection && <GridOverlay selection={selection} grid={{ rows, columns }} viewport={viewport} page={page} />}
             {selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
           </svg>
         </>

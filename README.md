@@ -9,7 +9,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 1 – PDF spike** (`crates/card-core`)
 - [x] **Milestone 2 – Tauri viewer** (open PDF, pdfium previews, thumbnails, page navigation)
 - [x] **Milestone 3 – Selection / zoom / pan** (draw, move, resize; normalized coordinates)
-- [ ] Milestone 4 – Grid UI
+- [x] **Milestone 4 – Grid** (rows, columns, grid overlay, exact card size in mm)
 - [ ] Milestone 5 – Spacing preview
 - [ ] Milestone 6 – Export wiring
 
@@ -66,6 +66,7 @@ pnpm tauri dev
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
+| Exact values | Layout panel: columns, rows, card width/height (mm) and selection X/Y. Enter commits, Esc reverts, ↑/↓ nudge |
 
 Geometry is stored normalized (0..1 of the page, top-left origin); all conversions live in
 `src/lib/coordinates.ts` and `src/lib/units.ts`. Frontend unit tests: `pnpm test`.
