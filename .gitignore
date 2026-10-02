@@ -3,3 +3,6 @@ node_modules/
 dist/
 out/
 *.log
+src-tauri/resources/pdfium/*
+!src-tauri/resources/pdfium/.gitkeep
+src-tauri/gen/

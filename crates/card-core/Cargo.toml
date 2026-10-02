@@ -8,6 +8,8 @@ description = "Geometry, layout and PDF export engine for the PDF card editor (n
 lopdf = "0.45"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
+pdfium-render = "0.9"
+image = { version = "0.25", default-features = false, features = ["png"] }
 
 [dev-dependencies]
 serde_json = "1"

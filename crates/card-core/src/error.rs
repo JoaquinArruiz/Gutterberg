@@ -24,6 +24,8 @@ pub enum Error {
         page_w_mm: f64,
         page_h_mm: f64,
     },
+    #[error("pdfium error: {0}")]
+    Pdfium(String),
     #[error("malformed PDF: {0}")]
     Malformed(String),
 }

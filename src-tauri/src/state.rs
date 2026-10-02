@@ -1,0 +1,35 @@
+use pdfium_render::prelude::Pdfium;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use tauri::{AppHandle, Manager};
+
+#[derive(Default)]
+pub struct AppState {
+    pdfium: Mutex<Option<Arc<Pdfium>>>,
+    path: Mutex<Option<PathBuf>>,
+}
+
+impl AppState {
+    /// Bind pdfium on first use so a missing library becomes a UI error
+    /// instead of a crash at startup.
+    pub fn pdfium(&self, app: &AppHandle) -> Result<Arc<Pdfium>, String> {
+        let mut slot = self.pdfium.lock().map_err(|e| e.to_string())?;
+        if let Some(p) = slot.as_ref() {
+            return Ok(p.clone());
+        }
+        let bundled = app.path().resource_dir().ok().map(|d| d.join("resources").join("pdfium"));
+        let dev = Path::new(env!("CARGO_MANIFEST_DIR")).join("resources").join("pdfium");
+        let dir = [bundled, Some(dev)].into_iter().flatten().find(|d| d.is_dir());
+        let p = Arc::new(card_core::render::bind_pdfium(dir.as_deref()).map_err(|e| e.to_string())?);
+        *slot = Some(p.clone());
+        Ok(p)
+    }
+
+    pub fn set_path(&self, p: PathBuf) {
+        *self.path.lock().unwrap() = Some(p);
+    }
+
+    pub fn path(&self) -> Result<PathBuf, String> {
+        self.path.lock().unwrap().clone().ok_or_else(|| "no PDF is open".to_string())
+    }
+}
