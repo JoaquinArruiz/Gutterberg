@@ -1,0 +1,13 @@
+[package]
+name = "card-core"
+version = "0.1.0"
+edition = "2021"
+description = "Geometry, layout and PDF export engine for the PDF card editor (no UI/Tauri dependencies)"
+
+[dependencies]
+lopdf = "0.45"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+
+[dev-dependencies]
+serde_json = "1"
