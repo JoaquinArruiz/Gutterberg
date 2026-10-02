@@ -45,12 +45,12 @@ cargo run --example spike -- export in.pdf out.pdf 0.0464 0.0556 0.9071 0.8889 3
 
 ## Running the app
 
-Needs Node 20+, Rust, the Tauri Linux deps (webkit2gtk-4.1, gtk3) and a pdfium shared library:
+Needs Node 20+, pnpm, Rust, the Tauri Linux deps (webkit2gtk-4.1, gtk3) and a pdfium shared library:
 
 ```sh
-npm install
+pnpm install
 scripts/fetch-pdfium.sh            # or copy libpdfium into src-tauri/resources/pdfium/
-npm run tauri dev
+pnpm tauri dev
 ```
 
 `cargo test` runs the pdfium render test only if the library is found
