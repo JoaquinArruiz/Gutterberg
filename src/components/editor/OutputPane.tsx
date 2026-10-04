@@ -5,6 +5,7 @@ import { CSS_PX_PER_PT } from "../../lib/coordinates";
 import { usePreviewResult } from "../../lib/view-page";
 import { OutputPreview } from "./OutputPreview";
 import { OutputNotice } from "./OutputNotice";
+import { RefreshPreviewButton } from "./RefreshPreviewButton";
 
 const PAD = 24;
 
@@ -46,6 +47,7 @@ export function OutputPane() {
         Output{live ? "" : " (manual)"}
       </div>
       {content}
+      <RefreshPreviewButton className="absolute bottom-3 right-3 z-10" />
       <OutputNotice />
     </div>
   );

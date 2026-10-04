@@ -8,8 +8,10 @@
 // app never sees an invalid state.
 
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
+import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
-export const PREFERENCES_VERSION = 1;
+// v2: adds workspace.layout (panel positions/sizes). v1 files migrate by taking its defaults.
+export const PREFERENCES_VERSION = 2;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -31,6 +33,8 @@ export interface AppPreferences {
     defaultMode: DefaultWorkspace;
     /** Last workspace the user switched to (used when `defaultMode` is "last"). */
     lastMode: WorkspaceMode;
+    /** Where the Pages/Properties panels sit, and their remembered sizes. */
+    layout: WorkspaceLayoutPrefs;
   };
   preview: { livePreview: LivePreviewPreference };
   appearance: { theme: ThemePreference };
@@ -39,7 +43,7 @@ export interface AppPreferences {
 export const DEFAULT_PREFERENCES: AppPreferences = {
   version: PREFERENCES_VERSION,
   measurement: { unit: "mm" },
-  workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source" },
+  workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
 };
@@ -82,7 +86,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   return {
     version: PREFERENCES_VERSION,
     measurement: { unit: oneOf(m.unit, MEASUREMENT_UNITS, d.measurement.unit) },
-    workspace: { visibleModes, defaultMode, lastMode },
+    workspace: { visibleModes, defaultMode, lastMode, layout: normalizeLayout(w.layout) },
     preview: { livePreview: oneOf(p.livePreview, ["always", "manual"] as const, d.preview.livePreview) },
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },
   };
@@ -90,7 +94,9 @@ export function normalizePreferences(raw: unknown): AppPreferences {
 
 /** Upgrade stored data written by an older app version. v1 is current, so this normalizes. */
 export function migratePreferences(raw: unknown): AppPreferences {
-  // Future: `if (version < 2) raw = { ...raw, editor: {...} }` before normalizing.
+  // v1 -> v2 needs nothing extra: v1 has no `workspace.layout`, so normalizing
+  // fills it with the default layout and keeps every other v1 setting.
+  // Future: `if (version < 3) raw = { ...raw, editor: {...} }` before normalizing.
   return normalizePreferences(raw);
 }
 

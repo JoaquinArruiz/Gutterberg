@@ -12,6 +12,7 @@ import { OutputPreview } from "./OutputPreview";
 import { OutputPane } from "./OutputPane";
 import { Magnifier, MAG } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
+import { RefreshPreviewButton } from "./RefreshPreviewButton";
 import { usePreviewResult } from "../../lib/view-page";
 import { pxPerPoint } from "../../lib/coordinates";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -245,6 +246,7 @@ export function EditorViewport() {
               box={box} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
             />
           )}
+          {output && <RefreshPreviewButton className="absolute bottom-3 right-3 z-10" />}
           {output && <OutputNotice />}
         </>
       ) : (

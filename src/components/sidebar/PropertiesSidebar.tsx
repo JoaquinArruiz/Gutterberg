@@ -60,9 +60,9 @@ export function PropertiesSidebar() {
 
   if (!page) {
     return (
-      <aside className="h-full bg-[var(--panel)] p-3">
+      <div className="h-full p-3">
         <p className="text-[var(--muted)]">No document open.</p>
-      </aside>
+      </div>
     );
   }
 
@@ -72,7 +72,7 @@ export function PropertiesSidebar() {
   const ph = ptToMm(page.height_pt);
 
   return (
-    <aside className="h-full overflow-y-auto bg-[var(--panel)] p-3">
+    <div className="h-full overflow-y-auto p-3">
       <Section title="Page">
         <div className="flex justify-between">
           <span className="text-[var(--muted)]">Size</span>
@@ -177,15 +177,10 @@ export function PropertiesSidebar() {
           <input type="checkbox" checked={L.live} onChange={(e) => L.setLive(e.target.checked)} />
           Live output preview
         </label>
-        {!L.live && (
-          <button className={smallBtn} disabled={!L.result} onClick={L.updatePreview}>
-            Update preview{L.result && L.snapshot !== L.result ? " •" : ""}
-          </button>
-        )}
         <p className="text-[var(--muted)]">
           {L.live
             ? "Output and split views follow every change."
-            : "Output and split views show the last update. Use the Output or Split view button in the toolbar."}
+            : "Output and split views show the last update. Use the refresh button in the output view to update."}
         </p>
       </Section>
 
@@ -205,6 +200,6 @@ export function PropertiesSidebar() {
           </div>
         </Section>
       )}
-    </aside>
+    </div>
   );
 }

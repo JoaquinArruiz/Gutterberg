@@ -4,8 +4,11 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 export const ResizablePanelGroup = Group;
 export const ResizablePanel = Panel;
 
-export function ResizableHandle() {
+/** `orientation` is the Group's: a horizontal Group is divided by vertical lines, a vertical Group by horizontal ones. */
+export function ResizableHandle({ orientation = "horizontal" }: { orientation?: "horizontal" | "vertical" }) {
   return (
-    <Separator className="w-px bg-[var(--border)] transition-colors data-[separator=hover]:bg-[var(--accent)] data-[separator=active]:bg-[var(--accent)]" />
+    <Separator
+      className={`${orientation === "horizontal" ? "w-px" : "h-px"} bg-[var(--border)] transition-colors data-[separator=hover]:bg-[var(--accent)] data-[separator=active]:bg-[var(--accent)]`}
+    />
   );
 }

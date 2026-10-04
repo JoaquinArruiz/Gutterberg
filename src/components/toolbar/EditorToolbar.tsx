@@ -6,6 +6,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore, type Tool } from "../../stores/editor-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
+import { PanelsMenu } from "../workspace/PanelsMenu";
 import { WORKSPACE_LABEL } from "../../lib/preferences";
 import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
@@ -89,6 +90,7 @@ export function EditorToolbar() {
           {status.text}
         </span>
       )}
+      <PanelsMenu />
       <button title="Preferences (Ctrl+,)" aria-label="Preferences" onClick={() => setPrefsOpen(true)} className={`${btn} mr-1`}>
         <Settings size={14} />
       </button>

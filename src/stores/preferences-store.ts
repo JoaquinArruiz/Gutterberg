@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import type { MeasurementUnit } from "../lib/measurement";
 import {
+  applyPreset, defaultLayout, setPanelCollapsed, setPanelPosition,
+  type LayoutPresetId, type PanelId, type PanelPosition, type RegionPosition, type WorkspaceLayoutPrefs,
+} from "../lib/workspace-layout";
+import {
   DEFAULT_PREFERENCES, migratePreferences, moveMode, normalizePreferences, toggleMode,
   type AppPreferences, type DefaultWorkspace, type LivePreviewPreference, type ThemePreference, type WorkspaceMode,
 } from "../lib/preferences";
@@ -30,11 +34,26 @@ export function browserStorage(): KeyValueStorage {
   }
 }
 
-/** Load -> validate -> migrate -> merge with defaults. Never throws; corrupt data yields defaults. */
+/**
+ * Load -> validate -> migrate -> merge with defaults. Never throws; corrupt data yields defaults.
+ * "Remember ..." switches are honoured here: when off, the saved sizes / collapsed state are not restored.
+ */
 export function loadPreferences(storage: KeyValueStorage): AppPreferences {
   try {
     const text = storage.getItem(PREFERENCES_KEY);
-    return text ? migratePreferences(JSON.parse(text)) : DEFAULT_PREFERENCES;
+    if (!text) return DEFAULT_PREFERENCES;
+    const prefs = migratePreferences(JSON.parse(text));
+    const l = prefs.workspace.layout;
+    const layout: WorkspaceLayoutPrefs = {
+      ...l,
+      regionSizes: l.rememberSizes ? l.regionSizes : {},
+      panels: l.panels.map(({ stackSize, collapsed, ...p }) => ({
+        ...p,
+        ...(l.rememberSizes && stackSize ? { stackSize } : {}),
+        ...(l.rememberCollapsed && collapsed ? { collapsed } : {}),
+      })),
+    };
+    return { ...prefs, workspace: { ...prefs.workspace, layout } };
   } catch {
     return DEFAULT_PREFERENCES;
   }
@@ -42,6 +61,8 @@ export function loadPreferences(storage: KeyValueStorage): AppPreferences {
 
 type PreferencesState = {
   prefs: AppPreferences;
+  /** Bumped when sizes are reset so resizable groups remount with the new defaults. Not persisted. */
+  layoutEpoch: number;
   setUnit: (unit: MeasurementUnit) => void;
   setVisibleMode: (mode: WorkspaceMode, enabled: boolean) => void;
   moveVisibleMode: (mode: WorkspaceMode, dir: -1 | 1) => void;
@@ -51,6 +72,16 @@ type PreferencesState = {
   setLivePreview: (p: LivePreviewPreference) => void;
   setTheme: (t: ThemePreference) => void;
   resetToDefaults: () => void;
+  setPanelPosition: (id: PanelId, position: PanelPosition) => void;
+  setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
+  applyLayoutPreset: (preset: Exclude<LayoutPresetId, "custom">) => void;
+  /** Persist sizes the user dragged (ignored when "remember sizes" is off). */
+  saveRegionSize: (position: RegionPosition, px: number) => void;
+  saveStackSize: (id: PanelId, position: RegionPosition, percent: number) => void;
+  setRememberSizes: (on: boolean) => void;
+  setRememberCollapsed: (on: boolean) => void;
+  /** Panel layout, view modes and default view back to factory settings. Unit, theme and Live Preview are kept. */
+  resetWorkspace: () => void;
 };
 
 /** Store factory; the app uses the singleton below, tests pass their own storage. */
@@ -67,9 +98,13 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       }
     };
     const edit = (f: (p: AppPreferences) => AppPreferences) => commit(f(get().prefs));
+    const editLayout = (f: (l: WorkspaceLayoutPrefs) => WorkspaceLayoutPrefs) =>
+      edit((p) => ({ ...p, workspace: { ...p.workspace, layout: f(p.workspace.layout) } }));
+    const bumpEpoch = () => set((s) => ({ layoutEpoch: s.layoutEpoch + 1 }));
 
     return {
       prefs: loadPreferences(storage),
+      layoutEpoch: 0,
       setUnit: (unit) => edit((p) => ({ ...p, measurement: { unit } })),
       setVisibleMode: (mode, enabled) =>
         edit((p) => ({ ...p, workspace: { ...p.workspace, visibleModes: toggleMode(p.workspace.visibleModes, mode, enabled) } })),
@@ -81,7 +116,38 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       },
       setLivePreview: (livePreview) => edit((p) => ({ ...p, preview: { livePreview } })),
       setTheme: (theme) => edit((p) => ({ ...p, appearance: { theme } })),
-      resetToDefaults: () => commit(DEFAULT_PREFERENCES),
+      resetToDefaults: () => {
+        commit(DEFAULT_PREFERENCES);
+        bumpEpoch();
+      },
+      setPanelPosition: (id, position) => editLayout((l) => setPanelPosition(l, id, position)),
+      setPanelCollapsed: (id, collapsed) => editLayout((l) => setPanelCollapsed(l, id, collapsed)),
+      applyLayoutPreset: (preset) => {
+        editLayout((l) => applyPreset(l, preset));
+        bumpEpoch();
+      },
+      saveRegionSize: (position, px) => {
+        const l = get().prefs.workspace.layout;
+        if (l.rememberSizes && l.regionSizes[position] !== Math.round(px)) {
+          editLayout((x) => ({ ...x, regionSizes: { ...x.regionSizes, [position]: Math.round(px) } }));
+        }
+      },
+      saveStackSize: (id, position, percent) => {
+        if (!get().prefs.workspace.layout.rememberSizes) return;
+        editLayout((l) => ({
+          ...l,
+          panels: l.panels.map((p) => (p.id === id ? { ...p, stackSize: { ...p.stackSize, [position]: percent } } : p)),
+        }));
+      },
+      setRememberSizes: (rememberSizes) => editLayout((l) => ({ ...l, rememberSizes })),
+      setRememberCollapsed: (rememberCollapsed) => editLayout((l) => ({ ...l, rememberCollapsed })),
+      resetWorkspace: () => {
+        edit((p) => ({
+          ...p,
+          workspace: { ...DEFAULT_PREFERENCES.workspace, layout: defaultLayout() },
+        }));
+        bumpEpoch();
+      },
     };
   });
 }

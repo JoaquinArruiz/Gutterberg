@@ -17,7 +17,7 @@ export function OutputNotice() {
     : !selection && !shown
       ? "Select the card region on the page to preview the output."
       : !shown && !live
-        ? "Live preview is off. Press “Update preview” in the Preview panel."
+        ? "Live preview is off. Press the refresh button (bottom right) to generate the preview."
         : shown?.overflow
           ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
           : null;

@@ -5,6 +5,11 @@ import {
   THEMES, WORKSPACE_LABEL, WORKSPACE_MODES,
   type DefaultWorkspace, type LivePreviewPreference, type ThemePreference, type WorkspaceMode,
 } from "../../lib/preferences";
+import {
+  canPlace, detectPreset, LAYOUT_PRESETS, PANEL_DEFS, PANEL_IDS, POSITION_LABEL, PRESET_LABEL,
+  type LayoutPresetId, type PanelPosition,
+} from "../../lib/workspace-layout";
+import { LayoutPreview } from "./LayoutPreview";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 
@@ -47,6 +52,8 @@ export function PreferencesDialog() {
   const store = usePreferencesStore();
   const { prefs } = store;
   const { visibleModes } = prefs.workspace;
+  const layout = prefs.workspace.layout;
+  const preset = detectPreset(layout);
 
   useEffect(() => {
     const d = ref.current;
@@ -65,7 +72,7 @@ export function PreferencesDialog() {
       onClose={() => setOpen(false)}
       // A click on the backdrop (the dialog element itself) closes it.
       onMouseDown={(e) => e.target === ref.current && setOpen(false)}
-      className="m-auto w-[640px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"
+      className="m-auto w-[680px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"
     >
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
         <h2 className="text-sm font-semibold">Preferences</h2>
@@ -74,7 +81,7 @@ export function PreferencesDialog() {
         </button>
       </div>
 
-      <div className="flex h-[360px]">
+      <div className="flex h-[480px] max-h-[70vh]">
         <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label="Preferences sections">
           {SECTIONS.map((s) => (
             <button
@@ -156,6 +163,61 @@ export function PreferencesDialog() {
                 </select>
                 <p className="text-[var(--muted)]">
                   Used when a document opens. Switching views while editing does not change it.
+                </p>
+              </Field>
+
+              <Field label="Layout">
+                <div className="flex gap-4">
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    <label className="flex items-center justify-between gap-2">
+                      <span className="text-[var(--muted)]">Preset</span>
+                      <select
+                        aria-label="Layout preset"
+                        className={selectCls}
+                        value={preset}
+                        onChange={(e) => e.target.value !== "custom" && store.applyLayoutPreset(e.target.value as Exclude<LayoutPresetId, "custom">)}
+                      >
+                        {preset === "custom" && <option value="custom">{PRESET_LABEL.custom}</option>}
+                        {LAYOUT_PRESETS.map((id) => <option key={id} value={id}>{PRESET_LABEL[id]}</option>)}
+                      </select>
+                    </label>
+                    {PANEL_IDS.map((id) => (
+                      <label key={id} className="flex items-center justify-between gap-2">
+                        <span className="text-[var(--muted)]">{PANEL_DEFS[id].title} panel</span>
+                        <select
+                          aria-label={`${PANEL_DEFS[id].title} panel position`}
+                          className={selectCls}
+                          value={layout.panels.find((p) => p.id === id)?.position}
+                          onChange={(e) => store.setPanelPosition(id, e.target.value as PanelPosition)}
+                        >
+                          {PANEL_DEFS[id].positions.filter((pos) => canPlace(id, pos)).map((pos) => (
+                            <option key={pos} value={pos}>{POSITION_LABEL[pos]}</option>
+                          ))}
+                        </select>
+                      </label>
+                    ))}
+                  </div>
+                  <LayoutPreview panels={layout.panels} />
+                </div>
+                <p className="text-[var(--muted)]">
+                  Changes apply immediately. The Panels menu in the toolbar can always bring a hidden panel back.
+                </p>
+              </Field>
+
+              <Field label="Behavior">
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={layout.rememberSizes} onChange={(e) => store.setRememberSizes(e.target.checked)} />
+                  Remember panel sizes
+                </label>
+                <label className="flex items-center gap-2">
+                  <input type="checkbox" checked={layout.rememberCollapsed} onChange={(e) => store.setRememberCollapsed(e.target.checked)} />
+                  Remember collapsed panels
+                </label>
+                <div>
+                  <button className={btn} onClick={store.resetWorkspace}>Reset workspace layout</button>
+                </div>
+                <p className="text-[var(--muted)]">
+                  Restores panel positions and sizes, the visible views and the default view. Units, theme and Live Preview are kept.
                 </p>
               </Field>
             </>

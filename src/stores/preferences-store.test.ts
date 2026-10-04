@@ -80,3 +80,69 @@ describe("current workspace vs default", () => {
     prefs.resetToDefaults();
   });
 });
+
+describe("workspace layout in the store", () => {
+  const regions = (st: ReturnType<typeof createPreferencesStore>) => {
+    const l = st.getState().prefs.workspace.layout;
+    return l.panels.map((p) => `${p.id}:${p.position}`).sort();
+  };
+
+  it("persists panel positions across a restart", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage).getState();
+    st.setPanelPosition("pages", "top");
+    st.setPanelPosition("properties", "left");
+    expect(regions(createPreferencesStore(storage))).toEqual(["pages:top", "properties:left"]);
+  });
+
+  it("persists dragged sizes when 'remember sizes' is on, and ignores them when it is off", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().saveRegionSize("left", 333);
+    st.getState().saveStackSize("pages", "left", 40);
+    const back = createPreferencesStore(storage).getState().prefs.workspace.layout;
+    expect(back.regionSizes.left).toBe(333);
+    expect(back.panels.find((p) => p.id === "pages")?.stackSize?.left).toBe(40);
+
+    st.getState().setRememberSizes(false);
+    const off = createPreferencesStore(storage).getState().prefs.workspace.layout;
+    expect(off.regionSizes).toEqual({});
+    expect(off.panels.find((p) => p.id === "pages")?.stackSize).toBeUndefined();
+  });
+
+  it("collapsed state is restored only when 'remember collapsed' is on", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().setPanelCollapsed("pages", true);
+    expect(createPreferencesStore(storage).getState().prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed).toBe(true);
+    st.getState().setRememberCollapsed(false);
+    expect(createPreferencesStore(storage).getState().prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed).toBeUndefined();
+  });
+
+  it("applying a preset updates positions", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().applyLayoutPreset("right-sidebar");
+    expect(regions(st)).toEqual(["pages:right", "properties:right"]);
+  });
+
+  it("Reset workspace restores the layout and views but keeps unit, theme and live preview", () => {
+    const st = createPreferencesStore(memory());
+    const s = st.getState();
+    s.setUnit("in");
+    s.setTheme("dark");
+    s.setLivePreview("always");
+    s.setPanelPosition("pages", "bottom");
+    s.saveRegionSize("bottom", 200);
+    s.setVisibleMode("output", false);
+    s.setDefaultMode("split");
+    st.getState().resetWorkspace();
+    const p = st.getState().prefs;
+    expect(regions(st)).toEqual(["pages:left", "properties:right"]);
+    expect(p.workspace.layout.regionSizes).toEqual({});
+    expect(p.workspace.visibleModes).toEqual(["source", "output", "split"]);
+    expect(p.workspace.defaultMode).toBe("source");
+    expect(p.measurement.unit).toBe("in");
+    expect(p.appearance.theme).toBe("dark");
+    expect(p.preview.livePreview).toBe("always");
+  });
+});
