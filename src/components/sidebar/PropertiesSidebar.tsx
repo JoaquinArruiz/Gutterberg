@@ -7,6 +7,7 @@ import { usePreviewResult } from "../../lib/view-page";
 import { formatMeasurement } from "../../lib/measurement";
 import { useUnit } from "../../stores/preferences-store";
 import { MeasurementInput } from "../ui/MeasurementInput";
+import { Select } from "../ui/Select";
 import { NumberField } from "../ui/NumberField";
 
 function GapFields({
@@ -37,8 +38,6 @@ const PAGE_MODES: { id: PageMode; label: string }[] = [
   { id: "fit", label: "Auto-fit to cards" },
 ];
 
-const selectCls =
-  "rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 outline-none focus:border-[var(--accent)]";
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -117,12 +116,13 @@ export function PropertiesSidebar() {
       </Section>
 
       <Section title="Output page">
-        <label className="flex items-center justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-[var(--muted)]">Size</span>
-          <select className={selectCls} value={L.pageMode} onChange={(e) => L.setPageMode(e.target.value as PageMode)}>
-            {PAGE_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
-          </select>
-        </label>
+          <Select
+            label="Page size" value={L.pageMode} onChange={L.setPageMode}
+            options={PAGE_MODES.map((m) => ({ value: m.id, label: m.label }))}
+          />
+        </div>
         {L.pageMode === "custom" && (
           <>
             <MeasurementInput label="Width" min={10} value={L.customWidthMm} onChange={(w) => L.setCustomSize(w, undefined)} />
@@ -130,13 +130,13 @@ export function PropertiesSidebar() {
           </>
         )}
         {L.pageMode !== "same" && L.pageMode !== "fit" && (
-          <label className="flex items-center justify-between gap-2">
+          <div className="flex items-center justify-between gap-2">
             <span className="text-[var(--muted)]">Orientation</span>
-            <select className={selectCls} value={L.orientation} onChange={(e) => L.setOrientation(e.target.value as "portrait" | "landscape")}>
-              <option value="portrait">Portrait</option>
-              <option value="landscape">Landscape</option>
-            </select>
-          </label>
+            <Select
+              label="Orientation" value={L.orientation} onChange={L.setOrientation}
+              options={[{ value: "portrait", label: "Portrait" }, { value: "landscape", label: "Landscape" }]}
+            />
+          </div>
         )}
         {(["top", "right", "bottom", "left"] as const).map((side) => (
           <MeasurementInput
@@ -170,18 +170,6 @@ export function PropertiesSidebar() {
           </div>
         )}
         {layoutError && <p className="text-red-400">{layoutError}</p>}
-      </Section>
-
-      <Section title="Preview">
-        <label className="flex items-center gap-2">
-          <input type="checkbox" checked={L.live} onChange={(e) => L.setLive(e.target.checked)} />
-          Live output preview
-        </label>
-        <p className="text-[var(--muted)]">
-          {L.live
-            ? "Output and split views follow every change."
-            : "Output and split views show the last update. Use the refresh button in the output view to update."}
-        </p>
       </Section>
 
       {selection && (

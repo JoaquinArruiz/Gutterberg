@@ -12,7 +12,6 @@ import { OutputPreview } from "./OutputPreview";
 import { OutputPane } from "./OutputPane";
 import { Magnifier, MAG } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
-import { RefreshPreviewButton } from "./RefreshPreviewButton";
 import { usePreviewResult } from "../../lib/view-page";
 import { pxPerPoint } from "../../lib/coordinates";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -58,6 +57,17 @@ export function EditorViewport() {
   const output = viewMode === "output";
   // The page the viewport pans/zooms: the (possibly differently sized) output page in Output view.
   const viewPage = output ? (previewResult?.output_page ?? page) : page;
+  // Output view has no refresh button: showing it (re)generates the manual preview. Split keeps its button.
+  const live = useLayoutStore((s) => s.live);
+  const result = useLayoutStore((s) => s.result);
+  const snapshot = useLayoutStore((s) => s.snapshot);
+  useEffect(() => {
+    if (output && !live) useLayoutStore.getState().updatePreview(); // entering Output
+  }, [output, live]);
+  useEffect(() => {
+    // The layout may arrive after entering Output (selection still computing).
+    if (output && !live && result && !snapshot) useLayoutStore.getState().updatePreview();
+  }, [output, live, result, snapshot]);
   const viewPageRef = useRef(viewPage);
   viewPageRef.current = viewPage;
 
@@ -246,7 +256,6 @@ export function EditorViewport() {
               box={box} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
             />
           )}
-          {output && <RefreshPreviewButton className="absolute bottom-3 right-3 z-10" />}
           {output && <OutputNotice />}
         </>
       ) : (

@@ -75,7 +75,11 @@ export function EditorToolbar() {
               key={id}
               role="tab"
               aria-selected={viewMode === id}
-              onClick={() => switchWorkspace(id)}
+              onClick={() => {
+                switchWorkspace(id);
+                // Clicking Output (even when already there) refreshes a manual preview.
+                if (id === "output") useLayoutStore.getState().updatePreview();
+              }}
               disabled={empty}
               className={`${btn} ${viewMode === id ? "bg-[var(--active)]" : ""}`}
             >

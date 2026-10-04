@@ -12,12 +12,17 @@ import { applyTheme } from "./lib/theme";
 import { resolveStartMode } from "./lib/preferences";
 import { usePreferencesStore } from "./stores/preferences-store";
 import { useUiStore } from "./stores/ui-store";
+import { useLayoutStore } from "./stores/layout-store";
 
 export default function App() {
   useLayoutSync();
 
   const theme = usePreferencesStore((s) => s.prefs.appearance.theme);
   useEffect(() => applyTheme(theme), [theme]);
+
+  // Live Preview is only configured in Preferences, so a change applies to the open document too.
+  const livePref = usePreferencesStore((s) => s.prefs.preview.livePreview);
+  useEffect(() => useLayoutStore.getState().setLive(livePref === "always"), [livePref]);
 
   // If Preferences hides the workspace currently shown, fall back to a visible one.
   const prefs = usePreferencesStore((s) => s.prefs);

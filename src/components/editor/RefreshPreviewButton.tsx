@@ -19,10 +19,10 @@ export function RefreshPreviewButton({ className = "" }: { className?: string })
       title={stale ? "Refresh preview (out of date)" : "Refresh preview"}
       disabled={!result}
       onClick={updatePreview}
-      className={`relative rounded border border-[var(--border)] bg-[var(--panel)] p-1.5 hover:bg-[var(--hover)] disabled:opacity-40 ${className}`}
+      className={`relative flex h-10 w-10 items-center justify-center rounded-full bg-[var(--accent)] text-black shadow-lg shadow-black/40 hover:brightness-110 active:scale-95 disabled:opacity-40 ${className}`}
     >
-      <RefreshCw size={14} />
-      {stale && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-400" />}
+      <RefreshCw size={18} />
+      {stale && <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-[var(--panel)] bg-amber-400" />}
     </button>
   );
 }

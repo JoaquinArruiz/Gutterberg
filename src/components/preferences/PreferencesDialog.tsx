@@ -9,6 +9,7 @@ import {
   canPlace, detectPreset, LAYOUT_PRESETS, PANEL_DEFS, PANEL_IDS, POSITION_LABEL, PRESET_LABEL,
   type LayoutPresetId, type PanelPosition,
 } from "../../lib/workspace-layout";
+import { Select } from "../ui/Select";
 import { LayoutPreview } from "./LayoutPreview";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -16,8 +17,6 @@ import { useUiStore } from "../../stores/ui-store";
 const SECTIONS = ["General", "Workspace", "Preview", "Appearance"] as const;
 type Section = (typeof SECTIONS)[number];
 
-const selectCls =
-  "rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 outline-none focus:border-[var(--accent)]";
 const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 
 const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -98,14 +97,12 @@ export function PreferencesDialog() {
         <div className="min-w-0 flex-1 overflow-y-auto p-4">
           {section === "General" && (
             <Field label="Measurement unit">
-              <select
-                aria-label="Measurement unit"
-                className={selectCls}
+              <Select<MeasurementUnit>
+                label="Measurement unit"
                 value={prefs.measurement.unit}
-                onChange={(e) => store.setUnit(e.target.value as MeasurementUnit)}
-              >
-                {MEASUREMENT_UNITS.map((u) => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
-              </select>
+                onChange={store.setUnit}
+                options={MEASUREMENT_UNITS.map((u) => ({ value: u, label: UNIT_LABEL[u] }))}
+              />
               <p className="text-[var(--muted)]">
                 Only changes how lengths are shown and typed. The document itself is never altered.
               </p>
@@ -152,15 +149,15 @@ export function PreferencesDialog() {
                 })}
               </Field>
               <Field label="Default view">
-                <select
-                  aria-label="Default view"
-                  className={selectCls}
+                <Select<DefaultWorkspace>
+                  label="Default view"
                   value={prefs.workspace.defaultMode}
-                  onChange={(e) => store.setDefaultMode(e.target.value as DefaultWorkspace)}
-                >
-                  <option value="last">Last used</option>
-                  {visibleModes.map((m) => <option key={m} value={m}>{WORKSPACE_LABEL[m]}</option>)}
-                </select>
+                  onChange={store.setDefaultMode}
+                  options={[
+                    { value: "last", label: "Last used" },
+                    ...visibleModes.map((m) => ({ value: m as DefaultWorkspace, label: WORKSPACE_LABEL[m] })),
+                  ]}
+                />
                 <p className="text-[var(--muted)]">
                   Used when a document opens. Switching views while editing does not change it.
                 </p>
@@ -169,32 +166,28 @@ export function PreferencesDialog() {
               <Field label="Layout">
                 <div className="flex gap-4">
                   <div className="flex flex-1 flex-col gap-1.5">
-                    <label className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <span className="text-[var(--muted)]">Preset</span>
-                      <select
-                        aria-label="Layout preset"
-                        className={selectCls}
+                      <Select<LayoutPresetId>
+                        label="Layout preset"
                         value={preset}
-                        onChange={(e) => e.target.value !== "custom" && store.applyLayoutPreset(e.target.value as Exclude<LayoutPresetId, "custom">)}
-                      >
-                        {preset === "custom" && <option value="custom">{PRESET_LABEL.custom}</option>}
-                        {LAYOUT_PRESETS.map((id) => <option key={id} value={id}>{PRESET_LABEL[id]}</option>)}
-                      </select>
-                    </label>
+                        onChange={(v) => v !== "custom" && store.applyLayoutPreset(v)}
+                        options={[
+                          ...(preset === "custom" ? [{ value: "custom" as const, label: PRESET_LABEL.custom, disabled: true }] : []),
+                          ...LAYOUT_PRESETS.map((id) => ({ value: id as LayoutPresetId, label: PRESET_LABEL[id] })),
+                        ]}
+                      />
+                    </div>
                     {PANEL_IDS.map((id) => (
-                      <label key={id} className="flex items-center justify-between gap-2">
+                      <div key={id} className="flex items-center justify-between gap-2">
                         <span className="text-[var(--muted)]">{PANEL_DEFS[id].title} panel</span>
-                        <select
-                          aria-label={`${PANEL_DEFS[id].title} panel position`}
-                          className={selectCls}
-                          value={layout.panels.find((p) => p.id === id)?.position}
-                          onChange={(e) => store.setPanelPosition(id, e.target.value as PanelPosition)}
-                        >
-                          {PANEL_DEFS[id].positions.filter((pos) => canPlace(id, pos)).map((pos) => (
-                            <option key={pos} value={pos}>{POSITION_LABEL[pos]}</option>
-                          ))}
-                        </select>
-                      </label>
+                        <Select<PanelPosition>
+                          label={`${PANEL_DEFS[id].title} panel position`}
+                          value={layout.panels.find((p) => p.id === id)?.position ?? "hidden"}
+                          onChange={(pos) => store.setPanelPosition(id, pos)}
+                          options={PANEL_DEFS[id].positions.filter((pos) => canPlace(id, pos)).map((pos) => ({ value: pos, label: POSITION_LABEL[pos] }))}
+                        />
+                      </div>
                     ))}
                   </div>
                   <LayoutPreview panels={layout.panels} />
@@ -233,7 +226,10 @@ export function PreferencesDialog() {
                 name="live" value="manual" current={prefs.preview.livePreview} onSelect={store.setLivePreview}
                 label="Manual" hint="The output updates only when you press Update preview."
               />
-              <p className="text-[var(--muted)]">The default for each new document. You can still toggle it per document.</p>
+              <p className="text-[var(--muted)]">
+                With Manual, the Output tab refreshes the preview each time you open it, and the Split view has a refresh button
+                (a dot on it means the preview is out of date). Changing this applies to the open document immediately.
+              </p>
             </Field>
           )}
 

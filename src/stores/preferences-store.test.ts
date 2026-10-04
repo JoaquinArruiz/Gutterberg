@@ -11,6 +11,15 @@ const memory = (initial?: string): KeyValueStorage & { data: Map<string, string>
   return { data, getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v), removeItem: (k) => void data.delete(k) };
 };
 
+describe("first launch", () => {
+  it("opens in the Source view, with every view available", () => {
+    const fresh = createPreferencesStore(memory()).getState().prefs; // nothing stored yet
+    expect(fresh.workspace.defaultMode).toBe("source");
+    expect(sessionDefaults(fresh).viewMode).toBe("source");
+    expect(fresh.workspace.visibleModes).toEqual(["source", "output", "split"]);
+  });
+});
+
 describe("preferences store", () => {
   it("persists across a restart (a new store on the same storage)", () => {
     const storage = memory();

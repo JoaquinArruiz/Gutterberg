@@ -47,7 +47,7 @@ export function OutputPane() {
         Output{live ? "" : " (manual)"}
       </div>
       {content}
-      <RefreshPreviewButton className="absolute bottom-3 right-3 z-10" />
+      <RefreshPreviewButton className="absolute bottom-4 right-4 z-20" />
       <OutputNotice />
     </div>
   );
