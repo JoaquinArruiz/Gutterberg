@@ -7,11 +7,13 @@
 // the defaults, drops invalid values and repairs invariants, so the rest of the
 // app never sees an invalid state.
 
+import { isHintId, type HintId } from "./hints";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
 import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
-// v2: adds workspace.layout (panel positions/sizes). v1 files migrate by taking its defaults.
-export const PREFERENCES_VERSION = 2;
+// v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints.
+// Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 3;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -38,6 +40,10 @@ export interface AppPreferences {
   };
   preview: { livePreview: LivePreviewPreference };
   appearance: { theme: ThemePreference };
+  help: {
+    /** Tips the user has closed; they stay hidden until "Reset help tips". */
+    dismissedHints: HintId[];
+  };
 }
 
 export const DEFAULT_PREFERENCES: AppPreferences = {
@@ -46,6 +52,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
+  help: { dismissedHints: [] },
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -69,6 +76,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const w = isObj(r.workspace) ? r.workspace : {};
   const p = isObj(r.preview) ? r.preview : {};
   const a = isObj(r.appearance) ? r.appearance : {};
+  const h = isObj(r.help) ? r.help : {};
 
   // Visible modes: valid, de-duplicated, order kept. Never empty.
   const seen = new Set<WorkspaceMode>();
@@ -89,14 +97,20 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     workspace: { visibleModes, defaultMode, lastMode, layout: normalizeLayout(w.layout) },
     preview: { livePreview: oneOf(p.livePreview, ["always", "manual"] as const, d.preview.livePreview) },
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },
+    help: {
+      // Known ids only, no duplicates (a removed/renamed tip's old id is simply dropped).
+      dismissedHints: Array.isArray(h.dismissedHints)
+        ? [...new Set(h.dismissedHints.filter(isHintId))]
+        : d.help.dismissedHints,
+    },
   };
 }
 
 /** Upgrade stored data written by an older app version. v1 is current, so this normalizes. */
 export function migratePreferences(raw: unknown): AppPreferences {
-  // v1 -> v2 needs nothing extra: v1 has no `workspace.layout`, so normalizing
-  // fills it with the default layout and keeps every other v1 setting.
-  // Future: `if (version < 3) raw = { ...raw, editor: {...} }` before normalizing.
+  // Older versions need nothing extra: a missing `workspace.layout` (v1) or `help` (v1/v2)
+  // is filled with its default while every other setting is kept.
+  // Future: `if (version < 4) raw = { ...raw, editor: {...} }` before normalizing.
   return normalizePreferences(raw);
 }
 

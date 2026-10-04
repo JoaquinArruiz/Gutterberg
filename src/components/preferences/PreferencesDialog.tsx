@@ -12,10 +12,10 @@ import {
 import { Select } from "../ui/Select";
 import { LayoutPreview } from "./LayoutPreview";
 import { usePreferencesStore } from "../../stores/preferences-store";
-import { useUiStore } from "../../stores/ui-store";
+import { useUiStore, type PrefsSection } from "../../stores/ui-store";
 
-const SECTIONS = ["General", "Workspace", "Preview", "Appearance"] as const;
-type Section = (typeof SECTIONS)[number];
+const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance"];
+type Section = PrefsSection;
 
 const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 
@@ -57,6 +57,11 @@ export function PreferencesDialog() {
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
+    if (open) {
+      // Opened from a link ("Open Preferences" in a tip)? Land on that section.
+      const target = useUiStore.getState().prefsSection;
+      if (target) setSection(target);
+    }
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
     if (!open) setConfirmReset(false);
@@ -105,6 +110,25 @@ export function PreferencesDialog() {
               />
               <p className="text-[var(--muted)]">
                 Only changes how lengths are shown and typed. The document itself is never altered.
+              </p>
+            </Field>
+          )}
+
+          {section === "General" && (
+            <Field label="Help tips">
+              <div>
+                <button
+                  className={btn}
+                  disabled={prefs.help.dismissedHints.length === 0}
+                  onClick={store.resetHints}
+                >
+                  Reset help tips
+                </button>
+              </div>
+              <p className="text-[var(--muted)]">
+                {prefs.help.dismissedHints.length === 0
+                  ? "No tips are hidden."
+                  : `${prefs.help.dismissedHints.length} tip${prefs.help.dismissedHints.length === 1 ? " is" : "s are"} hidden. Reset to show them again.`}
               </p>
             </Field>
           )}

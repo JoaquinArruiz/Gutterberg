@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { HintId } from "../lib/hints";
 import type { MeasurementUnit } from "../lib/measurement";
 import {
   applyPreset, defaultLayout, setPanelCollapsed, setPanelPosition,
@@ -72,6 +73,10 @@ type PreferencesState = {
   setLivePreview: (p: LivePreviewPreference) => void;
   setTheme: (t: ThemePreference) => void;
   resetToDefaults: () => void;
+  /** Close a help tip for good (until it is reset). */
+  dismissHint: (id: HintId) => void;
+  /** Show every help tip again. */
+  resetHints: () => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
   applyLayoutPreset: (preset: Exclude<LayoutPresetId, "custom">) => void;
@@ -120,6 +125,12 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         commit(DEFAULT_PREFERENCES);
         bumpEpoch();
       },
+      dismissHint: (id) =>
+        edit((p) => ({
+          ...p,
+          help: { dismissedHints: p.help.dismissedHints.includes(id) ? p.help.dismissedHints : [...p.help.dismissedHints, id] },
+        })),
+      resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: [] } })),
       setPanelPosition: (id, position) => editLayout((l) => setPanelPosition(l, id, position)),
       setPanelCollapsed: (id, collapsed) => editLayout((l) => setPanelCollapsed(l, id, collapsed)),
       applyLayoutPreset: (preset) => {
@@ -156,3 +167,10 @@ export const usePreferencesStore = createPreferencesStore(browserStorage());
 
 /** Unit currently chosen for displaying/typing measurements. */
 export const useUnit = () => usePreferencesStore((s) => s.prefs.measurement.unit);
+
+/** Whether tip `id` should be shown, and how to close it. */
+export function useHint(id: HintId) {
+  const dismissed = usePreferencesStore((s) => s.prefs.help.dismissedHints.includes(id));
+  const dismissHint = usePreferencesStore((s) => s.dismissHint);
+  return { visible: !dismissed, dismiss: () => dismissHint(id) };
+}

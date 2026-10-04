@@ -3,6 +3,8 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { formatMeasurement } from "../../lib/measurement";
 import { useUnit } from "../../stores/preferences-store";
 import { usePreviewResult } from "../../lib/view-page";
+import { useUiStore } from "../../stores/ui-store";
+import { HintToast } from "../ui/HintToast";
 
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
 export function OutputNotice() {
@@ -16,14 +18,23 @@ export function OutputNotice() {
     ? layoutError
     : !selection && !shown
       ? "Select the card region on the page to preview the output."
-      : !shown && !live
-        ? "Live preview is off. Press the refresh button (bottom right) to generate the preview."
-        : shown?.overflow
+      : shown?.overflow
           ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
           : null;
   const bad = !!layoutError || !!shown?.overflow;
+  const showManualHint = !live && !shown && !!selection && !layoutError;
   return (
     <>
+      {showManualHint && (
+        <HintToast
+          id="live-preview-manual"
+          className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+          action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
+        >
+          Live preview is off, so this preview isn&apos;t generated automatically. Press the refresh button (bottom right) to
+          generate it. You can change this in Preferences &gt; Preview.
+        </HintToast>
+      )}
       {stale && (
         <span className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
           Preview out of date

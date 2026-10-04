@@ -45,6 +45,20 @@ describe("normalizePreferences", () => {
   });
 });
 
+describe("help tips preference", () => {
+  it("drops unknown or duplicate tip ids", () => {
+    const p = normalizePreferences({ help: { dismissedHints: ["live-preview-manual", "gone", "live-preview-manual", 3] } });
+    expect(p.help.dismissedHints).toEqual(["live-preview-manual"]);
+  });
+
+  it("older preferences without `help` get an empty list and keep their settings", () => {
+    const v2 = { version: 2, measurement: { unit: "cm" } };
+    const p = migratePreferences(v2);
+    expect(p.help.dismissedHints).toEqual([]);
+    expect(p.measurement.unit).toBe("cm");
+  });
+});
+
 describe("migratePreferences", () => {
   it("fills settings added in later versions without losing existing ones", () => {
     const old = { version: 1, measurement: { unit: "in" } }; // no workspace/preview/appearance yet

@@ -155,3 +155,42 @@ describe("workspace layout in the store", () => {
     expect(p.preview.livePreview).toBe("always");
   });
 });
+
+describe("help tips", () => {
+  it("a dismissed tip stays dismissed across a restart", () => {
+    const storage = memory();
+    createPreferencesStore(storage).getState().dismissHint("live-preview-manual");
+    expect(createPreferencesStore(storage).getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
+  });
+
+  it("dismissing twice does not duplicate", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().dismissHint("live-preview-manual");
+    st.getState().dismissHint("live-preview-manual");
+    expect(st.getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
+  });
+
+  it("Reset help tips shows them again, and leaves other preferences alone", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().setUnit("in");
+    st.getState().dismissHint("live-preview-manual");
+    st.getState().resetHints();
+    expect(createPreferencesStore(storage).getState().prefs.help.dismissedHints).toEqual([]);
+    expect(createPreferencesStore(storage).getState().prefs.measurement.unit).toBe("in");
+  });
+
+  it("Reset all preferences also brings the tips back", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().dismissHint("live-preview-manual");
+    st.getState().resetToDefaults();
+    expect(st.getState().prefs.help.dismissedHints).toEqual([]);
+  });
+
+  it("Reset workspace does not touch the tips", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().dismissHint("live-preview-manual");
+    st.getState().resetWorkspace();
+    expect(st.getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
+  });
+});
