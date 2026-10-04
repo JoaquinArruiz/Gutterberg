@@ -10,6 +10,7 @@ import { SelectionRect } from "./SelectionRect";
 import { GridOverlay } from "./GridOverlay";
 import { OutputPreview } from "./OutputPreview";
 import { OutputPane } from "./OutputPane";
+import { Magnifier, MAG } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
 import { usePreviewResult } from "../../lib/view-page";
 import { pxPerPoint } from "../../lib/coordinates";
@@ -19,7 +20,12 @@ type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
   | { kind: "create"; anchor: Point }
   | { kind: "move"; start: Point; rect: NormalizedRect }
-  | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect };
+  | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect; fine?: boolean };
+
+/** Press-and-hold on a handle for this long to open the magnifier. */
+const HOLD_MS = 350;
+/** Moving further than this (screen px) before the hold fires means a normal drag. */
+const HOLD_TOLERANCE_PX = 4;
 
 const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 
@@ -36,6 +42,15 @@ export function EditorViewport() {
   const [box, setBox] = useState({ width: 0, height: 0 });
   const [spaceDown, setSpaceDown] = useState(false);
   const [panning, setPanning] = useState(false);
+  // Magnifier: `pending` while a handle is held (raster prefetching), `active` once the hold fired.
+  const [loupe, setLoupe] = useState<{ handle: Handle; active: boolean } | null>(null);
+  const hold = useRef<{ timer: number; origin: Point } | null>(null);
+  const lastPointer = useRef<Point>({ x: 0, y: 0 });
+  const endHold = () => {
+    if (hold.current) window.clearTimeout(hold.current.timer);
+    hold.current = null;
+  };
+  useEffect(() => endHold, []);
 
   const page = pages[currentPage];
   const output = viewMode === "output";
@@ -122,6 +137,29 @@ export function EditorViewport() {
         hit === "body"
           ? { kind: "move", start: doc, rect: ed.selection }
           : { kind: "resize", handle: hit as Handle, start: doc, rect: ed.selection };
+      if (hit !== "body") {
+        const handle = hit as Handle;
+        lastPointer.current = p;
+        setLoupe({ handle, active: false });
+        endHold();
+        hold.current = {
+          origin: p,
+          timer: window.setTimeout(() => {
+            hold.current = null;
+            const d = drag.current;
+            if (d?.kind !== "resize") return;
+            const cur = useEditorStore.getState();
+            if (!cur.selection) return;
+            // Rebase the drag here so the handle doesn't jump, then slow it down.
+            drag.current = {
+              kind: "resize", handle: d.handle, fine: true,
+              start: screenToDocument(lastPointer.current, cur.viewport, page),
+              rect: cur.selection,
+            };
+            setLoupe({ handle: d.handle, active: true });
+          }, HOLD_MS),
+        };
+      }
     } else {
       // Starting a new rectangle replaces the old one (so a bare click clears it).
       ed.setSelection(null);
@@ -131,9 +169,20 @@ export function EditorViewport() {
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const d = drag.current;
+    if (!d && page && !panMode) {
+      // Hovering a handle starts rendering the magnifier crop, so it is ready when the hold fires.
+      const hit = (e.target as SVGElement).dataset.hit;
+      const handle = hit && hit !== "body" ? (hit as Handle) : null;
+      setLoupe((cur) => (cur?.handle === handle ? cur : handle ? { handle, active: false } : null));
+    }
     if (!d || !page) return;
     const ed = useEditorStore.getState();
     const p = local(e);
+    lastPointer.current = p;
+    if (hold.current && Math.hypot(p.x - hold.current.origin.x, p.y - hold.current.origin.y) > HOLD_TOLERANCE_PX) {
+      endHold();
+      setLoupe(null);
+    }
     if (d.kind === "pan") {
       ed.setPan(d.panX + p.x - d.start.x, d.panY + p.y - d.start.y);
       return;
@@ -141,13 +190,18 @@ export function EditorViewport() {
     const doc = screenToDocument(p, ed.viewport, page);
     if (d.kind === "create") ed.setSelection(rectFromPoints(d.anchor, doc));
     else if (d.kind === "move") ed.setSelection(moveRect(d.rect, doc.x - d.start.x, doc.y - d.start.y));
-    else ed.setSelection(resizeRect(d.rect, d.handle, doc.x - d.start.x, doc.y - d.start.y));
+    else {
+      const k = d.fine ? 1 / MAG : 1;
+      ed.setSelection(resizeRect(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k));
+    }
   };
 
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
     setPanning(false);
+    endHold();
+    setLoupe(null);
     if (d?.kind === "create") {
       const s = useEditorStore.getState().selection;
       // A plain click (no real drag) clears the selection.
@@ -178,10 +232,17 @@ export function EditorViewport() {
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
+            onPointerLeave={() => !drag.current && setLoupe(null)}
           >
             {!output && selection && <GridOverlay selection={selection} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }} viewport={viewport} page={page} />}
             {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
           </svg>
+          {!output && loupe && selection && (
+            <Magnifier
+              handle={loupe.handle} active={loupe.active} selection={selection} page={page} pageRect={pageRect}
+              box={box} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
+            />
+          )}
           {output && <OutputNotice />}
         </>
       ) : (

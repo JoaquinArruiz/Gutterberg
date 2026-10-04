@@ -57,3 +57,9 @@ export async function renderPage(pageIndex: number, widthPx: number): Promise<st
   const bytes = await invoke<ArrayBuffer>("render_page", { pageIndex, widthPx });
   return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
 }
+
+/** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
+export async function renderRegion(pageIndex: number, region: NormalizedRect, fullWidthPx: number): Promise<string> {
+  const bytes = await invoke<ArrayBuffer>("render_region", { pageIndex, region, fullWidthPx });
+  return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+}

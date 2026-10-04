@@ -33,3 +33,11 @@ export function resizeRect(r: NormalizedRect, handle: Handle, dx: number, dy: nu
   if (handle.includes("s")) bottom = clamp(bottom + dy, top + MIN_SIZE, 1);
   return { x: left, y: top, width: right - left, height: bottom - top };
 }
+
+/** The point of `sel` a handle controls: a corner, or the midpoint of an edge. */
+export function handlePoint(sel: NormalizedRect, h: Handle): Point {
+  return {
+    x: h.includes("w") ? sel.x : h.includes("e") ? sel.x + sel.width : sel.x + sel.width / 2,
+    y: h.includes("n") ? sel.y : h.includes("s") ? sel.y + sel.height : sel.y + sel.height / 2,
+  };
+}

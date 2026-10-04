@@ -10,6 +10,7 @@ pub fn run() {
             commands::layout::compute_layout,
             commands::export::export_document,
             commands::render::render_page,
+            commands::render::render_region,
         ])
         .run(tauri::generate_context!())
         .expect("error while running the PDF Card Editor");
