@@ -7,7 +7,8 @@ import { MIN_SIZE } from "./selection";
 import type { PageSize } from "./tauri";
 import { ptToMm } from "./units";
 
-export type GridSpec = { rows: number; columns: number };
+/** Source grid: `gapXMm`/`gapYMm` is the spacing already present between cards in the PDF. */
+export type GridSpec = { rows: number; columns: number; gapXMm?: number; gapYMm?: number };
 export const MAX_GRID = 30;
 
 export const clampCount = (n: number) => clamp(Math.round(n), 1, MAX_GRID);
@@ -17,16 +18,25 @@ const pageMm = (page: PageSize) => ({ width: ptToMm(page.width_pt), height: ptTo
 /** Size in mm of one source card when `sel` is split into rows x columns. */
 export function cardSizeMm(sel: NormalizedRect, page: PageSize, grid: GridSpec) {
   const p = pageMm(page);
-  return { width: (sel.width * p.width) / grid.columns, height: (sel.height * p.height) / grid.rows };
+  const gx = grid.gapXMm ?? 0;
+  const gy = grid.gapYMm ?? 0;
+  return {
+    width: (sel.width * p.width - gx * (grid.columns - 1)) / grid.columns,
+    height: (sel.height * p.height - gy * (grid.rows - 1)) / grid.rows,
+  };
 }
 
 /** Source card rects (normalized), row-major. */
-export function cardRects(sel: NormalizedRect, grid: GridSpec): NormalizedRect[] {
-  const w = sel.width / grid.columns;
-  const h = sel.height / grid.rows;
+export function cardRects(sel: NormalizedRect, grid: GridSpec, page: PageSize): NormalizedRect[] {
+  const p = pageMm(page);
+  const gx = (grid.gapXMm ?? 0) / p.width;
+  const gy = (grid.gapYMm ?? 0) / p.height;
+  const w = (sel.width - gx * (grid.columns - 1)) / grid.columns;
+  const h = (sel.height - gy * (grid.rows - 1)) / grid.rows;
   const out: NormalizedRect[] = [];
   for (let r = 0; r < grid.rows; r++)
-    for (let c = 0; c < grid.columns; c++) out.push({ x: sel.x + c * w, y: sel.y + r * h, width: w, height: h });
+    for (let c = 0; c < grid.columns; c++)
+      out.push({ x: sel.x + c * (w + gx), y: sel.y + r * (h + gy), width: w, height: h });
   return out;
 }
 
@@ -41,8 +51,16 @@ export function selectionForCardSize(
   size: { width?: number; height?: number },
 ): NormalizedRect {
   const p = pageMm(page);
-  const width = size.width === undefined ? sel.width : clamp((size.width * grid.columns) / p.width, MIN_SIZE, 1 - sel.x);
-  const height = size.height === undefined ? sel.height : clamp((size.height * grid.rows) / p.height, MIN_SIZE, 1 - sel.y);
+  const gx = grid.gapXMm ?? 0;
+  const gy = grid.gapYMm ?? 0;
+  const width =
+    size.width === undefined
+      ? sel.width
+      : clamp((size.width * grid.columns + gx * (grid.columns - 1)) / p.width, MIN_SIZE, 1 - sel.x);
+  const height =
+    size.height === undefined
+      ? sel.height
+      : clamp((size.height * grid.rows + gy * (grid.rows - 1)) / p.height, MIN_SIZE, 1 - sel.y);
   return { ...sel, width, height };
 }
 

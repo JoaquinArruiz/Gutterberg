@@ -24,7 +24,16 @@ fn main() {
                 bounds: Rect::new(f(3), f(4), f(5), f(6)),
                 rows: a[7].parse().unwrap(),
                 columns: a[8].parse().unwrap(),
-                gap_mm: f(9),
+                source_gap_x_mm: 0.0,
+                source_gap_y_mm: 0.0,
+                gap_x_mm: f(9),
+                gap_y_mm: f(9),
+                margin_top_mm: 0.0,
+                margin_right_mm: 0.0,
+                margin_bottom_mm: 0.0,
+                margin_left_mm: 0.0,
+                output_page: None,
+                fit_page: false,
             };
             let l = card_core::layout::calculate_layout(size, &grid, None).unwrap();
             println!(

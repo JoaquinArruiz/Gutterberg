@@ -22,7 +22,16 @@ pub fn sample_grid(gap_mm: f64) -> GridLayout {
         ),
         rows: 3,
         columns: 3,
-        gap_mm,
+        source_gap_x_mm: 0.0,
+        source_gap_y_mm: 0.0,
+        gap_x_mm: gap_mm,
+        gap_y_mm: gap_mm,
+        margin_top_mm: 0.0,
+        margin_right_mm: 0.0,
+        margin_bottom_mm: 0.0,
+        margin_left_mm: 0.0,
+        output_page: None,
+        fit_page: false,
     }
 }
 

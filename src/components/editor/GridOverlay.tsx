@@ -13,9 +13,17 @@ export function GridOverlay({
   viewport: ViewportState;
   page: PageSize;
 }) {
-  const cards = cardRects(selection, grid).map((r) => rectToScreen(r, viewport, page));
+  const cards = cardRects(selection, grid, page).map((r) => rectToScreen(r, viewport, page));
+  // Source gaps = selection minus the cards (even-odd), so existing spacing is visible.
+  const sel = rectToScreen(selection, viewport, page);
+  const hasGap = (grid.gapXMm ?? 0) > 0 || (grid.gapYMm ?? 0) > 0;
+  const box = (r: { x: number; y: number; width: number; height: number }) =>
+    `M${r.x} ${r.y}h${r.width}v${r.height}h${-r.width}z`;
   return (
     <g pointerEvents="none">
+      {hasGap && (
+        <path d={[sel, ...cards].map(box).join("")} fillRule="evenodd" fill="#a855f7" fillOpacity={0.28} />
+      )}
       {cards.map((c, i) => (
         <g key={i}>
           <rect

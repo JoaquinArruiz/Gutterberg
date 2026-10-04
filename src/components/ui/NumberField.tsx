@@ -26,10 +26,18 @@ export function NumberField({
     if (!focused.current) setText(fmt(value));
   }, [value, decimals]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const clampV = (v: number) => Math.min(Math.max(v, min ?? -Infinity), max ?? Infinity);
+  // Round away float noise (3.1 + 0.1 = 3.1000000000000005).
+  const nudge = (dir: 1 | -1, e: { shiftKey: boolean; altKey: boolean }) => {
+    if (value === null) return;
+    const amount = e.shiftKey ? Math.max(step, 1) : e.altKey && decimals > 0 ? 0.1 : step;
+    onCommit(clampV(Number((value + dir * amount).toFixed(Math.max(decimals, 3)))));
+  };
+
   const commit = () => {
     const n = Number(text.replace(",", "."));
     if (text.trim() !== "" && Number.isFinite(n)) {
-      onCommit(Math.min(Math.max(n, min ?? -Infinity), max ?? Infinity));
+      onCommit(clampV(n));
     }
     setText(fmt(value));
   };
@@ -38,6 +46,12 @@ export function NumberField({
     <label className="flex items-center justify-between gap-2">
       <span className="text-[var(--muted)]">{label}</span>
       <span className="flex items-center gap-1">
+        <button
+          type="button" tabIndex={-1} aria-label={`Decrease ${label}`}
+          disabled={disabled || value === null || (min !== undefined && value <= min)}
+          onClick={(e) => nudge(-1, e)}
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-white/10 disabled:opacity-30"
+        >−</button>
         <input
           aria-label={label}
           disabled={disabled}
@@ -50,13 +64,19 @@ export function NumberField({
           onKeyDown={(e) => {
             if (e.key === "Enter") e.currentTarget.blur();
             else if (e.key === "Escape") { setText(fmt(value)); e.currentTarget.blur(); }
-            else if ((e.key === "ArrowUp" || e.key === "ArrowDown") && value !== null) {
+            else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
               e.preventDefault();
-              onCommit(Math.min(Math.max(value + (e.key === "ArrowUp" ? step : -step), min ?? -Infinity), max ?? Infinity));
+              nudge(e.key === "ArrowUp" ? 1 : -1, e);
             }
           }}
-          className="w-16 rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 text-right tabular-nums outline-none focus:border-[var(--accent)] disabled:opacity-40"
+          className="w-14 rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 text-right tabular-nums outline-none focus:border-[var(--accent)] disabled:opacity-40"
         />
+        <button
+          type="button" tabIndex={-1} aria-label={`Increase ${label}`}
+          disabled={disabled || value === null || (max !== undefined && value >= max)}
+          onClick={(e) => nudge(1, e)}
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-white/10 disabled:opacity-30"
+        >+</button>
         {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
       </span>
     </label>

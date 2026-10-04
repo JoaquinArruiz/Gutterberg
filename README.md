@@ -12,6 +12,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 4 – Grid** (rows, columns, grid overlay, exact card size in mm)
 - [x] **Milestone 5 – Spacing preview** (gap in mm, Source/Output toggle driven by `compute_layout`)
 - [x] **Milestone 6 – Export wiring** (Export PDF button calls `export_document`)
+- [x] **Milestone 7 – Source spacing, output page and live preview** (source vs output gaps, margins, page size/orientation/auto-fit, overflow blocks export, Source/Output/Split views, optional live preview)
 
 ## Architecture
 

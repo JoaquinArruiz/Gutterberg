@@ -1,49 +1,58 @@
 import { useDocumentStore } from "../../stores/document-store";
-import { useLayoutStore } from "../../stores/layout-store";
 import { usePageImage } from "../../lib/use-page-image";
-import { pxPerPoint, type Rect, type ViewportState } from "../../lib/coordinates";
+import type { Rect } from "../../lib/coordinates";
+import type { LayoutResult } from "../../lib/layout-api";
 
 const MAX_RENDER_PX = 8192;
+const EPS_PT = 0.01;
 
 /**
  * The exported page: each card's source region of the page raster, clipped and
  * moved to its destination from the Rust layout. Mirrors what the exporter does
  * (translate + clip, no scaling), using the raster only for display.
+ *
+ * `screen` is the OUTPUT page's rect and `k` the screen px per point. The raster
+ * is requested at the source page's on-screen size, so it depends on zoom only
+ * (never on gaps, margins or page size): changing spacing just repositions crops.
  */
-export function OutputPreview({ screen, viewport }: { screen: Rect; viewport: ViewportState }) {
+export function OutputPreview({ screen, k, result }: { screen: Rect; k: number; result: LayoutResult | null }) {
   const { path, currentPage, pages } = useDocumentStore();
-  const result = useLayoutStore((s) => s.result);
   const page = pages[currentPage];
   const dpr = window.devicePixelRatio || 1;
-  const widthPx = Math.min(MAX_RENDER_PX, Math.max(16, Math.round(screen.width * dpr)));
+  const widthPx = page ? Math.min(MAX_RENDER_PX, Math.max(16, Math.round(page.width_pt * k * dpr))) : 0;
   const url = usePageImage(path, currentPage, widthPx, 150);
-  const k = pxPerPoint(viewport.zoom);
+  const out = result?.output_page;
 
   return (
     <div
       className="absolute bg-white shadow-lg shadow-black/50"
       style={{ left: screen.x, top: screen.y, width: screen.width, height: screen.height }}
     >
-      {url && page && result?.placements.map((p) => (
-        <div
-          key={p.index}
-          className="absolute overflow-hidden"
-          style={{
-            left: p.destination.x * k, top: p.destination.y * k,
-            width: p.destination.width * k, height: p.destination.height * k,
-          }}
-        >
-          <img
-            src={url}
-            draggable={false}
+      {url && page && result?.placements.map((p) => {
+        const d = p.destination;
+        const outside =
+          !!out && (d.x < -EPS_PT || d.y < -EPS_PT || d.x + d.width > out.width_pt + EPS_PT || d.y + d.height > out.height_pt + EPS_PT);
+        return (
+          <div
+            key={p.index}
+            className="absolute overflow-hidden"
             style={{
-              position: "absolute", maxWidth: "none",
-              left: -p.source.x * k, top: -p.source.y * k,
-              width: page.width_pt * k, height: page.height_pt * k,
+              left: d.x * k, top: d.y * k, width: d.width * k, height: d.height * k,
+              ...(outside && { opacity: 0.55, outline: "2px solid #f87171", outlineOffset: -1 }),
             }}
-          />
-        </div>
-      ))}
+          >
+            <img
+              src={url}
+              draggable={false}
+              style={{
+                position: "absolute", maxWidth: "none",
+                left: -p.source.x * k, top: -p.source.y * k,
+                width: page.width_pt * k, height: page.height_pt * k,
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 }

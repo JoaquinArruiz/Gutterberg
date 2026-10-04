@@ -169,6 +169,14 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
         let src_size = PageSize { width_pt: bx[2] - bx[0], height_pt: bx[3] - bx[1] };
         let layout = calculate_layout(src_size, &pj.grid, None)?;
         let out = layout.output_page;
+        if let Some(o) = layout.overflow {
+            return Err(Error::DoesNotFit {
+                needed_w_mm: pt_to_mm(out.width_pt) + o.width_mm,
+                needed_h_mm: pt_to_mm(out.height_pt) + o.height_mm,
+                page_w_mm: pt_to_mm(out.width_pt),
+                page_h_mm: pt_to_mm(out.height_pt),
+            });
+        }
 
         let mut ops = String::new();
         for p in &layout.placements {

@@ -26,9 +26,26 @@ export async function pickExportPath(inputPath: string): Promise<string | null> 
   return save({ defaultPath: `${name}-spaced.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
 }
 
+/** Mirrors card_core::layout::GridLayout. */
+export type GridPayload = {
+  bounds: NormalizedRect;
+  rows: number;
+  columns: number;
+  source_gap_x_mm: number;
+  source_gap_y_mm: number;
+  gap_x_mm: number;
+  gap_y_mm: number;
+  margin_top_mm: number;
+  margin_right_mm: number;
+  margin_bottom_mm: number;
+  margin_left_mm: number;
+  output_page: PageSize | null;
+  fit_page: boolean;
+};
+
 /** Exports every page with the given grid via the Rust exporter. Resolves to the page count. */
 export async function exportDocument(
-  grid: { bounds: NormalizedRect; rows: number; columns: number; gap_mm: number },
+  grid: GridPayload,
   pageCount: number,
   outputPath: string,
 ): Promise<number> {

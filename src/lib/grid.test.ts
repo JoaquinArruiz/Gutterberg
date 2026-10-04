@@ -17,7 +17,7 @@ describe("grid", () => {
   });
 
   it("builds row-major card rects that tile the selection", () => {
-    const r = cardRects(sel, grid);
+    const r = cardRects(sel, grid, A4);
     expect(r).toHaveLength(9);
     close(r[1].x, r[0].x + r[0].width);
     close(r[3].y, r[0].y + r[0].height);
@@ -44,5 +44,17 @@ describe("grid", () => {
     close(m.x * 210, 10);
     close(m.y * 297, 20);
     expect(selectionAtMm(sel, A4, { x: 999 }).x).toBeCloseTo(1 - sel.width, 9);
+  });
+
+  it("accounts for source gaps when deriving card size and rects", () => {
+    // 3 cards of 60 mm with 2 mm gaps = 184 mm wide
+    const g = { rows: 1, columns: 3, gapXMm: 2, gapYMm: 0 };
+    const s = { x: 0.1, y: 0.1, width: 184 / 210, height: 100 / 297 };
+    close(cardSizeMm(s, A4, g).width, 60);
+    const r = cardRects(s, g, A4);
+    close((r[1].x - (r[0].x + r[0].width)) * 210, 2);
+    close((r[2].x + r[2].width) - (s.x + s.width), 0);
+    const f = selectionForCardSize(s, A4, g, { width: 60 });
+    close(f.width * 210, 184);
   });
 });

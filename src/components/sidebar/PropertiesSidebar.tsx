@@ -1,9 +1,42 @@
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import { MAX_GAP_MM, useLayoutStore } from "../../stores/layout-store";
+import { MAX_GAP_MM, MAX_MARGIN_MM, useLayoutStore, type PageMode } from "../../stores/layout-store";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { ptToMm } from "../../lib/units";
+import { usePreviewResult } from "../../lib/view-page";
 import { NumberField } from "../ui/NumberField";
+
+function GapFields({
+  linked, onLink, x, y, onX, onY,
+}: {
+  linked: boolean; onLink: (l: boolean) => void;
+  x: number; y: number; onX: (v: number) => void; onY: (v: number) => void;
+}) {
+  const f = { suffix: "mm", decimals: 2, step: 0.5, min: 0, max: MAX_GAP_MM };
+  return (
+    <>
+      <label className="flex items-center gap-2 text-[var(--muted)]">
+        <input type="checkbox" checked={linked} onChange={(e) => onLink(e.target.checked)} />
+        Link horizontal / vertical
+      </label>
+      <NumberField label={linked ? "Gap" : "Horizontal"} value={x} onCommit={onX} {...f} />
+      {!linked && <NumberField label="Vertical" value={y} onCommit={onY} {...f} />}
+    </>
+  );
+}
+
+const PAGE_MODES: { id: PageMode; label: string }[] = [
+  { id: "same", label: "Same as source" },
+  { id: "a4", label: "A4" },
+  { id: "letter", label: "Letter" },
+  { id: "legal", label: "Legal" },
+  { id: "custom", label: "Custom" },
+  { id: "fit", label: "Auto-fit to cards" },
+];
+
+const selectCls =
+  "rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 outline-none focus:border-[var(--accent)]";
+const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-white/10 disabled:opacity-40";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-5">
@@ -15,8 +48,10 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 export function PropertiesSidebar() {
   const { pages, currentPage } = useDocumentStore();
   const { selection, setSelection } = useEditorStore();
-  const { rows, columns, gapMm, setRows, setColumns, setGapMm, layoutError } = useLayoutStore();
+  const L = useLayoutStore();
+  const { rows, columns, setRows, setColumns, layoutError } = L;
   const page = pages[currentPage];
+  const shown = usePreviewResult();
 
   if (!page) {
     return (
@@ -26,7 +61,7 @@ export function PropertiesSidebar() {
     );
   }
 
-  const grid = { rows, columns };
+  const grid = { rows, columns, gapXMm: L.sourceGapXMm, gapYMm: L.sourceGapYMm };
   const card = selection ? cardSizeMm(selection, page, grid) : null;
   const pw = ptToMm(page.width_pt);
   const ph = ptToMm(page.height_pt);
@@ -40,7 +75,7 @@ export function PropertiesSidebar() {
         </div>
       </Section>
 
-      <Section title="Layout">
+      <Section title="Source layout">
         <NumberField label="Columns" value={columns} onCommit={setColumns} min={1} max={MAX_GRID} />
         <NumberField label="Rows" value={rows} onCommit={setRows} min={1} max={MAX_GRID} />
         <NumberField
@@ -68,9 +103,93 @@ export function PropertiesSidebar() {
         )}
       </Section>
 
-      <Section title="Spacing">
-        <NumberField label="Gap" suffix="mm" decimals={2} step={0.5} min={0} max={MAX_GAP_MM} value={gapMm} onCommit={setGapMm} />
+      <Section title="Source spacing">
+        <GapFields
+          linked={L.sourceGapLinked} onLink={L.setSourceGapLinked}
+          x={L.sourceGapXMm} y={L.sourceGapYMm} onX={L.setSourceGapX} onY={L.setSourceGapY}
+        />
+        <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
+      </Section>
+
+      <Section title="Output spacing">
+        <GapFields
+          linked={L.gapLinked} onLink={L.setGapLinked}
+          x={L.gapXMm} y={L.gapYMm} onX={L.setGapX} onY={L.setGapY}
+        />
+        <p className="text-[var(--muted)]">Final gap between cards. Independent of the source gap.</p>
+      </Section>
+
+      <Section title="Output page">
+        <label className="flex items-center justify-between gap-2">
+          <span className="text-[var(--muted)]">Size</span>
+          <select className={selectCls} value={L.pageMode} onChange={(e) => L.setPageMode(e.target.value as PageMode)}>
+            {PAGE_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+          </select>
+        </label>
+        {L.pageMode === "custom" && (
+          <>
+            <NumberField label="Width" suffix="mm" decimals={1} step={1} min={10} value={L.customWidthMm} onCommit={(w) => L.setCustomSize(w, undefined)} />
+            <NumberField label="Height" suffix="mm" decimals={1} step={1} min={10} value={L.customHeightMm} onCommit={(h) => L.setCustomSize(undefined, h)} />
+          </>
+        )}
+        {L.pageMode !== "same" && L.pageMode !== "fit" && (
+          <label className="flex items-center justify-between gap-2">
+            <span className="text-[var(--muted)]">Orientation</span>
+            <select className={selectCls} value={L.orientation} onChange={(e) => L.setOrientation(e.target.value as "portrait" | "landscape")}>
+              <option value="portrait">Portrait</option>
+              <option value="landscape">Landscape</option>
+            </select>
+          </label>
+        )}
+        {(["top", "right", "bottom", "left"] as const).map((side) => (
+          <NumberField
+            key={side} label={`Margin ${side}`} suffix="mm" decimals={1} step={1} min={0} max={MAX_MARGIN_MM}
+            value={L.margins[side]} onCommit={(v) => L.setMargin(side, v)}
+          />
+        ))}
+        {shown && (
+          <div className="flex justify-between">
+            <span className="text-[var(--muted)]">Result</span>
+            <span className="tabular-nums">
+              {ptToMm(shown.output_page.width_pt).toFixed(1)} × {ptToMm(shown.output_page.height_pt).toFixed(1)} mm
+            </span>
+          </div>
+        )}
+        {L.result?.overflow && (
+          <div className="rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300">
+            <p>
+              ⚠ Layout exceeds the page by {L.result.overflow.width_mm.toFixed(1)} mm horizontally
+              and {L.result.overflow.height_mm.toFixed(1)} mm vertically. Cards are never scaled.
+            </p>
+            <p className="mt-1">Change the page size or orientation, reduce spacing or margins, or auto-fit the page. Export is disabled until it fits.</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <button className={smallBtn} onClick={() => L.setPageMode("fit")}>Auto-fit page</button>
+              {L.pageMode !== "same" && L.pageMode !== "fit" && (
+                <button className={smallBtn} onClick={() => L.setOrientation(L.orientation === "portrait" ? "landscape" : "portrait")}>
+                  Switch orientation
+                </button>
+              )}
+            </div>
+          </div>
+        )}
         {layoutError && <p className="text-red-400">{layoutError}</p>}
+      </Section>
+
+      <Section title="Preview">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={L.live} onChange={(e) => L.setLive(e.target.checked)} />
+          Live output preview
+        </label>
+        {!L.live && (
+          <button className={smallBtn} disabled={!L.result} onClick={L.updatePreview}>
+            Update preview{L.result && L.snapshot !== L.result ? " •" : ""}
+          </button>
+        )}
+        <p className="text-[var(--muted)]">
+          {L.live
+            ? "Output and split views follow every change."
+            : "Output and split views show the last update. Use the Output or Split view button in the toolbar."}
+        </p>
       </Section>
 
       {selection && (

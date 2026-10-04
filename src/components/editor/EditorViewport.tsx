@@ -9,6 +9,10 @@ import { PagePreview } from "./PagePreview";
 import { SelectionRect } from "./SelectionRect";
 import { GridOverlay } from "./GridOverlay";
 import { OutputPreview } from "./OutputPreview";
+import { OutputPane } from "./OutputPane";
+import { OutputNotice } from "./OutputNotice";
+import { usePreviewResult } from "../../lib/view-page";
+import { pxPerPoint } from "../../lib/coordinates";
 import { useLayoutStore } from "../../stores/layout-store";
 
 type Drag =
@@ -22,8 +26,10 @@ const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 export function EditorViewport() {
   const { pages, currentPage, path, error, loading } = useDocumentStore();
   const { viewport, tool, selection, fitMode, viewMode } = useEditorStore();
-  const { layoutError } = useLayoutStore();
+  const previewResult = usePreviewResult();
   const rows = useLayoutStore((s) => s.rows);
+  const sourceGapXMm = useLayoutStore((s) => s.sourceGapXMm);
+  const sourceGapYMm = useLayoutStore((s) => s.sourceGapYMm);
   const columns = useLayoutStore((s) => s.columns);
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -32,6 +38,11 @@ export function EditorViewport() {
   const [panning, setPanning] = useState(false);
 
   const page = pages[currentPage];
+  const output = viewMode === "output";
+  // The page the viewport pans/zooms: the (possibly differently sized) output page in Output view.
+  const viewPage = output ? (previewResult?.output_page ?? page) : page;
+  const viewPageRef = useRef(viewPage);
+  viewPageRef.current = viewPage;
 
   useEffect(() => {
     const el = ref.current;
@@ -42,12 +53,15 @@ export function EditorViewport() {
   }, []);
 
   // New document: forget the selection and fit.
-  useEffect(() => useEditorStore.getState().reset(), [path]);
+  useEffect(() => {
+    useEditorStore.getState().reset();
+    useLayoutStore.getState().clearSnapshot();
+  }, [path]);
 
   // Keep the page fitted while in fit mode (resize, page change, new document).
   useEffect(() => {
-    if (page && fitMode && box.width > 0) useEditorStore.getState().fit(box, page);
-  }, [page, fitMode, box]);
+    if (viewPage && fitMode && box.width > 0) useEditorStore.getState().fit(box, viewPage);
+  }, [viewPage, fitMode, box]);
 
   // Space = temporary pan.
   useEffect(() => {
@@ -68,7 +82,7 @@ export function EditorViewport() {
     const el = ref.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
-      const pg = useDocumentStore.getState().pages[useDocumentStore.getState().currentPage];
+      const pg = viewPageRef.current;
       if (!pg) return;
       e.preventDefault();
       const s = useEditorStore.getState();
@@ -88,7 +102,6 @@ export function EditorViewport() {
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
 
-  const output = viewMode === "output";
   const panMode = output || tool === "pan" || spaceDown;
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -142,17 +155,23 @@ export function EditorViewport() {
     }
   };
 
-  const pageRect = page ? pageScreenRect(viewport, page) : null;
+  const pageRect = viewPage ? pageScreenRect(viewport, viewPage) : null;
   const selScreen = page && selection ? rectToScreen(selection, viewport, page) : null;
   const cursor = panMode ? (panning ? "grabbing" : "grab") : "crosshair";
 
+  const split = viewMode === "split" && !!page;
   return (
-    <div ref={ref} data-viewport className="relative h-full w-full overflow-hidden bg-[#15161a]">
+    <div className="flex h-full w-full">
+    <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[#15161a]">
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
       ) : page && pageRect ? (
         <>
-          {output ? <OutputPreview screen={pageRect} viewport={viewport} /> : <PagePreview screen={pageRect} />}
+          {output ? (
+            <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
+          ) : (
+            <PagePreview screen={pageRect} />
+          )}
           <svg
             className="absolute inset-0 h-full w-full"
             style={{ cursor, touchAction: "none" }}
@@ -160,20 +179,19 @@ export function EditorViewport() {
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
           >
-            {!output && selection && <GridOverlay selection={selection} grid={{ rows, columns }} viewport={viewport} page={page} />}
+            {!output && selection && <GridOverlay selection={selection} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }} viewport={viewport} page={page} />}
             {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
           </svg>
-          {output && (!selection || layoutError) && (
-            <p className="pointer-events-none absolute inset-x-0 top-3 mx-auto w-fit max-w-[80%] rounded bg-black/70 px-3 py-1.5 text-center text-[var(--muted)]">
-              {layoutError ?? "Select the card region on the page to preview the output."}
-            </p>
-          )}
+          {output && <OutputNotice />}
         </>
       ) : (
         <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
           {loading ? "Opening…" : "Open a PDF to get started (Ctrl/Cmd+O)"}
         </p>
       )}
+    </div>
+    {split && <div className="w-px shrink-0 bg-[var(--border)]" />}
+    {split && <OutputPane />}
     </div>
   );
 }

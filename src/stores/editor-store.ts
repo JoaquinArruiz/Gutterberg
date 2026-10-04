@@ -6,8 +6,8 @@ import {
 import type { PageSize } from "../lib/tauri";
 
 export type Tool = "select" | "pan";
-/** "source" edits the card region; "output" previews the spaced-out page. */
-export type ViewMode = "source" | "output";
+/** "source" edits the card region; "output" previews the spaced-out page; "split" shows both. */
+export type ViewMode = "source" | "output" | "split";
 
 type EditorState = {
   viewport: ViewportState;

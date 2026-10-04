@@ -1,6 +1,6 @@
 import { Download, FileText, Hand, Maximize, MousePointer2, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
-import { useLayoutStore } from "../../stores/layout-store";
+import { gridPayload, useLayoutStore } from "../../stores/layout-store";
 import { exportDocument, pickExportPath } from "../../lib/tauri";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore, type Tool, type ViewMode } from "../../stores/editor-store";
@@ -14,6 +14,7 @@ const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
 const VIEWS: { id: ViewMode; label: string }[] = [
   { id: "source", label: "Source" },
   { id: "output", label: "Output" },
+  { id: "split", label: "Split" },
 ];
 
 const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10 disabled:opacity-40";
@@ -21,7 +22,7 @@ const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10 disab
 export function EditorToolbar() {
   const { openDialog, pages, loading, path } = useDocumentStore();
   const { selection } = useEditorStore();
-  const { rows, columns, gapMm, result } = useLayoutStore();
+  const { result } = useLayoutStore();
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -32,7 +33,7 @@ export function EditorToolbar() {
       if (!out) return;
       setExporting(true);
       setStatus(null);
-      const n = await exportDocument({ bounds: selection, rows, columns, gap_mm: gapMm }, pages.length, out);
+      const n = await exportDocument(gridPayload(selection, useLayoutStore.getState()), pages.length, out);
       setStatus({ ok: true, text: `Exported ${n} page${n === 1 ? "" : "s"} to ${out}` });
     } catch (e) {
       setStatus({ ok: false, text: String(e) });
@@ -83,8 +84,13 @@ export function EditorToolbar() {
       )}
       <button
         onClick={doExport}
-        disabled={!selection || !result || exporting}
-        title={selection ? (result ? "Export PDF" : "The layout does not fit the page") : "Select the card region first"}
+        disabled={!selection || !result || !!result.overflow || exporting}
+        title={
+          !selection ? "Select the card region first"
+            : !result ? "The grid is not valid"
+            : result.overflow ? "The cards do not fit the output page. Change the page, spacing or margins."
+            : "Export PDF"
+        }
         className="flex items-center gap-1.5 rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"
       >
         <Download size={14} /> {exporting ? "Exporting…" : "Export PDF"}
