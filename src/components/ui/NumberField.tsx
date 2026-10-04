@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
  * "6", "63", "63.5" doesn't fire an update (and a clamp) per keystroke.
  */
 export function NumberField({
-  value, onCommit, decimals = 0, min, max, step = 1, suffix, disabled, label,
+  value, onCommit, decimals = 0, min, max, step = 1, fineStep, coarseStep, suffix, disabled, label,
 }: {
   value: number | null;
   onCommit: (v: number) => void;
@@ -13,6 +13,9 @@ export function NumberField({
   min?: number;
   max?: number;
   step?: number;
+  /** Alt+arrow / Shift+arrow increments (defaults: 0.1 when decimals are shown / at least 1). */
+  fineStep?: number;
+  coarseStep?: number;
   suffix?: string;
   disabled?: boolean;
   label: string;
@@ -30,13 +33,19 @@ export function NumberField({
   // Round away float noise (3.1 + 0.1 = 3.1000000000000005).
   const nudge = (dir: 1 | -1, e: { shiftKey: boolean; altKey: boolean }) => {
     if (value === null) return;
-    const amount = e.shiftKey ? Math.max(step, 1) : e.altKey && decimals > 0 ? 0.1 : step;
+    const amount = e.shiftKey
+      ? (coarseStep ?? Math.max(step, 1))
+      : e.altKey && (fineStep !== undefined || decimals > 0)
+        ? (fineStep ?? 0.1)
+        : step;
     onCommit(clampV(Number((value + dir * amount).toFixed(Math.max(decimals, 3)))));
   };
 
   const commit = () => {
     const n = Number(text.replace(",", "."));
-    if (text.trim() !== "" && Number.isFinite(n)) {
+    // Only commit a real edit. The shown text is rounded, so committing it
+    // unchanged would overwrite the exact value (3 mm -> "0.118 in" -> 2.997 mm).
+    if (text !== fmt(value) && text.trim() !== "" && Number.isFinite(n)) {
       onCommit(clampV(n));
     }
     setText(fmt(value));
@@ -50,7 +59,7 @@ export function NumberField({
           type="button" tabIndex={-1} aria-label={`Decrease ${label}`}
           disabled={disabled || value === null || (min !== undefined && value <= min)}
           onClick={(e) => nudge(-1, e)}
-          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-white/10 disabled:opacity-30"
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
         >−</button>
         <input
           aria-label={label}
@@ -75,7 +84,7 @@ export function NumberField({
           type="button" tabIndex={-1} aria-label={`Increase ${label}`}
           disabled={disabled || value === null || (max !== undefined && value >= max)}
           onClick={(e) => nudge(1, e)}
-          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-white/10 disabled:opacity-30"
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
         >+</button>
         {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
       </span>

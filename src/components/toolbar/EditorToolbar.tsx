@@ -1,9 +1,13 @@
-import { Download, FileText, Hand, Maximize, MousePointer2, ZoomIn, ZoomOut } from "lucide-react";
+import { Download, FileText, Hand, Maximize, MousePointer2, Settings, ZoomIn, ZoomOut } from "lucide-react";
 import { useState } from "react";
 import { gridPayload, useLayoutStore } from "../../stores/layout-store";
 import { exportDocument, pickExportPath } from "../../lib/tauri";
 import { useDocumentStore } from "../../stores/document-store";
-import { useEditorStore, type Tool, type ViewMode } from "../../stores/editor-store";
+import { useEditorStore, type Tool } from "../../stores/editor-store";
+import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
+import { WORKSPACE_LABEL } from "../../lib/preferences";
+import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
 
 const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
@@ -11,13 +15,7 @@ const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
   { id: "pan", label: "Pan", key: "H", Icon: Hand },
 ];
 
-const VIEWS: { id: ViewMode; label: string }[] = [
-  { id: "source", label: "Source" },
-  { id: "output", label: "Output" },
-  { id: "split", label: "Split" },
-];
-
-const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-white/10 disabled:opacity-40";
+const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 
 export function EditorToolbar() {
   const { openDialog, pages, loading, path } = useDocumentStore();
@@ -42,7 +40,10 @@ export function EditorToolbar() {
     }
   };
 
-  const { tool, setTool, viewMode, setViewMode } = useEditorStore();
+  const { tool, setTool, viewMode } = useEditorStore();
+  // The switcher is the ordered list from Preferences; with a single view there is nothing to switch.
+  const visibleModes = usePreferencesStore((s) => s.prefs.workspace.visibleModes);
+  const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);
   const { zoomIn, zoomOut, fitPage } = zoomActions;
   const empty = pages.length === 0;
   return (
@@ -56,7 +57,7 @@ export function EditorToolbar() {
           key={id}
           title={`${label} (${key})`}
           onClick={() => setTool(id)}
-          className={`${btn} ${tool === id ? "bg-white/15" : ""}`}
+          className={`${btn} ${tool === id ? "bg-[var(--active)]" : ""}`}
         >
           <Icon size={14} />
         </button>
@@ -66,22 +67,31 @@ export function EditorToolbar() {
       <button title="Zoom in (+)" onClick={zoomIn} disabled={empty} className={btn}><ZoomIn size={14} /></button>
       <button title="Fit page (0)" onClick={fitPage} disabled={empty} className={btn}><Maximize size={14} /></button>
       <div className="mx-2 h-4 w-px bg-[var(--border)]" />
-      {VIEWS.map(({ id, label }) => (
-        <button
-          key={id}
-          onClick={() => setViewMode(id)}
-          disabled={empty}
-          className={`${btn} ${viewMode === id ? "bg-white/15" : ""}`}
-        >
-          {label}
-        </button>
-      ))}
+      {visibleModes.length > 1 && (
+        <div role="tablist" aria-label="Workspace" className="flex items-center gap-1">
+          {visibleModes.map((id) => (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={viewMode === id}
+              onClick={() => switchWorkspace(id)}
+              disabled={empty}
+              className={`${btn} ${viewMode === id ? "bg-[var(--active)]" : ""}`}
+            >
+              {WORKSPACE_LABEL[id]}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex-1" />
       {status && (
         <span title={status.text} className={`mr-2 max-w-[40ch] truncate text-[11px] ${status.ok ? "text-[var(--muted)]" : "text-red-400"}`}>
           {status.text}
         </span>
       )}
+      <button title="Preferences (Ctrl+,)" aria-label="Preferences" onClick={() => setPrefsOpen(true)} className={`${btn} mr-1`}>
+        <Settings size={14} />
+      </button>
       <button
         onClick={doExport}
         disabled={!selection || !result || !!result.overflow || exporting}

@@ -9,14 +9,35 @@ import { useDocumentStore } from "./stores/document-store";
 import { useEditorStore } from "./stores/editor-store";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { zoomActions } from "./lib/zoom-actions";
+import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
+import { applyTheme } from "./lib/theme";
+import { resolveStartMode } from "./lib/preferences";
+import { usePreferencesStore } from "./stores/preferences-store";
+import { useUiStore } from "./stores/ui-store";
 
 export default function App() {
   useLayoutSync();
+
+  const theme = usePreferencesStore((s) => s.prefs.appearance.theme);
+  useEffect(() => applyTheme(theme), [theme]);
+
+  // If Preferences hides the workspace currently shown, fall back to a visible one.
+  const prefs = usePreferencesStore((s) => s.prefs);
+  const viewMode = useEditorStore((s) => s.viewMode);
+  useEffect(() => {
+    if (!prefs.workspace.visibleModes.includes(viewMode)) useEditorStore.getState().setViewMode(resolveStartMode(prefs));
+  }, [prefs, viewMode]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const doc = useDocumentStore.getState();
       const ed = useEditorStore.getState();
       const mod = e.ctrlKey || e.metaKey;
+      if (mod && e.key === ",") {
+        e.preventDefault();
+        useUiStore.getState().setPrefsOpen(true);
+        return;
+      }
       if (mod && e.key.toLowerCase() === "o") {
         e.preventDefault();
         void doc.openDialog();
@@ -54,6 +75,7 @@ export default function App() {
         </ResizablePanel>
       </ResizablePanelGroup>
       <StatusBar />
+      <PreferencesDialog />
     </div>
   );
 }

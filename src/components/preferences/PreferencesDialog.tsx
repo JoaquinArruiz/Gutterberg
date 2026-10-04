@@ -1,0 +1,212 @@
+import { ArrowDown, ArrowUp, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { MEASUREMENT_UNITS, UNIT_LABEL, type MeasurementUnit } from "../../lib/measurement";
+import {
+  THEMES, WORKSPACE_LABEL, WORKSPACE_MODES,
+  type DefaultWorkspace, type LivePreviewPreference, type ThemePreference, type WorkspaceMode,
+} from "../../lib/preferences";
+import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
+
+const SECTIONS = ["General", "Workspace", "Preview", "Appearance"] as const;
+type Section = (typeof SECTIONS)[number];
+
+const selectCls =
+  "rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 outline-none focus:border-[var(--accent)]";
+const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
+
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="mb-5">
+    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">{label}</div>
+    <div className="flex flex-col gap-1.5">{children}</div>
+  </div>
+);
+
+function Radio<T extends string>({
+  name, value, current, onSelect, label, hint,
+}: { name: string; value: T; current: T; onSelect: (v: T) => void; label: string; hint?: string }) {
+  return (
+    <label className="flex items-start gap-2">
+      <input type="radio" name={name} checked={current === value} onChange={() => onSelect(value)} className="mt-0.5" />
+      <span>
+        {label}
+        {hint && <span className="block text-[var(--muted)]">{hint}</span>}
+      </span>
+    </label>
+  );
+}
+
+/** Application preferences. Document settings (gaps, page, margins...) are NOT here. */
+export function PreferencesDialog() {
+  const open = useUiStore((s) => s.prefsOpen);
+  const setOpen = useUiStore((s) => s.setPrefsOpen);
+  const ref = useRef<HTMLDialogElement>(null);
+  const [section, setSection] = useState<Section>("General");
+  const [confirmReset, setConfirmReset] = useState(false);
+
+  const store = usePreferencesStore();
+  const { prefs } = store;
+  const { visibleModes } = prefs.workspace;
+
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (open && !d.open) d.showModal();
+    if (!open && d.open) d.close();
+    if (!open) setConfirmReset(false);
+  }, [open]);
+
+  const hiddenModes = WORKSPACE_MODES.filter((m) => !visibleModes.includes(m));
+
+  return (
+    <dialog
+      ref={ref}
+      aria-label="Preferences"
+      onClose={() => setOpen(false)}
+      // A click on the backdrop (the dialog element itself) closes it.
+      onMouseDown={(e) => e.target === ref.current && setOpen(false)}
+      className="m-auto w-[640px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"
+    >
+      <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
+        <h2 className="text-sm font-semibold">Preferences</h2>
+        <button aria-label="Close preferences" onClick={() => setOpen(false)} className="rounded p-1 hover:bg-[var(--hover)]">
+          <X size={14} />
+        </button>
+      </div>
+
+      <div className="flex h-[360px]">
+        <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label="Preferences sections">
+          {SECTIONS.map((s) => (
+            <button
+              key={s}
+              onClick={() => setSection(s)}
+              aria-current={section === s}
+              className={`block w-full rounded px-2 py-1.5 text-left hover:bg-[var(--hover)] ${section === s ? "bg-[var(--active)]" : ""}`}
+            >
+              {s}
+            </button>
+          ))}
+        </nav>
+
+        <div className="min-w-0 flex-1 overflow-y-auto p-4">
+          {section === "General" && (
+            <Field label="Measurement unit">
+              <select
+                aria-label="Measurement unit"
+                className={selectCls}
+                value={prefs.measurement.unit}
+                onChange={(e) => store.setUnit(e.target.value as MeasurementUnit)}
+              >
+                {MEASUREMENT_UNITS.map((u) => <option key={u} value={u}>{UNIT_LABEL[u]}</option>)}
+              </select>
+              <p className="text-[var(--muted)]">
+                Only changes how lengths are shown and typed. The document itself is never altered.
+              </p>
+            </Field>
+          )}
+
+          {section === "Workspace" && (
+            <>
+              <Field label="Visible views">
+                <p className="text-[var(--muted)]">The view switcher shows these, in this order. At least one must stay enabled.</p>
+                {[...visibleModes, ...hiddenModes].map((mode: WorkspaceMode) => {
+                  const on = visibleModes.includes(mode);
+                  const i = visibleModes.indexOf(mode);
+                  return (
+                    <div key={mode} className="flex items-center gap-2">
+                      <label className="flex flex-1 items-center gap-2">
+                        <input
+                          type="checkbox"
+                          aria-label={`Show ${WORKSPACE_LABEL[mode]} view`}
+                          checked={on}
+                          disabled={on && visibleModes.length === 1}
+                          onChange={(e) => store.setVisibleMode(mode, e.target.checked)}
+                        />
+                        {WORKSPACE_LABEL[mode]}
+                      </label>
+                      {on && (
+                        <>
+                          <button
+                            aria-label={`Move ${WORKSPACE_LABEL[mode]} earlier`}
+                            disabled={i === 0}
+                            onClick={() => store.moveVisibleMode(mode, -1)}
+                            className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
+                          ><ArrowUp size={13} /></button>
+                          <button
+                            aria-label={`Move ${WORKSPACE_LABEL[mode]} later`}
+                            disabled={i === visibleModes.length - 1}
+                            onClick={() => store.moveVisibleMode(mode, 1)}
+                            className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
+                          ><ArrowDown size={13} /></button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </Field>
+              <Field label="Default view">
+                <select
+                  aria-label="Default view"
+                  className={selectCls}
+                  value={prefs.workspace.defaultMode}
+                  onChange={(e) => store.setDefaultMode(e.target.value as DefaultWorkspace)}
+                >
+                  <option value="last">Last used</option>
+                  {visibleModes.map((m) => <option key={m} value={m}>{WORKSPACE_LABEL[m]}</option>)}
+                </select>
+                <p className="text-[var(--muted)]">
+                  Used when a document opens. Switching views while editing does not change it.
+                </p>
+              </Field>
+            </>
+          )}
+
+          {section === "Preview" && (
+            <Field label="Live preview">
+              <Radio<LivePreviewPreference>
+                name="live" value="always" current={prefs.preview.livePreview} onSelect={store.setLivePreview}
+                label="Always on" hint="The output follows every change."
+              />
+              <Radio<LivePreviewPreference>
+                name="live" value="manual" current={prefs.preview.livePreview} onSelect={store.setLivePreview}
+                label="Manual" hint="The output updates only when you press Update preview."
+              />
+              <p className="text-[var(--muted)]">The default for each new document. You can still toggle it per document.</p>
+            </Field>
+          )}
+
+          {section === "Appearance" && (
+            <Field label="Theme">
+              {THEMES.map((t) => (
+                <Radio<ThemePreference>
+                  key={t} name="theme" value={t} current={prefs.appearance.theme} onSelect={store.setTheme}
+                  label={t[0].toUpperCase() + t.slice(1)}
+                />
+              ))}
+            </Field>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">
+        {confirmReset ? (
+          <>
+            <span>Reset all preferences? This restores the default application settings. Your document is not affected.</span>
+            <span className="flex gap-2">
+              <button className={btn} onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button
+                className={`${btn} border-red-400/60 text-red-300`}
+                onClick={() => { store.resetToDefaults(); setConfirmReset(false); }}
+              >Reset</button>
+            </span>
+          </>
+        ) : (
+          <>
+            <button className={btn} onClick={() => setConfirmReset(true)}>Reset to defaults</button>
+            <button className={btn} onClick={() => setOpen(false)}>Close</button>
+          </>
+        )}
+      </div>
+    </dialog>
+  );
+}

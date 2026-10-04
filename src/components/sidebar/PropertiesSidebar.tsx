@@ -4,6 +4,9 @@ import { MAX_GAP_MM, MAX_MARGIN_MM, useLayoutStore, type PageMode } from "../../
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { ptToMm } from "../../lib/units";
 import { usePreviewResult } from "../../lib/view-page";
+import { formatMeasurement } from "../../lib/measurement";
+import { useUnit } from "../../stores/preferences-store";
+import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 
 function GapFields({
@@ -12,15 +15,15 @@ function GapFields({
   linked: boolean; onLink: (l: boolean) => void;
   x: number; y: number; onX: (v: number) => void; onY: (v: number) => void;
 }) {
-  const f = { suffix: "mm", decimals: 2, step: 0.5, min: 0, max: MAX_GAP_MM };
+  const f = { min: 0, max: MAX_GAP_MM };
   return (
     <>
       <label className="flex items-center gap-2 text-[var(--muted)]">
         <input type="checkbox" checked={linked} onChange={(e) => onLink(e.target.checked)} />
         Link horizontal / vertical
       </label>
-      <NumberField label={linked ? "Gap" : "Horizontal"} value={x} onCommit={onX} {...f} />
-      {!linked && <NumberField label="Vertical" value={y} onCommit={onY} {...f} />}
+      <MeasurementInput label={linked ? "Gap" : "Horizontal"} value={x} onChange={onX} {...f} />
+      {!linked && <MeasurementInput label="Vertical" value={y} onChange={onY} {...f} />}
     </>
   );
 }
@@ -36,7 +39,7 @@ const PAGE_MODES: { id: PageMode; label: string }[] = [
 
 const selectCls =
   "rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 outline-none focus:border-[var(--accent)]";
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-white/10 disabled:opacity-40";
+const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <section className="mb-5">
@@ -52,6 +55,8 @@ export function PropertiesSidebar() {
   const { rows, columns, setRows, setColumns, layoutError } = L;
   const page = pages[currentPage];
   const shown = usePreviewResult();
+  const unit = useUnit();
+  const fmt = (mm: number, decimals?: number) => formatMeasurement(mm, unit, decimals);
 
   if (!page) {
     return (
@@ -71,32 +76,24 @@ export function PropertiesSidebar() {
       <Section title="Page">
         <div className="flex justify-between">
           <span className="text-[var(--muted)]">Size</span>
-          <span className="tabular-nums">{pw.toFixed(1)} × {ph.toFixed(1)} mm</span>
+          <span className="tabular-nums">{fmt(pw)} × {fmt(ph)}</span>
         </div>
       </Section>
 
       <Section title="Source layout">
         <NumberField label="Columns" value={columns} onCommit={setColumns} min={1} max={MAX_GRID} />
         <NumberField label="Rows" value={rows} onCommit={setRows} min={1} max={MAX_GRID} />
-        <NumberField
-          label="Card width"
-          suffix="mm"
-          decimals={2}
-          step={0.1}
-          min={1}
+        <MeasurementInput
+          label="Card width" precise min={1}
           value={card ? card.width : null}
           disabled={!selection}
-          onCommit={(w) => selection && setSelection(selectionForCardSize(selection, page, grid, { width: w }))}
+          onChange={(w) => selection && setSelection(selectionForCardSize(selection, page, grid, { width: w }))}
         />
-        <NumberField
-          label="Card height"
-          suffix="mm"
-          decimals={2}
-          step={0.1}
-          min={1}
+        <MeasurementInput
+          label="Card height" precise min={1}
           value={card ? card.height : null}
           disabled={!selection}
-          onCommit={(h) => selection && setSelection(selectionForCardSize(selection, page, grid, { height: h }))}
+          onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, grid, { height: h }))}
         />
         {!selection && (
           <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>
@@ -128,8 +125,8 @@ export function PropertiesSidebar() {
         </label>
         {L.pageMode === "custom" && (
           <>
-            <NumberField label="Width" suffix="mm" decimals={1} step={1} min={10} value={L.customWidthMm} onCommit={(w) => L.setCustomSize(w, undefined)} />
-            <NumberField label="Height" suffix="mm" decimals={1} step={1} min={10} value={L.customHeightMm} onCommit={(h) => L.setCustomSize(undefined, h)} />
+            <MeasurementInput label="Width" min={10} value={L.customWidthMm} onChange={(w) => L.setCustomSize(w, undefined)} />
+            <MeasurementInput label="Height" min={10} value={L.customHeightMm} onChange={(h) => L.setCustomSize(undefined, h)} />
           </>
         )}
         {L.pageMode !== "same" && L.pageMode !== "fit" && (
@@ -142,24 +139,24 @@ export function PropertiesSidebar() {
           </label>
         )}
         {(["top", "right", "bottom", "left"] as const).map((side) => (
-          <NumberField
-            key={side} label={`Margin ${side}`} suffix="mm" decimals={1} step={1} min={0} max={MAX_MARGIN_MM}
-            value={L.margins[side]} onCommit={(v) => L.setMargin(side, v)}
+          <MeasurementInput
+            key={side} label={`Margin ${side}`} min={0} max={MAX_MARGIN_MM}
+            value={L.margins[side]} onChange={(v) => L.setMargin(side, v)}
           />
         ))}
         {shown && (
           <div className="flex justify-between">
             <span className="text-[var(--muted)]">Result</span>
             <span className="tabular-nums">
-              {ptToMm(shown.output_page.width_pt).toFixed(1)} × {ptToMm(shown.output_page.height_pt).toFixed(1)} mm
+              {fmt(ptToMm(shown.output_page.width_pt))} × {fmt(ptToMm(shown.output_page.height_pt))}
             </span>
           </div>
         )}
         {L.result?.overflow && (
           <div className="rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300">
             <p>
-              ⚠ Layout exceeds the page by {L.result.overflow.width_mm.toFixed(1)} mm horizontally
-              and {L.result.overflow.height_mm.toFixed(1)} mm vertically. Cards are never scaled.
+              ⚠ Layout exceeds the page by {fmt(L.result.overflow.width_mm)} horizontally
+              and {fmt(L.result.overflow.height_mm)} vertically. Cards are never scaled.
             </p>
             <p className="mt-1">Change the page size or orientation, reduce spacing or margins, or auto-fit the page. Export is disabled until it fits.</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
@@ -194,17 +191,17 @@ export function PropertiesSidebar() {
 
       {selection && (
         <Section title="Selection position">
-          <NumberField
-            label="X" suffix="mm" decimals={2} step={0.1} value={selection.x * pw}
-            onCommit={(x) => setSelection(selectionAtMm(selection, page, { x }))}
+          <MeasurementInput
+            label="X" precise value={selection.x * pw}
+            onChange={(x) => setSelection(selectionAtMm(selection, page, { x }))}
           />
-          <NumberField
-            label="Y" suffix="mm" decimals={2} step={0.1} value={selection.y * ph}
-            onCommit={(y) => setSelection(selectionAtMm(selection, page, { y }))}
+          <MeasurementInput
+            label="Y" precise value={selection.y * ph}
+            onChange={(y) => setSelection(selectionAtMm(selection, page, { y }))}
           />
           <div className="flex justify-between">
             <span className="text-[var(--muted)]">Total</span>
-            <span className="tabular-nums">{(selection.width * pw).toFixed(1)} × {(selection.height * ph).toFixed(1)} mm</span>
+            <span className="tabular-nums">{fmt(selection.width * pw)} × {fmt(selection.height * ph)}</span>
           </div>
         </Section>
       )}

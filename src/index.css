@@ -8,6 +8,37 @@
   --fg: #e4e5e9;
   --muted: #8d9099;
   --accent: #60a5fa;
+  --canvas: #15161a;
+  --hover: rgb(255 255 255 / 0.1);
+  --active: rgb(255 255 255 / 0.15);
+}
+
+/* Theme preference: "system" leaves data-theme unset and follows the OS. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --border: #d5d8de;
+  --fg: #1f2329;
+  --muted: #5f6672;
+  --accent: #2563eb;
+  --canvas: #dfe2e8;
+  --hover: rgb(0 0 0 / 0.07);
+  --active: rgb(0 0 0 / 0.12);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --bg: #f4f5f7;
+    --panel: #ffffff;
+    --border: #d5d8de;
+    --fg: #1f2329;
+    --muted: #5f6672;
+    --accent: #2563eb;
+    --canvas: #dfe2e8;
+    --hover: rgb(0 0 0 / 0.07);
+    --active: rgb(0 0 0 / 0.12);
+  }
 }
 
 html, body, #root { height: 100%; }

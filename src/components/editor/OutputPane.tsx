@@ -41,7 +41,7 @@ export function OutputPane() {
   }
 
   return (
-    <div ref={ref} className="relative h-full min-w-0 flex-1 overflow-hidden bg-[#15161a]">
+    <div ref={ref} className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
       <div className="pointer-events-none absolute left-2 top-2 z-10 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
         Output{live ? "" : " (manual)"}
       </div>

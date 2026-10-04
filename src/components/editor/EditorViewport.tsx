@@ -15,6 +15,7 @@ import { OutputNotice } from "./OutputNotice";
 import { usePreviewResult } from "../../lib/view-page";
 import { pxPerPoint } from "../../lib/coordinates";
 import { useLayoutStore } from "../../stores/layout-store";
+import { startSession } from "../../lib/workspace";
 
 type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
@@ -71,6 +72,7 @@ export function EditorViewport() {
   useEffect(() => {
     useEditorStore.getState().reset();
     useLayoutStore.getState().clearSnapshot();
+    startSession(); // new document = new session: workspace and Live Preview start from preferences
   }, [path]);
 
   // Keep the page fitted while in fit mode (resize, page change, new document).
@@ -216,7 +218,7 @@ export function EditorViewport() {
   const split = viewMode === "split" && !!page;
   return (
     <div className="flex h-full w-full">
-    <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[#15161a]">
+    <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
       {error ? (
         <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
       ) : page && pageRect ? (

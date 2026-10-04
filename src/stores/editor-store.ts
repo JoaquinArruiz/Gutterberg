@@ -3,11 +3,13 @@ import {
   clamp, fitViewport, MAX_ZOOM, MIN_ZOOM, zoomAt,
   type NormalizedRect, type Point, type Size, type ViewportState,
 } from "../lib/coordinates";
+import { sessionDefaults, type WorkspaceMode } from "../lib/preferences";
 import type { PageSize } from "../lib/tauri";
+import { usePreferencesStore } from "./preferences-store";
 
 export type Tool = "select" | "pan";
-/** "source" edits the card region; "output" previews the spaced-out page; "split" shows both. */
-export type ViewMode = "source" | "output" | "split";
+/** The current workspace: "source" edits the card region, "output" previews the spaced-out page, "split" shows both. */
+export type ViewMode = WorkspaceMode;
 
 type EditorState = {
   viewport: ViewportState;
@@ -33,7 +35,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   viewport: { zoom: 1, panX: 0, panY: 0 },
   fitMode: true,
   tool: "select",
-  viewMode: "source",
+  // Session state: starts in the preferred workspace; switching never edits the preference.
+  viewMode: sessionDefaults(usePreferencesStore.getState().prefs).viewMode,
   selection: null,
 
   fit: (box, page) => set({ viewport: fitViewport(box, page), fitMode: true }),

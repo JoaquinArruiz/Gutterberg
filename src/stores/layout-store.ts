@@ -3,7 +3,9 @@ import type { NormalizedRect } from "../lib/coordinates";
 import { clampCount } from "../lib/grid";
 import type { LayoutResult } from "../lib/layout-api";
 import type { GridPayload } from "../lib/tauri";
+import { sessionDefaults } from "../lib/preferences";
 import { mmToPt } from "../lib/units";
+import { usePreferencesStore } from "./preferences-store";
 
 export const MAX_GAP_MM = 50;
 export const MAX_MARGIN_MM = 100;
@@ -20,25 +22,6 @@ export const PAGE_PRESETS_MM = {
 } as const;
 
 type Margins = { top: number; right: number; bottom: number; left: number };
-
-// Lightweight per-viewer preferences. Storage can be unavailable (private
-// windows, blocked site data), so every access is guarded.
-const PREFS_KEY = "pdf-card-editor:prefs";
-type Prefs = { live: boolean; pageMode: PageMode; orientation: Orientation };
-function loadPrefs(): Partial<Prefs> {
-  try {
-    return JSON.parse(localStorage.getItem(PREFS_KEY) ?? "{}") ?? {};
-  } catch {
-    return {};
-  }
-}
-function savePrefs(p: Prefs) {
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(p));
-  } catch {
-    /* ignore */
-  }
-}
 
 /**
  * Layout/export settings. Currently one layout for the whole document; kept
@@ -63,7 +46,7 @@ type LayoutState = {
   customWidthMm: number;
   customHeightMm: number;
   margins: Margins;
-  /** Live output preview on/off; when off the output view shows `snapshot`. */
+  /** Live output preview for this session (initial value = Live Preview preference). */
   live: boolean;
   /** Result frozen by "Update preview" (manual mode). */
   snapshot: LayoutResult | null;
@@ -89,9 +72,7 @@ type LayoutState = {
   setResult: (result: LayoutResult | null, error: string | null) => void;
 };
 
-const prefs = loadPrefs();
-
-export const useLayoutStore = create<LayoutState>((set, get) => ({
+export const useLayoutStore = create<LayoutState>((set) => ({
   rows: 3,
   columns: 3,
   gapXMm: 3,
@@ -100,12 +81,13 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   sourceGapYMm: 0,
   gapLinked: true,
   sourceGapLinked: true,
-  pageMode: prefs.pageMode ?? "same",
-  orientation: prefs.orientation ?? "portrait",
+  pageMode: "same",
+  orientation: "portrait",
   customWidthMm: 210,
   customHeightMm: 297,
   margins: { top: 0, right: 0, bottom: 0, left: 0 },
-  live: prefs.live ?? false,
+  // Session state: starts from the Live Preview preference, toggling it does not change the preference.
+  live: sessionDefaults(usePreferencesStore.getState().prefs).live,
   snapshot: null,
   result: null,
   layoutError: null,
@@ -120,32 +102,19 @@ export const useLayoutStore = create<LayoutState>((set, get) => ({
   setGapLinked: (gapLinked) => set((s) => ({ gapLinked, ...(gapLinked && { gapYMm: s.gapXMm }) })),
   setSourceGapLinked: (sourceGapLinked) =>
     set((s) => ({ sourceGapLinked, ...(sourceGapLinked && { sourceGapYMm: s.sourceGapXMm }) })),
-  setPageMode: (pageMode) => {
-    set({ pageMode });
-    persist(get());
-  },
-  setOrientation: (orientation) => {
-    set({ orientation });
-    persist(get());
-  },
+  setPageMode: (pageMode) => set({ pageMode }),
+  setOrientation: (orientation) => set({ orientation }),
   setCustomSize: (w, h) =>
     set((s) => ({
       customWidthMm: w === undefined ? s.customWidthMm : Math.max(w, 10),
       customHeightMm: h === undefined ? s.customHeightMm : Math.max(h, 10),
     })),
   setMargin: (side, mm) => set((s) => ({ margins: { ...s.margins, [side]: margin(mm) } })),
-  setLive: (live) => {
-    set({ live });
-    persist(get());
-  },
+  setLive: (live) => set({ live }),
   updatePreview: () => set((s) => ({ snapshot: s.result })),
   clearSnapshot: () => set({ snapshot: null }),
   setResult: (result, layoutError) => set({ result, layoutError }),
 }));
-
-function persist(s: LayoutState) {
-  savePrefs({ live: s.live, pageMode: s.pageMode, orientation: s.orientation });
-}
 
 type GridSettings = Pick<
   LayoutState,

@@ -27,7 +27,7 @@ function Thumbnail({ index }: { index: number }) {
     <button
       ref={ref}
       onClick={() => setCurrentPage(index)}
-      className={`mx-auto flex w-[132px] flex-col items-center gap-1 rounded p-1.5 ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-white/5"}`}
+      className={`mx-auto flex w-[132px] flex-col items-center gap-1 rounded p-1.5 ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
     >
       <div
         className="w-[120px] bg-white/5"
