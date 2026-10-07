@@ -10,6 +10,6 @@ serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 pdfium-render = "0.9"
 image = { version = "0.25", default-features = false, features = ["png"] }
-
-[dev-dependencies]
 serde_json = "1"
+sha2 = "0.10"
+

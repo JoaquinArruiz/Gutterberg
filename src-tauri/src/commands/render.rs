@@ -1,4 +1,5 @@
 use crate::state::{internal, AppState};
+use card_core::card::DocumentId;
 use card_core::geometry::Rect;
 use card_core::render_worker::RenderKind;
 use card_core::ErrorInfo;
@@ -26,19 +27,20 @@ impl From<Kind> for RenderKind {
     }
 }
 
-/// Render a page (0-based) to a PNG of the given pixel width. Used for both
+/// Render a page (0-based) of an open document to a PNG of the given pixel width. Used for both
 /// the page base layers and thumbnails.
 #[tauri::command]
 pub async fn render_page(
     app: AppHandle,
     state: State<'_, AppState>,
     kind: Kind,
+    document_id: DocumentId,
     page_index: usize,
     width_px: u32,
 ) -> Result<Response, ErrorInfo> {
     let worker = state.worker(&app)?;
     let png = tauri::async_runtime::spawn_blocking(move || {
-        worker.render_page(kind.into(), page_index, width_px)
+        worker.render_page(kind.into(), document_id, page_index, width_px)
     })
     .await
     .map_err(internal)??;
@@ -53,6 +55,7 @@ pub async fn render_region(
     app: AppHandle,
     state: State<'_, AppState>,
     kind: Kind,
+    document_id: DocumentId,
     page_index: usize,
     region: Rect,
     full_width_px: u32,
@@ -62,7 +65,7 @@ pub async fn render_region(
     }
     let worker = state.worker(&app)?;
     let png = tauri::async_runtime::spawn_blocking(move || {
-        worker.render_region(kind.into(), page_index, region, full_width_px)
+        worker.render_region(kind.into(), document_id, page_index, region, full_width_px)
     })
     .await
     .map_err(internal)??;

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { pageBadge } from "../../lib/document-layout";
+import { activateDocument, addPdfDialog } from "../../lib/project-actions";
 import { usePageImage } from "../../lib/use-page-image";
 import type { PanelOrientation } from "../../lib/workspace-layout";
-import { useDocumentStore } from "../../stores/document-store";
+import { fileName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
+import { Select } from "../ui/Select";
 import { ApplyGridDialog } from "./ApplyGridDialog";
 
 const THUMB_WIDTH = 120; // vertical list: fixed width
@@ -79,6 +81,36 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
   );
 }
 
+/** Which PDF of the project is being edited, and the button that adds another. */
+function DocumentSwitcher() {
+  const { t } = useTranslation();
+  const documents = useDocumentStore((s) => s.documents);
+  const activeId = useDocumentStore((s) => s.activeId);
+  const loading = useDocumentStore((s) => s.loading);
+  return (
+    <div className="flex min-w-0 flex-col gap-1" data-testid="document-switcher">
+      {documents.length > 1 && (
+        <Select
+          className="min-w-0 [&>button]:w-full [&>button]:min-w-0"
+          label={t("pages.document")}
+          value={String(activeId)}
+          onChange={(id) => activateDocument(Number(id))}
+          options={documents.map((d) => ({ value: String(d.id), label: fileName(d.path) }))}
+        />
+      )}
+      <button
+        type="button"
+        onClick={() => void addPdfDialog()}
+        disabled={loading}
+        title={t("pages.addPdfTitle")}
+        className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
+      >
+        {t("pages.addPdf")}
+      </button>
+    </div>
+  );
+}
+
 /**
  * Page thumbnails. Same component everywhere; `orientation` (derived from the
  * panel's position) only decides whether they stack vertically or run in a
@@ -92,7 +124,8 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
   return (
     <div className={`flex h-full ${vertical ? "flex-col" : "flex-row items-start"}`}>
       {count > 0 && (
-        <div className={`shrink-0 ${vertical ? "px-2 pb-1" : "px-1"}`}>
+        <div className={`flex shrink-0 gap-1 ${vertical ? "flex-col px-2 pb-1" : "w-44 flex-col px-1"}`}>
+          <DocumentSwitcher />
           <button
             type="button"
             onClick={() => setApplyOpen(true)}

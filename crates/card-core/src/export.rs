@@ -17,8 +17,8 @@ use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
-    card_transform, plan_print, sheet_from_layout, Affine, CardSetting, OutputSheet,
-    PaginateOptions, PrintLayout, SheetPlacement,
+    card_transform, plan_print_in, sheet_from_layout, Affine, CardSetting, DocumentSource,
+    OutputSheet, PaginateOptions, PrintLayout, SheetPlacement,
 };
 use crate::units::pt_to_mm;
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
@@ -311,7 +311,21 @@ pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
 
 /// Export `sheets` built from the single document at `input` (document id 0), writing `output`.
 pub fn export_sheets_file(input: &Path, output: &Path, sheets: &[OutputSheet]) -> Result<()> {
-    let mut doc = export_sheets(vec![(DEFAULT_DOCUMENT_ID, Document::load(input)?)], sheets)?;
+    export_sheets_files(&[(DEFAULT_DOCUMENT_ID, input)], output, sheets)
+}
+
+/// Export `sheets` built from several PDFs, each at its `document_id`, writing `output`. The
+/// first file is the base: its metadata is kept.
+pub fn export_sheets_files(
+    inputs: &[(DocumentId, &Path)],
+    output: &Path,
+    sheets: &[OutputSheet],
+) -> Result<()> {
+    let sources = inputs
+        .iter()
+        .map(|(id, path)| Ok((*id, Document::load(path)?)))
+        .collect::<Result<Vec<_>>>()?;
+    let mut doc = export_sheets(sources, sheets)?;
     save_atomically(&mut doc, output)
 }
 
@@ -332,6 +346,9 @@ fn fitting_layout(frame: &PageFrame, grid: &GridLayout) -> Result<LayoutResult> 
 /// A page that would make the export fail, found before anything is written.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PageIssue {
+    /// Which open PDF the page is in.
+    #[serde(default)]
+    pub document_id: DocumentId,
     /// 0-based source page index.
     pub page_index: usize,
     pub message: String,
@@ -347,11 +364,18 @@ impl PageIssue {
     pub fn new(page_index: usize, error: &Error) -> Self {
         let info = ErrorInfo::from(error);
         Self {
+            document_id: DEFAULT_DOCUMENT_ID,
             page_index,
             message: info.message,
             code: info.code,
             params: info.params,
         }
+    }
+
+    /// The same issue, in the PDF open as `document_id`.
+    pub fn in_document(mut self, document_id: DocumentId) -> Self {
+        self.document_id = document_id;
+        self
     }
 }
 
@@ -382,7 +406,14 @@ pub fn validate_export(doc: &Document, jobs: &[PageJob]) -> Vec<PageIssue> {
 /// will: one issue per page that cannot (missing, rotated by something other than a quarter
 /// turn, unreadable boxes, from a document that was not provided).
 pub fn validate_sheets(doc: &Document, sheets: &[OutputSheet]) -> Vec<PageIssue> {
-    let source_pages = doc.get_pages();
+    validate_sheets_in(&[(DEFAULT_DOCUMENT_ID, doc)], sheets)
+}
+
+/// [`validate_sheets`] for sheets that draw from several documents.
+pub fn validate_sheets_in(
+    docs: &[(DocumentId, &Document)],
+    sheets: &[OutputSheet],
+) -> Vec<PageIssue> {
     let mut issues: Vec<PageIssue> = Vec::new();
     let mut seen: std::collections::HashSet<(DocumentId, usize)> = Default::default();
     for p in sheets.iter().flat_map(|s| &s.placements) {
@@ -390,23 +421,25 @@ pub fn validate_sheets(doc: &Document, sheets: &[OutputSheet]) -> Vec<PageIssue>
         if !seen.insert(key) {
             continue;
         }
-        let checked = if key.0 != DEFAULT_DOCUMENT_ID {
-            Err(Error::Malformed(format!(
+        let checked = match docs.iter().find(|(id, _)| *id == key.0) {
+            None => Err(Error::Malformed(format!(
                 "document {} was not provided",
                 key.0
-            )))
-        } else {
-            source_pages
-                .get(&(key.1 as u32 + 1))
-                .ok_or(Error::PageOutOfRange(key.1, source_pages.len()))
-                .and_then(|&id| PageFrame::read(doc, id, key.1))
-                .map(|_| ())
+            ))),
+            Some((_, doc)) => {
+                let source_pages = doc.get_pages();
+                source_pages
+                    .get(&(key.1 as u32 + 1))
+                    .ok_or(Error::PageOutOfRange(key.1, source_pages.len()))
+                    .and_then(|&id| PageFrame::read(doc, id, key.1))
+                    .map(|_| ())
+            }
         };
         if let Err(e) = checked {
-            issues.push(PageIssue::new(key.1, &e));
+            issues.push(PageIssue::new(key.1, &e).in_document(key.0));
         }
     }
-    issues.sort_by_key(|i| i.page_index);
+    issues.sort_by_key(|i| (i.document_id, i.page_index));
     issues
 }
 
@@ -421,41 +454,69 @@ pub fn plan_print_file(
     layout: &PrintLayout,
     options: &PaginateOptions,
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
-    let doc = Document::load(input)?;
-    let sizes = page_sizes(&doc);
+    let file = SourceFile {
+        document_id: DEFAULT_DOCUMENT_ID,
+        path: input,
+        groups,
+    };
+    plan_print_files(&[file], settings, layout, options)
+}
+
+/// One PDF of a project and the page groups that say where its cards are.
+pub struct SourceFile<'a> {
+    pub document_id: DocumentId,
+    pub path: &'a Path,
+    pub groups: &'a [PageGroup],
+}
+
+/// [`plan_print_file`] for a project with several PDFs: their cards share the sheets.
+pub fn plan_print_files(
+    files: &[SourceFile],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
+    let docs = files
+        .iter()
+        .map(|f| Document::load(f.path))
+        .collect::<std::result::Result<Vec<_>, _>>()?;
     let mut issues = Vec::new();
-    for g in groups.iter().filter(|g| g.kind != PageGroupKind::Skip) {
-        if g.pages.last >= sizes.len() {
-            return Err(Error::PageOutOfRange(g.pages.last, sizes.len()));
-        }
-        for (page_index, size) in (g.pages.first..).zip(&sizes[g.pages.first..=g.pages.last]) {
-            if let Err(e) = size {
-                issues.push(PageIssue::new(page_index, e));
+    let mut sources = Vec::with_capacity(files.len());
+    for (file, doc) in files.iter().zip(&docs) {
+        let sizes = page_sizes(doc);
+        for g in file.groups.iter().filter(|g| g.kind != PageGroupKind::Skip) {
+            if g.pages.last >= sizes.len() {
+                return Err(Error::PageOutOfRange(g.pages.last, sizes.len()));
+            }
+            for (page_index, size) in (g.pages.first..).zip(&sizes[g.pages.first..=g.pages.last]) {
+                if let Err(e) = size {
+                    issues.push(PageIssue::new(page_index, e).in_document(file.document_id));
+                }
             }
         }
+        // Pages nothing draws from may be unreadable; they never reach the planner.
+        let pages: Vec<PageSize> = sizes
+            .into_iter()
+            .map(|s| {
+                s.unwrap_or(PageSize {
+                    width_pt: 0.0,
+                    height_pt: 0.0,
+                })
+            })
+            .collect();
+        sources.push(DocumentSource {
+            document_id: file.document_id,
+            pages,
+            groups: file.groups.to_vec(),
+        });
     }
     if !issues.is_empty() {
         return Ok((Vec::new(), issues));
     }
-    // Pages nothing draws from may be unreadable; they never reach the planner.
-    let sizes: Vec<PageSize> = sizes
-        .into_iter()
-        .map(|s| {
-            s.unwrap_or(PageSize {
-                width_pt: 0.0,
-                height_pt: 0.0,
-            })
-        })
-        .collect();
-    let sheets = plan_print(
-        DEFAULT_DOCUMENT_ID,
-        &sizes,
-        groups,
-        settings,
-        layout,
-        options,
-    )?;
-    let issues = validate_sheets(&doc, &sheets);
+    let sheets = plan_print_in(&sources, settings, layout, options)?;
+    let loaded: Vec<(DocumentId, &Document)> =
+        files.iter().map(|f| f.document_id).zip(&docs).collect();
+    let issues = validate_sheets_in(&loaded, &sheets);
     Ok((sheets, issues))
 }
 

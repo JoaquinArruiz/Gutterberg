@@ -3,7 +3,7 @@ import { cardIdKey, cropWidthPx } from "../../lib/card";
 import { finalSizePt, formatCardSize } from "../../lib/card-edits";
 import type { Card } from "../../lib/sheet-api";
 import { useCardImage } from "../../lib/use-card-image";
-import { useDocumentStore } from "../../stores/document-store";
+import { documentById, useDocumentStore } from "../../stores/document-store";
 import { useUnit } from "../../stores/preferences-store";
 import { CardImage } from "./CardImage";
 
@@ -40,8 +40,8 @@ export function CardThumb({
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
   const { t } = useTranslation();
-  const path = useDocumentStore((s) => s.path);
-  const page = useDocumentStore((s) => s.pages[card.id.page_index]);
+  const path = useDocumentStore((s) => documentById(s, card.id.document_id)?.path ?? null);
+  const page = useDocumentStore((s) => documentById(s, card.id.document_id)?.pages[card.id.page_index]);
   const unit = useUnit();
   const dpr = window.devicePixelRatio || 1;
   // The picture's box has the card's final shape, as large as the cell allows.

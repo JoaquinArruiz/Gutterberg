@@ -1,0 +1,8 @@
+{
+  "format": "gutterberg-project",
+  "version": 1,
+  "documents": [
+    { "id": 0, "path": "/games/poker.pdf", "cards": [] }
+  ],
+  "spacing": { "gap_mm": 3 }
+}

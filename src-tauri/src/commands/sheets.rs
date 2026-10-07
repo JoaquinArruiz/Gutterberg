@@ -1,58 +1,90 @@
 use super::export::{same_file, same_file_error};
 use crate::state::{internal, AppState};
-use card_core::card::{PageGroup, DEFAULT_DOCUMENT_ID};
-use card_core::export::{export_sheets_file, plan_print_file, PageIssue};
-use card_core::geometry::PageSize;
+use card_core::card::PageGroup;
+use card_core::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use card_core::sheet::{
-    extract_cards, plan_print, Card, CardSetting, OutputSheet, PaginateOptions, PrintLayout,
+    extract_all_cards, plan_print_in, Card, CardSetting, DocumentSource, OutputSheet,
+    PaginateOptions, PrintLayout,
 };
 use card_core::{ErrorInfo, ErrorParam};
-use std::path::PathBuf;
+use serde::Deserialize;
+use std::path::{Path, PathBuf};
 use tauri::State;
 
-/// Every card of the page groups, in page order: the card library. Pure geometry like
-/// `compute_layout` (no PDF is read); `pages` are the sizes the UI shows.
-#[tauri::command]
-pub fn compute_cards(pages: Vec<PageSize>, groups: Vec<PageGroup>) -> Result<Vec<Card>, ErrorInfo> {
-    Ok(extract_cards(DEFAULT_DOCUMENT_ID, &pages, &groups)?)
+/// A document of the project as an export request names it: which PDF, and where its cards
+/// are. The page sizes come from the file itself.
+#[derive(Debug, Clone, Deserialize)]
+pub struct DocumentGroups {
+    pub document_id: u32,
+    pub groups: Vec<PageGroup>,
 }
 
-/// Output sheets for the preview: the same planner the export runs (`plan_print`), fed with
+/// Every card of the documents' page groups, in page order, one document after the other: the
+/// piece library. Pure geometry like `compute_layout` (no PDF is read); the pages carry the
+/// sizes the UI shows.
+#[tauri::command]
+pub fn compute_cards(documents: Vec<DocumentSource>) -> Result<Vec<Card>, ErrorInfo> {
+    Ok(extract_all_cards(&documents)?)
+}
+
+/// Output sheets for the preview: the same planner the export runs (`plan_print_in`), fed with
 /// the page sizes the UI shows.
 #[tauri::command]
 pub fn compute_sheets(
-    pages: Vec<PageSize>,
-    groups: Vec<PageGroup>,
+    documents: Vec<DocumentSource>,
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
 ) -> Result<Vec<OutputSheet>, ErrorInfo> {
-    Ok(plan_print(
-        DEFAULT_DOCUMENT_ID,
-        &pages,
-        &groups,
+    Ok(plan_print_in(
+        &documents,
         &settings,
         &layout,
         &options.unwrap_or_default(),
     )?)
 }
 
+/// The open file behind each document of the request.
+fn files_of(
+    state: &AppState,
+    documents: &[DocumentGroups],
+) -> Result<Vec<(u32, PathBuf)>, ErrorInfo> {
+    documents
+        .iter()
+        .map(|d| Ok((d.document_id, state.path(d.document_id)?)))
+        .collect()
+}
+
+fn sources<'a>(
+    documents: &'a [DocumentGroups],
+    files: &'a [(u32, PathBuf)],
+) -> Vec<SourceFile<'a>> {
+    documents
+        .iter()
+        .zip(files)
+        .map(|(d, (id, path))| SourceFile {
+            document_id: *id,
+            path: path.as_path(),
+            groups: &d.groups,
+        })
+        .collect()
+}
+
 /// Pre-flight for the print stage: plans the sheets exactly as the export will and lists the
-/// pages that would make it fail. An error string means the plan itself does not work (cards
+/// pages that would make it fail. An error string means the plan itself does not work (pieces
 /// that do not fit the sheet, ...). Empty = good to export.
 #[tauri::command]
 pub async fn validate_print(
     state: State<'_, AppState>,
-    groups: Vec<PageGroup>,
+    documents: Vec<DocumentGroups>,
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
 ) -> Result<Vec<PageIssue>, ErrorInfo> {
-    let input = state.path()?;
+    let files = files_of(&state, &documents)?;
     tauri::async_runtime::spawn_blocking(move || {
-        plan_print_file(
-            &input,
-            &groups,
+        plan_print_files(
+            &sources(&documents, &files),
             &settings,
             &layout,
             &options.unwrap_or_default(),
@@ -64,26 +96,25 @@ pub async fn validate_print(
     .map_err(internal)?
 }
 
-/// Export the open PDF as the print stage plans it, writing `output_path`. Returns the number
-/// of sheets written.
+/// Export the project's PDFs as the print stage plans it, writing `output_path`. Returns the
+/// number of sheets written.
 #[tauri::command]
 pub async fn export_print(
     state: State<'_, AppState>,
-    groups: Vec<PageGroup>,
+    documents: Vec<DocumentGroups>,
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
     output_path: String,
 ) -> Result<usize, ErrorInfo> {
-    let input = state.path()?;
+    let files = files_of(&state, &documents)?;
     let output = PathBuf::from(output_path);
-    if same_file(&input, &output) {
+    if files.iter().any(|(_, input)| same_file(input, &output)) {
         return Err(same_file_error());
     }
     tauri::async_runtime::spawn_blocking(move || {
-        let (sheets, issues) = plan_print_file(
-            &input,
-            &groups,
+        let (sheets, issues) = plan_print_files(
+            &sources(&documents, &files),
             &settings,
             &layout,
             &options.unwrap_or_default(),
@@ -105,7 +136,8 @@ pub async fn export_print(
                 "there is nothing to print",
             ));
         }
-        export_sheets_file(&input, &output, &sheets)?;
+        let inputs: Vec<(u32, &Path)> = files.iter().map(|(id, p)| (*id, p.as_path())).collect();
+        export_sheets_files(&inputs, &output, &sheets)?;
         Ok(sheets.len())
     })
     .await

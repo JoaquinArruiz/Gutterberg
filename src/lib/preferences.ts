@@ -7,6 +7,8 @@
 // the defaults, drops invalid values and repairs invariants, so the rest of the
 // app never sees an invalid state.
 
+import { MAX_GAP_MM } from "./document-layout";
+import { clampCount } from "./grid";
 import { type HintId, isHintId } from "./hints";
 import { DECIMAL_PREFERENCES, type DecimalPreference, LANGUAGE_PREFERENCES, type LanguagePreference } from "./locale";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
@@ -14,9 +16,9 @@ import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./wor
 
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
 // inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). v6: adds
-// locale (language and decimal separator, both defaulting to following the system). Older files migrate by
-// taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 6;
+// locale (language and decimal separator, both defaulting to following the system). v7: adds files.recent
+// (recent projects) and presets (named grids). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 7;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -32,6 +34,20 @@ export interface LocalePrefs {
   language: LanguagePreference;
   decimal: DecimalPreference;
 }
+
+/** A named grid and source gap, saved to apply to any page group ("3×3 poker, 0 mm"). */
+export interface GridPreset {
+  name: string;
+  rows: number;
+  columns: number;
+  sourceGapXMm: number;
+  sourceGapYMm: number;
+  sourceGapLinked: boolean;
+}
+
+export const MAX_PRESETS = 50;
+export const MAX_PRESET_NAME = 60;
+export const MAX_RECENT_PROJECTS = 8;
 
 export interface AppPreferences {
   version: number;
@@ -60,6 +76,12 @@ export interface AppPreferences {
     /** The Print stage's own layout: widths in px of the card library and of the inspector. */
     layout: PrintLayoutPrefs;
   };
+  files: {
+    /** Project files opened or saved lately, newest first. */
+    recent: string[];
+  };
+  /** Saved grids, in the order they were made. */
+  presets: GridPreset[];
 }
 
 export interface PrintLayoutPrefs {
@@ -83,6 +105,8 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   help: { dismissedHints: {} },
   inspector: { sections: {} },
   print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
+  files: { recent: [] },
+  presets: [],
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -125,6 +149,43 @@ function normalizeDismissed(raw: unknown): Partial<Record<HintId, number>> {
   return out;
 }
 
+/** Paths of project files: non-empty text, no repeats, newest first, a short list. */
+function normalizeRecent(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const p of raw) {
+    if (typeof p === "string" && p.length > 0 && p.length <= 1024 && !out.includes(p)) out.push(p);
+    if (out.length >= MAX_RECENT_PROJECTS) break;
+  }
+  return out;
+}
+
+const num = (v: unknown, fallback: number) => (typeof v === "number" && Number.isFinite(v) ? v : fallback);
+const gap = (v: unknown) => Math.min(Math.max(num(v, 0), 0), MAX_GAP_MM);
+
+/** Presets with a name and a grid inside what the UI allows; a repeated name keeps its first entry. */
+function normalizePresets(raw: unknown): GridPreset[] {
+  if (!Array.isArray(raw)) return [];
+  const out: GridPreset[] = [];
+  for (const p of raw) {
+    if (!isObj(p) || typeof p.name !== "string") continue;
+    const name = p.name.trim().slice(0, MAX_PRESET_NAME);
+    if (!name || out.some((o) => o.name.toLowerCase() === name.toLowerCase())) continue;
+    const linked = typeof p.sourceGapLinked === "boolean" ? p.sourceGapLinked : true;
+    const sourceGapXMm = gap(p.sourceGapXMm);
+    out.push({
+      name,
+      rows: clampCount(num(p.rows, 1)),
+      columns: clampCount(num(p.columns, 1)),
+      sourceGapXMm,
+      sourceGapYMm: linked ? sourceGapXMm : gap(p.sourceGapYMm),
+      sourceGapLinked: linked,
+    });
+    if (out.length >= MAX_PRESETS) break;
+  }
+  return out;
+}
+
 const width = (v: unknown, fallback: number) =>
   typeof v === "number" && Number.isFinite(v)
     ? Math.round(Math.min(Math.max(v, PRINT_PANEL_LIMITS.min), PRINT_PANEL_LIMITS.max))
@@ -147,6 +208,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const ins = isObj(r.inspector) ? r.inspector : {};
   const pr = isObj(r.print) ? r.print : {};
   const pl = isObj(pr.layout) ? pr.layout : {};
+  const fl = isObj(r.files) ? r.files : {};
 
   // Visible modes: valid, de-duplicated, order kept. Never empty.
   const seen = new Set<WorkspaceMode>();
@@ -181,6 +243,8 @@ export function normalizePreferences(raw: unknown): AppPreferences {
         inspectorWidth: width(pl.inspectorWidth, d.print.layout.inspectorWidth),
       },
     },
+    files: { recent: normalizeRecent(fl.recent) },
+    presets: normalizePresets(r.presets),
   };
 }
 

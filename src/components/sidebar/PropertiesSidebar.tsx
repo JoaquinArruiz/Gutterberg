@@ -15,6 +15,7 @@ import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 import { FreeformSection } from "./FreeformSection";
+import { PresetsSection } from "./PresetsSection";
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
@@ -133,6 +134,8 @@ export function PropertiesSidebar() {
             />
             <p className="text-[var(--muted)]">{t("source.gapNote")}</p>
           </CollapsibleSection>
+
+          <PresetsSection grid={grid} page={currentPage} />
         </>
       )}
 

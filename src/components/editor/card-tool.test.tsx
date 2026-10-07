@@ -50,7 +50,7 @@ beforeEach(() => {
   if (!("PointerEvent" in window)) vi.stubGlobal("PointerEvent", MouseEvent);
   Element.prototype.setPointerCapture = () => {};
   usePreferencesStore.getState().resetToDefaults();
-  useDocumentStore.setState({ path: "/x.pdf", pages: [A4, A4], currentPage: 0 });
+  useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4], hash: "" }], 0);
   useLayoutStore.getState().resetDocument(2);
   useEditorStore.setState({ tool: "card", selectedCard: null, viewMode: "source", fitMode: true });
 });

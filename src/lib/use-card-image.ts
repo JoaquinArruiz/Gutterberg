@@ -48,13 +48,13 @@ export function useCardImage(
     const fullWidthPx = Math.min(MAX_FULL_WIDTH_PX, Math.round((width * page.width_pt) / box.width));
     let cancelled = false;
     cache
-      .get(key, () => renderRegion(kind, id.page_index, region, fullWidthPx))
+      .get(key, () => renderRegion(kind, id.document_id, id.page_index, region, fullWidthPx))
       .then((u) => !cancelled && setUrl(u))
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [key, docKey, page, kind, width, center, w, h, angle_deg, id.page_index, widthPx]);
+  }, [key, docKey, page, kind, width, center, w, h, angle_deg, id.document_id, id.page_index, widthPx]);
 
   return docKey ? url : null;
 }

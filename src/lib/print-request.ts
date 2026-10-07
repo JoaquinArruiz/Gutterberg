@@ -2,7 +2,7 @@
 // records what the user chose; where cards land is decided in Rust (`card_core::sheet`).
 
 import { gridPayload, type OutputSettings, outputPage } from "../stores/layout-store";
-import { cardIdKey } from "./card";
+import { cardIdKey, type DocumentId } from "./card";
 import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
 import { orientedToPoints } from "./coordinates";
 import type { FreeformCards, PageGroup } from "./document-layout";
@@ -12,6 +12,7 @@ import type {
   PaginateOptionsPayload,
   PrintLayoutPayload,
   PrintRequest,
+  RustDocumentWithPages,
   RustGroup,
   SheetPagePayload,
 } from "./sheet-api";
@@ -49,6 +50,15 @@ export const DEFAULT_PLAN: PrintPlan = {
 
 export const MAX_QUANTITY = 99;
 export const MAX_SHEET_GRID = 30;
+
+/** One PDF of the project with where its pieces are: what the planner works from. */
+export type LayoutDocument = {
+  id: DocumentId;
+  /** Page sizes in points. */
+  pages: PageSize[];
+  groups: PageGroup[];
+  freeform: FreeformCards;
+};
 
 /**
  * Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out.
@@ -124,16 +134,24 @@ function sheetPage(output: OutputSettings): SheetPagePayload {
   return size ? { kind: "size", ...size } : { kind: "same_as_source" };
 }
 
+/** The project's PDFs in the shape the Rust commands take (with the page sizes the preview plans from). */
+export function toRustDocuments(documents: LayoutDocument[], output: OutputSettings): RustDocumentWithPages[] {
+  return documents.map((d) => ({
+    document_id: d.id,
+    pages: d.pages,
+    groups: toRustGroups(d.groups, d.pages, output, d.freeform),
+  }));
+}
+
 export function buildPrintRequest(
   plan: PrintPlan,
   cards: Card[],
-  groups: PageGroup[],
-  pages: PageSize[],
+  documents: LayoutDocument[],
   output: OutputSettings,
-  doc: { freeform?: FreeformCards; edits?: CardEdits } = {},
+  edits: CardEdits = NO_EDITS,
 ): PrintRequest {
-  // `cards` are the engine's, in page order; the user's turns, scales and order are applied here.
-  const edits = doc.edits ?? NO_EDITS;
+  // `cards` are the engine's, in page order (one document after the other); the user's turns, scales and
+  // order are applied here.
   const ordered = applyEdits(cards, edits);
   const edited = hasCardEdits(cards, edits);
   const grid = effectiveGrid(plan, plannerRequired(cards, edits));
@@ -162,7 +180,7 @@ export function buildPrintRequest(
     auto_fill: plan.autoFill,
   };
   return {
-    groups: toRustGroups(groups, pages, output, doc.freeform),
+    documents: toRustDocuments(documents, output).map(({ pages: _pages, ...rest }) => rest),
     settings: planSettings(plan, ordered, edited),
     layout,
     options,

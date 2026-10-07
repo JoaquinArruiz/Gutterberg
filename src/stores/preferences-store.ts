@@ -8,6 +8,7 @@ import {
   DEFAULT_PREFERENCES,
   DEFAULT_PRINT_LAYOUT,
   type DefaultWorkspace,
+  type GridPreset,
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
@@ -104,6 +105,13 @@ type PreferencesState = {
   resetHints: () => void;
   /** Remember that inspector section `id` was opened or closed. */
   setSectionOpen: (id: string, open: boolean) => void;
+  /** A project file was opened or saved: it goes to the top of the recent list. */
+  addRecentProject: (path: string) => void;
+  /** The file is gone: drop it from the recent list. */
+  removeRecentProject: (path: string) => void;
+  /** Saves a grid under its name, replacing a preset of the same name. */
+  savePreset: (preset: GridPreset) => void;
+  deletePreset: (name: string) => void;
   /** Persist the widths the user dragged in the Print stage. */
   savePrintLayout: (layout: Partial<PrintLayoutPrefs>) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
@@ -163,7 +171,8 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setLivePreview: (livePreview) => edit((p) => ({ ...p, preview: { livePreview } })),
       setTheme: (theme) => edit((p) => ({ ...p, appearance: { theme } })),
       resetToDefaults: () => {
-        commit(DEFAULT_PREFERENCES);
+        // Recent projects and saved grids are the user's own data, not settings: they stay.
+        commit({ ...DEFAULT_PREFERENCES, files: get().prefs.files, presets: get().prefs.presets });
         bumpEpoch();
       },
       dismissHint: (id) => {
@@ -175,6 +184,18 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         if (get().prefs.inspector.sections[id] !== open)
           edit((p) => ({ ...p, inspector: { sections: { ...p.inspector.sections, [id]: open } } }));
       },
+      addRecentProject: (path) =>
+        edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),
+      removeRecentProject: (path) =>
+        edit((p) => ({ ...p, files: { recent: p.files.recent.filter((x) => x !== path) } })),
+      savePreset: (preset) =>
+        edit((p) => {
+          const same = (a: GridPreset) => a.name.trim().toLowerCase() === preset.name.trim().toLowerCase();
+          const at = p.presets.findIndex(same);
+          const presets = at === -1 ? [...p.presets, preset] : p.presets.map((x, i) => (i === at ? preset : x));
+          return { ...p, presets };
+        }),
+      deletePreset: (name) => edit((p) => ({ ...p, presets: p.presets.filter((x) => x.name !== name) })),
       savePrintLayout: (layout) => {
         if (!get().prefs.workspace.layout.rememberSizes) return;
         const cur = get().prefs.print.layout;

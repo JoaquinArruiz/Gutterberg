@@ -150,23 +150,29 @@ describe("moveCards", () => {
 
 describe("deleting a freeform card", () => {
   it("renumbers the later cards of that page only", () => {
-    expect(keyAfterDelete("f:0:2:1", 2, 1)).toBeNull();
-    expect(keyAfterDelete("f:0:2:3", 2, 1)).toBe("f:0:2:2");
-    expect(keyAfterDelete("f:0:2:0", 2, 1)).toBe("f:0:2:0");
-    expect(keyAfterDelete("f:0:5:3", 2, 1)).toBe("f:0:5:3");
-    expect(keyAfterDelete("g:0:2:0:3", 2, 1)).toBe("g:0:2:0:3");
+    expect(keyAfterDelete("f:0:2:1", 0, 2, 1)).toBeNull();
+    expect(keyAfterDelete("f:0:2:3", 0, 2, 1)).toBe("f:0:2:2");
+    expect(keyAfterDelete("f:0:2:0", 0, 2, 1)).toBe("f:0:2:0");
+    expect(keyAfterDelete("f:0:5:3", 0, 2, 1)).toBe("f:0:5:3");
+    expect(keyAfterDelete("g:0:2:0:3", 0, 2, 1)).toBe("g:0:2:0:3");
+  });
+
+  it("leaves the cards of other PDFs alone", () => {
+    expect(keyAfterDelete("f:1:2:1", 0, 2, 1)).toBe("f:1:2:1");
+    expect(keyAfterDelete("f:1:2:3", 0, 2, 1)).toBe("f:1:2:3");
+    expect(keyAfterDelete("f:1:2:3", 1, 2, 1)).toBe("f:1:2:2");
   });
 
   it("moves its turn, scale and place in the order along with the cards", () => {
     const e: CardEdits = {
-      turns: { "f:0:0:0": 90, "f:0:0:1": 180, "f:0:0:2": 270 },
+      turns: { "f:0:0:0": 90, "f:0:0:1": 180, "f:0:0:2": 270, "f:1:0:2": 90 },
       scales: { "f:0:0:1": 0.9, "f:0:0:2": 0.8 },
-      order: ["f:0:0:2", "f:0:0:1", "f:0:0:0"],
+      order: ["f:0:0:2", "f:1:0:2", "f:0:0:1", "f:0:0:0"],
     };
-    expect(editsAfterDelete(e, 0, 1)).toEqual({
-      turns: { "f:0:0:0": 90, "f:0:0:1": 270 },
+    expect(editsAfterDelete(e, 0, 0, 1)).toEqual({
+      turns: { "f:0:0:0": 90, "f:0:0:1": 270, "f:1:0:2": 90 },
       scales: { "f:0:0:1": 0.8 },
-      order: ["f:0:0:1", "f:0:0:0"],
+      order: ["f:0:0:1", "f:1:0:2", "f:0:0:0"],
     });
   });
 });

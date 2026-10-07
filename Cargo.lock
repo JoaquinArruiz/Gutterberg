@@ -308,6 +308,7 @@ dependencies = [
  "pdfium-render",
  "serde",
  "serde_json",
+ "sha2 0.10.9",
  "thiserror 2.0.21",
 ]
 
@@ -2490,6 +2491,7 @@ dependencies = [
  "card-core",
  "pdfium-render",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

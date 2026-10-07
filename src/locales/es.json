@@ -42,7 +42,8 @@
       "pagesTitle_other": "No se pueden exportar {{count}} páginas",
       "page": "Página {{n}}:",
       "fixPrint": "Corrígelos y vuelve a exportar. Las piezas nunca se escalan para que quepan.",
-      "fixSource": "Corrige estas páginas u omítelas, y vuelve a exportar."
+      "fixSource": "Corrige estas páginas u omítelas, y vuelve a exportar.",
+      "pageIn": "Página {{n}} de {{name}}:"
     }
   },
   "files": {
@@ -168,7 +169,10 @@
       "noRegion": "Sin región",
       "pieces_one": "{{count}} pieza",
       "pieces_other": "{{count}} piezas"
-    }
+    },
+    "document": "PDF en edición",
+    "addPdf": "Agregar PDF…",
+    "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas."
   },
   "applyGrid": {
     "dialog": "Aplicar esta cuadrícula a",
@@ -217,7 +221,9 @@
       "label": "p{{page}} · {{position}}",
       "title": "Página {{page}}, {{position}} · {{size}}",
       "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°"
-    }
+    },
+    "allOfDocument": "Todas las piezas de {{name}}",
+    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})"
   },
   "print": {
     "error": {
@@ -478,10 +484,56 @@
     "nothing_to_print": "No hay nada que imprimir.",
     "internal": "Algo falló dentro de la aplicación: {{detail}}",
     "freeform_only": "Esta página solo tiene piezas libres: imprímela desde la pestaña Imprimir.",
-    "no_region": "No hay ninguna región de piezas seleccionada."
+    "no_region": "No hay ninguna región de piezas seleccionada.",
+    "not_a_project": "Este no es un archivo de proyecto válido.",
+    "project_too_new": "Este proyecto se creó con una versión más reciente de la aplicación (versión de archivo {{found}}; esta versión lee hasta la {{supported}}). Actualiza la aplicación.",
+    "project_invalid": "Este archivo de proyecto está dañado o incompleto."
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",
     "increase": "Aumentar {{label}}"
+  },
+  "presets": {
+    "title": "Preajustes",
+    "none": "Aún no hay preajustes. Guarda la cuadrícula actual para reutilizarla en otros grupos de páginas.",
+    "choose": "Elige un preajuste",
+    "delete": "Eliminar preajuste",
+    "apply": "Aplicar a este grupo de páginas",
+    "applyTitle": "Establece las filas, las columnas y la separación de origen de las páginas que comparten esta cuadrícula",
+    "name": "Nombre del preajuste",
+    "save": "Guardar cuadrícula actual",
+    "saveTitle": "Guarda las filas, las columnas y la separación de origen de este grupo de páginas con este nombre"
+  },
+  "project": {
+    "fileFilter": "Proyecto",
+    "untitled": "Sin título",
+    "unsaved": "Proyecto sin guardar",
+    "menu": {
+      "file": "Archivo",
+      "new": "Proyecto nuevo",
+      "openPdf": "Abrir PDF…",
+      "openProject": "Abrir proyecto…",
+      "addPdf": "Agregar PDF…",
+      "save": "Guardar",
+      "saveAs": "Guardar como…",
+      "recent": "Proyectos recientes",
+      "noRecent": "No hay proyectos recientes"
+    },
+    "discard": {
+      "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
+      "ok": "Descartar cambios"
+    },
+    "relink": {
+      "message": "¿Dónde está ahora «{{name}}»? Elige el PDF para seguir abriendo el proyecto.",
+      "ok": "Elegir archivo…",
+      "differs": "Este archivo no es el mismo PDF «{{name}}» con el que se guardó el proyecto, así que las piezas podrían no estar donde estaban. ¿Quieres usarlo de todos modos?",
+      "useAnyway": "Usarlo de todos modos"
+    },
+    "notices": {
+      "label": "Mensajes del proyecto",
+      "close": "Cerrar",
+      "pdfChanged": "«{{name}}» cambió desde que se guardó el proyecto. Comprueba que las piezas sigan donde las marcaste.",
+      "layoutReset": "«{{name}}» tiene un número de páginas distinto al de cuando se guardó el proyecto, así que se restablecieron sus grupos de páginas y sus piezas."
+    }
   }
 }

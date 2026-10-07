@@ -69,6 +69,8 @@ type PrintState = PrintPlan & {
   beginPlanning: () => void;
   /** A new document: back to the default plan. */
   reset: () => void;
+  /** Opens a saved plan (a project was opened). */
+  loadPlan: (plan: PrintPlan) => void;
 };
 
 const initial = {
@@ -121,14 +123,15 @@ export const usePrintStore = create<PrintState>((set) => ({
   updateSheetsPreview: () => set((s) => ({ sheetsSnapshot: s.sheets })),
   beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
   reset: () => set({ ...initial }),
+  loadPlan: (plan) => set({ ...initial, ...plan }),
 }));
 
 // A freeform card was deleted and the later ones renumbered: their copies and selection move with them.
-onFreeformCardDeleted((page, index) =>
+onFreeformCardDeleted((documentId, page, index) =>
   usePrintStore.setState((s) => {
-    const kept = s.selection.selected.flatMap((k) => keyAfterDelete(k, page, index) ?? []);
-    const anchor = s.selection.anchor === null ? null : keyAfterDelete(s.selection.anchor, page, index);
-    return { quantities: remapRecord(s.quantities, page, index), selection: { selected: kept, anchor } };
+    const kept = s.selection.selected.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []);
+    const anchor = s.selection.anchor === null ? null : keyAfterDelete(s.selection.anchor, documentId, page, index);
+    return { quantities: remapRecord(s.quantities, documentId, page, index), selection: { selected: kept, anchor } };
   }),
 );
 

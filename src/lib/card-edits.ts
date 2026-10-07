@@ -135,32 +135,37 @@ export function formatCardSize(c: Card, unit: MeasurementUnit): string {
 const FREEFORM = /^f:(\d+):(\d+):(\d+)$/;
 
 /**
- * Keys after the freeform card `index` of `page` is deleted: its own entry goes and the cards after it
- * move up one place, because a freeform card's identity is its position on the page.
+ * Keys after the freeform card `index` of `page` of document `documentId` is deleted: its own entry goes
+ * and the cards after it move up one place, because a freeform card's identity is its position on the page.
  */
-export function keyAfterDelete(k: string, page: number, index: number): string | null {
+export function keyAfterDelete(k: string, documentId: number, page: number, index: number): string | null {
   const m = FREEFORM.exec(k);
-  if (!m || Number(m[2]) !== page) return k;
+  if (!m || Number(m[1]) !== documentId || Number(m[2]) !== page) return k;
   const i = Number(m[3]);
   if (i === index) return null;
   return i > index ? `f:${m[1]}:${m[2]}:${i - 1}` : k;
 }
 
 /** `rec` with the entries of a deleted freeform card dropped and the later ones renumbered. */
-export function remapRecord<T>(rec: Record<string, T>, page: number, index: number): Record<string, T> {
+export function remapRecord<T>(
+  rec: Record<string, T>,
+  documentId: number,
+  page: number,
+  index: number,
+): Record<string, T> {
   const out: Record<string, T> = {};
   for (const [k, v] of Object.entries(rec)) {
-    const nk = keyAfterDelete(k, page, index);
+    const nk = keyAfterDelete(k, documentId, page, index);
     if (nk !== null) out[nk] = v;
   }
   return out;
 }
 
-/** The card edits after the freeform card `index` of `page` is deleted. */
-export function editsAfterDelete(edits: CardEdits, page: number, index: number): CardEdits {
+/** The card edits after the freeform card `index` of `page` of document `documentId` is deleted. */
+export function editsAfterDelete(edits: CardEdits, documentId: number, page: number, index: number): CardEdits {
   return {
-    turns: remapRecord(edits.turns, page, index),
-    scales: remapRecord(edits.scales, page, index),
-    order: edits.order.flatMap((k) => keyAfterDelete(k, page, index) ?? []),
+    turns: remapRecord(edits.turns, documentId, page, index),
+    scales: remapRecord(edits.scales, documentId, page, index),
+    order: edits.order.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []),
   };
 }

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useDocumentStore } from "../stores/document-store";
 import type { NormalizedRect, Rect, Size } from "./coordinates";
 import { isSuperseded, renderRegion } from "./tauri";
 import { covers, planCrop, scaleIsOk } from "./view-region";
@@ -34,12 +35,14 @@ export function useViewportImage({
   debounceMs?: number;
 }) {
   const [img, setImg] = useState<ViewportImage | null>(null);
+  // The page editor shows the PDF being edited.
+  const documentId = useDocumentStore((s) => s.activeId);
   const [tick, setTick] = useState(0); // bumped when a render finishes, to re-evaluate
   const imgRef = useRef(img);
   imgRef.current = img;
   const inflight = useRef(false);
   const failed = useRef<string | null>(null);
-  const key = `${docKey}:${pageIndex}`;
+  const key = `${docKey}:${documentId}:${pageIndex}`;
   const keyRef = useRef(key);
   keyRef.current = key;
   const alive = useRef(true);
@@ -76,7 +79,7 @@ export function useViewportImage({
     const t = setTimeout(() => {
       if (inflight.current) return; // the running render's completion bumps `tick` and re-evaluates
       inflight.current = true;
-      renderRegion("viewport", pageIndex, plan.send, plan.fullWidthPx)
+      renderRegion("viewport", documentId, pageIndex, plan.send, plan.fullWidthPx)
         .then((url) => {
           if (!alive.current || keyRef.current !== key) return URL.revokeObjectURL(url);
           setImg((prev) => {
@@ -96,6 +99,7 @@ export function useViewportImage({
   }, [
     enabled,
     docKey,
+    documentId,
     pageIndex,
     key,
     dpr,

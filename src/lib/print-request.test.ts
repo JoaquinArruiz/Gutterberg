@@ -45,6 +45,7 @@ const groups = setSkipped(
   true,
 );
 const plan = (p: Partial<PrintPlan> = {}): PrintPlan => ({ ...DEFAULT_PLAN, ...p });
+const docs = [{ id: 0, pages, groups, freeform: {} }];
 
 describe("toRustGroups", () => {
   it("keeps skips, gives grids the output settings and leaves out groups with no region", () => {
@@ -93,7 +94,7 @@ describe("cards the user turned, resized or reordered", () => {
 
   it("lists every card in the user's order with its turn and scale, even in 'all cards' mode", () => {
     const edits = { turns: { [key(0)]: 90 as const }, scales: { [key(2)]: 0.98 }, order: [key(2), key(0), key(1)] };
-    const req = buildPrintRequest(plan(), cards, groups, pages, output, { edits });
+    const req = buildPrintRequest(plan(), cards, docs, output, edits);
     expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity, s.turn, s.scale])).toEqual([
       [key(2), 1, 0, 0.98],
       [key(0), 1, 90, 1],
@@ -106,7 +107,7 @@ describe("cards the user turned, resized or reordered", () => {
   it("keeps the order in custom mode too, with the quantities attached to the right cards", () => {
     const p = plan({ mode: "custom", quantities: { [key(0)]: 2, [key(1)]: 3 } });
     const edits = { turns: {}, scales: {}, order: [key(1), key(0)] };
-    const req = buildPrintRequest(p, cards, groups, pages, output, { edits });
+    const req = buildPrintRequest(p, cards, docs, output, edits);
     expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity])).toEqual([
       [key(1), 3],
       [key(0), 2],
@@ -115,10 +116,8 @@ describe("cards the user turned, resized or reordered", () => {
   });
 
   it("changes nothing when no card is edited", () => {
-    const plain = buildPrintRequest(plan(), cards, groups, pages, output);
-    expect(
-      buildPrintRequest(plan(), cards, groups, pages, output, { edits: { turns: {}, scales: {}, order: [] } }),
-    ).toEqual(plain);
+    const plain = buildPrintRequest(plan(), cards, docs, output);
+    expect(buildPrintRequest(plan(), cards, docs, output, { turns: {}, scales: {}, order: [] })).toEqual(plain);
     expect(plain.layout).toEqual({ kind: "same_as_source" });
   });
 
@@ -132,7 +131,7 @@ describe("cards the user turned, resized or reordered", () => {
 
 describe("the plan", () => {
   it("is every card once, each source page on its own sheet, by default", () => {
-    const req = buildPrintRequest(plan(), cards, groups, pages, output);
+    const req = buildPrintRequest(plan(), cards, docs, output);
     expect(req.layout).toEqual({ kind: "same_as_source" });
     expect(req.settings).toEqual([]);
     expect(req.options).toEqual({ order: "grouped", group_by_size: true, auto_fill: false });
@@ -156,7 +155,7 @@ describe("the plan", () => {
 
   it("describes the sheet from the output settings", () => {
     const p = plan({ mode: "custom", sheetGrid: "custom", rows: 2, columns: 5, order: "interleaved", autoFill: true });
-    const req = buildPrintRequest(p, cards, groups, pages, { ...output, pageMode: "a4", orientation: "landscape" });
+    const req = buildPrintRequest(p, cards, docs, { ...output, pageMode: "a4", orientation: "landscape" });
     if (req.layout.kind !== "grid") throw new Error("not a grid layout");
     const { spec } = req.layout;
     expect([spec.rows, spec.columns]).toEqual([2, 5]);
@@ -168,11 +167,11 @@ describe("the plan", () => {
   });
 
   it("leaves the rows and columns to the planner on Auto, and follows the source page or fits it", () => {
-    const auto = buildPrintRequest(plan({ mode: "custom" }), cards, groups, pages, output);
+    const auto = buildPrintRequest(plan({ mode: "custom" }), cards, docs, output);
     if (auto.layout.kind !== "grid") throw new Error("not a grid layout");
     expect([auto.layout.spec.rows, auto.layout.spec.columns]).toEqual([null, null]);
     expect(auto.layout.spec.page).toEqual({ kind: "same_as_source" });
-    const fit = buildPrintRequest(plan({ mode: "custom" }), cards, groups, pages, { ...output, pageMode: "fit" });
+    const fit = buildPrintRequest(plan({ mode: "custom" }), cards, docs, { ...output, pageMode: "fit" });
     if (fit.layout.kind !== "grid") throw new Error("not a grid layout");
     expect(fit.layout.spec.page).toEqual({ kind: "fit" });
   });
@@ -220,7 +219,7 @@ describe("the IPC contract with the Rust planner", () => {
       customHeightMm: 297,
       margins: { top: 1, right: 2, bottom: 3, left: 4 },
     };
-    const req = buildPrintRequest(p, three, groups, [a4, a4, a4], settings);
+    const req = buildPrintRequest(p, three, [{ id: 0, pages: [a4, a4, a4], groups, freeform: {} }], settings);
     expect(JSON.parse(JSON.stringify(req))).toEqual(fixture);
   });
 });

@@ -1,5 +1,7 @@
+use card_core::card::DocumentId;
 use card_core::render_worker::RenderWorker;
 use card_core::{Error, ErrorInfo, ErrorParam};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
@@ -7,7 +9,8 @@ use tauri::{AppHandle, Manager};
 #[derive(Default)]
 pub struct AppState {
     worker: Mutex<Option<Arc<RenderWorker>>>,
-    path: Mutex<Option<PathBuf>>,
+    /// The file each open document was read from, by the id its cards carry.
+    paths: Mutex<HashMap<DocumentId, PathBuf>>,
 }
 
 impl AppState {
@@ -36,16 +39,29 @@ impl AppState {
         Ok(w)
     }
 
-    pub fn set_path(&self, p: PathBuf) -> Result<(), ErrorInfo> {
-        *self.path.lock().map_err(internal)? = Some(p);
+    pub fn set_path(&self, id: DocumentId, p: PathBuf) -> Result<(), ErrorInfo> {
+        self.paths.lock().map_err(internal)?.insert(id, p);
         Ok(())
     }
 
-    pub fn path(&self) -> Result<PathBuf, ErrorInfo> {
-        self.path
+    /// Forget one open document, or all of them (`None`).
+    pub fn clear_paths(&self, id: Option<DocumentId>) -> Result<(), ErrorInfo> {
+        let mut paths = self.paths.lock().map_err(internal)?;
+        match id {
+            Some(id) => {
+                paths.remove(&id);
+            }
+            None => paths.clear(),
+        }
+        Ok(())
+    }
+
+    pub fn path(&self, id: DocumentId) -> Result<PathBuf, ErrorInfo> {
+        self.paths
             .lock()
             .map_err(internal)?
-            .clone()
+            .get(&id)
+            .cloned()
             .ok_or_else(|| Error::NoDocument.into())
     }
 }

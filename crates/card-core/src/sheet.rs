@@ -178,6 +178,44 @@ pub fn extract_cards(
     Ok(cards)
 }
 
+/// One source PDF as the planner sees it: the sizes of its pages (as the UI shows them, or
+/// read from the file) and the page groups that say where its cards are.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct DocumentSource {
+    pub document_id: DocumentId,
+    #[serde(default)]
+    pub pages: Vec<PageSize>,
+    pub groups: Vec<PageGroup>,
+}
+
+/// Rejects two sources that claim the same document id: their cards would be told apart by
+/// nothing.
+fn check_documents(documents: &[DocumentSource]) -> Result<()> {
+    for (i, d) in documents.iter().enumerate() {
+        if documents[..i]
+            .iter()
+            .any(|e| e.document_id == d.document_id)
+        {
+            return Err(Error::InvalidSheet(format!(
+                "document {} is listed twice",
+                d.document_id
+            )));
+        }
+    }
+    Ok(())
+}
+
+/// [`extract_cards`] for several documents: each document's cards in page order, the
+/// documents in the order given.
+pub fn extract_all_cards(documents: &[DocumentSource]) -> Result<Vec<Card>> {
+    check_documents(documents)?;
+    let mut cards = Vec::new();
+    for d in documents {
+        cards.extend(extract_cards(d.document_id, &d.pages, &d.groups)?);
+    }
+    Ok(cards)
+}
+
 /// Output page size, or sized around the cards.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -542,9 +580,24 @@ pub fn plan_sheets(
     spec: &SheetSpec,
     options: &PaginateOptions,
 ) -> Result<Vec<OutputSheet>> {
+    let document = DocumentSource {
+        document_id,
+        pages: pages.to_vec(),
+        groups: groups.to_vec(),
+    };
+    plan_sheets_in(&[document], settings, spec, options)
+}
+
+/// [`plan_sheets`] for cards from several documents on the same sheets.
+pub fn plan_sheets_in(
+    documents: &[DocumentSource],
+    settings: &[CardSetting],
+    spec: &SheetSpec,
+    options: &PaginateOptions,
+) -> Result<Vec<OutputSheet>> {
     // Cards with a setting come first, in the order the settings list them (the user's own
     // order); the rest follow in page order with one copy each.
-    let mut extracted: Vec<Option<Card>> = extract_cards(document_id, pages, groups)?
+    let mut extracted: Vec<Option<Card>> = extract_all_cards(documents)?
         .into_iter()
         .map(Some)
         .collect();
@@ -569,8 +622,14 @@ pub fn plan_sheets(
             let Some((first, _)) = cards.iter().find(|(_, quantity)| *quantity > 0) else {
                 return Ok(Vec::new());
             };
+            let size = documents
+                .iter()
+                .find(|d| d.document_id == first.id.document_id())
+                .and_then(|d| d.pages.get(first.id.page_index()))
+                .copied()
+                .ok_or(Error::NoDocument)?;
             SheetSpec {
-                page: SheetPage::Size(pages[first.id.page_index()]),
+                page: SheetPage::Size(size),
                 ..*spec
             }
         }
@@ -628,6 +687,26 @@ pub fn source_sheets(
     groups: &[PageGroup],
 ) -> Result<Vec<OutputSheet>> {
     let mut sheets = Vec::new();
+    source_sheets_into(&mut sheets, document_id, pages, groups)?;
+    Ok(sheets)
+}
+
+/// [`source_sheets`] for several documents, one after the other.
+pub fn source_sheets_in(documents: &[DocumentSource]) -> Result<Vec<OutputSheet>> {
+    check_documents(documents)?;
+    let mut sheets = Vec::new();
+    for d in documents {
+        source_sheets_into(&mut sheets, d.document_id, &d.pages, &d.groups)?;
+    }
+    Ok(sheets)
+}
+
+fn source_sheets_into(
+    sheets: &mut Vec<OutputSheet>,
+    document_id: DocumentId,
+    pages: &[PageSize],
+    groups: &[PageGroup],
+) -> Result<()> {
     for g in groups {
         check_range(g.pages, pages.len())?;
         if let PageGroupKind::Grid { grid } = &g.kind {
@@ -643,7 +722,7 @@ pub fn source_sheets(
             }
         }
     }
-    Ok(sheets)
+    Ok(())
 }
 
 /// The output sheets of the print stage for `layout`.
@@ -660,6 +739,19 @@ pub fn plan_print(
         PrintLayout::Grid { spec } => {
             plan_sheets(document_id, pages, groups, settings, spec, options)
         }
+    }
+}
+
+/// [`plan_print`] for a project with several documents: their cards share the sheets.
+pub fn plan_print_in(
+    documents: &[DocumentSource],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+) -> Result<Vec<OutputSheet>> {
+    match layout {
+        PrintLayout::SameAsSource => source_sheets_in(documents),
+        PrintLayout::Grid { spec } => plan_sheets_in(documents, settings, spec, options),
     }
 }
 

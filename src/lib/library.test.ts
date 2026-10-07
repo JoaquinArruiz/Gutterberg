@@ -31,16 +31,35 @@ describe("filterCards", () => {
   let groups = updateGridGroup(defaultGroups(2), 0, (g) => ({ ...g, selection: sel }));
   groups = applyGridTo(groups, 0, [1]);
   groups = updateGridGroup(groups, 1, (g) => ({ ...g, grid: patchGrid(g.grid, { rows: 2 }) }));
+  const docs = [{ id: 0, groups }];
 
   it("shows everything, one group or one page", () => {
-    expect(filterCards(cards, groups, { kind: "all" })).toHaveLength(8);
-    expect(filterCards(cards, groups, { kind: "group", index: 1 }).map((c) => c.id.page_index)).toEqual([1, 1, 1, 1]);
-    expect(filterCards(cards, groups, { kind: "page", page: 0 })).toHaveLength(4);
-    expect(filterCards(cards, groups, { kind: "page", page: 7 })).toEqual([]);
+    expect(filterCards(cards, docs, { kind: "all" })).toHaveLength(8);
+    expect(filterCards(cards, docs, { kind: "group", document: 0, index: 1 }).map((c) => c.id.page_index)).toEqual([
+      1, 1, 1, 1,
+    ]);
+    expect(filterCards(cards, docs, { kind: "page", document: 0, page: 0 })).toHaveLength(4);
+    expect(filterCards(cards, docs, { kind: "page", document: 0, page: 7 })).toEqual([]);
   });
 
   it("shows nothing for a group that no longer exists", () => {
-    expect(filterCards(cards, setSkipped(groups, 1, true).slice(0, 1), { kind: "group", index: 3 })).toEqual([]);
+    const fewer = [{ id: 0, groups: setSkipped(groups, 1, true).slice(0, 1) }];
+    expect(filterCards(cards, fewer, { kind: "group", document: 0, index: 3 })).toEqual([]);
+  });
+
+  it("tells the cards of different PDFs apart", () => {
+    const other = (page: number, row: number, column: number): Card => ({
+      ...card(page, row, column),
+      id: gridCardId(1, page, row, column),
+    });
+    const mixed = [...cards, other(0, 0, 0), other(0, 0, 1)];
+    const both = [...docs, { id: 1, groups: defaultGroups(1) }];
+    expect(filterCards(mixed, both, { kind: "document", document: 1 })).toHaveLength(2);
+    expect(filterCards(mixed, both, { kind: "document", document: 0 })).toHaveLength(8);
+    // Page 0 of document 1 is not page 0 of document 0.
+    expect(filterCards(mixed, both, { kind: "page", document: 1, page: 0 })).toHaveLength(2);
+    expect(filterCards(mixed, both, { kind: "group", document: 1, index: 0 })).toHaveLength(2);
+    expect(filterCards(mixed, both, { kind: "document", document: 5 })).toEqual([]);
   });
 });
 

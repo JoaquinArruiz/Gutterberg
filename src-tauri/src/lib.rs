@@ -7,6 +7,11 @@ pub fn run() {
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::document::open_pdf,
+            commands::document::close_pdf,
+            commands::project::open_project,
+            commands::project::save_project_file,
+            commands::project::hash_file,
+            commands::project::file_exists,
             commands::layout::compute_layout,
             commands::sheets::compute_cards,
             commands::sheets::compute_sheets,

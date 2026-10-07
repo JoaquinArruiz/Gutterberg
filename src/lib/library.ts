@@ -1,20 +1,32 @@
 // The card library: which cards are shown, which are selected and how many copies each gets.
 // Pure functions over plain data, so the panel stays a thin view.
 
-import { cardIdKey } from "./card";
+import { cardIdKey, type DocumentId } from "./card";
 import type { PageGroup } from "./document-layout";
 import { MAX_QUANTITY } from "./print-request";
 import type { Card } from "./sheet-api";
 
-/** All cards, the cards of one grid group (an index into the page groups), or the cards of one page. */
-export type LibraryFilter = { kind: "all" } | { kind: "group"; index: number } | { kind: "page"; page: number };
+/**
+ * All cards, the cards of one PDF, the cards of one grid group of a PDF (an index into its page groups), or
+ * the cards of one page of a PDF.
+ */
+export type LibraryFilter =
+  | { kind: "all" }
+  | { kind: "document"; document: DocumentId }
+  | { kind: "group"; document: DocumentId; index: number }
+  | { kind: "page"; document: DocumentId; page: number };
 
-export function filterCards(cards: Card[], groups: PageGroup[], filter: LibraryFilter): Card[] {
+/** The page groups of each PDF, which a group filter points into. */
+export type FilterDocument = { id: DocumentId; groups: PageGroup[] };
+
+export function filterCards(cards: Card[], documents: FilterDocument[], filter: LibraryFilter): Card[] {
   if (filter.kind === "all") return cards;
-  if (filter.kind === "page") return cards.filter((c) => c.id.page_index === filter.page);
-  const g = groups[filter.index];
+  const own = cards.filter((c) => c.id.document_id === filter.document);
+  if (filter.kind === "document") return own;
+  if (filter.kind === "page") return own.filter((c) => c.id.page_index === filter.page);
+  const g = documents.find((d) => d.id === filter.document)?.groups[filter.index];
   if (!g) return [];
-  return cards.filter((c) => c.id.page_index >= g.pages.first && c.id.page_index <= g.pages.last);
+  return own.filter((c) => c.id.page_index >= g.pages.first && c.id.page_index <= g.pages.last);
 }
 
 export type Selection = { selected: string[]; anchor: string | null };

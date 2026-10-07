@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDocumentStore } from "../stores/document-store";
 import { type RenderKind, renderPage } from "./tauri";
 
 /**
@@ -14,13 +15,15 @@ export function usePageImage(
   kind: RenderKind = "page",
 ) {
   const [url, setUrl] = useState<string | null>(null);
+  // The page editor shows the PDF being edited.
+  const documentId = useDocumentStore((s) => s.activeId);
 
   useEffect(() => {
     if (!docKey || widthPx <= 0) return;
     let cancelled = false;
     let created: string | null = null;
     const t = setTimeout(() => {
-      renderPage(kind, pageIndex, widthPx)
+      renderPage(kind, documentId, pageIndex, widthPx)
         .then((u) => {
           if (cancelled) return URL.revokeObjectURL(u);
           created = u;
@@ -34,7 +37,7 @@ export function usePageImage(
       // Revoke after the next image has replaced this one.
       if (created) setTimeout(() => URL.revokeObjectURL(created!), 1000);
     };
-  }, [docKey, pageIndex, widthPx, debounceMs, kind]);
+  }, [docKey, documentId, pageIndex, widthPx, debounceMs, kind]);
 
   return docKey ? url : null;
 }

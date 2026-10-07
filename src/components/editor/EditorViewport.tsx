@@ -9,7 +9,6 @@ import {
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
-import { formatError } from "../../lib/errors";
 import { drawCard, isTooSmall, moveCard, resizeCard, rotateCardTo } from "../../lib/freeform";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import type { PageSize } from "../../lib/tauri";
@@ -60,7 +59,6 @@ export function EditorViewport() {
   const { t } = useTranslation();
   const pages = useDocumentStore((s) => s.pages);
   const currentPage = useDocumentStore((s) => s.currentPage);
-  const error = useDocumentStore((s) => s.error);
   const loading = useDocumentStore((s) => s.loading);
   const viewport = useEditorStore((s) => s.viewport);
   const tool = useEditorStore((s) => s.tool);
@@ -356,9 +354,7 @@ export function EditorViewport() {
           data-hint-target="page-canvas-tip"
           className="pointer-events-none absolute bottom-6 left-1/2 size-px"
         />
-        {error ? (
-          <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{formatError(error)}</p>
-        ) : page && pageRect ? (
+        {page && pageRect ? (
           <>
             {output ? (
               <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />

@@ -42,7 +42,8 @@
       "pagesTitle_other": "{{count}} pages can't be exported",
       "page": "Page {{n}}:",
       "fixPrint": "Fix these, then export again. Pieces are never scaled to fit.",
-      "fixSource": "Fix these pages, or skip them, then export again."
+      "fixSource": "Fix these pages, or skip them, then export again.",
+      "pageIn": "Page {{n}} of {{name}}:"
     }
   },
   "files": {
@@ -168,7 +169,10 @@
       "noRegion": "No region",
       "pieces_one": "{{count}} piece",
       "pieces_other": "{{count}} pieces"
-    }
+    },
+    "document": "PDF being edited",
+    "addPdf": "Add PDF…",
+    "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library."
   },
   "applyGrid": {
     "dialog": "Apply this grid to",
@@ -217,7 +221,9 @@
       "label": "p{{page}} · {{position}}",
       "title": "Page {{page}}, {{position}} · {{size}}",
       "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°"
-    }
+    },
+    "allOfDocument": "All pieces of {{name}}",
+    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})"
   },
   "print": {
     "error": {
@@ -478,10 +484,56 @@
     "nothing_to_print": "There is nothing to print.",
     "internal": "Something went wrong inside the app: {{detail}}",
     "freeform_only": "This page has only freeform pieces: print it from the Print tab.",
-    "no_region": "No piece region is selected."
+    "no_region": "No piece region is selected.",
+    "not_a_project": "This is not a valid project file.",
+    "project_too_new": "This project was made with a newer version of the app (file version {{found}}; this version reads up to {{supported}}). Please update.",
+    "project_invalid": "This project file is damaged or incomplete."
   },
   "numberField": {
     "decrease": "Decrease {{label}}",
     "increase": "Increase {{label}}"
+  },
+  "presets": {
+    "title": "Presets",
+    "none": "No presets yet. Save the current grid to reuse it on other page groups.",
+    "choose": "Choose a preset",
+    "delete": "Delete preset",
+    "apply": "Apply to this page group",
+    "applyTitle": "Sets the rows, columns and source gap of the pages that share this grid",
+    "name": "Preset name",
+    "save": "Save current grid",
+    "saveTitle": "Save the rows, columns and source gap of this page group under this name"
+  },
+  "project": {
+    "fileFilter": "Project",
+    "untitled": "Untitled",
+    "unsaved": "Unsaved project",
+    "menu": {
+      "file": "File",
+      "new": "New project",
+      "openPdf": "Open PDF…",
+      "openProject": "Open project…",
+      "addPdf": "Add PDF…",
+      "save": "Save",
+      "saveAs": "Save as…",
+      "recent": "Recent projects",
+      "noRecent": "No recent projects"
+    },
+    "discard": {
+      "message": "This project has changes that are not saved. Discard them?",
+      "ok": "Discard changes"
+    },
+    "relink": {
+      "message": "Where is “{{name}}” now? Choose the PDF to keep opening the project.",
+      "ok": "Choose file…",
+      "differs": "This file is not the same as the PDF “{{name}}” the project was saved with, so the pieces may not be where they were. Use it anyway?",
+      "useAnyway": "Use it anyway"
+    },
+    "notices": {
+      "label": "Project messages",
+      "close": "Close",
+      "pdfChanged": "“{{name}}” has changed since the project was saved. Check that the pieces are still where you marked them.",
+      "layoutReset": "“{{name}}” has a different number of pages than when the project was saved, so its page groups and pieces were reset."
+    }
   }
 }

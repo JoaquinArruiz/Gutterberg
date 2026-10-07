@@ -2,7 +2,7 @@ import { cropWidthPx } from "../../lib/card";
 import type { SheetPlacement } from "../../lib/sheet-api";
 import type { RenderKind } from "../../lib/tauri";
 import { useCardImage } from "../../lib/use-card-image";
-import { useDocumentStore } from "../../stores/document-store";
+import { documentById, useDocumentStore } from "../../stores/document-store";
 import { CardImage } from "./CardImage";
 
 /**
@@ -11,8 +11,8 @@ import { CardImage } from "./CardImage";
  * vector content. `kind` is the render priority: the large preview uses "page", thumbnails "thumbnail".
  */
 export function PlacedCard({ p, k, kind = "page" }: { p: SheetPlacement; k: number; kind?: RenderKind }) {
-  const path = useDocumentStore((s) => s.path);
-  const page = useDocumentStore((s) => s.pages[p.card_id.page_index]);
+  const path = useDocumentStore((s) => documentById(s, p.card_id.document_id)?.path ?? null);
+  const page = useDocumentStore((s) => documentById(s, p.card_id.document_id)?.pages[p.card_id.page_index]);
   const d = p.destination;
   const dpr = window.devicePixelRatio || 1;
   const url = useCardImage(

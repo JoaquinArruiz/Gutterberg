@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
 import { t } from "../i18n";
+import type { DocumentId } from "./card";
 import type { NormalizedRect } from "./coordinates";
 import { isSupersededError } from "./errors";
 
@@ -19,8 +20,19 @@ export async function pickPdf(): Promise<string | null> {
   return typeof picked === "string" ? picked : null;
 }
 
-export async function openPdf(path: string): Promise<DocumentInfo> {
-  return DocumentInfoSchema.parse(await invoke("open_pdf", { path }));
+/** Opens the PDF at `path` as document `documentId`; a project keeps several open, each under its own id. */
+export async function openPdf(documentId: DocumentId, path: string): Promise<DocumentInfo> {
+  return DocumentInfoSchema.parse(await invoke("open_pdf", { documentId, path }));
+}
+
+/** Forgets one open document, or all of them when `documentId` is omitted. */
+export async function closePdf(documentId?: DocumentId): Promise<void> {
+  await invoke("close_pdf", { documentId: documentId ?? null });
+}
+
+export async function pickPdfs(): Promise<string[]> {
+  const picked = await open({ multiple: true, filters: [{ name: t("files.pdfFilter"), extensions: ["pdf"] }] });
+  return Array.isArray(picked) ? picked : typeof picked === "string" ? [picked] : [];
 }
 
 export async function pickExportPath(inputPath: string, kind: "spaced" | "print" = "spaced"): Promise<string | null> {
@@ -28,7 +40,7 @@ export async function pickExportPath(inputPath: string, kind: "spaced" | "print"
     inputPath
       .split(/[\\/]/)
       .pop()
-      ?.replace(/\.pdf$/i, "") ?? t("files.fallbackName");
+      ?.replace(/\.(pdf|gtr)$/i, "") ?? t("files.fallbackName");
   const suffix = kind === "print" ? t("files.suffixPrint") : t("files.suffixSpaced");
   return save({ defaultPath: `${name}-${suffix}.pdf`, filters: [{ name: t("files.pdfFilter"), extensions: ["pdf"] }] });
 }
@@ -58,18 +70,23 @@ export type PageJob = { page_index: number; grid: GridPayload };
  * text, `code` (with the values the catalog's `errors.<code>` text needs, as extra fields) lets the UI word it.
  */
 export const PageIssueSchema = z
-  .object({ page_index: z.number().int(), message: z.string(), code: z.string().optional() })
+  .object({
+    document_id: z.number().int().optional(),
+    page_index: z.number().int(),
+    message: z.string(),
+    code: z.string().optional(),
+  })
   .catchall(z.union([z.string(), z.number()]));
 export type PageIssue = z.infer<typeof PageIssueSchema>;
 
 /** Exports one output page per job via the Rust exporter (pages without a job are left out). Resolves to the page count. */
-export async function exportDocument(pages: PageJob[], outputPath: string): Promise<number> {
-  return invoke<number>("export_document", { pages, outputPath });
+export async function exportDocument(documentId: DocumentId, pages: PageJob[], outputPath: string): Promise<number> {
+  return invoke<number>("export_document", { documentId, pages, outputPath });
 }
 
 /** Pre-flight: runs the exporter's own checks on every job and lists the pages that would fail. Empty = good to export. */
-export async function validateExport(pages: PageJob[]): Promise<PageIssue[]> {
-  return z.array(PageIssueSchema).parse(await invoke("validate_export", { pages }));
+export async function validateExport(documentId: DocumentId, pages: PageJob[]): Promise<PageIssue[]> {
+  return z.array(PageIssueSchema).parse(await invoke("validate_export", { documentId, pages }));
 }
 
 /**
@@ -82,18 +99,24 @@ export type RenderKind = "viewport" | "magnifier" | "thumbnail" | "page";
 export const isSuperseded = isSupersededError;
 
 /** Renders a page to a PNG blob URL. Caller owns the URL (revokeObjectURL). */
-export async function renderPage(kind: RenderKind, pageIndex: number, widthPx: number): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_page", { kind, pageIndex, widthPx });
+export async function renderPage(
+  kind: RenderKind,
+  documentId: DocumentId,
+  pageIndex: number,
+  widthPx: number,
+): Promise<string> {
+  const bytes = await invoke<ArrayBuffer>("render_page", { kind, documentId, pageIndex, widthPx });
   return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
 }
 
 /** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
 export async function renderRegion(
   kind: RenderKind,
+  documentId: DocumentId,
   pageIndex: number,
   region: NormalizedRect,
   fullWidthPx: number,
 ): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_region", { kind, pageIndex, region, fullWidthPx });
+  const bytes = await invoke<ArrayBuffer>("render_region", { kind, documentId, pageIndex, region, fullWidthPx });
   return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
 }

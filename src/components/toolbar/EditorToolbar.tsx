@@ -1,6 +1,5 @@
 import {
   Download,
-  FileText,
   Hand,
   Maximize,
   MousePointer2,
@@ -17,21 +16,25 @@ import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
 import { t as translate } from "../../i18n";
 import { includedPages } from "../../lib/document-layout";
+import { getLayoutDocuments, useLayoutDocuments } from "../../lib/documents";
 import { type AppError, formatError, toAppError } from "../../lib/errors";
 import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
 import { emitHintEvent } from "../../lib/hint-events";
 import { buildPrintRequest } from "../../lib/print-request";
+import { activateDocument } from "../../lib/project-actions";
 import { exportPrint, validatePrint } from "../../lib/sheet-api";
 import { exportDocument, pickExportPath, validateExport } from "../../lib/tauri";
 import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
-import { useDocumentStore } from "../../stores/document-store";
+import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
 import { type Tool, useEditorStore } from "../../stores/editor-store";
 import { redo, undo, useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { planOf, usePrintStore } from "../../stores/print-store";
+import { useProjectStore } from "../../stores/project-store";
 import { type Stage, useUiStore } from "../../stores/ui-store";
 import { PanelsMenu } from "../workspace/PanelsMenu";
+import { FileMenu } from "./FileMenu";
 
 const TOOLS = [
   { id: "select", label: "toolbar.tools.select", key: "V", Icon: MousePointer2 },
@@ -44,11 +47,17 @@ const STAGES = [
   { id: "print", label: "toolbar.stages.print" },
 ] as const satisfies { id: Stage; label: string }[];
 
-/** One line in the list of reasons an export cannot start. `page` is null for a problem with the plan itself. */
-type ExportIssue = { page: number | null; error: AppError };
+/**
+ * One line in the list of reasons an export cannot start. `page` is null for a problem with the plan itself;
+ * `documentId` is the PDF the page is in.
+ */
+type ExportIssue = { documentId: number; page: number | null; error: AppError };
 
 /** The line in the toolbar after an export. Worded when drawn, so changing the language updates it. */
 type Status = { ok: boolean; text: () => string };
+
+/** The file a PDF of the project was opened from (for naming the PDF a problem is in). */
+const documentPath = (id: number) => documentById(useDocumentStore.getState(), id)?.path ?? "";
 
 const base =
   "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded py-1 hover:bg-[var(--hover)] disabled:opacity-40";
@@ -58,12 +67,16 @@ const iconBtn = `${base} px-1.5`;
 
 export function EditorToolbar() {
   const { t } = useTranslation();
-  const openDialog = useDocumentStore((s) => s.openDialog);
   const pages = useDocumentStore((s) => s.pages);
-  const loading = useDocumentStore((s) => s.loading);
   const path = useDocumentStore((s) => s.path);
   const setCurrentPage = useDocumentStore((s) => s.setCurrentPage);
-  const includedCount = useLayoutStore((s) => includedPages(s.groups).length);
+  const documents = useLayoutDocuments();
+  const activeGroups = useLayoutStore((s) => s.groups);
+  // The Source tab exports the PDF being edited, the Print tab every PDF of the project.
+  const includedCount =
+    useUiStore((s) => s.stage) === "print"
+      ? documents.reduce((n, d) => n + includedPages(d.groups).length, 0)
+      : includedPages(activeGroups).length;
   const canUndo = useStore(useLayoutStore.temporal, (s) => s.pastStates.length > 0);
   const canRedo = useStore(useLayoutStore.temporal, (s) => s.futureStates.length > 0);
   const [exporting, setExporting] = useState(false);
@@ -73,23 +86,24 @@ export function EditorToolbar() {
   const stage = useUiStore((s) => s.stage);
   const setStage = useUiStore((s) => s.setStage);
 
-  /** Source tab: every included page with its own grid, as before. */
+  /** Source tab: every included page of the PDF being edited with its own grid, as before. */
   const exportCards = async (source: string) => {
     const state = useLayoutStore.getState();
+    const documentId = useDocumentStore.getState().activeId;
     const plan = buildExportPlan(state.groups, state, state.freeform);
     if (plan.jobs.length === 0 && plan.issues.length === 0) {
       setStatus({ ok: false, text: () => translate("toolbar.includeOnePage") });
       return;
     }
-    const remote = plan.jobs.length ? await validateExport(plan.jobs) : [];
+    const remote = plan.jobs.length ? await validateExport(documentId, plan.jobs) : [];
     const found = mergeIssues(plan.issues, remote);
     if (found.length > 0) {
-      setIssues(found.map((i) => ({ page: i.page_index, error: toAppError(i) })));
+      setIssues(found.map((i) => ({ documentId, page: i.page_index, error: toAppError(i) })));
       return;
     }
     const out = await pickExportPath(source);
     if (!out) return;
-    const n = await exportDocument(plan.jobs, out);
+    const n = await exportDocument(documentId, plan.jobs, out);
     setStatus({ ok: true, text: () => translate("toolbar.exportedPages", { count: n, path: out }) });
   };
 
@@ -101,26 +115,22 @@ export function EditorToolbar() {
       setStatus({ ok: false, text: () => translate("toolbar.nothingToPrint") });
       return;
     }
-    const req = buildPrintRequest(
-      planOf(print),
-      print.cards,
-      layout.groups,
-      useDocumentStore.getState().pages,
-      layout,
-      {
-        freeform: layout.freeform,
-        edits: layout.cardEdits,
-      },
-    );
+    const req = buildPrintRequest(planOf(print), print.cards, getLayoutDocuments(), layout, layout.cardEdits);
     try {
       const found = await validatePrint(req);
       if (found.length > 0) {
-        setIssues(found.map((i) => ({ page: i.page_index, error: toAppError(i) })));
+        setIssues(
+          found.map((i) => ({
+            documentId: i.document_id ?? useDocumentStore.getState().activeId,
+            page: i.page_index,
+            error: toAppError(i),
+          })),
+        );
         return;
       }
     } catch (e) {
       // The plan itself does not work (for example pieces that do not fit the sheet).
-      setIssues([{ page: null, error: toAppError(e) }]);
+      setIssues([{ documentId: useDocumentStore.getState().activeId, page: null, error: toAppError(e) }]);
       return;
     }
     const out = await pickExportPath(source, "print");
@@ -136,7 +146,7 @@ export function EditorToolbar() {
       setStatus(null);
       setIssues([]);
       emitHintEvent("export-started");
-      await (stage === "print" ? exportSheets(path) : exportCards(path));
+      await (stage === "print" ? exportSheets(useProjectStore.getState().path ?? path) : exportCards(path));
     } catch (e) {
       const error = toAppError(e);
       setStatus({ ok: false, text: () => formatError(error) });
@@ -155,11 +165,7 @@ export function EditorToolbar() {
   const empty = pages.length === 0;
   return (
     <header className="relative flex h-9 shrink-0 items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2">
-      <button type="button" onClick={openDialog} disabled={loading} title={t("toolbar.openPdf")} className={btn}>
-        <FileText size={14} />
-        {/* Below 1100px only the icon shows (the name is still its tooltip and accessible name). */}
-        <span className="max-[1100px]:sr-only">{t("toolbar.openPdf")}</span>
-      </button>
+      <FileMenu />
       <div className="mx-1 h-4 w-px bg-[var(--border)]" />
       <div
         role="tablist"
@@ -288,15 +294,23 @@ export function EditorToolbar() {
           </div>
           <ul className="max-h-72 overflow-y-auto">
             {issues.map((i) => (
-              <li key={`${i.page}:${i.error.message}`}>
+              <li key={`${i.documentId}:${i.page}:${i.error.message}`}>
                 <button
                   type="button"
                   disabled={i.page === null}
-                  onClick={() => i.page !== null && setCurrentPage(i.page)}
+                  onClick={() => {
+                    if (i.page === null) return;
+                    activateDocument(i.documentId);
+                    setCurrentPage(i.page);
+                  }}
                   className="w-full rounded px-1.5 py-1 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent"
                 >
                   {i.page !== null && (
-                    <span className="font-medium">{t("toolbar.issues.page", { n: i.page + 1 })} </span>
+                    <span className="font-medium">
+                      {documents.length > 1
+                        ? t("toolbar.issues.pageIn", { n: i.page + 1, name: fileName(documentPath(i.documentId)) })
+                        : t("toolbar.issues.page", { n: i.page + 1 })}{" "}
+                    </span>
                   )}
                   <span className="text-[var(--muted)]">{formatError(i.error)}</span>
                 </button>

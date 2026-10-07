@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   type AppPreferences,
   DEFAULT_PREFERENCES,
+  MAX_RECENT_PROJECTS,
   migratePreferences,
   moveMode,
   normalizePreferences,
+  PREFERENCES_VERSION,
   resolveStartMode,
   sessionDefaults,
   toggleMode,
@@ -164,7 +166,7 @@ describe("inspector sections and the Print layout", () => {
     const v3 = { version: 3, measurement: { unit: "cm" }, help: { dismissedHints: [] } };
     const p = migratePreferences(v3);
     expect(p.measurement.unit).toBe("cm");
-    expect(p.version).toBe(6);
+    expect(p.version).toBe(PREFERENCES_VERSION);
     expect(p.inspector).toEqual(DEFAULT_PREFERENCES.inspector);
     expect(p.print).toEqual(DEFAULT_PREFERENCES.print);
   });
@@ -181,7 +183,7 @@ describe("language and decimal separator", () => {
     expect(p.locale).toEqual({ language: "system", decimal: "auto" });
     expect(p.measurement.unit).toBe("cm");
     expect(p.appearance.theme).toBe("dark");
-    expect(p.version).toBe(6);
+    expect(p.version).toBe(PREFERENCES_VERSION);
   });
 
   it("keep valid choices and drop anything else", () => {
@@ -194,5 +196,47 @@ describe("language and decimal separator", () => {
       decimal: "auto",
     });
     expect(normalizePreferences({ locale: "es" }).locale).toEqual(DEFAULT_PREFERENCES.locale);
+  });
+});
+
+describe("recent projects and presets", () => {
+  it("start empty, also for a version 6 file that had neither", () => {
+    expect(DEFAULT_PREFERENCES.files.recent).toEqual([]);
+    expect(DEFAULT_PREFERENCES.presets).toEqual([]);
+    const v6 = migratePreferences({ version: 6, measurement: { unit: "in" } });
+    expect(v6.measurement.unit).toBe("in");
+    expect(v6.files).toEqual({ recent: [] });
+    expect(v6.presets).toEqual([]);
+    expect(v6.version).toBe(PREFERENCES_VERSION);
+  });
+
+  it("keep a short list of distinct project paths", () => {
+    const many = Array.from({ length: 20 }, (_, i) => `/p/${i}.gtr`);
+    const p = normalizePreferences({ files: { recent: ["/a.gtr", "", 5, "/a.gtr", ...many] } });
+    expect(p.files.recent).toHaveLength(MAX_RECENT_PROJECTS);
+    expect(p.files.recent.slice(0, 3)).toEqual(["/a.gtr", "/p/0.gtr", "/p/1.gtr"]);
+    expect(normalizePreferences({ files: "x" }).files).toEqual({ recent: [] });
+  });
+
+  it("keep presets with a name and a grid inside the allowed range", () => {
+    const p = normalizePreferences({
+      presets: [
+        { name: "  3×3 poker  ", rows: 3, columns: 3, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
+        { name: "3×3 POKER", rows: 9, columns: 9 },
+        { name: "", rows: 2, columns: 2 },
+        { rows: 2, columns: 2 },
+        { name: "wild", rows: 500, columns: -3, sourceGapXMm: 900, sourceGapYMm: 4, sourceGapLinked: false },
+        "nope",
+      ],
+    });
+    expect(p.presets.map((x) => x.name)).toEqual(["3×3 poker", "wild"]);
+    expect(p.presets[1]).toMatchObject({ rows: 30, columns: 1, sourceGapXMm: 50, sourceGapYMm: 4 });
+  });
+
+  it("make a linked vertical gap follow the horizontal one", () => {
+    const p = normalizePreferences({
+      presets: [{ name: "a", rows: 1, columns: 1, sourceGapXMm: 2, sourceGapYMm: 7, sourceGapLinked: true }],
+    });
+    expect(p.presets[0].sourceGapYMm).toBe(2);
   });
 });

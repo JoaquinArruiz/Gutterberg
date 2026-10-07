@@ -5,12 +5,13 @@ import { useShallow } from "zustand/react/shallow";
 import { cardIdKey } from "../../lib/card";
 import { moveCards, orientCards, turnCards } from "../../lib/card-edits";
 import { rangeLabel } from "../../lib/document-layout";
+import { useLayoutDocuments } from "../../lib/documents";
 import { formatError } from "../../lib/errors";
 import { commonQuantity, filterCards } from "../../lib/library";
 import { MAX_QUANTITY } from "../../lib/print-request";
 import { useLibraryCards } from "../../lib/use-library-cards";
 import { cellWidth, gridColumns, rowCount, visibleRows } from "../../lib/virtual-grid";
-import { useDocumentStore } from "../../stores/document-store";
+import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePrintStore } from "../../stores/print-store";
 import { NumberField } from "../ui/NumberField";
@@ -26,7 +27,7 @@ const ASPECT = 1.35;
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
-type FilterChoice = "all" | "page" | `group:${number}`;
+type FilterChoice = "all" | "page" | `doc:${number}` | `group:${number}:${number}`;
 
 /**
  * Every piece of the page groups, as a windowed grid of thumbnails (only the rows near the view are
@@ -35,8 +36,9 @@ type FilterChoice = "all" | "page" | `group:${number}`;
  */
 export function CardLibrary() {
   const { t } = useTranslation();
-  const hasDocument = useDocumentStore((s) => s.pages.length > 0);
-  const groups = useLayoutStore((s) => s.groups);
+  const hasDocument = useDocumentStore((s) => s.documents.length > 0);
+  const activeId = useDocumentStore((s) => s.activeId);
+  const documents = useLayoutDocuments();
   const P = usePrintStore(
     useShallow((s) => ({
       cardsError: s.cardsError,
@@ -58,7 +60,7 @@ export function CardLibrary() {
   const cardCount = usePrintStore((s) => s.cards.length);
   const edits = useLayoutStore((s) => s.cardEdits);
   const setEdits = useLayoutStore((s) => s.setCardEdits);
-  const shown = useMemo(() => filterCards(cards, groups, P.filter), [cards, groups, P.filter]);
+  const shown = useMemo(() => filterCards(cards, documents, P.filter), [cards, documents, P.filter]);
   const keys = useMemo(() => shown.map((c) => cardIdKey(c.id)), [shown]);
   const selected = useMemo(() => new Set(P.selection.selected), [P.selection.selected]);
 
@@ -89,18 +91,42 @@ export function CardLibrary() {
   const { first, last } = visibleRows(scrollTop, box.height, rowHeight, rows);
 
   const filterValue: FilterChoice =
-    P.filter.kind === "group" ? `group:${P.filter.index}` : P.filter.kind === "page" ? "page" : "all";
-  const groupOptions = groups.flatMap((g, i) =>
-    g.kind === "grid" && g.selection
-      ? [
-          {
-            value: `group:${i}` as FilterChoice,
-            label: t("library.group", { range: rangeLabel(g.pages), rows: g.grid.rows, columns: g.grid.columns }),
-          },
-        ]
-      : [],
+    P.filter.kind === "group"
+      ? `group:${P.filter.document}:${P.filter.index}`
+      : P.filter.kind === "document"
+        ? `doc:${P.filter.document}`
+        : P.filter.kind === "page"
+          ? "page"
+          : "all";
+  // With several PDFs the menu names each one, and its groups say which PDF they belong to.
+  const several = documents.length > 1;
+  const nameOf = (id: number) => fileName(documentById(useDocumentStore.getState(), id)?.path ?? "");
+  const documentOptions = several
+    ? documents.map((d) => ({
+        value: `doc:${d.id}` as FilterChoice,
+        label: t("library.allOfDocument", { name: nameOf(d.id) }),
+      }))
+    : [];
+  const groupOptions = documents.flatMap((d) =>
+    d.groups.flatMap((g, i) =>
+      g.kind === "grid" && g.selection
+        ? [
+            {
+              value: `group:${d.id}:${i}` as FilterChoice,
+              label: t(several ? "library.groupIn" : "library.group", {
+                name: nameOf(d.id),
+                range: rangeLabel(g.pages),
+                rows: g.grid.rows,
+                columns: g.grid.columns,
+              }),
+            },
+          ]
+        : [],
+    ),
   );
-  const pageCount = useDocumentStore((s) => s.pages.length);
+  // The page field looks at the PDF the filter is on, or the one being edited.
+  const pageDocument = P.filter.kind === "all" ? activeId : P.filter.document;
+  const pageCount = documents.find((d) => d.id === pageDocument)?.pages.length ?? 0;
 
   const picked = P.selection.selected;
   const turn = (delta: number) => picked.length > 0 && setEdits(turnCards(edits, cards, picked, delta));
@@ -139,7 +165,11 @@ export function CardLibrary() {
             value={filterValue}
             onChange={(v) => {
               if (v === "all") P.setFilter({ kind: "all" });
-              else if (v !== "page") P.setFilter({ kind: "group", index: Number(v.slice("group:".length)) });
+              else if (v.startsWith("doc:")) P.setFilter({ kind: "document", document: Number(v.slice(4)) });
+              else if (v.startsWith("group:")) {
+                const [document, index] = v.slice(6).split(":").map(Number);
+                P.setFilter({ kind: "group", document, index });
+              }
             }}
             options={[
               { value: "all" as FilterChoice, label: t("library.all") },
@@ -147,6 +177,7 @@ export function CardLibrary() {
               ...(P.filter.kind === "page"
                 ? [{ value: "page" as FilterChoice, label: t("common.page", { n: P.filter.page + 1 }) }]
                 : []),
+              ...documentOptions,
               ...groupOptions,
             ]}
           />
@@ -160,7 +191,7 @@ export function CardLibrary() {
               value={P.filter.kind === "page" ? P.filter.page + 1 : null}
               min={1}
               max={pageCount}
-              onCommit={(p) => P.setFilter({ kind: "page", page: p - 1 })}
+              onCommit={(p) => P.setFilter({ kind: "page", document: pageDocument, page: p - 1 })}
             />
           </span>
         </div>

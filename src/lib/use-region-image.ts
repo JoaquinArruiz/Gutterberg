@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useDocumentStore } from "../stores/document-store";
 import type { NormalizedRect, Point, Rect } from "./coordinates";
 import { renderRegion } from "./tauri";
 
@@ -28,6 +29,8 @@ export function useRegionImage({
   reachPx: number;
   fullWidthPx: number;
 }) {
+  // The page editor shows the PDF being edited.
+  const documentId = useDocumentStore((s) => s.activeId);
   const [anchor, setAnchor] = useState(focus);
   const [img, setImg] = useState<RegionImage | null>(null);
 
@@ -54,7 +57,7 @@ export function useRegionImage({
     let cancelled = false;
     // Debounced: a pinch or fast drag only renders once it settles; the previous image stays meanwhile.
     const t = setTimeout(() => {
-      renderRegion("magnifier", pageIndex, region, fullWidthPx)
+      renderRegion("magnifier", documentId, pageIndex, region, fullWidthPx)
         .then((url) => {
           if (cancelled) return URL.revokeObjectURL(url);
           setImg((prev) => {
@@ -68,7 +71,7 @@ export function useRegionImage({
       cancelled = true;
       clearTimeout(t);
     };
-  }, [docKey, pageIndex, anchor.x, anchor.y, hx, hy, fullWidthPx]);
+  }, [docKey, documentId, pageIndex, anchor.x, anchor.y, hx, hy, fullWidthPx]);
 
   // Free the last image on unmount.
   useEffect(

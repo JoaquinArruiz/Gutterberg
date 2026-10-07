@@ -252,3 +252,57 @@ describe("Print stage layout", () => {
     expect(st.getState().prefs.print.layout).toEqual({ libraryWidth: 320, inspectorWidth: 300 });
   });
 });
+
+describe("recent projects", () => {
+  it("lists the newest first, once each, and forgets one that is gone", () => {
+    const store = createPreferencesStore(memory());
+    const { addRecentProject, removeRecentProject } = store.getState();
+    for (const p of ["/a.gtr", "/b.gtr", "/a.gtr"]) addRecentProject(p);
+    expect(store.getState().prefs.files.recent).toEqual(["/a.gtr", "/b.gtr"]);
+    removeRecentProject("/a.gtr");
+    expect(store.getState().prefs.files.recent).toEqual(["/b.gtr"]);
+  });
+
+  it("survive a restart, and the reset to defaults", () => {
+    const storage = memory();
+    const first = createPreferencesStore(storage);
+    first.getState().addRecentProject("/a.gtr");
+    first.getState().savePreset({
+      name: "poker",
+      rows: 3,
+      columns: 3,
+      sourceGapXMm: 0,
+      sourceGapYMm: 0,
+      sourceGapLinked: true,
+    });
+    first.getState().resetToDefaults();
+    const second = createPreferencesStore(storage).getState().prefs;
+    expect(second.files.recent).toEqual(["/a.gtr"]);
+    expect(second.presets.map((p) => p.name)).toEqual(["poker"]);
+  });
+});
+
+describe("presets", () => {
+  const preset = (name: string, rows: number) => ({
+    name,
+    rows,
+    columns: 3,
+    sourceGapXMm: 0,
+    sourceGapYMm: 0,
+    sourceGapLinked: true,
+  });
+
+  it("are saved by name, replacing one of the same name (ignoring case), and deleted", () => {
+    const store = createPreferencesStore(memory());
+    const s = store.getState();
+    s.savePreset(preset("Poker", 3));
+    s.savePreset(preset("Tarot", 2));
+    s.savePreset(preset("poker", 4));
+    expect(store.getState().prefs.presets.map((p) => [p.name, p.rows])).toEqual([
+      ["poker", 4],
+      ["Tarot", 2],
+    ]);
+    s.deletePreset("Tarot");
+    expect(store.getState().prefs.presets.map((p) => p.name)).toEqual(["poker"]);
+  });
+});

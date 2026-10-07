@@ -9,6 +9,7 @@ pub mod error;
 pub mod export;
 pub mod geometry;
 pub mod layout;
+pub mod project;
 pub mod render;
 pub mod render_worker;
 pub mod sample;

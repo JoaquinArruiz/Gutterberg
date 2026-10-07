@@ -45,7 +45,7 @@ beforeEach(() => {
   joyrideSteps.length = 0;
   usePreferencesStore.getState().resetToDefaults();
   useUiStore.setState({ stage: "cards" });
-  useDocumentStore.setState({ path: "/x.pdf", pages: [A4, A4], currentPage: 0 });
+  useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4], hash: "" }], 0);
   useLayoutStore.getState().resetDocument(2);
 });
 afterEach(() => {
@@ -55,7 +55,7 @@ afterEach(() => {
 
 describe("first PDF tour", () => {
   it("does not start without a document", () => {
-    useDocumentStore.setState({ pages: [] });
+    useDocumentStore.getState().clear();
     render(<FirstPdfTour />);
     expect(tour()).toBeNull();
   });

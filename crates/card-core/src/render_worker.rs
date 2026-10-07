@@ -1,21 +1,23 @@
-//! A dedicated thread that owns pdfium and the open document.
+//! A dedicated thread that owns pdfium and the open documents.
 //!
 //! `PdfDocument` borrows `Pdfium`, so neither can live in shared app state. Instead the
 //! thread owns both and callers send requests over a channel, which also serialises all
-//! pdfium use. The document is parsed once per [`RenderWorker::open`], not per render.
+//! pdfium use. A document is parsed once per [`RenderWorker::open`], not per render, and a
+//! project can keep several open, each under its [`DocumentId`].
 //!
 //! Requests carry `(kind, generation)`. Before drawing, the thread drops a viewport or
 //! magnifier request that a newer one of the same kind has superseded; the caller gets
 //! [`Error::Superseded`]. Thumbnails and page layers are never dropped (each is a different
 //! page or pane), but thumbnails run last so they never delay the interactive kinds.
 
+use crate::card::DocumentId;
 use crate::error::{Error, Result};
 use crate::geometry::Rect;
 use crate::render::{
     bind_pdfium, document_info_in, render_page_png_in, render_region_png_in, DocumentInfo,
 };
 use pdfium_render::prelude::{PdfDocument, Pdfium};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender};
@@ -48,9 +50,11 @@ impl RenderKind {
 type Reply<T> = Sender<Result<T>>;
 
 enum Work {
-    Open(PathBuf, Reply<DocumentInfo>),
-    Page(usize, u32, Reply<Vec<u8>>),
-    Region(usize, Rect, u32, Reply<Vec<u8>>),
+    Open(DocumentId, PathBuf, Reply<DocumentInfo>),
+    /// Close one document, or every document when the id is `None`.
+    Close(Option<DocumentId>, Reply<()>),
+    Page(DocumentId, usize, u32, Reply<Vec<u8>>),
+    Region(DocumentId, usize, Rect, u32, Reply<Vec<u8>>),
 }
 
 struct Msg {
@@ -63,7 +67,7 @@ impl Msg {
     /// Lower runs first.
     fn priority(&self) -> u8 {
         match (&self.work, self.kind) {
-            (Work::Open(..), _) => 0,
+            (Work::Open(..) | Work::Close(..), _) => 0,
             (_, RenderKind::Thumbnail) => 2,
             _ => 1,
         }
@@ -111,35 +115,45 @@ impl RenderWorker {
         rx.recv().map_err(|_| Error::WorkerStopped)?
     }
 
-    /// Parse `path` once and keep it open for later renders. Blocks until done.
-    pub fn open(&self, path: PathBuf) -> Result<DocumentInfo> {
-        self.send(RenderKind::Page, |r| Work::Open(path, r))
+    /// Parse `path` once and keep it open under `document_id` for later renders (replacing
+    /// whatever was open under that id). Blocks until done.
+    pub fn open(&self, document_id: DocumentId, path: PathBuf) -> Result<DocumentInfo> {
+        self.send(RenderKind::Page, |r| Work::Open(document_id, path, r))
+    }
+
+    /// Forget one open document, or all of them (`None`). Blocks until done.
+    pub fn close(&self, document_id: Option<DocumentId>) -> Result<()> {
+        self.send(RenderKind::Page, |r| Work::Close(document_id, r))
     }
 
     /// Blocks until rendered (or superseded).
     pub fn render_page(
         &self,
         kind: RenderKind,
+        document_id: DocumentId,
         page_index: usize,
         width_px: u32,
     ) -> Result<Vec<u8>> {
-        self.send(kind, |r| Work::Page(page_index, width_px, r))
+        self.send(kind, |r| Work::Page(document_id, page_index, width_px, r))
     }
 
     /// Blocks until rendered (or superseded).
     pub fn render_region(
         &self,
         kind: RenderKind,
+        document_id: DocumentId,
         page_index: usize,
         region: Rect,
         full_width_px: u32,
     ) -> Result<Vec<u8>> {
-        self.send(kind, |r| Work::Region(page_index, region, full_width_px, r))
+        self.send(kind, |r| {
+            Work::Region(document_id, page_index, region, full_width_px, r)
+        })
     }
 }
 
 fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
-    let mut doc: Option<PdfDocument> = None;
+    let mut docs: HashMap<DocumentId, PdfDocument> = HashMap::new();
     let mut queue: VecDeque<Msg> = VecDeque::new();
     loop {
         if queue.is_empty() {
@@ -161,31 +175,40 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
         let stale = msg.kind.supersedable()
             && msg.generation < latest[msg.kind.index()].load(Ordering::SeqCst);
         match msg.work {
-            Work::Open(path, reply) => {
+            Work::Open(id, path, reply) => {
                 let result = pdfium
                     .load_pdf_from_file(&path, None)
                     .map_err(|e| Error::Pdfium(e.to_string()))
                     .and_then(|d| {
                         let info = document_info_in(&d)?;
-                        doc = Some(d);
+                        docs.insert(id, d);
                         Ok(info)
                     });
                 let _ = reply.send(result);
             }
-            Work::Page(index, width, reply) => {
+            Work::Close(id, reply) => {
+                match id {
+                    Some(id) => {
+                        docs.remove(&id);
+                    }
+                    None => docs.clear(),
+                }
+                let _ = reply.send(Ok(()));
+            }
+            Work::Page(id, index, width, reply) => {
                 let _ = reply.send(if stale {
                     Err(Error::Superseded)
                 } else {
-                    doc.as_ref()
+                    docs.get(&id)
                         .ok_or(Error::NoDocument)
                         .and_then(|d| render_page_png_in(d, index, width))
                 });
             }
-            Work::Region(index, region, width, reply) => {
+            Work::Region(id, index, region, width, reply) => {
                 let _ = reply.send(if stale {
                     Err(Error::Superseded)
                 } else {
-                    doc.as_ref()
+                    docs.get(&id)
                         .ok_or(Error::NoDocument)
                         .and_then(|d| render_region_png_in(d, index, region, width))
                 });

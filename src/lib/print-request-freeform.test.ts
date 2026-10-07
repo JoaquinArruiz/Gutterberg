@@ -63,10 +63,13 @@ describe("the IPC contract with the Rust planner: freeform and edited cards", ()
   };
 
   it("builds exactly the request the Rust test reads", () => {
-    const req = buildPrintRequest({ ...DEFAULT_PLAN, groupBySize: false }, [...grid, ...free], groups, [a4], settings, {
-      freeform,
+    const req = buildPrintRequest(
+      { ...DEFAULT_PLAN, groupBySize: false },
+      [...grid, ...free],
+      [{ id: 0, pages: [a4], groups, freeform }],
+      settings,
       edits,
-    });
+    );
     expect(JSON.parse(JSON.stringify(req))).toEqual(JSON.parse(fixtureText));
   });
 });

@@ -1,40 +1,94 @@
 import { create } from "zustand";
-import { type AppError, toAppError } from "../lib/errors";
-import { emitHintEvent } from "../lib/hint-events";
-import { openPdf, type PageSize, pickPdf } from "../lib/tauri";
+import type { DocumentId } from "../lib/card";
+import type { PageSize } from "../lib/tauri";
 
+/** One PDF of the project, opened for rendering. */
+export type OpenDocument = {
+  id: DocumentId;
+  path: string;
+  /** Page sizes in points; `pages.length` is the page count. */
+  pages: PageSize[];
+  /** SHA-256 of the file (hex) when it was added to the project. */
+  hash: string;
+};
+
+/**
+ * The project's PDFs. The Source tab edits one of them at a time (`activeId`); `path`, `pages` and
+ * `currentPage` always describe that one, so the page editor reads them without knowing about the others.
+ */
 type DocumentState = {
+  documents: OpenDocument[];
+  activeId: DocumentId;
   path: string | null;
   pages: PageSize[]; // points; pages.length is the page count
   currentPage: number; // 0-based
+  /** The page last viewed in each document, so switching back returns to it. */
+  viewed: Record<DocumentId, number>;
   loading: boolean;
-  error: AppError | null;
-  openDialog: () => Promise<void>;
+  setLoading: (loading: boolean) => void;
+  /** Replaces the project's PDFs. `activeId` must be one of them. */
+  setDocuments: (documents: OpenDocument[], activeId: DocumentId, viewed?: Record<DocumentId, number>) => void;
+  /** Adds a PDF to the project without changing which one is being edited. */
+  addDocument: (document: OpenDocument) => void;
+  /** Edit another PDF; remembers the page left behind and returns to the one last viewed there. */
+  setActive: (id: DocumentId) => void;
+  clear: () => void;
   setCurrentPage: (i: number) => void;
 };
 
-export const useDocumentStore = create<DocumentState>((set, get) => ({
-  path: null,
-  pages: [],
-  currentPage: 0,
-  loading: false,
-  error: null,
+const NONE = { documents: [] as OpenDocument[], activeId: 0, path: null, pages: [] as PageSize[], currentPage: 0 };
 
-  openDialog: async () => {
-    try {
-      const path = await pickPdf();
-      if (!path) return;
-      set({ loading: true, error: null });
-      const info = await openPdf(path);
-      set({ path, pages: info.pages, currentPage: 0, loading: false });
-      emitHintEvent("pdf-opened");
-    } catch (e) {
-      set({ loading: false, error: toAppError(e) });
-    }
+/** The fields that mirror the active document. */
+function mirror(documents: OpenDocument[], activeId: DocumentId, page: number) {
+  const active = documents.find((d) => d.id === activeId);
+  if (!active) return NONE;
+  return {
+    documents,
+    activeId,
+    path: active.path,
+    pages: active.pages,
+    currentPage: Math.min(Math.max(page, 0), active.pages.length - 1),
+  };
+}
+
+export const useDocumentStore = create<DocumentState>((set, get) => ({
+  ...NONE,
+  viewed: {},
+  loading: false,
+
+  setLoading: (loading) => set({ loading }),
+
+  setDocuments: (documents, activeId, viewed = {}) =>
+    set({ ...mirror(documents, activeId, viewed[activeId] ?? 0), viewed }),
+
+  addDocument: (document) =>
+    set((s) => ({
+      documents: [...s.documents.filter((d) => d.id !== document.id), document],
+      ...(s.documents.length === 0 ? mirror([document], document.id, 0) : {}),
+    })),
+
+  setActive: (id) => {
+    const s = get();
+    if (id === s.activeId || !s.documents.some((d) => d.id === id)) return;
+    const viewed = { ...s.viewed, [s.activeId]: s.currentPage };
+    set({ ...mirror(s.documents, id, viewed[id] ?? 0), viewed });
   },
+
+  clear: () => set({ ...NONE, viewed: {} }),
 
   setCurrentPage: (i) => {
     const n = get().pages.length;
     if (n > 0) set({ currentPage: Math.min(Math.max(i, 0), n - 1) });
   },
 }));
+
+/** The PDF open under `id`, if any. */
+export const documentById = (s: Pick<DocumentState, "documents">, id: DocumentId) =>
+  s.documents.find((d) => d.id === id);
+
+/** The next unused document id. */
+export const nextDocumentId = (s: Pick<DocumentState, "documents">): DocumentId =>
+  s.documents.reduce((max, d) => Math.max(max, d.id + 1), 0);
+
+/** The last component of a path: the PDF's name as the user knows it. */
+export const fileName = (path: string): string => path.split(/[\\/]/).pop() || path;

@@ -59,7 +59,7 @@ beforeEach(() => {
   usePreferencesStore.getState().resetToDefaults();
   usePrintStore.getState().reset();
   useUiStore.setState({ stage: "cards" });
-  useDocumentStore.setState({ path: "/x.pdf", pages: [A4, A4], currentPage: 0 });
+  useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4], hash: "" }], 0);
   useLayoutStore.getState().resetDocument(2);
 });
 afterEach(() => {
@@ -258,7 +258,7 @@ describe("Card library", () => {
     useLayoutStore.setState({
       groups: updateGridGroup(defaultGroups(2), 0, (g) => ({ ...g, selection: { x: 0, y: 0, width: 1, height: 1 } })),
     });
-    print().setFilter({ kind: "group", index: 0 });
+    print().setFilter({ kind: "group", document: 0, index: 0 });
     render(<CardLibrary />);
     expect(thumbs()).toHaveLength(4);
   });
@@ -270,7 +270,7 @@ describe("Card library", () => {
     act(() => print().setCards([], "page 3 does not exist"));
     expect(screen.getByText("page 3 does not exist")).toBeTruthy();
     r.unmount();
-    useDocumentStore.setState({ path: null, pages: [] });
+    useDocumentStore.getState().clear();
     render(<CardLibrary />);
     expect(screen.getByText(/Open a PDF/)).toBeTruthy();
   });
@@ -350,7 +350,7 @@ describe("stage switch", () => {
   });
 
   it("has no stages to switch to without a document", () => {
-    useDocumentStore.setState({ path: null, pages: [] });
+    useDocumentStore.getState().clear();
     render(<EditorToolbar />);
     expect(screen.getByRole("tab", { name: "Print" }).hasAttribute("disabled")).toBe(true);
   });
@@ -382,7 +382,7 @@ describe("Apply this grid to…", () => {
     HTMLDialogElement.prototype.close = function close() {
       this.removeAttribute("open");
     };
-    useDocumentStore.setState({ pages: [A4, A4, A4, A4], currentPage: 0 });
+    useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4, A4, A4], hash: "" }], 0);
     useLayoutStore.getState().resetDocument(4);
     useLayoutStore.getState().setSelection(0, { x: 0, y: 0, width: 1, height: 1 });
   });

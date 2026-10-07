@@ -1,0 +1,8 @@
+{
+  "format": "gutterberg-project",
+  "version": 1,
+  "documents": [
+    { "id": 0, "path": "/games/poker.pdf", "hash": "00", "groups": [], "freeform": {} }
+  ],
+  "output": { "gapXMm": 3 }
+}

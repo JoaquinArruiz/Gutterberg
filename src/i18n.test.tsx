@@ -24,7 +24,9 @@ beforeAll(() => {
 
 beforeEach(() => {
   prefs().resetToDefaults();
-  useDocumentStore.setState({ path: "/tmp/cards.pdf", pages: [{ width_pt: 612, height_pt: 792 }], currentPage: 0 });
+  useDocumentStore
+    .getState()
+    .setDocuments([{ id: 0, path: "/tmp/cards.pdf", pages: [{ width_pt: 612, height_pt: 792 }], hash: "" }], 0);
 });
 afterEach(() => {
   cleanup();

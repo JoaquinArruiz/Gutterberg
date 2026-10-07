@@ -40,6 +40,13 @@ pub enum Error {
     NoDocument,
     #[error("malformed PDF: {0}")]
     Malformed(String),
+    #[error("this is not a valid Gutterberg project file")]
+    NotAProject,
+    #[error(
+        "this project was made with a newer version of Gutterberg (file version {found}, this \
+         version reads up to {supported}); please update"
+    )]
+    ProjectTooNew { found: u32, supported: u32 },
 }
 
 /// A value that goes with an error code (a page number, a size in mm, a detail text).
@@ -118,6 +125,14 @@ impl From<&Error> for ErrorInfo {
             Error::WorkerStopped => ("worker_stopped", vec![]),
             Error::NoDocument => ("no_document", vec![]),
             Error::Malformed(d) => ("malformed", vec![("detail", text(d))]),
+            Error::NotAProject => ("not_a_project", vec![]),
+            Error::ProjectTooNew { found, supported } => (
+                "project_too_new",
+                vec![
+                    ("found", ErrorParam::Number(*found as f64)),
+                    ("supported", ErrorParam::Number(*supported as f64)),
+                ],
+            ),
         };
         Self {
             code: code.into(),

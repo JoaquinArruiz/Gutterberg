@@ -1,7 +1,7 @@
 import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
-import type { OrientedRect } from "../lib/card";
+import type { DocumentId, OrientedRect } from "../lib/card";
 import { type CardEdits, editsAfterDelete, NO_EDITS } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
 import {
@@ -42,6 +42,9 @@ export const PAGE_PRESETS_MM = {
 
 type Margins = { top: number; right: number; bottom: number; left: number };
 
+/** Where the pieces of one PDF are: its page groups and the pieces drawn one by one. */
+export type DocLayout = { groups: PageGroup[]; freeform: FreeformCards };
+
 /** Settings that shape the output sheet. Global for now; they move to the Print stage in M13. */
 export type OutputSettings = {
   /** OUTPUT spacing between cards. */
@@ -57,6 +60,29 @@ export type OutputSettings = {
   margins: Margins;
 };
 
+export const DEFAULT_OUTPUT: OutputSettings = {
+  gapXMm: 3,
+  gapYMm: 3,
+  gapLinked: true,
+  pageMode: "same",
+  orientation: "portrait",
+  customWidthMm: 210,
+  customHeightMm: 297,
+  margins: { top: 0, right: 0, bottom: 0, left: 0 },
+};
+
+/** Just the output settings of any state that has them (a project file saves exactly these). */
+export const outputSettings = (s: OutputSettings): OutputSettings => ({
+  gapXMm: s.gapXMm,
+  gapYMm: s.gapYMm,
+  gapLinked: s.gapLinked,
+  pageMode: s.pageMode,
+  orientation: s.orientation,
+  customWidthMm: s.customWidthMm,
+  customHeightMm: s.customHeightMm,
+  margins: s.margins,
+});
+
 /**
  * The document layout (page groups) plus the output settings. Everything here is one
  * undo step per edit; the derived `result`/`snapshot`/`layoutError` and the session flag
@@ -70,6 +96,11 @@ type LayoutState = OutputSettings & {
   groups: PageGroup[];
   /** Cards drawn one by one (the card tool), by page. A page can have these and a grid. */
   freeform: FreeformCards;
+  /**
+   * The layouts of the project's other PDFs, by document id. The PDF being edited keeps its own in `groups`
+   * and `freeform`; switching swaps them, so every edit, drag and undo step works on one PDF at a time.
+   */
+  parked: Record<DocumentId, DocLayout>;
   /** Turn, scale and order the user gave the library's cards. */
   cardEdits: CardEdits;
   /** Live output preview for this session (initial value = Live Preview preference). */
@@ -82,6 +113,20 @@ type LayoutState = OutputSettings & {
   layoutError: AppError | null;
   /** A new document: one default group over all its pages, and no history. */
   resetDocument: (pageCount: number) => void;
+  /**
+   * Opens a whole project: the layout of the PDF being edited, the others parked, the output settings and
+   * the per-piece edits. No history.
+   */
+  loadProject: (project: {
+    active: DocLayout;
+    parked: Record<DocumentId, DocLayout>;
+    output: OutputSettings;
+    edits: CardEdits;
+  }) => void;
+  /** Adds the layout of a PDF that was just added to the project; it stays parked until it is edited. */
+  parkDocument: (id: DocumentId, layout: DocLayout) => void;
+  /** Edit the PDF `to` instead of `from`: `from`'s layout is parked and `to`'s is taken up. No history. */
+  switchDocument: (from: DocumentId, to: DocumentId) => void;
   setSelection: (page: number, r: NormalizedRect | null) => void;
   /** Adds a freeform card to `page`; returns its index there (its identity in the library). */
   addFreeformCard: (page: number, card: OrientedRect) => number;
@@ -128,8 +173,8 @@ export const HISTORY_LIMIT = 200;
 
 // Deleting a freeform card renumbers the ones after it. The copies and selection in the Print stage are
 // keyed by those numbers, so its store listens here and follows (undo does not bring them back).
-const deletedListeners = new Set<(page: number, index: number) => void>();
-export function onFreeformCardDeleted(fn: (page: number, index: number) => void): () => void {
+const deletedListeners = new Set<(documentId: DocumentId, page: number, index: number) => void>();
+export function onFreeformCardDeleted(fn: (documentId: DocumentId, page: number, index: number) => void): () => void {
   deletedListeners.add(fn);
   return () => {
     deletedListeners.delete(fn);
@@ -141,22 +186,30 @@ export const useLayoutStore = create<LayoutState>()(
     (set, get) => ({
       groups: [],
       freeform: {},
+      parked: {},
       cardEdits: NO_EDITS,
-      gapXMm: 3,
-      gapYMm: 3,
-      gapLinked: true,
-      pageMode: "same",
-      orientation: "portrait",
-      customWidthMm: 210,
-      customHeightMm: 297,
-      margins: { top: 0, right: 0, bottom: 0, left: 0 },
+      ...DEFAULT_OUTPUT,
       // Session state: starts from the Live Preview preference, toggling it does not change the preference.
       live: sessionDefaults(usePreferencesStore.getState().prefs).live,
       snapshot: null,
       result: null,
       layoutError: null,
       resetDocument: (pageCount) => {
-        set({ groups: defaultGroups(pageCount), freeform: {}, cardEdits: NO_EDITS });
+        set({ groups: defaultGroups(pageCount), freeform: {}, parked: {}, cardEdits: NO_EDITS });
+        useLayoutStore.temporal.getState().clear();
+      },
+      loadProject: ({ active, parked, output, edits }) => {
+        set({ ...output, groups: active.groups, freeform: active.freeform, parked, cardEdits: edits });
+        useLayoutStore.temporal.getState().clear();
+      },
+      parkDocument: (id, layout) => set((s) => ({ parked: { ...s.parked, [id]: layout } })),
+      switchDocument: (from, to) => {
+        if (from === to) return;
+        const { parked, groups, freeform } = get();
+        const target = parked[to];
+        if (!target) return;
+        const { [to]: _taken, ...rest } = parked;
+        set({ parked: { ...rest, [from]: { groups, freeform } }, groups: target.groups, freeform: target.freeform });
         useLayoutStore.temporal.getState().clear();
       },
       setSelection: (page, selection) => {
@@ -179,13 +232,14 @@ export const useLayoutStore = create<LayoutState>()(
         const own = get().freeform[page];
         if (!own?.[index]) return;
         const rest = own.filter((_, i) => i !== index);
+        const documentId = useDocumentStore.getState().activeId;
         set((s) => {
           const freeform = { ...s.freeform };
           if (rest.length > 0) freeform[page] = rest;
           else delete freeform[page];
-          return { freeform, cardEdits: editsAfterDelete(s.cardEdits, page, index) };
+          return { freeform, cardEdits: editsAfterDelete(s.cardEdits, documentId, page, index) };
         });
-        for (const fn of deletedListeners) fn(page, index);
+        for (const fn of deletedListeners) fn(documentId, page, index);
       },
       setCardEdits: (cardEdits) => set({ cardEdits }),
       setGrid: (page, patch) => {

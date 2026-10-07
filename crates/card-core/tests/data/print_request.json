@@ -1,48 +1,53 @@
 {
-  "groups": [
+  "documents": [
     {
-      "pages": {
-        "first": 0,
-        "last": 0
-      },
-      "kind": "skip"
-    },
-    {
-      "pages": {
-        "first": 1,
-        "last": 1
-      },
-      "kind": "grid",
-      "grid": {
-        "bounds": {
-          "x": 0.1,
-          "y": 0.2,
-          "width": 0.8,
-          "height": 0.3
+      "document_id": 0,
+      "groups": [
+        {
+          "pages": {
+            "first": 0,
+            "last": 0
+          },
+          "kind": "skip"
         },
-        "rows": 1,
-        "columns": 3,
-        "source_gap_x_mm": 0,
-        "source_gap_y_mm": 0,
-        "gap_x_mm": 3,
-        "gap_y_mm": 4,
-        "margin_top_mm": 1,
-        "margin_right_mm": 2,
-        "margin_bottom_mm": 3,
-        "margin_left_mm": 4,
-        "output_page": {
-          "width_pt": 595.2755905511812,
-          "height_pt": 841.8897637795276
+        {
+          "pages": {
+            "first": 1,
+            "last": 1
+          },
+          "kind": "grid",
+          "grid": {
+            "bounds": {
+              "x": 0.1,
+              "y": 0.2,
+              "width": 0.8,
+              "height": 0.3
+            },
+            "rows": 1,
+            "columns": 3,
+            "source_gap_x_mm": 0,
+            "source_gap_y_mm": 0,
+            "gap_x_mm": 3,
+            "gap_y_mm": 4,
+            "margin_top_mm": 1,
+            "margin_right_mm": 2,
+            "margin_bottom_mm": 3,
+            "margin_left_mm": 4,
+            "output_page": {
+              "width_pt": 595.2755905511812,
+              "height_pt": 841.8897637795276
+            },
+            "fit_page": false
+          }
         },
-        "fit_page": false
-      }
-    },
-    {
-      "pages": {
-        "first": 2,
-        "last": 2
-      },
-      "kind": "skip"
+        {
+          "pages": {
+            "first": 2,
+            "last": 2
+          },
+          "kind": "skip"
+        }
+      ]
     }
   ],
   "settings": [

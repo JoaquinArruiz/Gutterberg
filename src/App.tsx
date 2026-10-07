@@ -4,12 +4,14 @@ import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
 import { PrintStage } from "./components/print/PrintStage";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
+import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { resolveStartMode } from "./lib/preferences";
+import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
+import { useProjectTracking } from "./lib/project-state";
 import { applyTheme } from "./lib/theme";
 import { useLayoutSync } from "./lib/use-layout-sync";
-import { useNewDocument } from "./lib/use-new-document";
 import { usePrintSync } from "./lib/use-print-sync";
 import { zoomActions } from "./lib/zoom-actions";
 import { useDocumentStore } from "./stores/document-store";
@@ -21,7 +23,7 @@ import { useUiStore } from "./stores/ui-store";
 export default function App() {
   useLayoutSync();
   usePrintSync();
-  useNewDocument();
+  useProjectTracking();
   const stage = useUiStore((s) => s.stage);
 
   const theme = usePreferencesStore((s) => s.prefs.appearance.theme);
@@ -58,9 +60,20 @@ export default function App() {
         else undo();
         return;
       }
-      if (mod && e.key.toLowerCase() === "o") {
+      // File menu shortcuts. They work inside text fields too, as in any editor.
+      if (mod && key === "o") {
         e.preventDefault();
-        void doc.openDialog();
+        void (e.shiftKey ? openProjectDialog() : openPdfDialog());
+        return;
+      }
+      if (mod && key === "n") {
+        e.preventDefault();
+        void newProject();
+        return;
+      }
+      if (mod && key === "s") {
+        e.preventDefault();
+        void (e.shiftKey ? saveProjectAs() : saveProject());
         return;
       }
       // The single-key shortcuts drive the page editor (tools, zoom, paging): the Print stage has none.
@@ -120,6 +133,7 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <EditorToolbar />
+      <ProjectNotices />
       <div className="min-h-0 flex-1">
         {stage === "print" ? <PrintStage /> : <WorkspaceLayout editor={<EditorViewport />} />}
       </div>

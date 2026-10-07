@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M13, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
+M1–M14, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
@@ -11,7 +11,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M11](M11.md) | Document model: page include/skip, grid per page range, pre-flight, undo/redo | L | M10 |
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
 | [M13](M13.md) | Print stage UI: Source → Print switch, piece library, quantities, sheet preview | L | M9, M12 |
-| [M14](M14.md) | Project files, several PDFs and presets | M | M13 |
+| [M14](M14.md) | Project files, several PDFs and presets (done) | M | M13 |
 | [M15](M15.md) | Rename to Gutterberg, then distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (outline) | M | M12 |
 | [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
@@ -23,8 +23,8 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 \* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
   Don't start it or build anything for it unless asked.
 
-M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M14,
-M16, M17, M15. The numbers are names, not the order.
+M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M16,
+M17, M15. The numbers are names, not the order.
 
 ## Direction: Source → Print
 

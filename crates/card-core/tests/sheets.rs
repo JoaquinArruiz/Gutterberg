@@ -1076,7 +1076,9 @@ fn the_requests_the_frontend_sends_deserialise_and_plan() {
     // produces exactly this, so the two sides cannot drift apart unnoticed.
     let text = include_str!("data/print_request.json");
     let v: serde_json::Value = serde_json::from_str(text).unwrap();
-    let groups: Vec<PageGroup> = serde_json::from_value(v["groups"].clone()).unwrap();
+    let groups: Vec<PageGroup> =
+        serde_json::from_value(v["documents"][0]["groups"].clone()).unwrap();
+    assert_eq!(v["documents"][0]["document_id"], 0);
     let settings: Vec<CardSetting> = serde_json::from_value(v["settings"].clone()).unwrap();
     let layout: PrintLayout = serde_json::from_value(v["layout"].clone()).unwrap();
     let options: PaginateOptions = serde_json::from_value(v["options"].clone()).unwrap();
@@ -1405,7 +1407,9 @@ fn the_freeform_requests_the_frontend_sends_deserialise_and_plan() {
     // freeform pair first, one turned a quarter and one set to 63 mm wide, all on one shared grid.
     let text = include_str!("data/print_request_freeform.json");
     let v: serde_json::Value = serde_json::from_str(text).unwrap();
-    let groups: Vec<PageGroup> = serde_json::from_value(v["groups"].clone()).unwrap();
+    let groups: Vec<PageGroup> =
+        serde_json::from_value(v["documents"][0]["groups"].clone()).unwrap();
+    assert_eq!(v["documents"][0]["document_id"], 0);
     let settings: Vec<CardSetting> = serde_json::from_value(v["settings"].clone()).unwrap();
     let layout: PrintLayout = serde_json::from_value(v["layout"].clone()).unwrap();
     let options: PaginateOptions = serde_json::from_value(v["options"].clone()).unwrap();
