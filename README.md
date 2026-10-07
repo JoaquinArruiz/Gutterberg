@@ -19,6 +19,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
 - [x] **Milestone 12 – Sheet engine** (`extract_cards`, `paginate` with quantities, order, size groups, turn and scale, `export_sheets` from several PDFs, `compute_sheets`; Rust only)
 - [x] **Milestone 13 – Print stage** (Cards | Print switch, card library with copies per card, plan and auto-fill, sheet preview, collapsible inspector, export from the sheets)
+- [x] **Milestone 18 – Freeform cards** (card tool: one rectangle per card, movable, resizable and rotatable; straightened on export; turn, sort by dragging and real size per card in the Print stage; a page can have a grid and freeform cards)
 - [x] **Milestone 20 – Hint system** (catalog of help tips in `src/lib/hints.ts`, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride; first-PDF and Print-stage tours. The single tips for the magnifier, pan/zoom, source vs output gap and page groups are still to add)
 
 ## Architecture
@@ -83,13 +84,15 @@ pnpm tauri dev
 
 | Action | Input |
 | --- | --- |
-| Select / Pan tool | `V` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
+| Grid region / Card / Pan tool | `V` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
 | Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear |
+| Draw freeform cards (Card tool) | drag on the page for each card; drag a card to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked card; the Freeform cards section in the Cards sidebar has its angle and size |
 | Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
 | Cards \| Print | tabs in the toolbar. Print: card library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview (the sheet in front is always live) with a hideable row of sheet thumbnails (follows Live Preview, with a refresh button when it is off), and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
+| Turn, size and sort cards (Print stage) | card library: `R` / `Shift+R` turn the selection 90° right / left, "Make all portrait / landscape"; drag cards to reorder them (the sheets follow); the Selected cards section of the inspector sets a real size (e.g. 63 × 88 mm) or a percentage, and scaled cards carry a badge |
 | Skip a page / include it | checkbox on its thumbnail (skipped pages are left out of the export) |
 | Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
 | Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons; a whole drag is one step |

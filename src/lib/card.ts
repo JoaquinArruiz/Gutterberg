@@ -72,3 +72,13 @@ export function orientedBounds(r: OrientedRect): { x: number; y: number; width: 
   const height = r.width * sin + r.height * cos;
   return { x: r.center.x - width / 2, y: r.center.y - height / 2, width, height };
 }
+
+/**
+ * Width in px of the crop of a source's bounding box when the card is shown in a `boxW` x `boxH` px box
+ * (its final shape, after `turn`): the unturned card is as wide as the box's width, or its height for a
+ * quarter turn, and the crop is wider than the card by the bounding box's ratio.
+ */
+export function cropWidthPx(source: OrientedRect, turn: number, boxW: number, boxH: number): number {
+  const cardWidth = turn === 90 || turn === 270 ? boxH : boxW;
+  return (orientedBounds(source).width / source.width) * cardWidth;
+}

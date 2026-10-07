@@ -1,6 +1,6 @@
 import { useShallow } from "zustand/react/shallow";
 import { formatMeasurement } from "../../lib/measurement";
-import { effectiveGrid, MAX_SHEET_GRID, type SheetGridMode } from "../../lib/print-request";
+import { effectiveGrid, MAX_SHEET_GRID, plannerRequired, type SheetGridMode } from "../../lib/print-request";
 import { ptToMm } from "../../lib/units";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
@@ -9,6 +9,7 @@ import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
 import { OutputPageFields, OutputSpacingFields } from "./OutputFields";
+import { SelectedCardsSection } from "./SelectedCardsSection";
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
@@ -72,12 +73,16 @@ export function PrintInspector() {
       setOrientation: s.setOrientation,
     })),
   );
+  const rawCards = usePrintStore((s) => s.cards);
+  const edits = useLayoutStore((s) => s.cardEdits);
   const unit = useUnit();
   const fmt = (mm: number) => formatMeasurement(mm, unit);
 
-  const grid = effectiveGrid(P);
+  // Freeform, turned, resized or reordered cards need the card planner, which "same as source" is not.
+  const planner = plannerRequired(rawCards, edits);
+  const grid = effectiveGrid(P, planner);
   // "Same as source" is the default plan only: one sheet per source page with its own grid.
-  const sameAvailable = P.mode === "all" && !P.autoFill;
+  const sameAvailable = P.mode === "all" && !P.autoFill && !planner;
   const sourceLayout = grid === "same";
   const first = P.sheets?.[0];
 
@@ -103,6 +108,8 @@ export function PrintInspector() {
           </div>
         </div>
       )}
+
+      <SelectedCardsSection />
 
       <CollapsibleSection id="print.plan" title="Plan">
         <Radio
@@ -180,7 +187,8 @@ export function PrintInspector() {
         </div>
         {!sameAvailable && P.sheetGrid === "same" && (
           <p className="text-[var(--muted)]">
-            "Same as source" is for all cards in order, without auto-fill. Auto is used instead.
+            "Same as source" is for all cards in order, as the page has them: no auto-fill, and no freeform, turned,
+            resized or reordered cards. Auto is used instead.
           </p>
         )}
         {grid === "custom" && (

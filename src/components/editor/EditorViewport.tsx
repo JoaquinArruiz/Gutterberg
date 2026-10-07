@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { OrientedRect } from "../../lib/card";
 import {
   type NormalizedRect,
   type Point,
@@ -7,7 +8,9 @@ import {
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
-import { type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
+import { drawCard, isTooSmall, moveCard, resizeCard, rotateCardTo } from "../../lib/freeform";
+import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
+import type { PageSize } from "../../lib/tauri";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
@@ -20,6 +23,8 @@ import {
   useCurrentGroup,
   useLayoutStore,
 } from "../../stores/layout-store";
+import { HintToast } from "../ui/HintToast";
+import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
 import { MAG, Magnifier } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
@@ -32,7 +37,15 @@ type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
   | { kind: "create"; anchor: Point }
   | { kind: "move"; start: Point; rect: NormalizedRect }
-  | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect; fine?: boolean };
+  | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect; fine?: boolean }
+  // The card tool: `index` is null until a drawn card is big enough to exist.
+  | { kind: "card-create"; anchor: Point; index: number | null }
+  | { kind: "card-move"; index: number; start: Point; rect: OrientedRect }
+  | { kind: "card-resize"; index: number; handle: Handle; start: Point; rect: OrientedRect; fine?: boolean }
+  | { kind: "card-rotate"; index: number; rect: OrientedRect };
+
+const NO_CARDS: OrientedRect[] = [];
+const isHandle = (hit: string | undefined): hit is Handle => HANDLES.includes(hit as Handle);
 
 /** Press-and-hold on a handle for this long to open the magnifier. */
 const HOLD_MS = 350;
@@ -48,6 +61,8 @@ export function EditorViewport() {
   const loading = useDocumentStore((s) => s.loading);
   const viewport = useEditorStore((s) => s.viewport);
   const tool = useEditorStore((s) => s.tool);
+  const selectedCard = useEditorStore((s) => s.selectedCard);
+  const freeform = useLayoutStore((s) => s.freeform[currentPage]) ?? NO_CARDS;
   const group = useCurrentGridGroup();
   const skipped = useCurrentGroup()?.kind === "skip";
   const selection = group?.selection ?? null;
@@ -151,6 +166,38 @@ export function EditorViewport() {
   };
 
   const panMode = output || tool === "pan" || spaceDown;
+  // The card tool edits freeform cards; skipped pages are left out of the export, so they take none.
+  const cardTool = tool === "card" && !output && !skipped && !panMode;
+  const picked = selectedCard?.page === currentPage ? selectedCard.index : null;
+  const pickedCard = picked === null ? null : (freeform[picked] ?? null);
+
+  /** A handle was pressed: prefetch the magnifier, and open it if the pointer stays put for a moment. */
+  const startHold = (handle: Handle, p: Point, pg: PageSize) => {
+    lastPointer.current = p;
+    setLoupe({ handle, active: false });
+    endHold();
+    hold.current = {
+      origin: p,
+      timer: window.setTimeout(() => {
+        hold.current = null;
+        const d = drag.current;
+        if (d?.kind !== "resize" && d?.kind !== "card-resize") return;
+        const cur = useEditorStore.getState();
+        const start = screenToDocument(lastPointer.current, cur.viewport, pg);
+        // Rebase the drag here so the handle doesn't jump, then slow it down.
+        if (d.kind === "resize") {
+          const rect = getCurrentSelection();
+          if (!rect) return;
+          drag.current = { kind: "resize", handle: d.handle, fine: true, start, rect };
+        } else {
+          const rect = useLayoutStore.getState().freeform[currentPage]?.[d.index];
+          if (!rect) return;
+          drag.current = { kind: "card-resize", index: d.index, handle: d.handle, fine: true, start, rect };
+        }
+        setLoupe({ handle: d.handle, active: true });
+      }, HOLD_MS),
+    };
+  };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page) return;
@@ -167,9 +214,34 @@ export function EditorViewport() {
       setPanning(true);
       return;
     }
-    if (e.button !== 0 || !group) return; // a skipped page has no region to edit
+    if (e.button !== 0) return;
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
+    if (cardTool) {
+      const L = useLayoutStore.getState();
+      const own = L.freeform[currentPage] ?? NO_CARDS;
+      const index = Number((e.target as SVGElement).dataset.card);
+      const card = own[index];
+      const select = (i: number | null) => ed.setSelectedCard(i === null ? null : { page: currentPage, index: i });
+      beginEdit(); // the whole drag is one undo step
+      if (card && hit === "rotate") {
+        select(index);
+        drag.current = { kind: "card-rotate", index, rect: card };
+      } else if (card && isHandle(hit)) {
+        select(index);
+        drag.current = { kind: "card-resize", index, handle: hit, start: doc, rect: card };
+        startHold(hit, p, page);
+      } else if (card && hit === "card") {
+        select(index);
+        drag.current = { kind: "card-move", index, start: doc, rect: card };
+      } else {
+        // Dragging on empty page draws a new card; a bare click only drops the selection.
+        select(null);
+        drag.current = { kind: "card-create", anchor: doc, index: null };
+      }
+      return;
+    }
+    if (!group) return; // a skipped page has no region to edit
     const current = getCurrentSelection();
     beginEdit(); // the whole drag is one undo step
     if (hit && current) {
@@ -177,32 +249,7 @@ export function EditorViewport() {
         hit === "body"
           ? { kind: "move", start: doc, rect: current }
           : { kind: "resize", handle: hit as Handle, start: doc, rect: current };
-      if (hit !== "body") {
-        const handle = hit as Handle;
-        lastPointer.current = p;
-        setLoupe({ handle, active: false });
-        endHold();
-        hold.current = {
-          origin: p,
-          timer: window.setTimeout(() => {
-            hold.current = null;
-            const d = drag.current;
-            if (d?.kind !== "resize") return;
-            const cur = useEditorStore.getState();
-            const rect = getCurrentSelection();
-            if (!rect) return;
-            // Rebase the drag here so the handle doesn't jump, then slow it down.
-            drag.current = {
-              kind: "resize",
-              handle: d.handle,
-              fine: true,
-              start: screenToDocument(lastPointer.current, cur.viewport, page),
-              rect,
-            };
-            setLoupe({ handle: d.handle, active: true });
-          }, HOLD_MS),
-        };
-      }
+      if (hit !== "body") startHold(hit as Handle, p, page);
     } else {
       // Starting a new rectangle replaces the old one (so a bare click clears it).
       setCurrentSelection(null);
@@ -215,7 +262,7 @@ export function EditorViewport() {
     if (!d && page && !panMode) {
       // Hovering a handle starts rendering the magnifier crop, so it is ready when the hold fires.
       const hit = (e.target as SVGElement).dataset.hit;
-      const handle = hit && hit !== "body" ? (hit as Handle) : null;
+      const handle = isHandle(hit) ? hit : null;
       setLoupe((cur) => (cur?.handle === handle ? cur : handle ? { handle, active: false } : null));
     }
     if (!d || !page) return;
@@ -231,6 +278,32 @@ export function EditorViewport() {
       return;
     }
     const doc = screenToDocument(p, ed.viewport, page);
+    if (d.kind === "card-create") {
+      const L = useLayoutStore.getState();
+      const card = drawCard(d.anchor, doc, page);
+      if (d.index !== null) L.updateFreeformCard(currentPage, d.index, card);
+      else if (!isTooSmall(card, page)) {
+        d.index = L.addFreeformCard(currentPage, card);
+        ed.setSelectedCard({ page: currentPage, index: d.index });
+      }
+      return;
+    }
+    if (d.kind === "card-move" || d.kind === "card-resize" || d.kind === "card-rotate") {
+      const L = useLayoutStore.getState();
+      if (d.kind === "card-move")
+        L.updateFreeformCard(currentPage, d.index, moveCard(d.rect, doc.x - d.start.x, doc.y - d.start.y));
+      else if (d.kind === "card-rotate")
+        L.updateFreeformCard(currentPage, d.index, rotateCardTo(d.rect, doc, page, e.shiftKey));
+      else {
+        const k = d.fine ? 1 / MAG : 1;
+        L.updateFreeformCard(
+          currentPage,
+          d.index,
+          resizeCard(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k, page),
+        );
+      }
+      return;
+    }
     if (d.kind === "create") setCurrentSelection(rectFromPoints(d.anchor, doc));
     else if (d.kind === "move") setCurrentSelection(moveRect(d.rect, doc.x - d.start.x, doc.y - d.start.y));
     else {
@@ -245,6 +318,14 @@ export function EditorViewport() {
     setPanning(false);
     endHold();
     setLoupe(null);
+    if (d?.kind === "card-create" && d.index !== null && page) {
+      // Shrunk back to nothing before letting go: not a card after all.
+      const card = useLayoutStore.getState().freeform[currentPage]?.[d.index];
+      if (card && isTooSmall(card, page)) {
+        useLayoutStore.getState().deleteFreeformCard(currentPage, d.index);
+        useEditorStore.getState().setSelectedCard(null);
+      }
+    }
     if (d?.kind === "create") {
       const s = getCurrentSelection();
       // A plain click (no real drag) clears the selection.
@@ -295,9 +376,23 @@ export function EditorViewport() {
               {!output && selection && gridSpec && (
                 <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
               )}
-              {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
+              {!output && selScreen && (
+                // In the card tool the grid region is only a backdrop: it must not catch the pointer.
+                <g pointerEvents={tool === "card" ? "none" : undefined}>
+                  <SelectionRect screen={selScreen} movable={!panMode && tool !== "card"} />
+                </g>
+              )}
+              {!output && freeform.length > 0 && (
+                <FreeformOverlay
+                  cards={freeform}
+                  selected={picked}
+                  viewport={viewport}
+                  page={page}
+                  interactive={cardTool}
+                />
+              )}
             </svg>
-            {!output && loupe && selection && gridSpec && (
+            {!output && loupe && !cardTool && selection && gridSpec && (
               <Magnifier
                 handle={loupe.handle}
                 active={loupe.active}
@@ -306,6 +401,22 @@ export function EditorViewport() {
                 pageRect={pageRect}
                 box={box}
                 grid={gridSpec}
+              />
+            )}
+            {!output && loupe && cardTool && pickedCard && (
+              <Magnifier
+                handle={loupe.handle}
+                active={loupe.active}
+                card={pickedCard}
+                page={page}
+                pageRect={pageRect}
+                box={box}
+              />
+            )}
+            {cardTool && (
+              <HintToast
+                hint="freeform-tool"
+                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
               />
             )}
             {!output && skipped && (

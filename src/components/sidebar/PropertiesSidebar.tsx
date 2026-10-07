@@ -12,6 +12,7 @@ import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
+import { FreeformSection } from "./FreeformSection";
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
@@ -134,6 +135,8 @@ export function PropertiesSidebar() {
           </CollapsibleSection>
         </>
       )}
+
+      {group?.kind !== "skip" && <FreeformSection />}
 
       <CollapsibleSection id="cards.output" title="Output">
         <p className="text-[var(--muted)]">

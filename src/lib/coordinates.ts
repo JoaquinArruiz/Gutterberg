@@ -100,6 +100,17 @@ export function orientedToPoints(r: OrientedRect, page: PageSize): OrientedRect 
   };
 }
 
+/** An oriented rect held normalized -> screen px: centre, size and angle, ready to draw rotated about its centre. */
+export function orientedToScreen(r: OrientedRect, vp: ViewportState, page: PageSize): OrientedRect {
+  const p = pageScreenRect(vp, page);
+  return {
+    center: { x: p.x + r.center.x * p.width, y: p.y + r.center.y * p.height },
+    width: r.width * p.width,
+    height: r.height * p.height,
+    angle_deg: r.angle_deg,
+  };
+}
+
 export function orientedFromPoints(r: OrientedRect, page: PageSize): OrientedRect {
   return {
     center: { x: r.center.x / page.width_pt, y: r.center.y / page.height_pt },

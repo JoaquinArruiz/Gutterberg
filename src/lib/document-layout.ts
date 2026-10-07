@@ -38,12 +38,14 @@ export const DEFAULT_GROUP_GRID: GroupGrid = {
 export type GridGroup = { kind: "grid"; pages: PageRange; grid: GroupGrid; selection: NormalizedRect | null };
 /** Pages left out of the export. */
 export type SkipGroup = { kind: "skip"; pages: PageRange };
+export type PageGroup = GridGroup | SkipGroup;
+
 /**
- * Pages whose cards are drawn one by one (M18), each an oriented rect normalized to the page.
- * Reserved: nothing creates it yet, and export treats it as not supported.
+ * Cards drawn one by one (M18), by page: each an oriented rect normalized to the page. They sit beside
+ * the groups, not in them, so a page can have a grid and freeform cards. Pages that are skipped keep
+ * their cards but leave them out of the export.
  */
-export type FreeformGroup = { kind: "freeform"; pages: PageRange; cards: OrientedRect[] };
-export type PageGroup = GridGroup | SkipGroup | FreeformGroup;
+export type FreeformCards = Record<number, OrientedRect[]>;
 
 export const pageCount = (r: PageRange) => r.last - r.first + 1;
 
@@ -203,14 +205,21 @@ export function clampRange(first: number, last: number, totalPages: number): Pag
 
 /**
  * Short label for a thumbnail whose page belongs to a different group than the viewed one:
- * the grid ("3×3"), "No region" until one is drawn, or "Skipped". Null for the viewed group.
+ * the grid ("3×3"), "No region" until one is drawn, or "Skipped", plus the freeform cards the page
+ * has ("3×3 + 2", "2 cards"). Null for the viewed group.
  */
-export function pageBadge(groups: PageGroup[], page: number, viewed: number): string | null {
+export function pageBadge(
+  groups: PageGroup[],
+  page: number,
+  viewed: number,
+  freeform: FreeformCards = {},
+): string | null {
   const g = groupAt(groups, page);
   if (!g || g === groupAt(groups, viewed)) return null;
   if (g.kind === "skip") return "Skipped";
-  if (g.kind === "freeform") return "Freeform";
-  return g.selection ? `${g.grid.rows}×${g.grid.columns}` : "No region";
+  const own = freeform[page]?.length ?? 0;
+  if (!g.selection) return own > 0 ? `${own} card${own === 1 ? "" : "s"}` : "No region";
+  return `${g.grid.rows}×${g.grid.columns}${own > 0 ? ` + ${own}` : ""}`;
 }
 
 export type GridPatch = Partial<GroupGrid>;

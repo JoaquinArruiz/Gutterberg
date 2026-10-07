@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { cardIdKey } from "../lib/card";
+import { keyAfterDelete, remapRecord } from "../lib/card-edits";
 import { emitHintEvent } from "../lib/hint-events";
 import {
   adjustQuantity,
@@ -20,6 +21,7 @@ import {
   type SheetGridMode,
 } from "../lib/print-request";
 import type { Card, OutputSheet } from "../lib/sheet-api";
+import { onFreeformCardDeleted } from "./layout-store";
 
 const grid = (n: number) => Math.min(Math.max(Math.round(Number.isFinite(n) ? n : 1), 1), MAX_SHEET_GRID);
 
@@ -118,6 +120,15 @@ export const usePrintStore = create<PrintState>((set) => ({
   beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
   reset: () => set({ ...initial }),
 }));
+
+// A freeform card was deleted and the later ones renumbered: their copies and selection move with them.
+onFreeformCardDeleted((page, index) =>
+  usePrintStore.setState((s) => {
+    const kept = s.selection.selected.flatMap((k) => keyAfterDelete(k, page, index) ?? []);
+    const anchor = s.selection.anchor === null ? null : keyAfterDelete(s.selection.anchor, page, index);
+    return { quantities: remapRecord(s.quantities, page, index), selection: { selected: kept, anchor } };
+  }),
+);
 
 /** The plan part of the state, for building a request. */
 export const planOf = (s: PrintState): PrintPlan => ({

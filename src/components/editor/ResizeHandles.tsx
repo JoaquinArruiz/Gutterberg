@@ -24,14 +24,15 @@ const CURSOR: Record<Handle, string> = {
   w: "ew-resize",
 };
 
-/** `screen` is the selection in screen px. */
-export function ResizeHandles({ screen }: { screen: Rect }) {
+/** `screen` is the selection in screen px. `card` marks the handles of a freeform card with its index. */
+export function ResizeHandles({ screen, card }: { screen: Rect; card?: number }) {
   return (
     <>
       {HANDLES.map((h) => (
         <rect
           key={h}
           data-hit={h}
+          data-card={card}
           x={screen.x + POS[h][0] * screen.width - SIZE / 2}
           y={screen.y + POS[h][1] * screen.height - SIZE / 2}
           width={SIZE}

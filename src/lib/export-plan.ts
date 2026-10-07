@@ -1,7 +1,7 @@
 // Turns the document layout into what the exporter takes: one PageJob per included page.
 
 import { gridPayload, type OutputSettings } from "../stores/layout-store";
-import type { PageGroup } from "./document-layout";
+import type { FreeformCards, PageGroup } from "./document-layout";
 import type { PageIssue, PageJob } from "./tauri";
 
 export type ExportPlan = {
@@ -11,16 +11,27 @@ export type ExportPlan = {
   issues: PageIssue[];
 };
 
-export function buildExportPlan(groups: PageGroup[], settings: OutputSettings): ExportPlan {
+/**
+ * The Cards stage re-spaces grids only. Freeform cards are printed from the Print stage, so a page that
+ * has nothing but freeform cards is reported rather than silently exported empty.
+ */
+export function buildExportPlan(
+  groups: PageGroup[],
+  settings: OutputSettings,
+  freeform: FreeformCards = {},
+): ExportPlan {
   const jobs: PageJob[] = [];
   const issues: PageIssue[] = [];
   for (const g of groups) {
     for (let page = g.pages.first; page <= g.pages.last; page++) {
       if (g.kind === "skip") continue;
-      if (g.kind === "freeform") {
-        issues.push({ page_index: page, message: "pages with freeform cards cannot be exported yet" });
-      } else if (!g.selection) {
-        issues.push({ page_index: page, message: "no card region is selected" });
+      if (!g.selection) {
+        const own = freeform[page]?.length ?? 0;
+        issues.push({
+          page_index: page,
+          message:
+            own > 0 ? "this page has only freeform cards: print it from the Print stage" : "no card region is selected",
+        });
       } else {
         jobs.push({ page_index: page, grid: gridPayload(g.selection, g.grid, settings) });
       }

@@ -124,3 +124,105 @@ fn every_turn_shows_the_card_turned_clockwise_and_clipped() {
         }
     }
 }
+
+#[test]
+fn a_tilted_freeform_card_comes_out_straight_and_clipped_whichever_way_it_is_turned() {
+    use card_core::card::OrientedRect;
+    use card_core::geometry::Point;
+    use card_core::sheet::Card;
+    use card_core::units::mm_to_pt;
+
+    let Ok(pdfium) = bind_pdfium(&[]) else {
+        assert!(
+            std::env::var_os("CI").is_none(),
+            "pdfium not available in CI"
+        );
+        eprintln!("SKIPPED pdfium render: pdfium not available (set PDFIUM_LIB_PATH)");
+        return;
+    };
+    let dir = std::env::temp_dir().join(format!("card-core-tilted-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let page = page_size(&sample_pdf(), 0).unwrap();
+    let src = dir.join("src.pdf");
+    sample_pdf().save(&src).unwrap();
+    let render = |path: &std::path::Path| {
+        let png = render_page_png(&pdfium, path, 0, (page.width_pt * 2.0).round() as u32).unwrap();
+        image::load_from_memory(&png).unwrap().to_rgba8()
+    };
+    let before = render(&src);
+    let scale = before.width() as f64 / page.width_pt;
+
+    // A 40 x 60 mm card drawn at 8 degrees on the middle card (plain fill outside its circle).
+    let (w, h, angle) = (mm_to_pt(40.0), mm_to_pt(60.0), 8.0_f64);
+    let source = OrientedRect {
+        center: Point {
+            x: page.width_pt / 2.0,
+            y: page.height_pt / 2.0,
+        },
+        width: w,
+        height: h,
+        angle_deg: angle,
+    };
+    let id = CardId::Freeform {
+        document_id: DEFAULT_DOCUMENT_ID,
+        page_index: 0,
+        index: 0,
+    };
+    // Four points inside the card, near its corners, in its own frame (centre origin, y down).
+    let local = [(-0.4, -0.4), (0.4, -0.4), (0.4, 0.4), (-0.4, 0.4)].map(|(a, b)| (a * w, b * h));
+    let (sin, cos) = angle.to_radians().sin_cos();
+    let spec = SheetSpec {
+        page: SheetPage::Size(page),
+        rows: None,
+        columns: None,
+        gap_x_mm: 0.0,
+        gap_y_mm: 0.0,
+        margins: Margins::default(),
+    };
+
+    for turn in [Turn::R0, Turn::R180] {
+        let mut card = Card::new(id, source);
+        card.turn = turn;
+        let sheet = paginate(&[(card, 1)], &spec, &PaginateOptions::default())
+            .unwrap()
+            .remove(0);
+        let d = sheet.placements[0].destination;
+        let (cx, cy) = (d.x + d.width / 2.0, d.y + d.height / 2.0);
+        let out_path = dir.join(format!("out-{}.pdf", turn.degrees()));
+        export_sheets(vec![(DEFAULT_DOCUMENT_ID, sample_pdf())], &[sheet])
+            .unwrap()
+            .save(&out_path)
+            .unwrap();
+        let after = render(&out_path);
+
+        for (u, v) in local {
+            // Where that point of the card is on the source page (rotated by the drawn angle)...
+            let (sx, sy) = (
+                source.center.x + u * cos - v * sin,
+                source.center.y + u * sin + v * cos,
+            );
+            let want = rgb_at(&before, sx * scale, sy * scale);
+            assert_ne!(want, [255, 255, 255]);
+            // ...and on the sheet: straight, so just its offset from the centre, flipped for 180.
+            let (ox, oy) = if turn == Turn::R180 { (-u, -v) } else { (u, v) };
+            let got = rgb_at(&after, (cx + ox) * scale, (cy + oy) * scale);
+            assert!(
+                near(got, want),
+                "turn {turn:?} at ({u:.1}, {v:.1}): {got:?} is not {want:?}"
+            );
+        }
+        // Cut to the card: just outside its straight box is blank page, not the rest of the source.
+        for (ox, oy) in [
+            (-w / 2.0 - 4.0, 0.0),
+            (w / 2.0 + 4.0, 0.0),
+            (0.0, -h / 2.0 - 4.0),
+            (0.0, h / 2.0 + 4.0),
+        ] {
+            let c = rgb_at(&after, (cx + ox) * scale, (cy + oy) * scale);
+            assert!(
+                near(c, [255, 255, 255]),
+                "turn {turn:?}: {c:?} outside the card"
+            );
+        }
+    }
+}

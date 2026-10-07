@@ -304,7 +304,11 @@ describe("Sheet preview", () => {
     render(<SheetPreview />);
     await act(async () => {});
     const imgs = Array.from(screen.getByTestId("sheet-page").querySelectorAll("img"));
-    expect(imgs.map((i) => i.style.transform)).toEqual(["", "rotate(90deg)"]);
+    // The turn is on the card layer around the picture, which is also rotated back by the source angle.
+    expect(imgs.map((i) => i.parentElement?.style.transform)).toEqual([
+      "translate(-50%, -50%) rotate(0deg)",
+      "translate(-50%, -50%) rotate(90deg)",
+    ]);
   });
 
   it("says when nothing is planned, and shows an engine error", () => {

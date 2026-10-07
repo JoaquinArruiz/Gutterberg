@@ -1,4 +1,6 @@
+import type { OrientedRect } from "../../lib/card";
 import type { NormalizedRect, Rect, Size } from "../../lib/coordinates";
+import { cardCorners, handlePosition } from "../../lib/freeform";
 import { cardRects, type GridSpec } from "../../lib/grid";
 import { type Handle, handlePoint } from "../../lib/selection";
 import type { PageSize } from "../../lib/tauri";
@@ -38,6 +40,11 @@ function edgesPath(r: NormalizedRect, toLoupe: (x: number, y: number) => { x: nu
   return d;
 }
 
+/** A freeform card's outline as one closed path in loupe px, drawn solid (a long dashed line is needlessly costly). */
+function outlinePath(corners: { x: number; y: number }[], toLoupe: (x: number, y: number) => { x: number; y: number }) {
+  return `${corners.map((c, i) => `${i === 0 ? "M" : "L"}${toLoupe(c.x, c.y).x.toFixed(1)} ${toLoupe(c.x, c.y).y.toFixed(1)}`).join("")}Z`;
+}
+
 /**
  * Zoomed view around the held handle. Rendered (invisibly) as soon as a handle
  * is pressed so the sharp raster is ready by the time the hold timer fires.
@@ -47,14 +54,18 @@ export function Magnifier({
   handle,
   selection,
   grid,
+  card,
   page,
   pageRect,
   box,
   active,
 }: {
   handle: Handle;
-  selection: NormalizedRect;
-  grid: GridSpec;
+  /** The grid region being resized (the grid tool)... */
+  selection?: NormalizedRect;
+  grid?: GridSpec;
+  /** ...or the freeform card being resized (the card tool), whose handles turn with it. */
+  card?: OrientedRect;
   page: PageSize;
   pageRect: Rect;
   box: Size;
@@ -65,7 +76,7 @@ export function Magnifier({
   const dpr = window.devicePixelRatio || 1;
   const W = pageRect.width * MAG;
   const H = pageRect.height * MAG;
-  const f = handlePoint(selection, handle);
+  const f = card ? handlePosition(card, handle, page) : handlePoint(selection as NormalizedRect, handle);
   // Only a small crop around the handle is rendered (at ×MAG), not the whole page.
   const img = useRegionImage({
     docKey: path,
@@ -93,7 +104,7 @@ export function Magnifier({
     x: LOUPE / 2 + (nx - f.x) * W,
     y: LOUPE / 2 + (ny - f.y) * H,
   });
-  const cards = cardRects(selection, grid, page);
+  const cards = !card && selection && grid ? cardRects(selection, grid, page) : [];
 
   return (
     <div
@@ -117,6 +128,14 @@ export function Magnifier({
         />
       )}
       <svg aria-hidden="true" className="absolute inset-0" width={LOUPE} height={LOUPE}>
+        {card && (
+          <path
+            d={outlinePath(cardCorners(card, page), toLoupe)}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth={1.5}
+          />
+        )}
         <path
           d={cards.map((c) => edgesPath(c, toLoupe)).join("")}
           fill="none"
@@ -125,7 +144,7 @@ export function Magnifier({
           strokeDasharray="4 3"
           strokeOpacity={0.8}
         />
-        <path d={edgesPath(selection, toLoupe)} fill="none" stroke="var(--accent)" strokeWidth={1.5} />
+        {selection && <path d={edgesPath(selection, toLoupe)} fill="none" stroke="var(--accent)" strokeWidth={1.5} />}
       </svg>
       {/* Crosshair on the exact point being moved. */}
       <div

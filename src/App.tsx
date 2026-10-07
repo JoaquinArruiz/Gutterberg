@@ -71,9 +71,27 @@ export default function App() {
         case "V":
           ed.setTool("select");
           break;
+        case "c":
+        case "C":
+          ed.setTool("card");
+          break;
         case "h":
         case "H":
           ed.setTool("pan");
+          break;
+        case "Delete":
+        case "Backspace": {
+          // Deletes the freeform card being edited.
+          const picked = ed.selectedCard;
+          if (ed.tool === "card" && picked?.page === doc.currentPage) {
+            e.preventDefault();
+            useLayoutStore.getState().deleteFreeformCard(picked.page, picked.index);
+            ed.setSelectedCard(null);
+          }
+          break;
+        }
+        case "Escape":
+          ed.setSelectedCard(null);
           break;
         case "+":
         case "=":

@@ -14,6 +14,7 @@ use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::{calculate_fitting_layout, source_cards, LayoutResult};
 use crate::units::{mm_to_pt, pt_to_mm};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Sizes closer than this (mm, on both sides) count as the same size when grouping.
 pub const SIZE_TOLERANCE_MM: f64 = 0.5;
@@ -113,7 +114,8 @@ impl Card {
     }
 }
 
-/// Per-card choices made by the user; cards without one are printed once, unturned and unscaled.
+/// Per-card choices made by the user; cards without one are printed once, unturned and unscaled,
+/// after the cards that have one. The order of the list is the order cards are printed in.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct CardSetting {
     pub id: CardId,
@@ -540,17 +542,27 @@ pub fn plan_sheets(
     spec: &SheetSpec,
     options: &PaginateOptions,
 ) -> Result<Vec<OutputSheet>> {
-    let cards: Vec<(Card, usize)> = extract_cards(document_id, pages, groups)?
+    // Cards with a setting come first, in the order the settings list them (the user's own
+    // order); the rest follow in page order with one copy each.
+    let mut extracted: Vec<Option<Card>> = extract_cards(document_id, pages, groups)?
         .into_iter()
-        .map(|mut card| match settings.iter().find(|s| s.id == card.id) {
-            Some(s) => {
-                card.turn = s.turn;
-                card.scale = s.scale;
-                (card, s.quantity)
-            }
-            None => (card, 1),
-        })
+        .map(Some)
         .collect();
+    let position: HashMap<CardId, usize> = extracted
+        .iter()
+        .enumerate()
+        .filter_map(|(i, c)| c.as_ref().map(|c| (c.id, i)))
+        .collect();
+    let mut cards: Vec<(Card, usize)> = Vec::with_capacity(extracted.len());
+    for s in settings {
+        // An unknown card, or one listed twice, is skipped.
+        if let Some(mut card) = position.get(&s.id).and_then(|&i| extracted[i].take()) {
+            card.turn = s.turn;
+            card.scale = s.scale;
+            cards.push((card, s.quantity));
+        }
+    }
+    cards.extend(extracted.into_iter().flatten().map(|card| (card, 1)));
     let spec = match spec.page {
         SheetPage::SameAsSource => {
             // The first card that is actually printed decides the page size.

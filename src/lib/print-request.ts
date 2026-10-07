@@ -3,8 +3,9 @@
 
 import { gridPayload, type OutputSettings, outputPage } from "../stores/layout-store";
 import { cardIdKey } from "./card";
+import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
 import { orientedToPoints } from "./coordinates";
-import type { PageGroup } from "./document-layout";
+import type { FreeformCards, PageGroup } from "./document-layout";
 import type {
   Card,
   CardSetting,
@@ -49,35 +50,68 @@ export const DEFAULT_PLAN: PrintPlan = {
 export const MAX_QUANTITY = 99;
 export const MAX_SHEET_GRID = 30;
 
-/** Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out. */
-export function toRustGroups(groups: PageGroup[], pages: PageSize[], output: OutputSettings): RustGroup[] {
+/**
+ * Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out.
+ * A page's freeform cards become a one-page freeform group right after that page's grid cards, so
+ * the cards come out in page order.
+ */
+export function toRustGroups(
+  groups: PageGroup[],
+  pages: PageSize[],
+  output: OutputSettings,
+  freeform: FreeformCards = {},
+): RustGroup[] {
   const out: RustGroup[] = [];
   for (const g of groups) {
-    if (g.kind === "skip") out.push({ pages: g.pages, kind: "skip" });
-    else if (g.kind === "grid") {
-      if (g.selection) out.push({ pages: g.pages, kind: "grid", grid: gridPayload(g.selection, g.grid, output) });
-    } else {
-      const page = pages[g.pages.first];
-      if (page) out.push({ pages: g.pages, kind: "freeform", cards: g.cards.map((c) => orientedToPoints(c, page)) });
+    if (g.kind === "skip") {
+      out.push({ pages: g.pages, kind: "skip" });
+      continue;
     }
+    const grid = g.selection ? gridPayload(g.selection, g.grid, output) : null;
+    let start = g.pages.first;
+    const flush = (end: number) => {
+      if (grid && end >= start) out.push({ pages: { first: start, last: end }, kind: "grid", grid });
+    };
+    for (let p = g.pages.first; p <= g.pages.last; p++) {
+      const own = freeform[p];
+      const size = pages[p];
+      if (!own?.length || !size) continue;
+      flush(p);
+      out.push({
+        pages: { first: p, last: p },
+        kind: "freeform",
+        cards: own.map((c) => orientedToPoints(c, size)),
+      });
+      start = p + 1;
+    }
+    flush(g.pages.last);
   }
   return out;
 }
 
+/** Whether the plan needs the card planner: freeform cards, or cards turned, resized or reordered. */
+export const plannerRequired = (cards: Card[], edits: CardEdits): boolean =>
+  cards.some((c) => c.id.kind === "freeform") || hasCardEdits(cards, edits);
+
 /**
  * The sheet grid the plan really uses. "Same as source" is the default plan only (every card
- * once, in order, each source page on its own sheet), so any other plan falls back to Auto.
+ * once, in order, each source page on its own sheet), so any other plan falls back to Auto. `planner`
+ * is true when cards are freeform, turned, resized or reordered (`plannerRequired`).
  */
-export function effectiveGrid(plan: PrintPlan): SheetGridMode {
-  return plan.sheetGrid === "same" && (plan.mode !== "all" || plan.autoFill) ? "auto" : plan.sheetGrid;
+export function effectiveGrid(plan: PrintPlan, planner = false): SheetGridMode {
+  return plan.sheetGrid === "same" && (plan.mode !== "all" || plan.autoFill || planner) ? "auto" : plan.sheetGrid;
 }
 
-/** The per-card settings the planner needs: in custom mode a quantity for every card (0 = not printed). */
-export function planSettings(plan: PrintPlan, cards: Card[]): CardSetting[] {
-  if (plan.mode === "all") return [];
+/**
+ * The per-card settings the planner needs, in print order: in custom mode a quantity for every card (0 =
+ * not printed); in "all cards" mode none, unless cards are turned, resized or reordered (`edited`), when
+ * every card is listed once. `cards` carry the user's turn, scale and order (`applyEdits`).
+ */
+export function planSettings(plan: PrintPlan, cards: Card[], edited = false): CardSetting[] {
+  if (plan.mode === "all" && !edited) return [];
   return cards.map((c) => ({
     id: c.id,
-    quantity: plan.quantities[cardIdKey(c.id)] ?? 0,
+    quantity: plan.mode === "all" ? 1 : (plan.quantities[cardIdKey(c.id)] ?? 0),
     turn: c.turn,
     scale: c.scale,
   }));
@@ -96,8 +130,13 @@ export function buildPrintRequest(
   groups: PageGroup[],
   pages: PageSize[],
   output: OutputSettings,
+  doc: { freeform?: FreeformCards; edits?: CardEdits } = {},
 ): PrintRequest {
-  const grid = effectiveGrid(plan);
+  // `cards` are the engine's, in page order; the user's turns, scales and order are applied here.
+  const edits = doc.edits ?? NO_EDITS;
+  const ordered = applyEdits(cards, edits);
+  const edited = hasCardEdits(cards, edits);
+  const grid = effectiveGrid(plan, plannerRequired(cards, edits));
   const layout: PrintLayoutPayload =
     grid === "same"
       ? { kind: "same_as_source" }
@@ -122,7 +161,12 @@ export function buildPrintRequest(
     group_by_size: plan.groupBySize,
     auto_fill: plan.autoFill,
   };
-  return { groups: toRustGroups(groups, pages, output), settings: planSettings(plan, cards), layout, options };
+  return {
+    groups: toRustGroups(groups, pages, output, doc.freeform),
+    settings: planSettings(plan, ordered, edited),
+    layout,
+    options,
+  };
 }
 
 /** How many copies the plan asks for (not counting auto-fill), for the summary line. */

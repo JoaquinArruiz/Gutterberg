@@ -19,7 +19,7 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
     s.groups.some((g) => g.kind === "skip" && g.pages.first <= index && index <= g.pages.last),
   );
   // A different group than the viewed page's: say which, so sections are easy to tell apart.
-  const badge = useLayoutStore((s) => pageBadge(s.groups, index, viewed));
+  const badge = useLayoutStore((s) => pageBadge(s.groups, index, viewed, s.freeform));
   const setSkipped = useLayoutStore((s) => s.setSkipped);
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);

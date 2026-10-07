@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CardIdSchema,
   cardIdKey,
+  cropWidthPx,
   DEFAULT_DOCUMENT_ID,
   freeformCardId,
   gridCardId,
@@ -75,5 +76,25 @@ describe("orientedBounds", () => {
     expect(b.height).toBeGreaterThan(30);
     expect(b.x + b.width / 2).toBeCloseTo(50, 9);
     expect(b.y + b.height / 2).toBeCloseTo(40, 9);
+  });
+});
+
+describe("cropWidthPx", () => {
+  const upright = { center: { x: 0, y: 0 }, width: 100, height: 200, angle_deg: 0 };
+  const tilted = { ...upright, angle_deg: 10 };
+
+  it("is the card's width when it is not tilted", () => {
+    expect(cropWidthPx(upright, 0, 50, 100)).toBeCloseTo(50);
+    expect(cropWidthPx(upright, 180, 50, 100)).toBeCloseTo(50);
+  });
+
+  it("is the box's height for a quarter turn, where the card's width lies along it", () => {
+    expect(cropWidthPx(upright, 90, 100, 50)).toBeCloseTo(50);
+  });
+
+  it("is wider than the card by the bounding box's ratio when tilted", () => {
+    const ratio = orientedBounds(tilted).width / tilted.width;
+    expect(ratio).toBeGreaterThan(1);
+    expect(cropWidthPx(tilted, 0, 50, 100)).toBeCloseTo(50 * ratio);
   });
 });

@@ -1,10 +1,12 @@
-import { Minus, Plus } from "lucide-react";
+import { Minus, Plus, RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { cardIdKey } from "../../lib/card";
+import { moveCards, orientCards, turnCards } from "../../lib/card-edits";
 import { rangeLabel } from "../../lib/document-layout";
 import { commonQuantity, filterCards } from "../../lib/library";
 import { MAX_QUANTITY } from "../../lib/print-request";
+import { useLibraryCards } from "../../lib/use-library-cards";
 import { cellWidth, gridColumns, rowCount, visibleRows } from "../../lib/virtual-grid";
 import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -12,6 +14,7 @@ import { usePrintStore } from "../../stores/print-store";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
 import { CardThumb } from "./CardThumb";
+import { useCardDrag } from "./use-card-drag";
 
 const GAP = 6;
 const CELL_MIN = 84;
@@ -33,7 +36,6 @@ export function CardLibrary() {
   const groups = useLayoutStore((s) => s.groups);
   const P = usePrintStore(
     useShallow((s) => ({
-      cards: s.cards,
       cardsError: s.cardsError,
       filter: s.filter,
       selection: s.selection,
@@ -48,7 +50,12 @@ export function CardLibrary() {
     })),
   );
 
-  const shown = useMemo(() => filterCards(P.cards, groups, P.filter), [P.cards, groups, P.filter]);
+  // The cards as they print: the engine's, with the user's turn, scale and order applied.
+  const cards = useLibraryCards();
+  const cardCount = usePrintStore((s) => s.cards.length);
+  const edits = useLayoutStore((s) => s.cardEdits);
+  const setEdits = useLayoutStore((s) => s.setCardEdits);
+  const shown = useMemo(() => filterCards(cards, groups, P.filter), [cards, groups, P.filter]);
   const keys = useMemo(() => shown.map((c) => cardIdKey(c.id)), [shown]);
   const selected = useMemo(() => new Set(P.selection.selected), [P.selection.selected]);
 
@@ -88,6 +95,26 @@ export function CardLibrary() {
   const pageCount = useDocumentStore((s) => s.pages.length);
 
   const picked = P.selection.selected;
+  const turn = (delta: number) => picked.length > 0 && setEdits(turnCards(edits, cards, picked, delta));
+  const orient = (to: "portrait" | "landscape") => picked.length > 0 && setEdits(orientCards(edits, cards, picked, to));
+  const sort = useCardDrag({
+    scrollRef: ref,
+    selected: picked,
+    onDrop: (keys, target, after) => setEdits(moveCards(edits, cards, keys, target, after)),
+  });
+
+  // R turns the selected cards a quarter turn clockwise, Shift+R counter-clockwise.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName);
+      if (typing || e.ctrlKey || e.metaKey || e.altKey || e.key.toLowerCase() !== "r") return;
+      e.preventDefault();
+      turn(e.shiftKey ? -90 : 90);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   const copies = P.mode === "custom" ? commonQuantity(P.quantities, picked) : null;
   const allMode = P.mode === "all";
 
@@ -174,6 +201,47 @@ export function CardLibrary() {
             <Plus size={12} />
           </button>
         </div>
+        <div className="flex flex-wrap items-center gap-1.5" data-testid="card-turn">
+          <span className="text-[var(--muted)]">Turn</span>
+          <button
+            type="button"
+            className={smallBtn}
+            aria-label="Turn left"
+            title="Turn the selected cards 90° counter-clockwise (Shift+R)"
+            disabled={picked.length === 0}
+            onClick={() => turn(-90)}
+          >
+            <RotateCcw size={12} />
+          </button>
+          <button
+            type="button"
+            className={smallBtn}
+            aria-label="Turn right"
+            title="Turn the selected cards 90° clockwise (R)"
+            disabled={picked.length === 0}
+            onClick={() => turn(90)}
+          >
+            <RotateCw size={12} />
+          </button>
+          <button
+            type="button"
+            className={smallBtn}
+            title="Turn the selected cards that are wider than tall, so they are all portrait"
+            disabled={picked.length === 0}
+            onClick={() => orient("portrait")}
+          >
+            Make all portrait
+          </button>
+          <button
+            type="button"
+            className={smallBtn}
+            title="Turn the selected cards that are taller than wide, so they are all landscape"
+            disabled={picked.length === 0}
+            onClick={() => orient("landscape")}
+          >
+            Make all landscape
+          </button>
+        </div>
         <p className="text-[var(--muted)]">
           {allMode
             ? "Every card prints once. Change the copies of a card to print a custom selection."
@@ -189,7 +257,7 @@ export function CardLibrary() {
       >
         {P.cardsError ? (
           <p className="p-3 text-red-400">{P.cardsError}</p>
-        ) : P.cards.length === 0 ? (
+        ) : cardCount === 0 ? (
           <Empty>No cards yet. Draw the card region on a page in the Cards stage.</Empty>
         ) : shown.length === 0 ? (
           <Empty>No cards match this filter.</Empty>
@@ -207,9 +275,13 @@ export function CardLibrary() {
                       height={height}
                       selected={selected.has(key)}
                       copies={allMode ? null : (P.quantities[key] ?? 0)}
-                      onClick={(e) =>
-                        P.clickCard(key, keys, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "none")
-                      }
+                      dragging={sort.drag?.keys.includes(key)}
+                      dropMark={sort.drag?.target?.key === key ? (sort.drag.target.after ? "after" : "before") : null}
+                      onPointerDown={(e) => sort.onPointerDown(key, e)}
+                      onClick={(e) => {
+                        if (sort.wasDrag()) return;
+                        P.clickCard(key, keys, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "none");
+                      }}
                     />
                   );
                 })}

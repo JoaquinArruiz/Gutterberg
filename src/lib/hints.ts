@@ -92,6 +92,14 @@ export const HINTS = {
       },
     ],
   },
+  "freeform-tool": {
+    steps: [
+      {
+        title: "One card at a time",
+        text: "Drag on the page to draw a card, and click a card to edit it: drag its body to move it, its handles to resize it and the dot above it to rotate it (Shift snaps to 15°). These cards are printed from the Print stage.",
+      },
+    ],
+  },
   "live-preview-output": {
     steps: [
       {

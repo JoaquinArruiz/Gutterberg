@@ -4,6 +4,7 @@ import {
   Hand,
   Maximize,
   MousePointer2,
+  RectangleVertical,
   Redo2,
   Settings,
   Undo2,
@@ -31,7 +32,8 @@ import { type Stage, useUiStore } from "../../stores/ui-store";
 import { PanelsMenu } from "../workspace/PanelsMenu";
 
 const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
-  { id: "select", label: "Select", key: "V", Icon: MousePointer2 },
+  { id: "select", label: "Grid region", key: "V", Icon: MousePointer2 },
+  { id: "card", label: "Card", key: "C", Icon: RectangleVertical },
   { id: "pan", label: "Pan", key: "H", Icon: Hand },
 ];
 
@@ -64,7 +66,7 @@ export function EditorToolbar() {
   /** Cards stage: every included page with its own grid, as before. */
   const exportCards = async (source: string) => {
     const state = useLayoutStore.getState();
-    const plan = buildExportPlan(state.groups, state);
+    const plan = buildExportPlan(state.groups, state, state.freeform);
     if (plan.jobs.length === 0 && plan.issues.length === 0) {
       setStatus({ ok: false, text: "Every page is skipped. Include at least one page to export." });
       return;
@@ -89,7 +91,17 @@ export function EditorToolbar() {
       setStatus({ ok: false, text: "Nothing to print yet. Choose cards and give them copies." });
       return;
     }
-    const req = buildPrintRequest(planOf(print), print.cards, layout.groups, useDocumentStore.getState().pages, layout);
+    const req = buildPrintRequest(
+      planOf(print),
+      print.cards,
+      layout.groups,
+      useDocumentStore.getState().pages,
+      layout,
+      {
+        freeform: layout.freeform,
+        edits: layout.cardEdits,
+      },
+    );
     try {
       const found = await validatePrint(req);
       if (found.length > 0) {

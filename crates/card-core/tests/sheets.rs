@@ -1219,3 +1219,246 @@ mod print_examples {
         assert!(sheets.is_empty());
     }
 }
+
+fn setting(id: CardId, quantity: usize, turn: Turn, scale: f64) -> CardSetting {
+    CardSetting {
+        id,
+        quantity,
+        turn,
+        scale,
+    }
+}
+
+fn grid_id(page_index: usize, row: usize, column: usize) -> CardId {
+    CardId::Grid {
+        document_id: 0,
+        page_index,
+        row,
+        column,
+    }
+}
+
+fn free_id(page_index: usize, index: usize) -> CardId {
+    CardId::Freeform {
+        document_id: 0,
+        page_index,
+        index,
+    }
+}
+
+#[test]
+fn the_order_of_the_settings_is_the_order_of_the_sheets() {
+    let groups = [grid_group(0, 0, sample_grid(0.0))];
+    let spec = SheetSpec {
+        rows: Some(3),
+        columns: Some(3),
+        ..a4_sheet()
+    };
+    // The user moved card 8 and card 2 to the front; the rest keep page order after them.
+    let settings = [
+        setting(grid_id(0, 2, 2), 1, Turn::R0, 1.0),
+        setting(grid_id(0, 0, 2), 1, Turn::R0, 1.0),
+    ];
+    let sheets = plan_sheets(
+        0,
+        &[A4],
+        &groups,
+        &settings,
+        &spec,
+        &PaginateOptions::default(),
+    )
+    .unwrap();
+    let cols: Vec<_> = sheets[0]
+        .placements
+        .iter()
+        .map(|p| match p.card_id {
+            CardId::Grid { row, column, .. } => row * 3 + column,
+            CardId::Freeform { .. } => unreachable!(),
+        })
+        .collect();
+    assert_eq!(cols, vec![8, 2, 0, 1, 3, 4, 5, 6, 7]);
+
+    // A card listed twice, or one that does not exist, changes nothing.
+    let noisy = [
+        settings[0],
+        settings[0],
+        setting(grid_id(0, 9, 9), 5, Turn::R0, 1.0),
+    ];
+    let sheets = plan_sheets(
+        0,
+        &[A4],
+        &groups,
+        &noisy,
+        &spec,
+        &PaginateOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(sheets[0].placements.len(), 9);
+}
+
+#[test]
+fn a_grid_and_freeform_cards_can_share_a_page() {
+    // A 3x3 grid plus one odd-sized card below it, on the same page.
+    let odd = OrientedRect {
+        center: Point { x: 300.0, y: 700.0 },
+        width: mm_to_pt(60.0),
+        height: mm_to_pt(90.0),
+        angle_deg: -4.0,
+    };
+    let groups = [
+        grid_group(0, 0, sample_grid(0.0)),
+        PageGroup {
+            pages: PageRange { first: 0, last: 0 },
+            kind: PageGroupKind::Freeform { cards: vec![odd] },
+        },
+    ];
+    let cards = extract_cards(0, &[A4], &groups).unwrap();
+    assert_eq!(cards.len(), 10);
+    assert_eq!(cards[9].id, free_id(0, 0));
+    assert_eq!(cards[9].source.angle_deg, -4.0);
+    let ids: std::collections::HashSet<_> = cards.iter().map(|c| c.id).collect();
+    assert_eq!(ids.len(), 10);
+}
+
+/// Where the four corners of `source` land on the sheet, top-left first.
+fn landed(p: &card_core::sheet::SheetPlacement) -> [Point; 4] {
+    let t = card_transform(&p.source, p.scale, p.turn, &p.destination);
+    p.source.corners().map(|c| t.apply(c))
+}
+
+#[test]
+fn tilted_cards_of_three_sizes_come_out_straight_facing_the_same_way_at_their_size() {
+    let card_at = |center: (f64, f64), w_mm: f64, h_mm: f64, angle_deg: f64| OrientedRect {
+        center: Point {
+            x: center.0,
+            y: center.1,
+        },
+        width: mm_to_pt(w_mm),
+        height: mm_to_pt(h_mm),
+        angle_deg,
+    };
+    let drawn = vec![
+        card_at((150.0, 150.0), 63.0, 88.0, 7.0),
+        card_at((400.0, 160.0), 64.0, 89.4, -3.5),
+        card_at((150.0, 450.0), 45.0, 70.0, 2.0),
+        // Scanned upside down: drawn at 180 degrees (the right way up once straightened).
+        card_at((400.0, 460.0), 63.0, 88.0, 180.0),
+    ];
+    let groups = [PageGroup {
+        pages: PageRange { first: 0, last: 0 },
+        kind: PageGroupKind::Freeform {
+            cards: drawn.clone(),
+        },
+    }];
+    let spec = SheetSpec {
+        gap_x_mm: 2.0,
+        gap_y_mm: 2.0,
+        ..a4_sheet()
+    };
+    let opts = PaginateOptions {
+        group_by_size: false,
+        ..PaginateOptions::default()
+    };
+    // The 64 x 89.4 mm card is set to a real size of 63 x 88 mm.
+    let scale = 63.0 / 64.0;
+    let settings: Vec<_> = (0..4)
+        .map(|i| setting(free_id(0, i), 1, Turn::R0, if i == 1 { scale } else { 1.0 }))
+        .collect();
+    let sheets = plan_sheets(0, &[A4], &groups, &settings, &spec, &opts).unwrap();
+    assert_eq!(sheets.len(), 1);
+    assert_eq!(sheets[0].placements.len(), 4);
+    for p in &sheets[0].placements {
+        let i = match p.card_id {
+            CardId::Freeform { index, .. } => index,
+            CardId::Grid { .. } => unreachable!(),
+        };
+        let src = drawn[i];
+        let [tl, tr, br, bl] = landed(p);
+        // Straight: the edges are horizontal and vertical.
+        assert!(
+            (tl.y - tr.y).abs() < 1e-6 && (tl.x - bl.x).abs() < 1e-6,
+            "card {i}"
+        );
+        assert!(
+            (br.y - bl.y).abs() < 1e-6 && (br.x - tr.x).abs() < 1e-6,
+            "card {i}"
+        );
+        // At the source size (times its scale), and the first corner stays on top-left, so the
+        // upside-down scan is turned the right way round by undoing its own angle.
+        let s = if i == 1 { scale } else { 1.0 };
+        close(tr.x - tl.x, src.width * s);
+        close(bl.y - tl.y, src.height * s);
+        assert!(tr.x > tl.x && bl.y > tl.y, "card {i} faces the same way");
+    }
+    // The re-sized card measures 63 x 88 mm.
+    let p = &sheets[0].placements[1];
+    let (w, h) = (p.source.width * p.scale, p.source.height * p.scale);
+    assert!((pt_to_mm(w) - 63.0).abs() < 0.01, "{}", pt_to_mm(w));
+    assert!((pt_to_mm(h) - 88.0).abs() < 0.01, "{}", pt_to_mm(h));
+}
+
+#[test]
+fn the_freeform_requests_the_frontend_sends_deserialise_and_plan() {
+    use card_core::sheet::PrintLayout;
+    // Written by the frontend's request builder (src/lib/print-request-freeform.test.ts checks it
+    // still produces exactly this): a 1 x 2 grid and two tilted freeform cards on one page, the
+    // freeform pair first, one turned a quarter and one set to 63 mm wide, all on one shared grid.
+    let text = include_str!("data/print_request_freeform.json");
+    let v: serde_json::Value = serde_json::from_str(text).unwrap();
+    let groups: Vec<PageGroup> = serde_json::from_value(v["groups"].clone()).unwrap();
+    let settings: Vec<CardSetting> = serde_json::from_value(v["settings"].clone()).unwrap();
+    let layout: PrintLayout = serde_json::from_value(v["layout"].clone()).unwrap();
+    let options: PaginateOptions = serde_json::from_value(v["options"].clone()).unwrap();
+
+    // The library: the page's grid cards, then its freeform cards, all on page 0.
+    let cards = extract_cards(0, &[A4], &groups).unwrap();
+    let ids: Vec<_> = cards.iter().map(|c| c.id).collect();
+    assert_eq!(
+        ids,
+        [
+            grid_id(0, 0, 0),
+            grid_id(0, 0, 1),
+            free_id(0, 0),
+            free_id(0, 1)
+        ]
+    );
+    assert_eq!(cards[2].source.angle_deg, 7.0);
+
+    // The plan follows the settings' order, with each card's own turn and scale.
+    let sheets =
+        card_core::sheet::plan_print(0, &[A4], &groups, &settings, &layout, &options).unwrap();
+    assert_eq!(sheets.len(), 1);
+    let ps = &sheets[0].placements;
+    assert_eq!(
+        ps.iter().map(|p| p.card_id).collect::<Vec<_>>(),
+        [
+            free_id(0, 1),
+            free_id(0, 0),
+            grid_id(0, 0, 0),
+            grid_id(0, 0, 1)
+        ]
+    );
+    assert_eq!(ps[0].turn, Turn::R90);
+    assert_eq!((ps[1].turn, ps[1].scale), (Turn::R0, 63.0 / 64.0));
+    // The re-sized card is 63 mm wide on the sheet; the turned one is as tall as it was wide.
+    // (The page and card sizes come through the frontend rounded to a few decimals.)
+    assert!((ps[1].destination.width - mm_to_pt(63.0)).abs() < 1e-3);
+    assert!((ps[0].destination.height - ps[0].source.width).abs() < 1e-3);
+    // Straight on the sheet whatever the angle it was drawn at: the four corners make an upright
+    // rectangle (a turn only changes which corner comes first).
+    for p in ps {
+        let corners = landed(p);
+        let (x0, x1) = (
+            corners[0].x.min(corners[2].x),
+            corners[0].x.max(corners[2].x),
+        );
+        let (y0, y1) = (
+            corners[0].y.min(corners[2].y),
+            corners[0].y.max(corners[2].y),
+        );
+        for c in corners {
+            assert!((c.x - x0).abs() < 1e-6 || (c.x - x1).abs() < 1e-6);
+            assert!((c.y - y0).abs() < 1e-6 || (c.y - y1).abs() < 1e-6);
+        }
+    }
+}

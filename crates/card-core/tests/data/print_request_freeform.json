@@ -1,0 +1,79 @@
+{
+  "groups": [
+    {
+      "grid": {
+        "bounds": { "height": 0.2, "width": 0.6, "x": 0.1, "y": 0.1 },
+        "columns": 2,
+        "fit_page": false,
+        "gap_x_mm": 2,
+        "gap_y_mm": 2,
+        "margin_bottom_mm": 5,
+        "margin_left_mm": 5,
+        "margin_right_mm": 5,
+        "margin_top_mm": 5,
+        "output_page": { "height_pt": 841.8897637795276, "width_pt": 595.2755905511812 },
+        "rows": 1,
+        "source_gap_x_mm": 0,
+        "source_gap_y_mm": 0
+      },
+      "kind": "grid",
+      "pages": { "first": 0, "last": 0 }
+    },
+    {
+      "cards": [
+        {
+          "angle_deg": 7,
+          "center": { "x": 178.58268, "y": 505.13388 },
+          "height": 253.41733373737375,
+          "width": 181.41732571428574
+        },
+        {
+          "angle_deg": -3.5,
+          "center": { "x": 416.69292, "y": 505.13388 },
+          "height": 249.4488296296296,
+          "width": 178.58268
+        }
+      ],
+      "kind": "freeform",
+      "pages": { "first": 0, "last": 0 }
+    }
+  ],
+  "layout": {
+    "kind": "grid",
+    "spec": {
+      "columns": null,
+      "gap_x_mm": 2,
+      "gap_y_mm": 2,
+      "margins": { "bottom_mm": 5, "left_mm": 5, "right_mm": 5, "top_mm": 5 },
+      "page": { "height_pt": 841.8897637795276, "kind": "size", "width_pt": 595.2755905511812 },
+      "rows": null
+    }
+  },
+  "options": { "auto_fill": false, "group_by_size": false, "order": "grouped" },
+  "settings": [
+    {
+      "id": { "document_id": 0, "index": 1, "kind": "freeform", "page_index": 0 },
+      "quantity": 1,
+      "scale": 1,
+      "turn": 90
+    },
+    {
+      "id": { "document_id": 0, "index": 0, "kind": "freeform", "page_index": 0 },
+      "quantity": 1,
+      "scale": 0.984375,
+      "turn": 0
+    },
+    {
+      "id": { "column": 0, "document_id": 0, "kind": "grid", "page_index": 0, "row": 0 },
+      "quantity": 1,
+      "scale": 1,
+      "turn": 0
+    },
+    {
+      "id": { "column": 1, "document_id": 0, "kind": "grid", "page_index": 0, "row": 0 },
+      "quantity": 1,
+      "scale": 1,
+      "turn": 0
+    }
+  ]
+}

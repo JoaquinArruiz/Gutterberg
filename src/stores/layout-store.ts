@@ -1,10 +1,13 @@
 import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
+import type { OrientedRect } from "../lib/card";
+import { type CardEdits, editsAfterDelete, NO_EDITS } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
 import {
   applyGridTo,
   defaultGroups,
+  type FreeformCards,
   type GridPatch,
   gridGroupAt,
   groupAt,
@@ -64,6 +67,10 @@ export type OutputSettings = {
 type LayoutState = OutputSettings & {
   /** Page groups covering every page, in order. See `lib/document-layout.ts`. */
   groups: PageGroup[];
+  /** Cards drawn one by one (the card tool), by page. A page can have these and a grid. */
+  freeform: FreeformCards;
+  /** Turn, scale and order the user gave the library's cards. */
+  cardEdits: CardEdits;
   /** Live output preview for this session (initial value = Live Preview preference). */
   live: boolean;
   /** Result frozen by "Update preview" (manual mode). */
@@ -75,6 +82,12 @@ type LayoutState = OutputSettings & {
   /** A new document: one default group over all its pages, and no history. */
   resetDocument: (pageCount: number) => void;
   setSelection: (page: number, r: NormalizedRect | null) => void;
+  /** Adds a freeform card to `page`; returns its index there (its identity in the library). */
+  addFreeformCard: (page: number, card: OrientedRect) => number;
+  updateFreeformCard: (page: number, index: number, card: OrientedRect) => void;
+  /** Removes a freeform card; later cards move up, and their turn, scale and place in the order with them. */
+  deleteFreeformCard: (page: number, index: number) => void;
+  setCardEdits: (edits: CardEdits) => void;
   setGrid: (page: number, patch: GridPatch) => void;
   setSkipped: (page: number, skip: boolean) => void;
   /** Copy the grid and region of `page`'s group onto `pages`. */
@@ -93,10 +106,12 @@ type LayoutState = OutputSettings & {
 };
 
 /** The part of the state that undo/redo records and restores. */
-type Undoable = OutputSettings & { groups: PageGroup[] };
+type Undoable = OutputSettings & { groups: PageGroup[]; freeform: FreeformCards; cardEdits: CardEdits };
 
 const undoable = (s: LayoutState): Undoable => ({
   groups: s.groups,
+  freeform: s.freeform,
+  cardEdits: s.cardEdits,
   gapXMm: s.gapXMm,
   gapYMm: s.gapYMm,
   gapLinked: s.gapLinked,
@@ -109,10 +124,22 @@ const undoable = (s: LayoutState): Undoable => ({
 
 export const HISTORY_LIMIT = 200;
 
+// Deleting a freeform card renumbers the ones after it. The copies and selection in the Print stage are
+// keyed by those numbers, so its store listens here and follows (undo does not bring them back).
+const deletedListeners = new Set<(page: number, index: number) => void>();
+export function onFreeformCardDeleted(fn: (page: number, index: number) => void): () => void {
+  deletedListeners.add(fn);
+  return () => {
+    deletedListeners.delete(fn);
+  };
+}
+
 export const useLayoutStore = create<LayoutState>()(
   temporal(
     (set, get) => ({
       groups: [],
+      freeform: {},
+      cardEdits: NO_EDITS,
       gapXMm: 3,
       gapYMm: 3,
       gapLinked: true,
@@ -127,7 +154,7 @@ export const useLayoutStore = create<LayoutState>()(
       result: null,
       layoutError: null,
       resetDocument: (pageCount) => {
-        set({ groups: defaultGroups(pageCount) });
+        set({ groups: defaultGroups(pageCount), freeform: {}, cardEdits: NO_EDITS });
         useLayoutStore.temporal.getState().clear();
       },
       setSelection: (page, selection) => {
@@ -135,6 +162,30 @@ export const useLayoutStore = create<LayoutState>()(
         set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection })) }));
         if (created) emitHintEvent("selection-created");
       },
+      addFreeformCard: (page, card) => {
+        const index = get().freeform[page]?.length ?? 0;
+        set((s) => ({ freeform: { ...s.freeform, [page]: [...(s.freeform[page] ?? []), card] } }));
+        return index;
+      },
+      updateFreeformCard: (page, index, card) =>
+        set((s) => {
+          const own = s.freeform[page];
+          if (!own?.[index]) return s;
+          return { freeform: { ...s.freeform, [page]: own.map((c, i) => (i === index ? card : c)) } };
+        }),
+      deleteFreeformCard: (page, index) => {
+        const own = get().freeform[page];
+        if (!own?.[index]) return;
+        const rest = own.filter((_, i) => i !== index);
+        set((s) => {
+          const freeform = { ...s.freeform };
+          if (rest.length > 0) freeform[page] = rest;
+          else delete freeform[page];
+          return { freeform, cardEdits: editsAfterDelete(s.cardEdits, page, index) };
+        });
+        for (const fn of deletedListeners) fn(page, index);
+      },
+      setCardEdits: (cardEdits) => set({ cardEdits }),
       setGrid: (page, patch) => {
         set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) }));
         emitHintEvent("grid-changed");

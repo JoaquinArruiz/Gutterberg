@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
 import fixtureText from "../../crates/card-core/tests/data/print_request.json?raw";
 import type { OutputSettings } from "../stores/layout-store";
-import { cardIdKey, gridCardId } from "./card";
+import { cardIdKey, freeformCardId, gridCardId } from "./card";
 import { defaultGroups, type PageGroup, setSkipped, updateGridGroup } from "./document-layout";
 import {
   buildPrintRequest,
   DEFAULT_PLAN,
   effectiveGrid,
   type PrintPlan,
+  plannerRequired,
   planSettings,
   requestedCopies,
   toRustGroups,
@@ -37,6 +38,7 @@ const card = (page: number, column: number): Card => ({
   turn: 0,
 });
 const cards = [card(1, 0), card(1, 1), card(1, 2)];
+const card1 = { center: { x: 0.5, y: 0.5 }, width: 0.1, height: 0.2, angle_deg: 5 };
 const groups = setSkipped(
   updateGridGroup(defaultGroups(3), 0, (g) => ({ ...g, selection: sel })),
   0,
@@ -57,16 +59,74 @@ describe("toRustGroups", () => {
   });
 
   it("converts freeform cards from the page's normalized units to points", () => {
-    const freeform = [
-      {
-        kind: "freeform" as const,
-        pages: { first: 2, last: 2 },
-        cards: [{ center: { x: 0.5, y: 0.5 }, width: 0.1, height: 0.2, angle_deg: 5 }],
-      },
-    ];
-    const [g] = toRustGroups(freeform, pages, output);
-    if (g.kind !== "freeform") throw new Error("not freeform");
+    const own = { 2: [{ center: { x: 0.5, y: 0.5 }, width: 0.1, height: 0.2, angle_deg: 5 }] };
+    const g = toRustGroups(defaultGroups(3), pages, output, own).find((x) => x.kind === "freeform");
+    if (g?.kind !== "freeform") throw new Error("not freeform");
+    expect(g.pages).toEqual({ first: 2, last: 2 });
     expect(g.cards[0]).toEqual({ center: { x: 297.5, y: 421 }, width: 59.5, height: 168.4, angle_deg: 5 });
+  });
+
+  it("puts a page's freeform cards right after its grid cards, so cards stay in page order", () => {
+    const own = { 2: [card1], 1: [card1] };
+    const out = toRustGroups(groups, pages, output, own);
+    // Pages 1 and 2 share one grid, split around the pages that have freeform cards.
+    expect(out.map((g) => [g.kind, g.pages.first, g.pages.last])).toEqual([
+      ["skip", 0, 0],
+      ["grid", 1, 1],
+      ["freeform", 1, 1],
+      ["grid", 2, 2],
+      ["freeform", 2, 2],
+    ]);
+  });
+
+  it("keeps freeform cards of a page with no grid region, and drops those of a skipped page", () => {
+    const own = { 0: [card1], 2: [card1] };
+    const out = toRustGroups(groups, pages, output, own);
+    expect(out.filter((g) => g.kind === "freeform").map((g) => g.pages.first)).toEqual([2]);
+    const onlyFree = toRustGroups(defaultGroups(3), pages, output, { 1: [card1] });
+    expect(onlyFree.map((g) => g.kind)).toEqual(["freeform"]);
+  });
+});
+
+describe("cards the user turned, resized or reordered", () => {
+  const key = (i: number) => cardIdKey(cards[i].id);
+
+  it("lists every card in the user's order with its turn and scale, even in 'all cards' mode", () => {
+    const edits = { turns: { [key(0)]: 90 as const }, scales: { [key(2)]: 0.98 }, order: [key(2), key(0), key(1)] };
+    const req = buildPrintRequest(plan(), cards, groups, pages, output, { edits });
+    expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity, s.turn, s.scale])).toEqual([
+      [key(2), 1, 0, 0.98],
+      [key(0), 1, 90, 1],
+      [key(1), 1, 0, 1],
+    ]);
+    // The planner has to lay out cards that differ, so "same as source" gives way to Auto.
+    expect(req.layout.kind).toBe("grid");
+  });
+
+  it("keeps the order in custom mode too, with the quantities attached to the right cards", () => {
+    const p = plan({ mode: "custom", quantities: { [key(0)]: 2, [key(1)]: 3 } });
+    const edits = { turns: {}, scales: {}, order: [key(1), key(0)] };
+    const req = buildPrintRequest(p, cards, groups, pages, output, { edits });
+    expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity])).toEqual([
+      [key(1), 3],
+      [key(0), 2],
+      [key(2), 0],
+    ]);
+  });
+
+  it("changes nothing when no card is edited", () => {
+    const plain = buildPrintRequest(plan(), cards, groups, pages, output);
+    expect(
+      buildPrintRequest(plan(), cards, groups, pages, output, { edits: { turns: {}, scales: {}, order: [] } }),
+    ).toEqual(plain);
+    expect(plain.layout).toEqual({ kind: "same_as_source" });
+  });
+
+  it("needs the planner for freeform cards, which 'same as source' would drop", () => {
+    const withFreeform = [...cards, { ...cards[0], id: freeformCardId(0, 1, 0) }];
+    expect(plannerRequired(cards, { turns: {}, scales: {}, order: [] })).toBe(false);
+    expect(plannerRequired(withFreeform, { turns: {}, scales: {}, order: [] })).toBe(true);
+    expect(effectiveGrid(plan(), true)).toBe("auto");
   });
 });
 

@@ -15,6 +15,8 @@ export function usePrintSync() {
   const active = useUiStore((s) => s.stage === "print");
   const pages = useDocumentStore((s) => s.pages);
   const groups = useLayoutStore((s) => s.groups);
+  const freeform = useLayoutStore((s) => s.freeform);
+  const edits = useLayoutStore((s) => s.cardEdits);
   const output = useLayoutStore(
     useShallow((s) => ({
       gapXMm: s.gapXMm,
@@ -41,7 +43,7 @@ export function usePrintSync() {
     const { setCards } = usePrintStore.getState();
     let stale = false;
     const t = setTimeout(() => {
-      computeCards(pages, toRustGroups(groups, pages, useLayoutStore.getState()))
+      computeCards(pages, toRustGroups(groups, pages, useLayoutStore.getState(), freeform))
         .then((c) => !stale && setCards(c, null))
         .catch((e) => !stale && setCards([], String(e)));
     }, 30);
@@ -49,7 +51,7 @@ export function usePrintSync() {
       stale = true;
       clearTimeout(t);
     };
-  }, [active, pages, groups]);
+  }, [active, pages, groups, freeform]);
 
   // The sheets the plan produces.
   useEffect(() => {
@@ -57,7 +59,7 @@ export function usePrintSync() {
     const { setSheets } = usePrintStore.getState();
     let stale = false;
     const t = setTimeout(() => {
-      computeSheets(pages, buildPrintRequest(plan, cards, groups, pages, output))
+      computeSheets(pages, buildPrintRequest(plan, cards, groups, pages, output, { freeform, edits }))
         .then((s) => !stale && setSheets(s, null))
         .catch((e) => !stale && setSheets(null, String(e)));
     }, 30);
@@ -65,5 +67,5 @@ export function usePrintSync() {
       stale = true;
       clearTimeout(t);
     };
-  }, [active, pages, groups, output, plan, cards]);
+  }, [active, pages, groups, freeform, edits, output, plan, cards]);
 }
