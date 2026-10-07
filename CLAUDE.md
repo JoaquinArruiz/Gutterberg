@@ -37,7 +37,12 @@ report existing issues; don't let them hide new ones.
 - Geometry lives only in `card-core`. `layout::calculate_layout` is the single source of
   truth for preview and export. The frontend never re-derives layout maths; it calls the
   Rust engine over IPC and draws the result.
-- Cards are never scaled, and content is never rasterised on export.
+- Cards keep their size unless the user explicitly changes it. The default is 100%;
+  scaling is only an explicit, visible per-card or per-group setting ("real size" in mm, or
+  a percentage), never applied automatically to make cards fit. Overflow is reported,
+  never fixed by shrinking.
+- Content is never rasterised on export. Rotation, translation and scaling are PDF
+  transformation matrices on the original content.
 - UI coordinates are normalized (0..1 of the page, top-left origin); `layout.rs` works in
   points with a top-left origin. Every conversion goes through `src/lib/coordinates.ts` or
   `src/lib/units.ts`.
