@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { emitHintEvent } from "../lib/hint-events";
 
 export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance" | "About";
 
@@ -19,5 +20,8 @@ export const useUiStore = create<{
   prefsSection: null,
   setPrefsOpen: (prefsOpen, section) => set({ prefsOpen, prefsSection: section ?? null }),
   stage: "cards",
-  setStage: (stage) => set({ stage }),
+  setStage: (stage) => {
+    set({ stage });
+    if (stage === "print") emitHintEvent("stage-changed:print");
+  },
 }));

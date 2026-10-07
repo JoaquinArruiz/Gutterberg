@@ -56,17 +56,32 @@ describe("normalizePreferences", () => {
 });
 
 describe("help tips preference", () => {
-  it("drops unknown or duplicate tip ids", () => {
+  it("drops unknown tip ids and bad versions", () => {
     const p = normalizePreferences({
-      help: { dismissedHints: ["live-preview-manual", "gone", "live-preview-manual", 3] },
+      help: {
+        dismissedHints: { "print-stage-intro": 2, gone: 1, "live-preview-output": "x", "live-preview-sheets": 0 },
+      },
     });
-    expect(p.help.dismissedHints).toEqual(["live-preview-manual"]);
+    expect(p.help.dismissedHints).toEqual({ "print-stage-intro": 2 });
+  });
+
+  it("turns an old list of dismissed tips into version 1 entries", () => {
+    const p = migratePreferences({
+      version: 4,
+      help: { dismissedHints: ["print-stage-intro", "gone", "print-stage-intro", 3] },
+    });
+    expect(p.help.dismissedHints).toEqual({ "print-stage-intro": 1 });
+  });
+
+  it("closing the old shared live-preview tip closes both new ones", () => {
+    const p = migratePreferences({ version: 4, help: { dismissedHints: ["live-preview-manual"] } });
+    expect(p.help.dismissedHints).toEqual({ "live-preview-output": 1, "live-preview-sheets": 1 });
   });
 
   it("older preferences without `help` get an empty list and keep their settings", () => {
     const v2 = { version: 2, measurement: { unit: "cm" } };
     const p = migratePreferences(v2);
-    expect(p.help.dismissedHints).toEqual([]);
+    expect(p.help.dismissedHints).toEqual({});
     expect(p.measurement.unit).toBe("cm");
   });
 });
@@ -149,7 +164,7 @@ describe("inspector sections and the Print layout", () => {
     const v3 = { version: 3, measurement: { unit: "cm" }, help: { dismissedHints: [] } };
     const p = migratePreferences(v3);
     expect(p.measurement.unit).toBe("cm");
-    expect(p.version).toBe(4);
+    expect(p.version).toBe(5);
     expect(p.inspector).toEqual(DEFAULT_PREFERENCES.inspector);
     expect(p.print).toEqual(DEFAULT_PREFERENCES.print);
   });

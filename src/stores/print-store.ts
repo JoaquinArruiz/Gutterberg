@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { cardIdKey } from "../lib/card";
+import { emitHintEvent } from "../lib/hint-events";
 import {
   adjustQuantity,
   clickCard,
@@ -81,9 +82,14 @@ const initial = {
 export const usePrintStore = create<PrintState>((set) => ({
   ...initial,
   setMode: (mode) => set({ mode }),
-  setQuantity: (keys, n) => set((s) => ({ mode: "custom", quantities: setQuantity(s.quantities, keys, n) })),
-  adjustQuantity: (keys, delta) =>
-    set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) })),
+  setQuantity: (keys, n) => {
+    set((s) => ({ mode: "custom", quantities: setQuantity(s.quantities, keys, n) }));
+    emitHintEvent("copies-changed");
+  },
+  adjustQuantity: (keys, delta) => {
+    set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) }));
+    emitHintEvent("copies-changed");
+  },
   startFromAllCards: () => set((s) => ({ mode: "custom", quantities: oneOfEach(s.cards) })),
   setAutoFill: (autoFill) => set({ autoFill }),
   setOrder: (order) => set({ order }),

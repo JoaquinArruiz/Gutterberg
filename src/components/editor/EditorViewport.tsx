@@ -260,7 +260,18 @@ export function EditorViewport() {
   const split = viewMode === "split" && !!page;
   return (
     <div className="flex h-full w-full">
-      <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
+      <div
+        ref={ref}
+        data-viewport
+        data-hint-target="page-canvas"
+        className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]"
+      >
+        {/* Where tour tips sit when they point at the whole canvas: inside it, above this spot. */}
+        <span
+          aria-hidden
+          data-hint-target="page-canvas-tip"
+          className="pointer-events-none absolute bottom-6 left-1/2 size-px"
+        />
         {error ? (
           <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
         ) : page && pageRect ? (

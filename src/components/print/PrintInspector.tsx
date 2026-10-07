@@ -82,7 +82,7 @@ export function PrintInspector() {
   const first = P.sheets?.[0];
 
   return (
-    <div className="h-full overflow-y-auto p-3" data-testid="print-inspector">
+    <div className="h-full overflow-y-auto p-3" data-testid="print-inspector" data-hint-target="sheet-inspector">
       {P.sheetsError && (
         <div className="mb-3 rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300" role="alert">
           <p>⚠ {P.sheetsError}</p>

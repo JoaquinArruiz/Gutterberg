@@ -12,8 +12,8 @@ import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
 import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
-// inspector.sections and print.layout. Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 4;
+// inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 5;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -41,8 +41,8 @@ export interface AppPreferences {
   preview: { livePreview: LivePreviewPreference };
   appearance: { theme: ThemePreference };
   help: {
-    /** Tips the user has closed; they stay hidden until "Reset help tips". */
-    dismissedHints: HintId[];
+    /** Tips the user has closed, with the hint version they closed; hidden until "Reset help tips". */
+    dismissedHints: Partial<Record<HintId, number>>;
   };
   inspector: {
     /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
@@ -71,7 +71,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
-  help: { dismissedHints: [] },
+  help: { dismissedHints: {} },
   inspector: { sections: {} },
   print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
 };
@@ -92,6 +92,26 @@ function normalizeSections(raw: unknown): Record<string, boolean> {
   for (const [id, open] of Object.entries(raw)) {
     if (Object.keys(out).length >= MAX_SECTIONS) break;
     if (typeof open === "boolean" && id.length > 0 && id.length <= 40) out[id] = open;
+  }
+  return out;
+}
+
+/**
+ * Known hint ids with a version (a removed or renamed tip's old id is dropped). Before v5 this was a
+ * list of ids, each counting as version 1; the shared `live-preview-manual` tip was later split in two,
+ * so closing it closes both halves.
+ */
+function normalizeDismissed(raw: unknown): Partial<Record<HintId, number>> {
+  const entries: [unknown, unknown][] = Array.isArray(raw)
+    ? raw.map((id) => [id, 1])
+    : isObj(raw)
+      ? Object.entries(raw)
+      : [];
+  const out: Partial<Record<HintId, number>> = {};
+  for (const [id, version] of entries) {
+    if (typeof version !== "number" || !Number.isInteger(version) || version < 1) continue;
+    const ids = id === "live-preview-manual" ? ["live-preview-output", "live-preview-sheets"] : [id];
+    for (const k of ids) if (isHintId(k)) out[k] = Math.max(out[k] ?? 0, version);
   }
   return out;
 }
@@ -138,10 +158,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     preview: { livePreview: oneOf(p.livePreview, ["always", "manual"] as const, d.preview.livePreview) },
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },
     help: {
-      // Known ids only, no duplicates (a removed/renamed tip's old id is simply dropped).
-      dismissedHints: Array.isArray(h.dismissedHints)
-        ? [...new Set(h.dismissedHints.filter(isHintId))]
-        : d.help.dismissedHints,
+      dismissedHints: normalizeDismissed(h.dismissedHints),
     },
     inspector: { sections: normalizeSections(ins.sections) },
     print: {

@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { EditorViewport } from "./components/editor/EditorViewport";
+import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
 import { PrintStage } from "./components/print/PrintStage";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
@@ -105,6 +106,7 @@ export default function App() {
         {stage === "print" ? <PrintStage /> : <WorkspaceLayout editor={<EditorViewport />} />}
       </div>
       <StatusBar />
+      <FirstPdfTour />
       <PreferencesDialog />
     </div>
   );

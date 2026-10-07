@@ -2,7 +2,6 @@ import { formatMeasurement } from "../../lib/measurement";
 import { usePreviewResult } from "../../lib/view-page";
 import { useCurrentGridGroup, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
-import { useUiStore } from "../../stores/ui-store";
 import { HintToast } from "../ui/HintToast";
 
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
@@ -32,13 +31,9 @@ export function OutputNotice() {
     <>
       {showManualHint && (
         <HintToast
-          id="live-preview-manual"
+          hint="live-preview-output"
           className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-          action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
-        >
-          Live preview is off, so this preview isn&apos;t generated automatically. Press the refresh button (bottom
-          right) to generate it. You can change this in Preferences &gt; Preview.
-        </HintToast>
+        />
       )}
       {stale && (
         <span className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">

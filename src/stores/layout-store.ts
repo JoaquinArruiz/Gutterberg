@@ -14,6 +14,7 @@ import {
   setSkipped,
   updateGridGroup,
 } from "../lib/document-layout";
+import { emitHintEvent } from "../lib/hint-events";
 import type { LayoutResult } from "../lib/layout-api";
 import { sessionDefaults } from "../lib/preferences";
 import type { GridPayload } from "../lib/tauri";
@@ -110,7 +111,7 @@ export const HISTORY_LIMIT = 200;
 
 export const useLayoutStore = create<LayoutState>()(
   temporal(
-    (set) => ({
+    (set, get) => ({
       groups: [],
       gapXMm: 3,
       gapYMm: 3,
@@ -129,10 +130,15 @@ export const useLayoutStore = create<LayoutState>()(
         set({ groups: defaultGroups(pageCount) });
         useLayoutStore.temporal.getState().clear();
       },
-      setSelection: (page, selection) =>
-        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection })) })),
-      setGrid: (page, patch) =>
-        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) })),
+      setSelection: (page, selection) => {
+        const created = selection !== null && (gridGroupAt(get().groups, page)?.selection ?? null) === null;
+        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection })) }));
+        if (created) emitHintEvent("selection-created");
+      },
+      setGrid: (page, patch) => {
+        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) }));
+        emitHintEvent("grid-changed");
+      },
       setSkipped: (page, skip) => set((s) => ({ groups: setSkipped(s.groups, page, skip) })),
       applyGrid: (page, pages) => set((s) => ({ groups: applyGridTo(s.groups, page, pages) })),
       setGapX: (mm) => set((s) => (s.gapLinked ? { gapXMm: gap(mm), gapYMm: gap(mm) } : { gapXMm: gap(mm) })),

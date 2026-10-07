@@ -463,7 +463,7 @@ describe("sheet previews strip", () => {
       render(<SheetPreview />);
       act(() => print().setSheets([sheet(3)], null));
       expect(screen.queryByRole("button", { name: /Refresh preview/ })).toBeNull();
-      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
       expect(screen.queryByText("Preview out of date")).toBeNull();
     });
 
@@ -504,7 +504,7 @@ describe("sheet previews strip", () => {
       print().setSheets([sheet(9), sheet(2)], null);
       render(<SheetPreview />);
       expect(thumbs()).toHaveLength(2);
-      expect(screen.getByTestId("hint-live-preview-manual")).toBeTruthy();
+      expect(screen.getByTestId("hint-live-preview-sheets")).toBeTruthy();
       expect(screen.getByRole("button", { name: /Refresh preview/ })).toBeTruthy();
       expect(screen.queryByText("Preview out of date")).toBeNull();
     });
@@ -555,21 +555,21 @@ describe("sheet previews strip", () => {
       print().setSheets([sheet(2)], null);
       render(<SheetPreview />);
       fireEvent.click(screen.getByRole("button", { name: "Hide sheet previews" }));
-      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
       expect(screen.queryByRole("button", { name: "Refresh preview" })).toBeNull();
       act(() => print().setSheets([sheet(5)], null));
       expect(screen.getByTestId("sheet-page").children).toHaveLength(5);
       fireEvent.click(screen.getByRole("button", { name: "Show sheet previews" }));
-      expect(screen.getByTestId("hint-live-preview-manual")).toBeTruthy();
+      expect(screen.getByTestId("hint-live-preview-sheets")).toBeTruthy();
     });
 
     it("lets the tip be closed for good, keeping the refresh button", () => {
       print().setSheets([sheet(2)], null);
       render(<SheetPreview />);
       fireEvent.click(screen.getByRole("button", { name: "Dismiss tip" }));
-      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
       expect(screen.getByRole("button", { name: /Refresh preview/ })).toBeTruthy();
-      expect(usePreferencesStore.getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
+      expect(usePreferencesStore.getState().prefs.help.dismissedHints).toEqual({ "live-preview-sheets": 1 });
     });
 
     it("waits for the first plan, then shows it without a click", () => {

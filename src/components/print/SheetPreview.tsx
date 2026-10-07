@@ -5,7 +5,6 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
-import { useUiStore } from "../../stores/ui-store";
 import { RefreshButton } from "../editor/RefreshPreviewButton";
 import { HintToast } from "../ui/HintToast";
 import { PlacedCard } from "./PlacedCard";
@@ -149,15 +148,7 @@ export function SheetPreview() {
           content
         )}
         {!live && stripOpen && hasDocument && (
-          <HintToast
-            id="live-preview-manual"
-            className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]"
-            action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
-          >
-            Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the
-            refresh button (top right) to update it. The large sheet always follows the plan. You can change this in
-            Preferences &gt; Preview.
-          </HintToast>
+          <HintToast hint="live-preview-sheets" className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]" />
         )}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { HintId } from "../lib/hints";
+import { type HintId, hintVersion } from "../lib/hints";
 import type { MeasurementUnit } from "../lib/measurement";
 import {
   type AppPreferences,
@@ -157,14 +157,11 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         commit(DEFAULT_PREFERENCES);
         bumpEpoch();
       },
-      dismissHint: (id) =>
-        edit((p) => ({
-          ...p,
-          help: {
-            dismissedHints: p.help.dismissedHints.includes(id) ? p.help.dismissedHints : [...p.help.dismissedHints, id],
-          },
-        })),
-      resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: [] } })),
+      dismissHint: (id) => {
+        if ((get().prefs.help.dismissedHints[id] ?? 0) < hintVersion(id))
+          edit((p) => ({ ...p, help: { dismissedHints: { ...p.help.dismissedHints, [id]: hintVersion(id) } } }));
+      },
+      resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: {} } })),
       setSectionOpen: (id, open) => {
         if (get().prefs.inspector.sections[id] !== open)
           edit((p) => ({ ...p, inspector: { sections: { ...p.inspector.sections, [id]: open } } }));
@@ -213,10 +210,3 @@ export const usePreferencesStore = createPreferencesStore(browserStorage());
 
 /** Unit currently chosen for displaying/typing measurements. */
 export const useUnit = () => usePreferencesStore((s) => s.prefs.measurement.unit);
-
-/** Whether tip `id` should be shown, and how to close it. */
-export function useHint(id: HintId) {
-  const dismissed = usePreferencesStore((s) => s.prefs.help.dismissedHints.includes(id));
-  const dismissHint = usePreferencesStore((s) => s.dismissHint);
-  return { visible: !dismissed, dismiss: () => dismissHint(id) };
-}

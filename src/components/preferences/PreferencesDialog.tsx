@@ -74,6 +74,7 @@ export function PreferencesDialog() {
 
   const store = usePreferencesStore();
   const { prefs } = store;
+  const hiddenTips = Object.keys(prefs.help.dismissedHints).length;
   const { visibleModes } = prefs.workspace;
   const layout = prefs.workspace.layout;
   const preset = detectPreset(layout);
@@ -147,19 +148,14 @@ export function PreferencesDialog() {
           {section === "General" && (
             <Field label="Help tips">
               <div>
-                <button
-                  type="button"
-                  className={btn}
-                  disabled={prefs.help.dismissedHints.length === 0}
-                  onClick={store.resetHints}
-                >
+                <button type="button" className={btn} disabled={hiddenTips === 0} onClick={store.resetHints}>
                   Enable all help tips
                 </button>
               </div>
               <p className="text-[var(--muted)]">
-                {prefs.help.dismissedHints.length === 0
+                {hiddenTips === 0
                   ? "All help tips are enabled."
-                  : `${prefs.help.dismissedHints.length} help tip${prefs.help.dismissedHints.length === 1 ? " is" : "s are"} hidden because you closed ${prefs.help.dismissedHints.length === 1 ? "it" : "them"}. Enable them to see ${prefs.help.dismissedHints.length === 1 ? "it" : "them"} again.`}
+                  : `${hiddenTips} help tip${hiddenTips === 1 ? " is" : "s are"} hidden because you closed ${hiddenTips === 1 ? "it" : "them"}. Enable them to see ${hiddenTips === 1 ? "it" : "them"} again.`}
               </p>
             </Field>
           )}

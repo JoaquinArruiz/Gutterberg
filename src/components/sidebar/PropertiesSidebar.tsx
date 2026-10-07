@@ -79,20 +79,22 @@ export function PropertiesSidebar() {
               {rangeLabel(group.pages)}
               {group.pages.first === group.pages.last ? " has" : " share"} this grid.
             </p>
-            <NumberField
-              label="Columns"
-              value={grid.columns}
-              onCommit={(columns) => L.setGrid(currentPage, { columns })}
-              min={1}
-              max={MAX_GRID}
-            />
-            <NumberField
-              label="Rows"
-              value={grid.rows}
-              onCommit={(rows) => L.setGrid(currentPage, { rows })}
-              min={1}
-              max={MAX_GRID}
-            />
+            <div className="flex flex-col gap-1.5" data-hint-target="grid-fields">
+              <NumberField
+                label="Columns"
+                value={grid.columns}
+                onCommit={(columns) => L.setGrid(currentPage, { columns })}
+                min={1}
+                max={MAX_GRID}
+              />
+              <NumberField
+                label="Rows"
+                value={grid.rows}
+                onCommit={(rows) => L.setGrid(currentPage, { rows })}
+                min={1}
+                max={MAX_GRID}
+              />
+            </div>
             <MeasurementInput
               label="Card width"
               precise

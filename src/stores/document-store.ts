@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { emitHintEvent } from "../lib/hint-events";
 import { openPdf, type PageSize, pickPdf } from "../lib/tauri";
 
 type DocumentState = {
@@ -25,6 +26,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       set({ loading: true, error: null });
       const info = await openPdf(path);
       set({ path, pages: info.pages, currentPage: 0, loading: false });
+      emitHintEvent("pdf-opened");
     } catch (e) {
       set({ loading: false, error: String(e) });
     }

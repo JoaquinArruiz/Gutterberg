@@ -94,7 +94,7 @@ export function CardLibrary() {
   if (!hasDocument) return <Empty>Open a PDF to see its cards.</Empty>;
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="card-library">
+    <div className="flex h-full min-h-0 flex-col" data-testid="card-library" data-hint-target="card-library">
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--border)] p-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-[var(--muted)]">Show</span>
@@ -143,7 +143,7 @@ export function CardLibrary() {
             {picked.length} of {shown.length} selected
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5" data-hint-target="copies">
           <span className="text-[var(--muted)]">Copies</span>
           <button
             type="button"

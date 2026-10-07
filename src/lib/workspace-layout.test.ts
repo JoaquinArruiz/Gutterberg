@@ -130,7 +130,7 @@ describe("preferences migration", () => {
     };
     const p = migratePreferences(v1);
     expect(p.version).toBe(DEFAULT_PREFERENCES.version);
-    expect(p.help.dismissedHints).toEqual([]);
+    expect(p.help.dismissedHints).toEqual({});
     expect(p.measurement.unit).toBe("in");
     expect(p.workspace.visibleModes).toEqual(["split", "source"]);
     expect(p.workspace.defaultMode).toBe("split");

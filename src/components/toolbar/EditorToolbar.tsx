@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useStore } from "zustand";
 import { includedPages } from "../../lib/document-layout";
 import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
+import { emitHintEvent } from "../../lib/hint-events";
 import { WORKSPACE_LABEL } from "../../lib/preferences";
 import { buildPrintRequest } from "../../lib/print-request";
 import { exportPrint, validatePrint } from "../../lib/sheet-api";
@@ -112,6 +113,7 @@ export function EditorToolbar() {
       setExporting(true);
       setStatus(null);
       setIssues([]);
+      emitHintEvent("export-started");
       await (stage === "print" ? exportSheets(path) : exportCards(path));
     } catch (e) {
       setStatus({ ok: false, text: String(e) });
@@ -134,7 +136,7 @@ export function EditorToolbar() {
         <FileText size={14} /> Open PDF
       </button>
       <div className="mx-2 h-4 w-px bg-[var(--border)]" />
-      <div role="tablist" aria-label="Stage" className="flex items-center gap-1">
+      <div role="tablist" aria-label="Stage" data-hint-target="stage-tabs" className="flex items-center gap-1">
         {STAGES.map(({ id, label }) => (
           <button
             type="button"
@@ -227,6 +229,7 @@ export function EditorToolbar() {
       <button
         type="button"
         onClick={doExport}
+        data-hint-target="export-button"
         disabled={!path || includedCount === 0 || exporting}
         title={includedCount === 0 ? "Every page is skipped" : "Export PDF"}
         className="flex items-center gap-1.5 rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"

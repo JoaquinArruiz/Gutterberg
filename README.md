@@ -19,6 +19,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
 - [x] **Milestone 12 – Sheet engine** (`extract_cards`, `paginate` with quantities, order, size groups, turn and scale, `export_sheets` from several PDFs, `compute_sheets`; Rust only)
 - [x] **Milestone 13 – Print stage** (Cards | Print switch, card library with copies per card, plan and auto-fill, sheet preview, collapsible inspector, export from the sheets)
+- [x] **Milestone 20 – Hint system** (catalog of help tips in `src/lib/hints.ts`, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride; first-PDF and Print-stage tours. The single tips for the magnifier, pan/zoom, source vs output gap and page groups are still to add)
 
 ## Architecture
 
