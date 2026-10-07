@@ -17,7 +17,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
 | [M18](M18.md) | Freeform cards: per-card rectangles, rotation, turn, sort, real size | L | M13 |
 | [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
-| [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints (tours later) | S | M13 |
+| [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
 
 \* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
   Don't start it or build anything for it unless asked.
@@ -54,7 +54,7 @@ Source PDF → Cards stage → extract_cards → card library
 | Name | The app becomes **Gutterberg**; the rename is step 0 of M15, before the first public build |
 | Project file | `.gtr`, JSON starting with `"format": "gutterberg-project"` and a `version`; checked on open (not a project / older: migrate / newer: please update). Registered as a file association in M15 |
 | Releases | Before the first public release: a license (leaning PolyForm Noncommercial, which includes a no-liability clause) or interim terms of use with a no-warranty disclaimer; ship third-party license notices, respect PDF permission flags (refuse locked files, never strip protection), and explain unsigned-build warnings if builds are unsigned (M15) |
-| Help tips | One catalog of hints (`src/lib/hints.ts`), shown with `<HintToast hint=… />`; a hint is one step or several with arrows; pointing at buttons is a later phase (M20) |
+| Help tips | One catalog of hints (`src/lib/hints.ts`), shown with `<HintToast hint=… />`; a hint is one step or a short tour; tours point at the UI with React Joyride (MIT) and advance on app events (M20) |
 | Sidebar | Split per stage in M13 (output settings move to the Print tab), built from collapsible sections that remember their state |
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
