@@ -12,6 +12,7 @@ pub mod layout;
 pub mod render;
 pub mod render_worker;
 pub mod sample;
+pub mod sheet;
 pub mod units;
 
 pub use error::{Error, Result};

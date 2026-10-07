@@ -26,6 +26,8 @@ pub enum Error {
         page_w_mm: f64,
         page_h_mm: f64,
     },
+    #[error("invalid sheet: {0}")]
+    InvalidSheet(String),
     #[error("pdfium error: {0}")]
     Pdfium(String),
     #[error("superseded")]

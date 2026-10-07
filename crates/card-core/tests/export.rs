@@ -36,7 +36,7 @@ fn export_is_one_page_with_nine_vector_placements() {
     assert_eq!(pages.len(), 1);
     let id = *pages.values().next().unwrap();
     let content = String::from_utf8(doc.get_page_content(id)).unwrap();
-    assert_eq!(content.matches("/Src Do").count(), 9);
+    assert_eq!(content.matches("/S0_0 Do").count(), 9);
 
     // Clip rects keep the original card size exactly.
     for line in content.lines().filter(|l| l.ends_with(" re W n")) {
@@ -58,7 +58,7 @@ fn export_is_one_page_with_nine_vector_placements() {
         .unwrap()
         .as_dict()
         .unwrap();
-    let form_id = xobj.get(b"Src").unwrap().as_reference().unwrap();
+    let form_id = xobj.get(b"S0_0").unwrap().as_reference().unwrap();
     let Object::Stream(form) = doc.get_object(form_id).unwrap() else {
         panic!("not a stream")
     };
@@ -112,7 +112,7 @@ fn placements_per_page(doc: &Document) -> Vec<usize> {
         .map(|&id| {
             String::from_utf8(doc.get_page_content(id))
                 .unwrap()
-                .matches("/Src Do")
+                .matches(" Do\n")
                 .count()
         })
         .collect()

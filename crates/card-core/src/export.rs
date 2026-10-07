@@ -12,12 +12,15 @@
 //!
 //! so text, vector art and embedded images keep their original encoding.
 
+use crate::card::{CardId, DocumentId, OrientedRect, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_layout, GridLayout, LayoutResult};
+use crate::sheet::{card_transform, Affine, OutputSheet, SheetPlacement, Turn};
 use crate::units::pt_to_mm;
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
 use serde::{Deserialize, Serialize};
+use std::collections::{BTreeMap, HashMap};
 use std::path::Path;
 
 /// One output page, built from one source page with its own grid. Keeping the
@@ -270,7 +273,12 @@ fn page_to_form(
 
 fn fmt(v: f64) -> String {
     let s = format!("{v:.4}");
-    s.trim_end_matches('0').trim_end_matches('.').to_string()
+    let s = s.trim_end_matches('0').trim_end_matches('.');
+    if s == "-0" {
+        "0".into()
+    } else {
+        s.to_string()
+    }
 }
 
 /// Export `input` according to `job`, writing `output`.
@@ -349,51 +357,108 @@ pub fn validate_export_file(input: &Path, jobs: &[PageJob]) -> Result<Vec<PageIs
     Ok(validate_export(&Document::load(input)?, jobs))
 }
 
-pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
-    let source_pages = doc.get_pages();
+/// The PDF `cm` matrix that places a card: `card` maps source to sheet in top-left page
+/// coordinates (see [`card_transform`]); this carries that over to PDF space, where the form
+/// is drawn in the source page's display frame `display_box` (bottom-left origin) and the
+/// sheet is `out_height` points tall.
+pub fn pdf_matrix(card: &Affine, display_box: [f64; 4], out_height: f64) -> [f64; 6] {
+    let (left, top) = (display_box[0], display_box[3]);
+    [
+        card.m11,
+        -card.m21,
+        -card.m12,
+        card.m22,
+        -card.m11 * left + card.m12 * top + card.tx,
+        out_height + card.m21 * left - card.m22 * top - card.ty,
+    ]
+}
+
+/// The content-stream operators that paint one card: move and clip, then draw the page form.
+fn placement_ops(name: &str, p: &SheetPlacement, display_box: [f64; 4], out_height: f64) -> String {
+    let m = pdf_matrix(
+        &card_transform(&p.source, p.scale, p.turn, &p.destination),
+        display_box,
+        out_height,
+    );
+    let (left, top) = (display_box[0], display_box[3]);
+    // The clip follows `cm`, so it is in the source page's own space and moves with the card.
+    let clip = match p.source.as_rect() {
+        Some(r) => format!(
+            "{} {} {} {} re W n",
+            fmt(left + r.x),
+            fmt(top - (r.y + r.height)),
+            fmt(r.width),
+            fmt(r.height),
+        ),
+        None => {
+            let c = p.source.corners();
+            let at = |i: usize| format!("{} {}", fmt(left + c[i].x), fmt(top - c[i].y));
+            format!("{} m {} l {} l {} l h W n", at(0), at(1), at(2), at(3))
+        }
+    };
+    format!("q\n{} cm\n{clip}\n/{name} Do\nQ\n", m.map(fmt).join(" "))
+}
+
+/// Resource name of the form that stands in for page `page_index` of `document_id`.
+fn form_name(document_id: DocumentId, page_index: usize) -> String {
+    format!("S{document_id}_{page_index}")
+}
+
+/// Build the output document in `doc`, whose pages become `sheets`. `doc` is source document
+/// `base_id`; `others` are further sources, imported once into `doc` (their objects are
+/// renumbered past `doc`'s) so every page form can live in one file.
+fn export_sheets_into(
+    doc: &mut Document,
+    base_id: DocumentId,
+    others: Vec<(DocumentId, Document)>,
+    sheets: &[OutputSheet],
+) -> Result<()> {
     let pages_root = doc
         .catalog()?
         .get(b"Pages")
         .and_then(|p| p.as_reference())
         .map_err(|_| Error::Malformed("catalog has no /Pages".into()))?;
 
+    let mut page_tables: HashMap<DocumentId, BTreeMap<u32, ObjectId>> = HashMap::new();
+    page_tables.insert(base_id, doc.get_pages());
+    for (id, mut other) in others {
+        if page_tables.contains_key(&id) {
+            return Err(Error::Malformed(format!("document {id} was given twice")));
+        }
+        other.renumber_objects_with(doc.max_id + 1);
+        page_tables.insert(id, other.get_pages());
+        doc.max_id = doc.max_id.max(other.max_id);
+        doc.objects.extend(other.objects);
+    }
+
     let mut new_page_ids: Vec<Object> = Vec::new();
-    // Cache so a source page used twice is wrapped only once.
-    let mut forms: std::collections::HashMap<usize, (ObjectId, PageFrame)> = Default::default();
+    // A source page used on several sheets (or several times on one) is wrapped only once.
+    let mut forms: HashMap<(DocumentId, usize), (ObjectId, PageFrame)> = HashMap::new();
 
-    for pj in &job.pages {
-        let src_id = *source_pages
-            .get(&(pj.page_index as u32 + 1))
-            .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))?;
-        let (form_id, frame) = match forms.get(&pj.page_index) {
-            Some(v) => *v,
-            None => {
-                let frame = PageFrame::read(doc, src_id, pj.page_index)?;
-                let id = page_to_form(doc, src_id, pj.page_index, &frame)?;
-                forms.insert(pj.page_index, (id, frame));
-                (id, frame)
-            }
-        };
-        let bx = frame.display_box();
-        let layout = fitting_layout(&frame, &pj.grid)?;
-        let out = layout.output_page;
-
+    for sheet in sheets {
+        let out = sheet.page;
         let mut ops = String::new();
-        for p in &layout.placements {
-            // Layout is top-left origin; PDF is bottom-left.
-            let src_left = bx[0] + p.source.x;
-            let src_bottom = bx[3] - (p.source.y + p.source.height);
-            let dst_left = p.destination.x;
-            let dst_bottom = out.height_pt - (p.destination.y + p.destination.height);
-            ops.push_str(&format!(
-                "q\n1 0 0 1 {} {} cm\n{} {} {} {} re W n\n/Src Do\nQ\n",
-                fmt(dst_left - src_left),
-                fmt(dst_bottom - src_bottom),
-                fmt(src_left),
-                fmt(src_bottom),
-                fmt(p.source.width),
-                fmt(p.source.height),
-            ));
+        let mut xobjects = Dictionary::new();
+        for p in &sheet.placements {
+            let key = (p.card_id.document_id(), p.card_id.page_index());
+            let (form_id, frame) = match forms.get(&key) {
+                Some(v) => *v,
+                None => {
+                    let table = page_tables.get(&key.0).ok_or_else(|| {
+                        Error::Malformed(format!("document {} was not provided", key.0))
+                    })?;
+                    let src_id = *table
+                        .get(&(key.1 as u32 + 1))
+                        .ok_or(Error::PageOutOfRange(key.1, table.len()))?;
+                    let frame = PageFrame::read(doc, src_id, key.1)?;
+                    let id = page_to_form(doc, src_id, key.1, &frame)?;
+                    forms.insert(key, (id, frame));
+                    (id, frame)
+                }
+            };
+            let name = form_name(key.0, key.1);
+            xobjects.set(name.as_bytes().to_vec(), form_id);
+            ops.push_str(&placement_ops(&name, p, frame.display_box(), out.height_pt));
         }
         let mut cs = Stream::new(Dictionary::new(), ops.into_bytes());
         let _ = cs.compress();
@@ -403,7 +468,7 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
             "Type" => "Page",
             "Parent" => pages_root,
             "MediaBox" => vec![0.into(), 0.into(), Object::Real(out.width_pt as f32), Object::Real(out.height_pt as f32)],
-            "Resources" => dictionary! { "XObject" => dictionary! { "Src" => form_id } },
+            "Resources" => dictionary! { "XObject" => xobjects },
             "Contents" => content_id,
         };
         new_page_ids.push(Object::Reference(doc.add_object(page)));
@@ -449,6 +514,55 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
     // that the forms still reference).
     doc.prune_objects();
     Ok(())
+}
+
+/// Build a PDF whose pages are `sheets`, from one or more source documents (keyed by the
+/// `document_id` their cards carry). The first source is the base: its metadata is kept and
+/// the others are imported into it. Page content is wrapped as forms, never rasterised.
+pub fn export_sheets(
+    sources: Vec<(DocumentId, Document)>,
+    sheets: &[OutputSheet],
+) -> Result<Document> {
+    let mut sources = sources.into_iter();
+    let (base_id, mut base) = sources
+        .next()
+        .ok_or_else(|| Error::Malformed("no source document was given".into()))?;
+    export_sheets_into(&mut base, base_id, sources.collect(), sheets)?;
+    Ok(base)
+}
+
+/// Re-space the pages of one document: each job becomes one sheet whose placements are
+/// `calculate_layout`'s (all cards in order, sheet grid = source grid).
+pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
+    let source_pages = doc.get_pages();
+    let mut sheets = Vec::with_capacity(job.pages.len());
+    for pj in &job.pages {
+        let src_id = *source_pages
+            .get(&(pj.page_index as u32 + 1))
+            .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))?;
+        let frame = PageFrame::read(doc, src_id, pj.page_index)?;
+        let layout = fitting_layout(&frame, &pj.grid)?;
+        sheets.push(OutputSheet {
+            page: layout.output_page,
+            placements: layout
+                .placements
+                .iter()
+                .map(|p| SheetPlacement {
+                    card_id: CardId::Grid {
+                        document_id: DEFAULT_DOCUMENT_ID,
+                        page_index: pj.page_index,
+                        row: p.index / pj.grid.columns,
+                        column: p.index % pj.grid.columns,
+                    },
+                    source: OrientedRect::from_rect(p.source),
+                    destination: p.destination,
+                    turn: Turn::R0,
+                    scale: 1.0,
+                })
+                .collect(),
+        });
+    }
+    export_sheets_into(doc, DEFAULT_DOCUMENT_ID, Vec::new(), &sheets)
 }
 
 /// Convenience for diagnostics: card size in mm of a rect in points.

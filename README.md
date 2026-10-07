@@ -17,6 +17,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 9 – Render pipeline** (dedicated pdfium thread, open-document cache, stale-request skipping)
 - [x] **Milestone 10 – Export correctness** (page boxes, rotated pages, catalog cleanup, atomic save)
 - [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
+- [x] **Milestone 12 – Sheet engine** (`extract_cards`, `paginate` with quantities, order, size groups, turn and scale, `export_sheets` from several PDFs, `compute_sheets`; Rust only)
 
 ## Architecture
 
@@ -29,11 +30,19 @@ keeping the original card size and the original vector content.
 - `card` – `CardId` (grid or freeform card, always with its `document_id`), `OrientedRect`
   (a card's source area, rotated about its centre) and the page-group types. Grid cards
   have `angle_deg = 0`; freeform cards are reserved for a later milestone.
+- `sheet` – the engine behind every export: `extract_cards` turns page groups into `Card`s,
+  `paginate` puts `(Card, quantity)` pairs on `OutputSheet`s (grouped or interleaved order, one
+  group of sheets per card size or one shared grid, per-card `turn` and explicit `scale`), and
+  `card_transform` is the single piece of matrix maths for placing a card. A card that does
+  not fit is an error, never shrunk.
 - `export` – wraps each source page unmodified as a Form XObject and paints each
   card with `q 1 0 0 1 dx dy cm <rect> re W n /Src Do Q` (translate + clip, no
   rasterisation). `ExportJob` holds a grid per page, so each section of a
   document can have its own grid and skipped pages are simply not listed.
-  `validate_export` runs the same per-page checks without writing anything. Rotated pages and CropBox offsets are handled. Export rebuilds the
+  `validate_export` runs the same per-page checks without writing anything. `export_sheets` builds
+  a PDF from any list of sheets and several source documents (one form per source page,
+  named `/S{document}_{page}`); `export_document` is a thin wrapper that turns each job's
+  `calculate_layout` result into a sheet. Rotated pages and CropBox offsets are handled. Export rebuilds the
   document, so it removes encryption and permissions, outlines and form fields.
 - `units` – mm <-> PDF points (`pt = mm * 72 / 25.4`).
 - `sample` – synthetic 3x3 A4 PnP page (63.5 x 88 mm cards) for tests/spike.
