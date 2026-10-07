@@ -131,9 +131,10 @@ export function CardLibrary() {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="card-library" data-hint-target="card-library">
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--border)] p-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[var(--muted)]">{t("library.show")}</span>
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-[var(--muted)]">{t("library.show")}</span>
           <Select
+            className="min-w-0 flex-1"
             label={t("library.filterLabel")}
             value={filterValue}
             onChange={(v) => {
@@ -149,7 +150,7 @@ export function CardLibrary() {
               ...groupOptions,
             ]}
           />
-          <span className="ml-auto flex items-center gap-1 text-[var(--muted)]">
+          <span className="flex shrink-0 items-center gap-1 text-[var(--muted)]">
             {t("library.page")}
             <NumberField
               hideLabel
@@ -231,9 +232,11 @@ export function CardLibrary() {
           >
             <RotateCw size={12} />
           </button>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
           <button
             type="button"
-            className={smallBtn}
+            className={`${smallBtn} truncate`}
             title={t("library.makePortraitTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("portrait")}
@@ -242,7 +245,7 @@ export function CardLibrary() {
           </button>
           <button
             type="button"
-            className={smallBtn}
+            className={`${smallBtn} truncate`}
             title={t("library.makeLandscapeTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("landscape")}
