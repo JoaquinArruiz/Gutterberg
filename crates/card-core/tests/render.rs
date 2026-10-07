@@ -19,6 +19,22 @@ fn pdfium_or_skip() -> Option<Pdfium> {
     }
 }
 
+/// pdfium binds once per process, and cargo runs a binary's tests on parallel threads, so every
+/// test after the first (or racing with it) used to fail with "bindings already initialized".
+#[test]
+fn pdfium_can_be_bound_repeatedly_in_one_process() {
+    let Some(first) = pdfium_or_skip() else {
+        return;
+    };
+    let path = std::env::temp_dir().join("card-core-render-rebind.pdf");
+    sample_pdf().save(&path).unwrap();
+    for _ in 0..3 {
+        let again = bind_pdfium(&[]).expect("a second bind shares the first");
+        assert_eq!(document_info(&again, &path).unwrap().page_count, 1);
+    }
+    assert_eq!(document_info(&first, &path).unwrap().page_count, 1);
+}
+
 #[test]
 fn info_and_png_preview() {
     let Some(pdfium) = pdfium_or_skip() else {

@@ -29,19 +29,26 @@ pub fn bind_pdfium(lib_dirs: &[std::path::PathBuf]) -> Result<Pdfium> {
             dirs.push(d.to_path_buf());
         }
     }
+    // pdfium binds once per process; later calls (parallel tests, a second window) share it.
+    let shared = || Pdfium::default();
     for d in &dirs {
-        if let Ok(b) = Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(d)) {
-            return Ok(Pdfium::new(b));
+        match Pdfium::bind_to_library(Pdfium::pdfium_platform_library_name_at_path(d)) {
+            Ok(b) => return Ok(Pdfium::new(b)),
+            Err(PdfiumError::PdfiumLibraryBindingsAlreadyInitialized) => return Ok(shared()),
+            Err(_) => {}
         }
     }
-    Pdfium::bind_to_system_library()
-        .map(Pdfium::new)
-        .map_err(|e| {
-            Error::Pdfium(format!(
-                "could not load the pdfium library (searched {dirs:?} and the system): {e}. \
+    match Pdfium::bind_to_system_library() {
+        Ok(b) => Ok(Pdfium::new(b)),
+        Err(PdfiumError::PdfiumLibraryBindingsAlreadyInitialized) => Ok(shared()),
+        Err(e) => Err(e),
+    }
+    .map_err(|e| {
+        Error::Pdfium(format!(
+            "could not load the pdfium library (searched {dirs:?} and the system): {e}. \
              Run scripts/fetch-pdfium.sh or set PDFIUM_LIB_PATH."
-            ))
-        })
+        ))
+    })
 }
 
 pub fn document_info(pdfium: &Pdfium, path: &Path) -> Result<DocumentInfo> {
