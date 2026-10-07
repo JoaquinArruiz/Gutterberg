@@ -87,7 +87,7 @@ describe("selection and sheets", () => {
     expect(st().currentSheet).toBe(0);
     st().setSheets(null, "boom");
     expect(st().currentSheet).toBe(0);
-    expect(st().sheetsError).toBe("boom");
+    expect(st().sheetsError?.message).toBe("boom");
   });
 });
 

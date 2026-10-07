@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cardIdKey, cropWidthPx } from "../../lib/card";
 import { finalSizePt, formatCardSize } from "../../lib/card-edits";
 import type { Card } from "../../lib/sheet-api";
@@ -11,7 +12,7 @@ const CHROME_X = 8;
 const CHROME_Y = 25;
 
 /**
- * A card in the library: its picture as it will print (straightened, turned and sized as set), a
+ * A piece in the library: its picture as it will print (straightened, turned and sized as set), a
  * page/position label, its copies, and a badge when it is printed at another size than on the page.
  */
 export function CardThumb({
@@ -38,6 +39,7 @@ export function CardThumb({
   onClick: (e: React.MouseEvent) => void;
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
+  const { t } = useTranslation();
   const path = useDocumentStore((s) => s.path);
   const page = useDocumentStore((s) => s.pages[card.id.page_index]);
   const unit = useUnit();
@@ -54,10 +56,13 @@ export function CardThumb({
     cropWidthPx(card.source, card.turn, boxW, boxH) * dpr,
     "thumbnail",
   );
-  const label =
+  const position =
     card.id.kind === "grid"
-      ? `p${card.id.page_index + 1} · r${card.id.row + 1} c${card.id.column + 1}`
-      : `p${card.id.page_index + 1} · #${card.id.index + 1}`;
+      ? t("library.thumb.gridPosition", { row: card.id.row + 1, column: card.id.column + 1 })
+      : t("library.thumb.freeformPosition", { n: card.id.index + 1 });
+  const page1 = card.id.page_index + 1;
+  const label = t("library.thumb.label", { page: page1, position });
+  const size = formatCardSize(card, unit);
   const printed = copies === null || copies > 0;
   const scaled = Math.abs(card.scale - 1) > 1e-6;
   return (
@@ -69,7 +74,11 @@ export function CardThumb({
       data-card={cardIdKey(card.id)}
       data-turn={card.turn}
       data-scale={card.scale}
-      title={`Page ${card.id.page_index + 1}, ${label.split("· ")[1]} · ${formatCardSize(card, unit)}${card.turn ? ` · turned ${card.turn}°` : ""}`}
+      title={
+        card.turn
+          ? t("library.thumb.titleTurned", { page: page1, position, size, turn: card.turn })
+          : t("library.thumb.title", { page: page1, position, size })
+      }
       style={{ width, height }}
       className={`relative flex select-none flex-col items-center gap-0.5 rounded p-1 text-[10px] ${selected ? "bg-[var(--accent)]/25 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"} ${printed ? "" : "opacity-45"} ${dragging ? "opacity-40" : ""}`}
     >

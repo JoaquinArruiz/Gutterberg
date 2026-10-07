@@ -5,7 +5,7 @@
 // Copies (quantities) are part of the plan, not of this: see `print-request.ts`.
 
 import { cardIdKey } from "./card";
-import { formatValue, type MeasurementUnit } from "./measurement";
+import { formatDecimal, formatValue, type MeasurementUnit } from "./measurement";
 import type { Card, Turn } from "./sheet-api";
 import { ptToMm } from "./units";
 
@@ -129,7 +129,7 @@ export function scaleForSize(source: { width: number; height: number }, side: "w
 export function formatCardSize(c: Card, unit: MeasurementUnit): string {
   const { width, height } = finalSizePt(c);
   const decimals = unit === "mm" ? 1 : 2;
-  return `${formatValue(ptToMm(width), unit, decimals)} × ${formatValue(ptToMm(height), unit, decimals)} ${unit} (${(c.scale * 100).toFixed(1)}%)`;
+  return `${formatValue(ptToMm(width), unit, decimals)} × ${formatValue(ptToMm(height), unit, decimals)} ${unit} (${formatDecimal(c.scale * 100, 1)}%)`;
 }
 
 const FREEFORM = /^f:(\d+):(\d+):(\d+)$/;

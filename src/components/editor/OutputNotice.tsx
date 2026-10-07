@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+import { formatError } from "../../lib/errors";
 import { formatMeasurement } from "../../lib/measurement";
 import { usePreviewResult } from "../../lib/view-page";
 import { useCurrentGridGroup, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
@@ -6,6 +8,7 @@ import { HintToast } from "../ui/HintToast";
 
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
 export function OutputNotice() {
+  const { t } = useTranslation();
   const selection = useCurrentGridGroup()?.selection ?? null;
   const skipped = useCurrentGroup()?.kind === "skip";
   const layoutError = useLayoutStore((s) => s.layoutError);
@@ -17,13 +20,16 @@ export function OutputNotice() {
   // Manual mode: the settings changed since the preview was generated.
   const stale = !live && !!snapshot && !!result && snapshot !== result;
   const msg = skipped
-    ? "This page is skipped: it is left out of the export."
+    ? t("viewport.pageSkipped")
     : layoutError
-      ? layoutError
+      ? formatError(layoutError)
       : !selection && !shown
-        ? "Select the card region on the page to preview the output."
+        ? t("preview.selectRegion")
         : shown?.overflow
-          ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
+          ? t("preview.overflow", {
+              width: formatMeasurement(shown.overflow.width_mm, unit),
+              height: formatMeasurement(shown.overflow.height_mm, unit),
+            })
           : null;
   const bad = !!layoutError || !!shown?.overflow;
   const showManualHint = !live && !shown && !!selection && !layoutError;
@@ -37,7 +43,7 @@ export function OutputNotice() {
       )}
       {stale && (
         <span className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-          Preview out of date
+          {t("preview.outOfDate")}
         </span>
       )}
       {msg && (

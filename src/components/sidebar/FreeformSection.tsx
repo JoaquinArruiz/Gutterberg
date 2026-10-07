@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { cardSizePt, sanitizeCard, withAngle } from "../../lib/freeform";
 import { formatMeasurement } from "../../lib/measurement";
@@ -13,10 +14,11 @@ import { NumberField } from "../ui/NumberField";
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /**
- * The cards of the viewed page that are drawn one by one: how many there are, and for the picked one
- * its angle and size. The card tool draws them; this is where they are fine-tuned by number.
+ * The pieces of the viewed page that are drawn one by one: how many there are, and for the picked one
+ * its angle and size. The piece tool draws them; this is where they are fine-tuned by number.
  */
 export function FreeformSection() {
+  const { t } = useTranslation();
   const page = useDocumentStore((s) => s.pages[s.currentPage]);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const tool = useEditorStore((s) => s.tool);
@@ -40,31 +42,21 @@ export function FreeformSection() {
     card && index !== null && update(currentPage, index, sanitizeCard(patch(card), page));
 
   return (
-    <CollapsibleSection id="cards.freeform" title="Freeform cards">
-      <p className="text-[var(--muted)]">
-        {count === 0 ? "No freeform cards on this page." : `${count} card${count === 1 ? "" : "s"} on this page.`} They
-        are printed from the Print stage.
-      </p>
-      {tool !== "card" && count > 0 && (
-        <p className="text-[var(--muted)]">Choose the Card tool (C) to move, resize or rotate them.</p>
-      )}
-      {tool === "card" && !card && (
-        <p className="text-[var(--muted)]">
-          Drag on the page to draw a card, and click one to edit it. Drag the dot above a card to rotate it; Shift snaps
-          to 15°.
-        </p>
-      )}
+    <CollapsibleSection id="cards.freeform" title={t("freeform.title")}>
+      <p className="text-[var(--muted)]">{count === 0 ? t("freeform.none") : t("freeform.count", { count })}</p>
+      {tool !== "card" && count > 0 && <p className="text-[var(--muted)]">{t("freeform.chooseTool")}</p>}
+      {tool === "card" && !card && <p className="text-[var(--muted)]">{t("freeform.drawHint")}</p>}
       {card && size && index !== null && (
         <>
           <div className="flex justify-between">
-            <span className="text-[var(--muted)]">Card</span>
+            <span className="text-[var(--muted)]">{t("freeform.piece")}</span>
             <span className="tabular-nums">
               {index + 1} · {formatMeasurement(ptToMm(size.width), unit, 1)} ×{" "}
               {formatMeasurement(ptToMm(size.height), unit, 1)}
             </span>
           </div>
           <NumberField
-            label="Angle"
+            label={t("freeform.angle")}
             value={card.angle_deg}
             onCommit={(v) => edit((c) => withAngle(c, v))}
             decimals={1}
@@ -76,14 +68,14 @@ export function FreeformSection() {
             suffix="°"
           />
           <MeasurementInput
-            label="Width"
+            label={t("common.width")}
             precise
             min={1}
             value={ptToMm(size.width)}
             onChange={(mm) => edit((c) => ({ ...c, width: mmToPt(mm) / page.width_pt }))}
           />
           <MeasurementInput
-            label="Height"
+            label={t("common.height")}
             precise
             min={1}
             value={ptToMm(size.height)}
@@ -98,7 +90,7 @@ export function FreeformSection() {
                 setSelected(null);
               }}
             >
-              Delete card
+              {t("freeform.delete")}
             </button>
           </div>
         </>

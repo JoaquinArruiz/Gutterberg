@@ -208,12 +208,12 @@ describe("editing a card", () => {
 describe("the sidebar section", () => {
   const start = { center: { x: 0.5, y: 0.5 }, width: 0.3, height: 0.2, angle_deg: 7 };
 
-  it("asks for the Card tool when the page has cards and another tool is active", () => {
+  it("asks for the Piece tool when the page has pieces and another tool is active", () => {
     layout().addFreeformCard(0, start);
     useEditorStore.setState({ tool: "select" });
     render(<FreeformSection />);
-    expect(screen.getByText(/1 card on this page/)).toBeTruthy();
-    expect(screen.getByText(/Choose the Card tool/)).toBeTruthy();
+    expect(screen.getByText(/1 freeform piece on this page/)).toBeTruthy();
+    expect(screen.getByText(/Choose the Piece tool/)).toBeTruthy();
   });
 
   it("is absent with no cards and no card tool", () => {
@@ -241,7 +241,7 @@ describe("the sidebar section", () => {
     fireEvent.keyDown(width, { key: "Enter" });
     expect((cards()[1].width * A4.width_pt * 25.4) / 72).toBeCloseTo(63, 3);
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete card" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete piece" }));
     expect(cards()).toHaveLength(1);
     expect(editor().selectedCard).toBeNull();
   });

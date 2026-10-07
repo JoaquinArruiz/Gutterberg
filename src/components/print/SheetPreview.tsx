@@ -1,6 +1,8 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
+import { formatError } from "../../lib/errors";
 import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -22,6 +24,7 @@ export const STRIP_SECTION_ID = "print.sheet-strip";
  * the sheets as of the last refresh.
  */
 export function SheetPreview() {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const hasDocument = useDocumentStore((s) => s.pages.length > 0);
@@ -87,11 +90,12 @@ export function SheetPreview() {
 
   return (
     <div className="flex h-full min-w-0 flex-col" data-testid="sheet-preview">
-      <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--panel)] px-3">
+      {/* Wraps to a second line when the pane is narrow (longer texts, e.g. in Spanish) instead of clipping. */}
+      <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-[var(--border)] bg-[var(--panel)] px-3 py-0.5">
         <button
           type="button"
-          aria-label={stripOpen ? "Hide sheet previews" : "Show sheet previews"}
-          title={stripOpen ? "Hide sheet previews" : "Show sheet previews"}
+          aria-label={stripOpen ? t("sheets.hide") : t("sheets.show")}
+          title={stripOpen ? t("sheets.hide") : t("sheets.show")}
           aria-expanded={stripOpen}
           onClick={() => setSectionOpen(STRIP_SECTION_ID, !stripOpen)}
           className="rounded p-1 hover:bg-[var(--hover)]"
@@ -100,31 +104,38 @@ export function SheetPreview() {
         </button>
         <button
           type="button"
-          aria-label="Previous sheet"
+          aria-label={t("sheets.previous")}
           disabled={index <= 0}
           onClick={() => setCurrent(index - 1)}
           className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
         >
           <ChevronLeft size={14} />
         </button>
-        <span className="tabular-nums" data-testid="sheet-position">
-          {total > 0 ? `Sheet ${index + 1} of ${total}` : "No sheets"}
+        <span className="whitespace-nowrap tabular-nums" data-testid="sheet-position">
+          {total > 0 ? t("sheets.position", { current: index + 1, total }) : t("sheets.none")}
         </span>
         <button
           type="button"
-          aria-label="Next sheet"
+          aria-label={t("sheets.next")}
           disabled={index >= total - 1}
           onClick={() => setCurrent(index + 1)}
           className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
         >
           <ChevronRight size={14} />
         </button>
-        <span className="ml-auto text-[var(--muted)]" data-testid="sheet-summary">
-          {total} sheet{total === 1 ? "" : "s"}, {cardCount} card{cardCount === 1 ? "" : "s"}
+        <span className="ml-auto whitespace-nowrap text-[var(--muted)]" data-testid="sheet-summary">
+          {t("sheets.summary", {
+            sheets: t("sheets.sheetCount", { count: total }),
+            pieces: t("sheets.pieceCount", { count: cardCount }),
+          })}
         </span>
         {!live && stripOpen && (
           <>
-            {stale && <span className="text-[10px] font-semibold text-amber-400">Previews out of date</span>}
+            {stale && (
+              <span className="whitespace-nowrap text-[10px] font-semibold text-amber-400">
+                {t("sheets.outOfDate")}
+              </span>
+            )}
             <RefreshButton stale={stale} disabled={planned === null} onClick={refresh} />
           </>
         )}
@@ -134,16 +145,13 @@ export function SheetPreview() {
       )}
       <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--canvas)]">
         {!hasDocument ? (
-          <Message>Open a PDF to plan the sheets.</Message>
+          <Message>{t("sheets.openPdf")}</Message>
         ) : error ? (
-          <Message tone="error">{error}</Message>
+          <Message tone="error">{formatError(error)}</Message>
         ) : planned === null ? (
-          <Message>Planning the sheets…</Message>
+          <Message>{t("sheets.planning")}</Message>
         ) : total === 0 ? (
-          <Message>
-            Nothing to print yet. Choose cards in the library and give them copies, or switch the plan back to all
-            cards.
-          </Message>
+          <Message>{t("sheets.nothing")}</Message>
         ) : (
           content
         )}

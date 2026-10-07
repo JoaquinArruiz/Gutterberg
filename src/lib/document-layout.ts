@@ -5,6 +5,7 @@
 // the store can record each result as one undo step. Output settings (gap, page size,
 // margins) are not part of a group; they stay global until the Print stage (M13).
 
+import { t } from "../i18n";
 import type { OrientedRect } from "./card";
 import { clamp, type NormalizedRect } from "./coordinates";
 import { clampCount } from "./grid";
@@ -51,7 +52,9 @@ export const pageCount = (r: PageRange) => r.last - r.first + 1;
 
 /** "Page 3" or "Pages 3–9" (1-based, as the user sees them). */
 export const rangeLabel = (r: PageRange) =>
-  r.first === r.last ? `Page ${r.first + 1}` : `Pages ${r.first + 1}–${r.last + 1}`;
+  r.first === r.last
+    ? t("common.page", { n: r.first + 1 })
+    : t("common.pages", { first: r.first + 1, last: r.last + 1 });
 
 /** One grid group over all pages: the starting point for a new document. */
 export function defaultGroups(totalPages: number): PageGroup[] {
@@ -205,8 +208,8 @@ export function clampRange(first: number, last: number, totalPages: number): Pag
 
 /**
  * Short label for a thumbnail whose page belongs to a different group than the viewed one:
- * the grid ("3×3"), "No region" until one is drawn, or "Skipped", plus the freeform cards the page
- * has ("3×3 + 2", "2 cards"). Null for the viewed group.
+ * the grid ("3×3"), "No region" until one is drawn, or "Skipped", plus the freeform pieces the page
+ * has ("3×3 + 2", "2 pieces"). Null for the viewed group.
  */
 export function pageBadge(
   groups: PageGroup[],
@@ -216,9 +219,9 @@ export function pageBadge(
 ): string | null {
   const g = groupAt(groups, page);
   if (!g || g === groupAt(groups, viewed)) return null;
-  if (g.kind === "skip") return "Skipped";
+  if (g.kind === "skip") return t("pages.badge.skipped");
   const own = freeform[page]?.length ?? 0;
-  if (!g.selection) return own > 0 ? `${own} card${own === 1 ? "" : "s"}` : "No region";
+  if (!g.selection) return own > 0 ? t("pages.badge.pieces", { count: own }) : t("pages.badge.noRegion");
   return `${g.grid.rows}×${g.grid.columns}${own > 0 ? ` + ${own}` : ""}`;
 }
 

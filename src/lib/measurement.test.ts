@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { setDecimalSeparator } from "./locale";
 import {
   convertFromCanonical,
   convertToCanonical,
+  formatDecimal,
   formatMeasurement,
   formatValue,
   MEASUREMENT_UNITS,
+  parseDecimal,
 } from "./measurement";
 
 describe("measurement", () => {
@@ -39,5 +42,51 @@ describe("measurement", () => {
   it("only rounds the display", () => {
     expect(formatValue(2.99999999, "mm", 1)).toBe("3.0");
     expect(convertFromCanonical(2.99999999, "mm")).toBe(2.99999999);
+  });
+});
+
+describe("decimal separator", () => {
+  afterEach(() => setDecimalSeparator("."));
+
+  it("shows measurements with a dot or a comma, never changing the value", () => {
+    expect(formatMeasurement(63.5, "mm")).toBe("63.50 mm");
+    setDecimalSeparator(",");
+    expect(formatMeasurement(63.5, "mm")).toBe("63,50 mm");
+    expect(formatValue(63.5, "in")).toBe("2,500");
+    expect(formatDecimal(98.4, 1)).toBe("98,4");
+    expect(formatDecimal(98.4, 1, ".")).toBe("98.4");
+    expect(formatDecimal(3, 0)).toBe("3");
+  });
+});
+
+describe("parseDecimal", () => {
+  it("accepts a dot or a comma whatever the display setting is", () => {
+    for (const sep of [".", ","] as const) {
+      setDecimalSeparator(sep);
+      expect(parseDecimal("63.5")).toBe(63.5);
+      expect(parseDecimal("63,5")).toBe(63.5);
+    }
+    setDecimalSeparator(".");
+  });
+
+  it("reads whole numbers, signs, leading and trailing separators and padding", () => {
+    expect(parseDecimal("12")).toBe(12);
+    expect(parseDecimal("  7,25  ")).toBe(7.25);
+    expect(parseDecimal("-3.5")).toBe(-3.5);
+    expect(parseDecimal("\u22123,5")).toBe(-3.5);
+    expect(parseDecimal("+2")).toBe(2);
+    expect(parseDecimal(".5")).toBe(0.5);
+    expect(parseDecimal("5,")).toBe(5);
+  });
+
+  it("rejects a value with both separators or more than one (there are no thousands separators)", () => {
+    for (const bad of ["1,234.5", "1.234,5", "1.2.3", "1,2,3", "1,,2", "63..5"])
+      expect(parseDecimal(bad), bad).toBeNull();
+  });
+
+  it("rejects what is not a number", () => {
+    for (const bad of ["", " ", "abc", "6 3", "1e3", "0x10", "--1", ".", ",", "Infinity", "5mm"]) {
+      expect(parseDecimal(bad), bad).toBeNull();
+    }
   });
 });

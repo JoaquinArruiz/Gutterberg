@@ -45,7 +45,7 @@ export function usePrintSync() {
     const t = setTimeout(() => {
       computeCards(pages, toRustGroups(groups, pages, useLayoutStore.getState(), freeform))
         .then((c) => !stale && setCards(c, null))
-        .catch((e) => !stale && setCards([], String(e)));
+        .catch((e) => !stale && setCards([], e));
     }, 30);
     return () => {
       stale = true;
@@ -61,7 +61,7 @@ export function usePrintSync() {
     const t = setTimeout(() => {
       computeSheets(pages, buildPrintRequest(plan, cards, groups, pages, output, { freeform, edits }))
         .then((s) => !stale && setSheets(s, null))
-        .catch((e) => !stale && setSheets(null, String(e)));
+        .catch((e) => !stale && setSheets(null, e));
     }, 30);
     return () => {
       stale = true;

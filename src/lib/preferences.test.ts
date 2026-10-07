@@ -164,8 +164,35 @@ describe("inspector sections and the Print layout", () => {
     const v3 = { version: 3, measurement: { unit: "cm" }, help: { dismissedHints: [] } };
     const p = migratePreferences(v3);
     expect(p.measurement.unit).toBe("cm");
-    expect(p.version).toBe(5);
+    expect(p.version).toBe(6);
     expect(p.inspector).toEqual(DEFAULT_PREFERENCES.inspector);
     expect(p.print).toEqual(DEFAULT_PREFERENCES.print);
+  });
+});
+
+describe("language and decimal separator", () => {
+  it("default to following the system", () => {
+    expect(DEFAULT_PREFERENCES.locale).toEqual({ language: "system", decimal: "auto" });
+  });
+
+  it("load from a version 5 file, which had neither, with the defaults and nothing else lost", () => {
+    const v5 = { version: 5, measurement: { unit: "cm" }, appearance: { theme: "dark" }, help: { dismissedHints: {} } };
+    const p = migratePreferences(v5);
+    expect(p.locale).toEqual({ language: "system", decimal: "auto" });
+    expect(p.measurement.unit).toBe("cm");
+    expect(p.appearance.theme).toBe("dark");
+    expect(p.version).toBe(6);
+  });
+
+  it("keep valid choices and drop anything else", () => {
+    expect(normalizePreferences({ locale: { language: "es", decimal: "comma" } }).locale).toEqual({
+      language: "es",
+      decimal: "comma",
+    });
+    expect(normalizePreferences({ locale: { language: "fr", decimal: ";" } }).locale).toEqual({
+      language: "system",
+      decimal: "auto",
+    });
+    expect(normalizePreferences({ locale: "es" }).locale).toEqual(DEFAULT_PREFERENCES.locale);
   });
 });

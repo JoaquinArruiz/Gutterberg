@@ -1,26 +1,28 @@
 # PDF Card Editor
 
-Desktop tool (Tauri + Rust + React/TS) that takes a Print-and-Play PDF whose cards
-are packed edge to edge and re-exports it with a configurable gap between cards,
-keeping the original card size and the original vector content.
+Desktop tool (Tauri + Rust + React/TS) that takes a Print-and-Play PDF whose pieces
+(cards, tokens, tiles) are packed edge to edge and re-exports it with a configurable gap
+between them, keeping the original piece size and the original vector content. The app
+speaks English and Spanish (Preferences › General › Language).
 
 ## Status
 
 - [x] **Milestone 1 – PDF spike** (`crates/card-core`)
 - [x] **Milestone 2 – Tauri viewer** (open PDF, pdfium previews, thumbnails, page navigation)
 - [x] **Milestone 3 – Selection / zoom / pan** (draw, move, resize; normalized coordinates)
-- [x] **Milestone 4 – Grid** (rows, columns, grid overlay, exact card size in mm)
-- [x] **Milestone 5 – Spacing preview** (gap in mm, Source/Output toggle driven by `compute_layout`)
+- [x] **Milestone 4 – Grid** (rows, columns, grid overlay, exact piece size in mm)
+- [x] **Milestone 5 – Spacing preview** (gap in mm, Original/Preview toggle driven by `compute_layout`)
 - [x] **Milestone 6 – Export wiring** (Export PDF button calls `export_document`)
-- [x] **Milestone 7 – Source spacing, output page and live preview** (source vs output gaps, margins, page size/orientation/auto-fit, overflow blocks export, Source/Output/Split views, optional live preview)
+- [x] **Milestone 7 – Source spacing, output page and live preview** (source vs output gaps, margins, page size/orientation/auto-fit, overflow blocks export, Original/Preview/Split views, optional live preview)
 - [x] **Milestone 8 – Foundations** (CI workflow, pinned and verified pdfium download, CSP, state locking)
 - [x] **Milestone 9 – Render pipeline** (dedicated pdfium thread, open-document cache, stale-request skipping)
 - [x] **Milestone 10 – Export correctness** (page boxes, rotated pages, catalog cleanup, atomic save)
 - [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
 - [x] **Milestone 12 – Sheet engine** (`extract_cards`, `paginate` with quantities, order, size groups, turn and scale, `export_sheets` from several PDFs, `compute_sheets`; Rust only)
-- [x] **Milestone 13 – Print stage** (Cards | Print switch, card library with copies per card, plan and auto-fill, sheet preview, collapsible inspector, export from the sheets)
-- [x] **Milestone 18 – Freeform cards** (card tool: one rectangle per card, movable, resizable and rotatable; straightened on export; turn, sort by dragging and real size per card in the Print stage; a page can have a grid and freeform cards)
+- [x] **Milestone 13 – Print stage** (Source | Print switch, piece library with copies per piece, plan and auto-fill, sheet preview, collapsible inspector, export from the sheets)
+- [x] **Milestone 18 – Freeform pieces** (piece tool: one rectangle per piece, movable, resizable and rotatable; straightened on export; turn, sort by dragging and real size per piece in the Print tab; a page can have a grid and freeform pieces)
 - [x] **Milestone 20 – Hint system** (catalog of help tips in `src/lib/hints.ts`, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride; first-PDF and Print-stage tours. The single tips for the magnifier, pan/zoom, source vs output gap and page groups are still to add)
+- [x] **Milestone 21 – Terminology and languages** (tabs Source / Print, views Original / Preview / Split, "pieces" throughout; every text in `src/locales/en.json` and `es.json` with i18next, language chosen in Preferences; Rust errors reach the UI as codes; decimal separator preference with dot or comma accepted in every number field)
 
 ## Architecture
 
@@ -38,7 +40,7 @@ keeping the original card size and the original vector content.
   group of sheets per card size or one shared grid, per-card `turn` and explicit `scale`), and
   `card_transform` is the single piece of matrix maths for placing a card. A card that does
   not fit is an error, never shrunk. `plan_print` is what the Print stage runs: either
-  `SameAsSource` (each source page on its own sheet, exactly what the Cards stage exports) or
+  `SameAsSource` (each source page on its own sheet, exactly what the Source tab exports) or
   `plan_sheets` with a sheet grid, per-card copies and `auto_fill`.
 - `export` – wraps each source page unmodified as a Form XObject and paints each
   card with `q 1 0 0 1 dx dy cm <rect> re W n /Src Do Q` (translate + clip, no
@@ -84,19 +86,20 @@ pnpm tauri dev
 
 | Action | Input |
 | --- | --- |
-| Grid region / Card / Pan tool | `V` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
+| Grid region / Piece / Pan tool | `V` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
 | Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear |
-| Draw freeform cards (Card tool) | drag on the page for each card; drag a card to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked card; the Freeform cards section in the Cards sidebar has its angle and size |
+| Draw freeform pieces (Piece tool) | drag on the page for each piece; drag a piece to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked piece; the Freeform pieces section in the Source sidebar has its angle and size |
 | Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
-| Cards \| Print | tabs in the toolbar. Print: card library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview (the sheet in front is always live) with a hideable row of sheet thumbnails (follows Live Preview, with a refresh button when it is off), and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
-| Turn, size and sort cards (Print stage) | card library: `R` / `Shift+R` turn the selection 90° right / left, "Make all portrait / landscape"; drag cards to reorder them (the sheets follow); the Selected cards section of the inspector sets a real size (e.g. 63 × 88 mm) or a percentage, and scaled cards carry a badge |
+| Source \| Print | tabs in the toolbar. Print: piece library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview (the sheet in front is always live) with a hideable row of sheet thumbnails (follows Live Preview, with a refresh button when it is off), and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
+| Turn, size and sort pieces (Print tab) | piece library: `R` / `Shift+R` turn the selection 90° right / left, "Make all portrait / landscape"; drag pieces to reorder them (the sheets follow); the Selected pieces section of the inspector sets a real size (e.g. 63 × 88 mm) or a percentage, and scaled pieces carry a badge |
 | Skip a page / include it | checkbox on its thumbnail (skipped pages are left out of the export) |
 | Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
 | Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons; a whole drag is one step |
-| Exact values | Layout panel: columns, rows, card width/height (mm) and selection X/Y. Enter commits, Esc reverts, ↑/↓ nudge |
+| Exact values | Source layout section: columns, rows, piece width/height and selection X/Y. Enter commits, Esc reverts, ↑/↓ nudge. Type `63.5` or `63,5`: both work whatever the decimal separator preference says |
+| Language and numbers | Preferences (`Ctrl/Cmd+,`) › General: Language (System / English / Español) and Decimal separator (Automatic / Dot / Comma) |
 
 Geometry is stored normalized (0..1 of the page, top-left origin); all conversions live in
 `src/lib/coordinates.ts` and `src/lib/units.ts`. Frontend unit tests: `pnpm test`.

@@ -1,7 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
+import { t } from "../i18n";
 import type { NormalizedRect } from "./coordinates";
+import { isSupersededError } from "./errors";
 
 // Mirrors card_core::render::DocumentInfo (serde, snake_case).
 const PageSizeSchema = z.object({ width_pt: z.number(), height_pt: z.number() });
@@ -13,7 +15,7 @@ export type PageSize = z.infer<typeof PageSizeSchema>;
 export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;
 
 export async function pickPdf(): Promise<string | null> {
-  const picked = await open({ multiple: false, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+  const picked = await open({ multiple: false, filters: [{ name: t("files.pdfFilter"), extensions: ["pdf"] }] });
   return typeof picked === "string" ? picked : null;
 }
 
@@ -21,13 +23,14 @@ export async function openPdf(path: string): Promise<DocumentInfo> {
   return DocumentInfoSchema.parse(await invoke("open_pdf", { path }));
 }
 
-export async function pickExportPath(inputPath: string, suffix = "spaced"): Promise<string | null> {
+export async function pickExportPath(inputPath: string, kind: "spaced" | "print" = "spaced"): Promise<string | null> {
   const name =
     inputPath
       .split(/[\\/]/)
       .pop()
-      ?.replace(/\.pdf$/i, "") ?? "cards";
-  return save({ defaultPath: `${name}-${suffix}.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+      ?.replace(/\.pdf$/i, "") ?? t("files.fallbackName");
+  const suffix = kind === "print" ? t("files.suffixPrint") : t("files.suffixSpaced");
+  return save({ defaultPath: `${name}-${suffix}.pdf`, filters: [{ name: t("files.pdfFilter"), extensions: ["pdf"] }] });
 }
 
 /** Mirrors card_core::layout::GridLayout. */
@@ -50,8 +53,13 @@ export type GridPayload = {
 /** One output page: a source page and the grid it is cut with. Mirrors card_core::export::PageJob. */
 export type PageJob = { page_index: number; grid: GridPayload };
 
-/** A page that would make the export fail. Mirrors card_core::export::PageIssue. */
-export const PageIssueSchema = z.object({ page_index: z.number().int(), message: z.string() });
+/**
+ * A page that would make the export fail. Mirrors card_core::export::PageIssue: `message` is the English
+ * text, `code` (with the values the catalog's `errors.<code>` text needs, as extra fields) lets the UI word it.
+ */
+export const PageIssueSchema = z
+  .object({ page_index: z.number().int(), message: z.string(), code: z.string().optional() })
+  .catchall(z.union([z.string(), z.number()]));
 export type PageIssue = z.infer<typeof PageIssueSchema>;
 
 /** Exports one output page per job via the Rust exporter (pages without a job are left out). Resolves to the page count. */
@@ -71,7 +79,7 @@ export async function validateExport(pages: PageJob[]): Promise<PageIssue[]> {
 export type RenderKind = "viewport" | "magnifier" | "thumbnail" | "page";
 
 /** True when the backend skipped this request because a newer one of the same kind replaced it. */
-export const isSuperseded = (e: unknown) => String(e) === "superseded";
+export const isSuperseded = isSupersededError;
 
 /** Renders a page to a PNG blob URL. Caller owns the URL (revokeObjectURL). */
 export async function renderPage(kind: RenderKind, pageIndex: number, widthPx: number): Promise<string> {

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { t } from "../../i18n";
 import { HINTS } from "../../lib/hints";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -18,7 +19,7 @@ describe("HintToast", () => {
   it("shows a single-step hint from the catalog without a stepper, and runs its button", () => {
     render(<HintToast hint="live-preview-output" />);
     const toast = screen.getByTestId("hint-live-preview-output");
-    expect(toast.textContent).toContain(HINTS["live-preview-output"].steps[0].text);
+    expect(toast.textContent).toContain(t(HINTS["live-preview-output"].steps[0].text));
     expect(screen.queryByRole("button", { name: "Next tip" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open Preferences" }));
     expect(useUiStore.getState().prefsOpen).toBe(true);

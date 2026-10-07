@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { MAX_GAP_MM } from "../../stores/layout-store";
 import { MeasurementInput } from "./MeasurementInput";
 
@@ -17,15 +18,21 @@ export function GapFields({
   onX: (v: number) => void;
   onY: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   const f = { min: 0, max: MAX_GAP_MM };
   return (
     <>
       <label className="flex items-center gap-2 text-[var(--muted)]">
         <input type="checkbox" checked={linked} onChange={(e) => onLink(e.target.checked)} />
-        Link horizontal / vertical
+        {t("gapFields.link")}
       </label>
-      <MeasurementInput label={linked ? "Gap" : "Horizontal"} value={x} onChange={onX} {...f} />
-      {!linked && <MeasurementInput label="Vertical" value={y} onChange={onY} {...f} />}
+      <MeasurementInput
+        label={linked ? t("gapFields.gap") : t("gapFields.horizontal")}
+        value={x}
+        onChange={onX}
+        {...f}
+      />
+      {!linked && <MeasurementInput label={t("gapFields.vertical")} value={y} onChange={onY} {...f} />}
     </>
   );
 }

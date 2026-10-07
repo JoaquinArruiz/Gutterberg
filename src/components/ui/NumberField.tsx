@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { formatDecimal, parseDecimal } from "../../lib/measurement";
+import { useDecimalSeparator } from "../../stores/preferences-store";
 
 /**
  * Numeric input that commits on Enter/blur and reverts on Escape, so typing
- * "6", "63", "63.5" doesn't fire an update (and a clamp) per keystroke.
+ * "6", "63", "63.5" doesn't fire an update (and a clamp) per keystroke. It shows numbers with the
+ * decimal separator from Preferences and accepts both "63.5" and "63,5" whatever that is.
  */
 export function NumberField({
   value,
@@ -37,15 +41,17 @@ export function NumberField({
   /** Leave out the built-in -/+ buttons, when the surroundings step the value another way. */
   hideSteppers?: boolean;
 }) {
-  const fmt = (v: number | null) => (v === null ? "" : v.toFixed(decimals));
+  const { t } = useTranslation();
+  const separator = useDecimalSeparator();
+  const fmt = (v: number | null) => (v === null ? "" : formatDecimal(v, decimals, separator));
   const [text, setText] = useState(fmt(value));
   const focused = useRef(false);
 
   // Follow external changes (e.g. dragging the selection) unless the user is typing.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `fmt` is recreated every render; `decimals` is its input
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `fmt` is recreated every render; `decimals` and `separator` are its inputs
   useEffect(() => {
     if (!focused.current) setText(fmt(value));
-  }, [value, decimals]);
+  }, [value, decimals, separator]);
 
   const clampV = (v: number) => Math.min(Math.max(v, min ?? -Infinity), max ?? Infinity);
   // Round away float noise (3.1 + 0.1 = 3.1000000000000005).
@@ -60,10 +66,10 @@ export function NumberField({
   };
 
   const commit = () => {
-    const n = Number(text.replace(",", "."));
+    const n = parseDecimal(text);
     // Only commit a real edit. The shown text is rounded, so committing it
     // unchanged would overwrite the exact value (3 mm -> "0.118 in" -> 2.997 mm).
-    if (text !== fmt(value) && text.trim() !== "" && Number.isFinite(n)) {
+    if (n !== null && n !== parseDecimal(fmt(value))) {
       onCommit(clampV(n));
     }
     setText(fmt(value));
@@ -77,7 +83,7 @@ export function NumberField({
           <button
             type="button"
             tabIndex={-1}
-            aria-label={`Decrease ${label}`}
+            aria-label={t("numberField.decrease", { label })}
             disabled={disabled || value === null || (min !== undefined && value <= min)}
             onClick={(e) => nudge(-1, e)}
             className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
@@ -116,7 +122,7 @@ export function NumberField({
           <button
             type="button"
             tabIndex={-1}
-            aria-label={`Increase ${label}`}
+            aria-label={t("numberField.increase", { label })}
             disabled={disabled || value === null || (max !== undefined && value >= max)}
             onClick={(e) => nudge(1, e)}
             className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"

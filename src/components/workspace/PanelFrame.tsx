@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
-import { PANEL_DEFS, type PanelConfig, type PanelOrientation, type RegionPosition } from "../../lib/workspace-layout";
+import { useTranslation } from "react-i18next";
+import type { PanelConfig, PanelOrientation, RegionPosition } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { PanelPositionItems } from "./PanelPositionMenu";
 import { Popover } from "./Popover";
@@ -22,9 +23,10 @@ export function PanelFrame({
   regionCollapsed: boolean;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   const setCollapsed = usePreferencesStore((s) => s.setPanelCollapsed);
   const { id, collapsed } = panel;
-  const title = PANEL_DEFS[id].title;
+  const title = t(`panels.titles.${id}`);
   const attrs = {
     "data-testid": `${id}-panel`,
     "data-position": position,
@@ -38,8 +40,8 @@ export function PanelFrame({
       <section {...attrs} className="flex h-full w-full flex-col items-center bg-[var(--panel)] py-1">
         <button
           type="button"
-          aria-label={`Expand ${title}`}
-          title={`Expand ${title}`}
+          aria-label={t("panels.expand", { title })}
+          title={t("panels.expand", { title })}
           onClick={() => setCollapsed(id, false)}
           className="flex flex-col items-center gap-2 rounded px-1 py-1 hover:bg-[var(--hover)]"
         >
@@ -57,7 +59,7 @@ export function PanelFrame({
       <header className="flex h-7 shrink-0 items-center gap-1 px-2">
         <button
           type="button"
-          aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
+          aria-label={collapsed ? t("panels.expand", { title }) : t("panels.collapse", { title })}
           aria-expanded={!collapsed}
           onClick={() => setCollapsed(id, !collapsed)}
           className="rounded p-0.5 hover:bg-[var(--hover)]"
@@ -68,7 +70,7 @@ export function PanelFrame({
           {title}
         </span>
         <Popover
-          label={`${title} panel options`}
+          label={t("panels.options", { title })}
           triggerClassName="rounded p-0.5 hover:bg-[var(--hover)]"
           trigger={<MoreVertical size={13} />}
         >

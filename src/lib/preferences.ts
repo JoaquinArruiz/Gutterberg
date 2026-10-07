@@ -8,17 +8,19 @@
 // app never sees an invalid state.
 
 import { type HintId, isHintId } from "./hints";
+import { DECIMAL_PREFERENCES, type DecimalPreference, LANGUAGE_PREFERENCES, type LanguagePreference } from "./locale";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
 import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
-// inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 5;
+// inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). v6: adds
+// locale (language and decimal separator, both defaulting to following the system). Older files migrate by
+// taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 6;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
 export const WORKSPACE_MODES: WorkspaceMode[] = ["source", "output", "split"];
-export const WORKSPACE_LABEL: Record<WorkspaceMode, string> = { source: "Source", output: "Output", split: "Split" };
 
 /** A fixed mode, or "last" = reopen whichever workspace was used last. */
 export type DefaultWorkspace = WorkspaceMode | "last";
@@ -26,9 +28,15 @@ export type LivePreviewPreference = "always" | "manual";
 export type ThemePreference = "system" | "light" | "dark";
 export const THEMES: ThemePreference[] = ["system", "light", "dark"];
 
+export interface LocalePrefs {
+  language: LanguagePreference;
+  decimal: DecimalPreference;
+}
+
 export interface AppPreferences {
   version: number;
   measurement: { unit: MeasurementUnit };
+  locale: LocalePrefs;
   workspace: {
     /** Ordered: this is exactly the order of the toolbar switcher. */
     visibleModes: WorkspaceMode[];
@@ -68,6 +76,7 @@ const MAX_SECTIONS = 64;
 export const DEFAULT_PREFERENCES: AppPreferences = {
   version: PREFERENCES_VERSION,
   measurement: { unit: "mm" },
+  locale: { language: "system", decimal: "auto" },
   workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
@@ -130,6 +139,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const d = DEFAULT_PREFERENCES;
   const r = isObj(raw) ? raw : {};
   const m = isObj(r.measurement) ? r.measurement : {};
+  const loc = isObj(r.locale) ? r.locale : {};
   const w = isObj(r.workspace) ? r.workspace : {};
   const p = isObj(r.preview) ? r.preview : {};
   const a = isObj(r.appearance) ? r.appearance : {};
@@ -154,6 +164,10 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   return {
     version: PREFERENCES_VERSION,
     measurement: { unit: oneOf(m.unit, MEASUREMENT_UNITS, d.measurement.unit) },
+    locale: {
+      language: oneOf(loc.language, LANGUAGE_PREFERENCES, d.locale.language),
+      decimal: oneOf(loc.decimal, DECIMAL_PREFERENCES, d.locale.decimal),
+    },
     workspace: { visibleModes, defaultMode, lastMode, layout: normalizeLayout(w.layout) },
     preview: { livePreview: oneOf(p.livePreview, ["always", "manual"] as const, d.preview.livePreview) },
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },

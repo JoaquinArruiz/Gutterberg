@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M13, M18 and M20 are done (see the README status list). Each brief below is sized for one session and
+M1–M13, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
@@ -10,44 +10,44 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M10](M10.md) | Export correctness: page boxes, catalog cleanup, atomic save, limits, rotated pages | M | M8 |
 | [M11](M11.md) | Document model: page include/skip, grid per page range, pre-flight, undo/redo | L | M10 |
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
-| [M13](M13.md) | Print stage UI: Cards → Print switch, card library, quantities, sheet preview | L | M9, M12 |
+| [M13](M13.md) | Print stage UI: Source → Print switch, piece library, quantities, sheet preview | L | M9, M12 |
 | [M14](M14.md) | Project files, several PDFs and presets | M | M13 |
 | [M15](M15.md) | Rename to Gutterberg, then distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (outline) | M | M12 |
 | [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
-| [M18](M18.md) | Freeform cards: per-card rectangles, rotation, turn, sort, real size (done) | L | M13 |
+| [M18](M18.md) | Freeform pieces: per-piece rectangles, rotation, turn, sort, real size (done) | L | M13 |
 | [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
-| [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals | M | M18, M20 |
+| [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals (done) | M | M18, M20 |
 
 \* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
   Don't start it or build anything for it unless asked.
 
-M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M21
-(small), then M14, M16, M17, M15. The numbers are names, not the order.
+M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M14,
+M16, M17, M15. The numbers are names, not the order.
 
-## Direction: Cards → Print
+## Direction: Source → Print
 
-The app is heading towards two stages in one window, switched from the toolbar:
+The app is two tabs in one window, switched from the toolbar:
 
-- **Cards**: today's editor. Define where the cards are (grid per page or page range, skip
-  non-card pages).
-- **Print**: pick which cards go on which sheet (all cards in order by default, or a custom
-  selection with a quantity per card), plus output spacing, page size and margins.
+- **Source**: the editor for the pages of the source PDFs. Define where the pieces are (grid per
+  page or page range, skip pages with no pieces).
+- **Print**: pick which pieces go on which sheet (all pieces in order by default, or a custom
+  selection with a quantity per piece), plus the output gap, page size and margins.
 
-Today's re-space export is the Print stage's default plan ("all cards in order, sheet grid
+Today's re-space export is the Print tab's default plan ("all pieces in order, sheet grid
 = source grid"), so there is one engine, not two:
 
 ```
-Source PDF → Cards stage → extract_cards → card library
-          → Print stage (plan) → paginate → output sheets → export_sheets → PDF
+Source PDF → Source tab → extract_cards → piece library
+          → Print tab (plan) → paginate → output sheets → export_sheets → PDF
 ```
 
 ## Decisions made by the owner
 
 | Topic | Decision |
 | --- | --- |
-| Sheet builder UI | Cards / Print tabs at the top (not a popup dialog) |
+| Sheet builder UI | Source / Print tabs at the top (not a popup dialog) |
 | Card sources | Cards from any page, and from several PDFs (multi-PDF UI in M14) |
 | Quantities and order | Any quantity per card; Grouped / Interleaved toggle |
 | Mixed card sizes | Automatic size groups (own sheets per size), with a toggle to turn it off (shared grid, slots sized to the largest card) |

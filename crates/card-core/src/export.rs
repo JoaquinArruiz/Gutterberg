@@ -13,7 +13,7 @@
 //! so text, vector art and embedded images keep their original encoding.
 
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
-use crate::error::{Error, Result};
+use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
@@ -335,6 +335,24 @@ pub struct PageIssue {
     /// 0-based source page index.
     pub page_index: usize,
     pub message: String,
+    /// What went wrong as a stable code with its values (see [`ErrorInfo`]), so the UI can word it in
+    /// its own language; `message` is the English fallback.
+    #[serde(default)]
+    pub code: String,
+    #[serde(default, flatten)]
+    pub params: std::collections::BTreeMap<String, ErrorParam>,
+}
+
+impl PageIssue {
+    pub fn new(page_index: usize, error: &Error) -> Self {
+        let info = ErrorInfo::from(error);
+        Self {
+            page_index,
+            message: info.message,
+            code: info.code,
+            params: info.params,
+        }
+    }
 }
 
 /// Checks every job the way [`export_document`] will, and returns one issue per page
@@ -354,10 +372,7 @@ pub fn validate_export(doc: &Document, jobs: &[PageJob]) -> Vec<PageIssue> {
             .and_then(|&id| PageFrame::read(doc, id, pj.page_index))
             .and_then(|frame| fitting_layout(&frame, &pj.grid));
         if let Err(e) = checked {
-            issues.push(PageIssue {
-                page_index: pj.page_index,
-                message: e.to_string(),
-            });
+            issues.push(PageIssue::new(pj.page_index, &e));
         }
     }
     issues
@@ -388,10 +403,7 @@ pub fn validate_sheets(doc: &Document, sheets: &[OutputSheet]) -> Vec<PageIssue>
                 .map(|_| ())
         };
         if let Err(e) = checked {
-            issues.push(PageIssue {
-                page_index: key.1,
-                message: e.to_string(),
-            });
+            issues.push(PageIssue::new(key.1, &e));
         }
     }
     issues.sort_by_key(|i| i.page_index);
@@ -418,10 +430,7 @@ pub fn plan_print_file(
         }
         for (page_index, size) in (g.pages.first..).zip(&sizes[g.pages.first..=g.pages.last]) {
             if let Err(e) = size {
-                issues.push(PageIssue {
-                    page_index,
-                    message: e.to_string(),
-                });
+                issues.push(PageIssue::new(page_index, e));
             }
         }
     }

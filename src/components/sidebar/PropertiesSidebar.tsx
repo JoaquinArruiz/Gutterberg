@@ -1,6 +1,8 @@
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import type { NormalizedRect } from "../../lib/coordinates";
-import { rangeLabel } from "../../lib/document-layout";
+import { pageCount, rangeLabel } from "../../lib/document-layout";
+import { formatError } from "../../lib/errors";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
@@ -16,8 +18,9 @@ import { FreeformSection } from "./FreeformSection";
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
-/** The Cards stage inspector: where the cards are on the viewed page. What to print is the Print stage's. */
+/** The Source tab inspector: where the pieces are on the viewed page. What to print is the Print tab's. */
 export function PropertiesSidebar() {
+  const { t } = useTranslation();
   const page = useDocumentStore((s) => s.pages[s.currentPage]);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const group = useCurrentGroup();
@@ -39,7 +42,7 @@ export function PropertiesSidebar() {
   if (!page) {
     return (
       <div className="h-full p-3">
-        <p className="text-[var(--muted)]">No document open.</p>
+        <p className="text-[var(--muted)]">{t("source.noDocument")}</p>
       </div>
     );
   }
@@ -51,9 +54,9 @@ export function PropertiesSidebar() {
 
   return (
     <div className="h-full overflow-y-auto p-3">
-      <CollapsibleSection id="cards.page" title="Page">
+      <CollapsibleSection id="cards.page" title={t("source.sections.page")}>
         <div className="flex justify-between">
-          <span className="text-[var(--muted)]">Size</span>
+          <span className="text-[var(--muted)]">{t("source.size")}</span>
           <span className="tabular-nums">
             {fmt(pw)} × {fmt(ph)}
           </span>
@@ -61,13 +64,13 @@ export function PropertiesSidebar() {
       </CollapsibleSection>
 
       {group?.kind === "skip" && (
-        <CollapsibleSection id="cards.skipped" title="Skipped page">
+        <CollapsibleSection id="cards.skipped" title={t("source.sections.skipped")}>
           <p className="text-[var(--muted)]">
-            {rangeLabel(group.pages)} {group.pages.first === group.pages.last ? "is" : "are"} left out of the export.
+            {t("source.skippedRange", { range: rangeLabel(group.pages), count: pageCount(group.pages) })}
           </p>
           <div>
             <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, false)}>
-              Include this page
+              {t("source.includePage")}
             </button>
           </div>
         </CollapsibleSection>
@@ -75,21 +78,20 @@ export function PropertiesSidebar() {
 
       {group?.kind === "grid" && grid && spec && (
         <>
-          <CollapsibleSection id="cards.layout" title="Source layout">
+          <CollapsibleSection id="cards.layout" title={t("source.sections.layout")}>
             <p className="text-[var(--muted)]">
-              {rangeLabel(group.pages)}
-              {group.pages.first === group.pages.last ? " has" : " share"} this grid.
+              {t("source.sharedGrid", { range: rangeLabel(group.pages), count: pageCount(group.pages) })}
             </p>
             <div className="flex flex-col gap-1.5" data-hint-target="grid-fields">
               <NumberField
-                label="Columns"
+                label={t("common.columns")}
                 value={grid.columns}
                 onCommit={(columns) => L.setGrid(currentPage, { columns })}
                 min={1}
                 max={MAX_GRID}
               />
               <NumberField
-                label="Rows"
+                label={t("common.rows")}
                 value={grid.rows}
                 onCommit={(rows) => L.setGrid(currentPage, { rows })}
                 min={1}
@@ -97,7 +99,7 @@ export function PropertiesSidebar() {
               />
             </div>
             <MeasurementInput
-              label="Card width"
+              label={t("source.pieceWidth")}
               precise
               min={1}
               value={card ? card.width : null}
@@ -105,24 +107,22 @@ export function PropertiesSidebar() {
               onChange={(w) => selection && setSelection(selectionForCardSize(selection, page, spec, { width: w }))}
             />
             <MeasurementInput
-              label="Card height"
+              label={t("source.pieceHeight")}
               precise
               min={1}
               value={card ? card.height : null}
               disabled={!selection}
               onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, spec, { height: h }))}
             />
-            {!selection && (
-              <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>
-            )}
+            {!selection && <p className="text-[var(--muted)]">{t("source.dragRegion")}</p>}
             <div>
               <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, true)}>
-                Skip this page
+                {t("source.skipPage")}
               </button>
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection id="cards.spacing" title="Source spacing">
+          <CollapsibleSection id="cards.spacing" title={t("source.sections.gap")}>
             <GapFields
               linked={grid.sourceGapLinked}
               onLink={(sourceGapLinked) => L.setGrid(currentPage, { sourceGapLinked })}
@@ -131,41 +131,39 @@ export function PropertiesSidebar() {
               onX={(sourceGapXMm) => L.setGrid(currentPage, { sourceGapXMm })}
               onY={(sourceGapYMm) => L.setGrid(currentPage, { sourceGapYMm })}
             />
-            <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
+            <p className="text-[var(--muted)]">{t("source.gapNote")}</p>
           </CollapsibleSection>
         </>
       )}
 
       {group?.kind !== "skip" && <FreeformSection />}
 
-      <CollapsibleSection id="cards.output" title="Output">
-        <p className="text-[var(--muted)]">
-          Spacing between cards, page size and margins, and which cards go on which sheet, are set in the Print stage.
-        </p>
+      <CollapsibleSection id="cards.output" title={t("source.sections.output")}>
+        <p className="text-[var(--muted)]">{t("source.outputNote")}</p>
         <div>
           <button type="button" className={smallBtn} onClick={() => setStage("print")}>
-            Open Print stage
+            {t("source.openPrint")}
           </button>
         </div>
-        {L.layoutError && <p className="text-red-400">{L.layoutError}</p>}
+        {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
       </CollapsibleSection>
 
       {selection && (
-        <CollapsibleSection id="cards.selection" title="Selection position">
+        <CollapsibleSection id="cards.selection" title={t("source.sections.selection")}>
           <MeasurementInput
-            label="X"
+            label={t("common.x")}
             precise
             value={selection.x * pw}
             onChange={(x) => setSelection(selectionAtMm(selection, page, { x }))}
           />
           <MeasurementInput
-            label="Y"
+            label={t("common.y")}
             precise
             value={selection.y * ph}
             onChange={(y) => setSelection(selectionAtMm(selection, page, { y }))}
           />
           <div className="flex justify-between">
-            <span className="text-[var(--muted)]">Total</span>
+            <span className="text-[var(--muted)]">{t("source.total")}</span>
             <span className="tabular-nums">
               {fmt(selection.width * pw)} × {fmt(selection.height * ph)}
             </span>

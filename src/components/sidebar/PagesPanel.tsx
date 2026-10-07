@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { pageBadge } from "../../lib/document-layout";
 import { usePageImage } from "../../lib/use-page-image";
 import type { PanelOrientation } from "../../lib/workspace-layout";
@@ -10,6 +11,7 @@ const THUMB_WIDTH = 120; // vertical list: fixed width
 const THUMB_HEIGHT = 84; // horizontal strip: fixed height, width follows the page aspect
 
 function Thumbnail({ index, orientation }: { index: number; orientation: PanelOrientation }) {
+  const { t } = useTranslation();
   const path = useDocumentStore((s) => s.path);
   const size = useDocumentStore((s) => s.pages[index]);
   const viewed = useDocumentStore((s) => s.currentPage);
@@ -51,17 +53,19 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
           className={`bg-white/5 ${skipped ? "opacity-35" : ""}`}
           style={{ width: widthCss, aspectRatio: `${size.width_pt} / ${size.height_pt}` }}
         >
-          {url && <img src={url} alt={`Page ${index + 1}`} draggable={false} className="h-full w-full" />}
+          {url && (
+            <img src={url} alt={t("common.page", { n: index + 1 })} draggable={false} className="h-full w-full" />
+          )}
         </div>
         <span className="text-[11px] text-[var(--muted)]">{index + 1}</span>
       </button>
       <label
-        title={skipped ? "Skipped: left out of the export" : "Included in the export"}
+        title={skipped ? t("pages.skippedTitle") : t("pages.includedTitle")}
         className="absolute left-2 top-2 flex items-center rounded bg-black/60 p-0.5"
       >
         <input
           type="checkbox"
-          aria-label={`Include page ${index + 1}`}
+          aria-label={t("pages.include", { n: index + 1 })}
           checked={!skipped}
           onChange={(e) => setSkipped(index, !e.target.checked)}
         />
@@ -81,6 +85,7 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
  * horizontal strip.
  */
 export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
+  const { t } = useTranslation();
   const count = useDocumentStore((s) => s.pages.length);
   const [applyOpen, setApplyOpen] = useState(false);
   const vertical = orientation === "vertical";
@@ -93,7 +98,7 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
             onClick={() => setApplyOpen(true)}
             className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)]"
           >
-            Apply this grid to…
+            {t("pages.applyGrid")}
           </button>
           <ApplyGridDialog open={applyOpen} onClose={() => setApplyOpen(false)} />
         </div>

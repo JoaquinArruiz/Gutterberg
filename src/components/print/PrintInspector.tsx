@@ -1,4 +1,6 @@
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { formatError } from "../../lib/errors";
 import { formatMeasurement } from "../../lib/measurement";
 import { effectiveGrid, MAX_SHEET_GRID, plannerRequired, type SheetGridMode } from "../../lib/print-request";
 import { ptToMm } from "../../lib/units";
@@ -50,6 +52,7 @@ function Radio<T extends string>({
 
 /** What to print and how the sheets look. Sections fold, and which are open is remembered. */
 export function PrintInspector() {
+  const { t } = useTranslation();
   const P = usePrintStore(
     useShallow((s) => ({
       ...planOf(s),
@@ -90,11 +93,11 @@ export function PrintInspector() {
     <div className="h-full overflow-y-auto p-3" data-testid="print-inspector" data-hint-target="sheet-inspector">
       {P.sheetsError && (
         <div className="mb-3 rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300" role="alert">
-          <p>⚠ {P.sheetsError}</p>
-          <p className="mt-1">Cards are never scaled. Change the page, spacing or margins, or auto-fit the page.</p>
+          <p>⚠ {formatError(P.sheetsError)}</p>
+          <p className="mt-1">{t("print.error.note")}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             <button type="button" className={smallBtn} onClick={() => setPageMode("fit")}>
-              Auto-fit page
+              {t("print.error.autoFit")}
             </button>
             {pageMode !== "same" && pageMode !== "fit" && (
               <button
@@ -102,7 +105,7 @@ export function PrintInspector() {
                 className={smallBtn}
                 onClick={() => setOrientation(orientation === "portrait" ? "landscape" : "portrait")}
               >
-                Switch orientation
+                {t("print.error.switchOrientation")}
               </button>
             )}
           </div>
@@ -111,27 +114,27 @@ export function PrintInspector() {
 
       <SelectedCardsSection />
 
-      <CollapsibleSection id="print.plan" title="Plan">
+      <CollapsibleSection id="print.plan" title={t("print.sections.plan")}>
         <Radio
           name="plan-mode"
           value="all"
           current={P.mode}
           onSelect={P.setMode}
-          label="All cards in order"
-          hint="Every card once, as the source lays them out."
+          label={t("print.plan.all")}
+          hint={t("print.plan.allHint")}
         />
         <Radio
           name="plan-mode"
           value="custom"
           current={P.mode}
           onSelect={P.setMode}
-          label="Custom selection"
-          hint="Only the cards you give copies, e.g. 4 × A, 2 × B, 3 × C."
+          label={t("print.plan.custom")}
+          hint={t("print.plan.customHint")}
         />
         {P.mode === "custom" && (
           <div>
             <button type="button" className={smallBtn} onClick={P.startFromAllCards}>
-              Start from all cards (1 each)
+              {t("print.plan.startFromAll")}
             </button>
           </div>
         )}
@@ -143,18 +146,18 @@ export function PrintInspector() {
             onChange={(e) => P.setAutoFill(e.target.checked)}
           />
           <span>
-            Auto-fill
-            <span className="block text-[var(--muted)]">Repeat the cards until the last sheet is full.</span>
+            {t("print.plan.autoFill")}
+            <span className="block text-[var(--muted)]">{t("print.plan.autoFillHint")}</span>
           </span>
         </label>
-        <div className="mt-1 text-[var(--muted)]">Order of copies</div>
+        <div className="mt-1 text-[var(--muted)]">{t("print.plan.order")}</div>
         <Radio
           name="plan-order"
           value="grouped"
           current={P.order}
           onSelect={P.setOrder}
-          label="Grouped"
-          hint="A A A A, B B, C C C"
+          label={t("print.plan.grouped")}
+          hint={t("print.plan.groupedHint")}
           disabled={sourceLayout}
         />
         <Radio
@@ -162,39 +165,38 @@ export function PrintInspector() {
           value="interleaved"
           current={P.order}
           onSelect={P.setOrder}
-          label="Interleaved"
-          hint="A B C, A B C, A C, A"
+          label={t("print.plan.interleaved")}
+          hint={t("print.plan.interleavedHint")}
           disabled={sourceLayout}
         />
-        {sourceLayout && (
-          <p className="text-[var(--muted)]">The order only matters when the sheet grid is not the source's.</p>
-        )}
+        {sourceLayout && <p className="text-[var(--muted)]">{t("print.plan.orderNote")}</p>}
       </CollapsibleSection>
 
-      <CollapsibleSection id="print.sheet" title="Sheet">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[var(--muted)]">Grid</span>
+      <CollapsibleSection id="print.sheet" title={t("print.sections.sheet")}>
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <span className="text-[var(--muted)]">{t("print.sheet.grid")}</span>
           <Select<SheetGridMode>
-            label="Sheet grid"
+            label={t("print.sheet.gridLabel")}
             value={grid}
             onChange={P.setSheetGrid}
             options={[
-              { value: "same", label: "Same as source", disabled: !sameAvailable },
-              { value: "auto", label: "Auto (as many as fit)" },
-              { value: "custom", label: "Rows × columns" },
+              { value: "same", label: t("print.sheet.gridSame"), disabled: !sameAvailable },
+              { value: "auto", label: t("print.sheet.gridAuto") },
+              { value: "custom", label: t("print.sheet.gridCustom") },
             ]}
           />
         </div>
-        {!sameAvailable && P.sheetGrid === "same" && (
-          <p className="text-[var(--muted)]">
-            "Same as source" is for all cards in order, as the page has them: no auto-fill, and no freeform, turned,
-            resized or reordered cards. Auto is used instead.
-          </p>
-        )}
+        {!sameAvailable && P.sheetGrid === "same" && <p className="text-[var(--muted)]">{t("print.sheet.sameNote")}</p>}
         {grid === "custom" && (
           <>
-            <NumberField label="Columns" value={P.columns} min={1} max={MAX_SHEET_GRID} onCommit={P.setColumns} />
-            <NumberField label="Rows" value={P.rows} min={1} max={MAX_SHEET_GRID} onCommit={P.setRows} />
+            <NumberField
+              label={t("common.columns")}
+              value={P.columns}
+              min={1}
+              max={MAX_SHEET_GRID}
+              onCommit={P.setColumns}
+            />
+            <NumberField label={t("common.rows")} value={P.rows} min={1} max={MAX_SHEET_GRID} onCommit={P.setRows} />
           </>
         )}
         <label className="flex items-start gap-2">
@@ -206,17 +208,15 @@ export function PrintInspector() {
             onChange={(e) => P.setGroupBySize(e.target.checked)}
           />
           <span>
-            Group cards by size
-            <span className="block text-[var(--muted)]">
-              Cards of different sizes get their own sheets. Off: one shared grid, slots as large as the largest card.
-            </span>
+            {t("print.sheet.groupBySize")}
+            <span className="block text-[var(--muted)]">{t("print.sheet.groupBySizeHint")}</span>
           </span>
         </label>
-        <div className="mt-1 text-[var(--muted)]">Spacing between cards</div>
+        <div className="mt-1 text-[var(--muted)]">{t("print.sheet.outputGap")}</div>
         <OutputSpacingFields />
         {first && (
           <div className="flex justify-between">
-            <span className="text-[var(--muted)]">Sheet</span>
+            <span className="text-[var(--muted)]">{t("print.sheet.size")}</span>
             <span className="tabular-nums">
               {fmt(ptToMm(first.page.width_pt))} × {fmt(ptToMm(first.page.height_pt))}
             </span>
@@ -224,7 +224,7 @@ export function PrintInspector() {
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection id="print.page" title="Page" defaultOpen={false}>
+      <CollapsibleSection id="print.page" title={t("print.sections.page")} defaultOpen={false}>
         <OutputPageFields />
       </CollapsibleSection>
     </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
@@ -11,6 +12,7 @@ const PAD = 24;
 
 /** Output page fitted into its own pane (split view). No pan/zoom: it answers "what will the sheet look like?". */
 export function OutputPane() {
+  const { t } = useTranslation();
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const result = usePreviewResult();
@@ -43,7 +45,7 @@ export function OutputPane() {
   return (
     <div ref={ref} className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
       <div className="pointer-events-none absolute left-2 top-2 z-10 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
-        Output{live ? "" : " (manual)"}
+        {live ? t("preview.title") : t("preview.titleManual")}
       </div>
       {content}
       <RefreshPreviewButton className="absolute bottom-3 right-3 z-20" />

@@ -1,12 +1,19 @@
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { MEASUREMENT_UNITS, type MeasurementUnit, UNIT_LABEL } from "../../lib/measurement";
+import { useTranslation } from "react-i18next";
+import {
+  DECIMAL_PREFERENCES,
+  type DecimalPreference,
+  LANGUAGE_NAME,
+  LANGUAGES,
+  type LanguagePreference,
+} from "../../lib/locale";
+import { MEASUREMENT_UNITS, type MeasurementUnit } from "../../lib/measurement";
 import {
   type DefaultWorkspace,
   type LivePreviewPreference,
   THEMES,
   type ThemePreference,
-  WORKSPACE_LABEL,
   WORKSPACE_MODES,
   type WorkspaceMode,
 } from "../../lib/preferences";
@@ -18,13 +25,14 @@ import {
   PANEL_DEFS,
   PANEL_IDS,
   type PanelPosition,
-  POSITION_LABEL,
-  PRESET_LABEL,
 } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { type PrefsSection, useUiStore } from "../../stores/ui-store";
 import { Select } from "../ui/Select";
 import { LayoutPreview } from "./LayoutPreview";
+
+/** The catalog key of each decimal choice. */
+const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalComma" } as const;
 
 const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "About"];
 type Section = PrefsSection;
@@ -66,6 +74,7 @@ function Radio<T extends string>({
 
 /** Application preferences. Document settings (gaps, page, margins...) are NOT here. */
 export function PreferencesDialog() {
+  const { t } = useTranslation();
   const open = useUiStore((s) => s.prefsOpen);
   const setOpen = useUiStore((s) => s.setPrefsOpen);
   const ref = useRef<HTMLDialogElement>(null);
@@ -97,17 +106,17 @@ export function PreferencesDialog() {
   return (
     <dialog
       ref={ref}
-      aria-label="Preferences"
+      aria-label={t("preferences.title")}
       onClose={() => setOpen(false)}
       // A click on the backdrop (the dialog element itself) closes it.
       onMouseDown={(e) => e.target === ref.current && setOpen(false)}
       className="m-auto w-[680px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"
     >
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
-        <h2 className="text-sm font-semibold">Preferences</h2>
+        <h2 className="text-sm font-semibold">{t("preferences.title")}</h2>
         <button
           type="button"
-          aria-label="Close preferences"
+          aria-label={t("preferences.close")}
           onClick={() => setOpen(false)}
           className="rounded p-1 hover:bg-[var(--hover)]"
         >
@@ -116,7 +125,7 @@ export function PreferencesDialog() {
       </div>
 
       <div className="flex h-[480px] max-h-[70vh]">
-        <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label="Preferences sections">
+        <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label={t("preferences.navLabel")}>
           {SECTIONS.map((s) => (
             <button
               type="button"
@@ -125,47 +134,73 @@ export function PreferencesDialog() {
               aria-current={section === s}
               className={`block w-full rounded px-2 py-1.5 text-left hover:bg-[var(--hover)] ${section === s ? "bg-[var(--active)]" : ""}`}
             >
-              {s}
+              {t(`preferences.sections.${s}`)}
             </button>
           ))}
         </nav>
 
         <div className="min-w-0 flex-1 overflow-y-auto p-4">
           {section === "General" && (
-            <Field label="Measurement unit">
+            <Field label={t("preferences.general.unit")}>
               <Select<MeasurementUnit>
-                label="Measurement unit"
+                label={t("preferences.general.unit")}
                 value={prefs.measurement.unit}
                 onChange={store.setUnit}
-                options={MEASUREMENT_UNITS.map((u) => ({ value: u, label: UNIT_LABEL[u] }))}
+                options={MEASUREMENT_UNITS.map((u) => ({ value: u, label: t(`preferences.units.${u}`) }))}
               />
-              <p className="text-[var(--muted)]">
-                Only changes how lengths are shown and typed. The document itself is never altered.
-              </p>
+              <p className="text-[var(--muted)]">{t("preferences.general.unitNote")}</p>
             </Field>
           )}
 
           {section === "General" && (
-            <Field label="Help tips">
+            <Field label={t("preferences.general.language")}>
+              <Select<LanguagePreference>
+                label={t("preferences.general.language")}
+                value={prefs.locale.language}
+                onChange={store.setLanguage}
+                options={[
+                  { value: "system", label: t("preferences.general.languageSystem") },
+                  ...LANGUAGES.map((l) => ({ value: l as LanguagePreference, label: LANGUAGE_NAME[l] })),
+                ]}
+              />
+              <p className="text-[var(--muted)]">{t("preferences.general.languageNote")}</p>
+            </Field>
+          )}
+
+          {section === "General" && (
+            <Field label={t("preferences.general.decimal")}>
+              <Select<DecimalPreference>
+                label={t("preferences.general.decimal")}
+                value={prefs.locale.decimal}
+                onChange={store.setDecimal}
+                options={DECIMAL_PREFERENCES.map((d) => ({
+                  value: d,
+                  label: t(`preferences.general.${DECIMAL_LABEL[d]}`),
+                }))}
+              />
+              <p className="text-[var(--muted)]">{t("preferences.general.decimalNote")}</p>
+            </Field>
+          )}
+
+          {section === "General" && (
+            <Field label={t("preferences.general.helpTips")}>
               <div>
                 <button type="button" className={btn} disabled={hiddenTips === 0} onClick={store.resetHints}>
-                  Enable all help tips
+                  {t("preferences.general.enableTips")}
                 </button>
               </div>
               <p className="text-[var(--muted)]">
                 {hiddenTips === 0
-                  ? "All help tips are enabled."
-                  : `${hiddenTips} help tip${hiddenTips === 1 ? " is" : "s are"} hidden because you closed ${hiddenTips === 1 ? "it" : "them"}. Enable them to see ${hiddenTips === 1 ? "it" : "them"} again.`}
+                  ? t("preferences.general.allTipsOn")
+                  : t("preferences.general.tipsHidden", { count: hiddenTips })}
               </p>
             </Field>
           )}
 
           {section === "Workspace" && (
             <>
-              <Field label="Visible views">
-                <p className="text-[var(--muted)]">
-                  The view switcher shows these, in this order. At least one must stay enabled.
-                </p>
+              <Field label={t("preferences.workspace.visibleViews")}>
+                <p className="text-[var(--muted)]">{t("preferences.workspace.visibleNote")}</p>
                 {[...visibleModes, ...hiddenModes].map((mode: WorkspaceMode) => {
                   const on = visibleModes.includes(mode);
                   const i = visibleModes.indexOf(mode);
@@ -174,18 +209,18 @@ export function PreferencesDialog() {
                       <label className="flex flex-1 items-center gap-2">
                         <input
                           type="checkbox"
-                          aria-label={`Show ${WORKSPACE_LABEL[mode]} view`}
+                          aria-label={t("preferences.workspace.showView", { view: t(`views.${mode}`) })}
                           checked={on}
                           disabled={on && visibleModes.length === 1}
                           onChange={(e) => store.setVisibleMode(mode, e.target.checked)}
                         />
-                        {WORKSPACE_LABEL[mode]}
+                        {t(`views.${mode}`)}
                       </label>
                       {on && (
                         <>
                           <button
                             type="button"
-                            aria-label={`Move ${WORKSPACE_LABEL[mode]} earlier`}
+                            aria-label={t("preferences.workspace.moveEarlier", { view: t(`views.${mode}`) })}
                             disabled={i === 0}
                             onClick={() => store.moveVisibleMode(mode, -1)}
                             className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
@@ -194,7 +229,7 @@ export function PreferencesDialog() {
                           </button>
                           <button
                             type="button"
-                            aria-label={`Move ${WORKSPACE_LABEL[mode]} later`}
+                            aria-label={t("preferences.workspace.moveLater", { view: t(`views.${mode}`) })}
                             disabled={i === visibleModes.length - 1}
                             onClick={() => store.moveVisibleMode(mode, 1)}
                             className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
@@ -207,67 +242,68 @@ export function PreferencesDialog() {
                   );
                 })}
               </Field>
-              <Field label="Default view">
+              <Field label={t("preferences.workspace.defaultView")}>
                 <Select<DefaultWorkspace>
-                  label="Default view"
+                  label={t("preferences.workspace.defaultView")}
                   value={prefs.workspace.defaultMode}
                   onChange={store.setDefaultMode}
                   options={[
-                    { value: "last", label: "Last used" },
-                    ...visibleModes.map((m) => ({ value: m as DefaultWorkspace, label: WORKSPACE_LABEL[m] })),
+                    { value: "last", label: t("preferences.workspace.lastUsed") },
+                    ...visibleModes.map((m) => ({ value: m as DefaultWorkspace, label: t(`views.${m}`) })),
                   ]}
                 />
-                <p className="text-[var(--muted)]">
-                  Used when a document opens. Switching views while editing does not change it.
-                </p>
+                <p className="text-[var(--muted)]">{t("preferences.workspace.defaultNote")}</p>
               </Field>
 
-              <Field label="Layout">
+              <Field label={t("preferences.workspace.layout")}>
                 <div className="flex gap-4">
                   <div className="flex flex-1 flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[var(--muted)]">Preset</span>
+                      <span className="text-[var(--muted)]">{t("preferences.workspace.preset")}</span>
                       <Select<LayoutPresetId>
-                        label="Layout preset"
+                        label={t("preferences.workspace.presetLabel")}
                         value={preset}
                         onChange={(v) => v !== "custom" && store.applyLayoutPreset(v)}
                         options={[
                           ...(preset === "custom"
-                            ? [{ value: "custom" as const, label: PRESET_LABEL.custom, disabled: true }]
+                            ? [{ value: "custom" as const, label: t("panels.presets.custom"), disabled: true }]
                             : []),
-                          ...LAYOUT_PRESETS.map((id) => ({ value: id as LayoutPresetId, label: PRESET_LABEL[id] })),
+                          ...LAYOUT_PRESETS.map((id) => ({
+                            value: id as LayoutPresetId,
+                            label: t(`panels.presets.${id}`),
+                          })),
                         ]}
                       />
                     </div>
                     {PANEL_IDS.map((id) => (
                       <div key={id} className="flex items-center justify-between gap-2">
-                        <span className="text-[var(--muted)]">{PANEL_DEFS[id].title} panel</span>
+                        <span className="text-[var(--muted)]">
+                          {t("preferences.workspace.panelRow", { panel: t(`panels.titles.${id}`) })}
+                        </span>
                         <Select<PanelPosition>
-                          label={`${PANEL_DEFS[id].title} panel position`}
+                          label={t("preferences.workspace.panelPosition", { panel: t(`panels.titles.${id}`) })}
                           value={layout.panels.find((p) => p.id === id)?.position ?? "hidden"}
                           onChange={(pos) => store.setPanelPosition(id, pos)}
                           options={PANEL_DEFS[id].positions
                             .filter((pos) => canPlace(id, pos))
-                            .map((pos) => ({ value: pos, label: POSITION_LABEL[pos] }))}
+                            .map((pos) => ({ value: pos, label: t(`panels.positions.${pos}`) }))}
                         />
                       </div>
                     ))}
                   </div>
                   <LayoutPreview panels={layout.panels} />
                 </div>
-                <p className="text-[var(--muted)]">
-                  Changes apply immediately. The Panels menu in the toolbar can always bring a hidden panel back.
-                </p>
+                <p className="text-[var(--muted)]">{t("preferences.workspace.layoutNote")}</p>
               </Field>
 
-              <Field label="Behavior">
+              <Field label={t("preferences.workspace.behavior")}>
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={layout.rememberSizes}
                     onChange={(e) => store.setRememberSizes(e.target.checked)}
                   />
-                  Remember panel sizes
+                  {t("preferences.workspace.rememberSizes")}
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -275,65 +311,58 @@ export function PreferencesDialog() {
                     checked={layout.rememberCollapsed}
                     onChange={(e) => store.setRememberCollapsed(e.target.checked)}
                   />
-                  Remember collapsed panels
+                  {t("preferences.workspace.rememberCollapsed")}
                 </label>
                 <div>
                   <button type="button" className={btn} onClick={store.resetWorkspace}>
-                    Reset workspace layout
+                    {t("preferences.workspace.resetLayout")}
                   </button>
                 </div>
-                <p className="text-[var(--muted)]">
-                  Restores panel positions and sizes, the visible views and the default view. Units, theme and Live
-                  Preview are kept.
-                </p>
+                <p className="text-[var(--muted)]">{t("preferences.workspace.resetNote")}</p>
               </Field>
             </>
           )}
 
           {section === "Preview" && (
-            <Field label="Live preview">
+            <Field label={t("preferences.livePreview.title")}>
               <Radio<LivePreviewPreference>
                 name="live"
                 value="always"
                 current={prefs.preview.livePreview}
                 onSelect={store.setLivePreview}
-                label="Always on"
-                hint="The output follows every change."
+                label={t("preferences.livePreview.always")}
+                hint={t("preferences.livePreview.alwaysHint")}
               />
               <Radio<LivePreviewPreference>
                 name="live"
                 value="manual"
                 current={prefs.preview.livePreview}
                 onSelect={store.setLivePreview}
-                label="Manual"
-                hint="The output updates only when you press Update preview."
+                label={t("preferences.livePreview.manual")}
+                hint={t("preferences.livePreview.manualHint")}
               />
-              <p className="text-[var(--muted)]">
-                With Manual, the Output tab refreshes the preview each time you open it, and the Split view has a
-                refresh button (a dot on it means the preview is out of date). Changing this applies to the open
-                document immediately.
-              </p>
+              <p className="text-[var(--muted)]">{t("preferences.livePreview.note")}</p>
             </Field>
           )}
 
           {section === "Appearance" && (
-            <Field label="Theme">
-              {THEMES.map((t) => (
+            <Field label={t("preferences.appearance.theme")}>
+              {THEMES.map((theme) => (
                 <Radio<ThemePreference>
-                  key={t}
+                  key={theme}
                   name="theme"
-                  value={t}
+                  value={theme}
                   current={prefs.appearance.theme}
                   onSelect={store.setTheme}
-                  label={t[0].toUpperCase() + t.slice(1)}
+                  label={t(`preferences.appearance.${theme}`)}
                 />
               ))}
             </Field>
           )}
 
           {section === "About" && (
-            <Field label="About">
-              <p>Created by Joaquin Arruiz</p>
+            <Field label={t("preferences.about.title")}>
+              <p>{t("preferences.about.createdBy")}</p>
             </Field>
           )}
         </div>
@@ -342,12 +371,10 @@ export function PreferencesDialog() {
       <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">
         {confirmReset ? (
           <>
-            <span>
-              Reset all preferences? This restores the default application settings. Your document is not affected.
-            </span>
+            <span>{t("preferences.footer.confirm")}</span>
             <span className="flex gap-2">
               <button type="button" className={btn} onClick={() => setConfirmReset(false)}>
-                Cancel
+                {t("preferences.footer.cancel")}
               </button>
               <button
                 type="button"
@@ -357,17 +384,17 @@ export function PreferencesDialog() {
                   setConfirmReset(false);
                 }}
               >
-                Reset
+                {t("preferences.footer.reset")}
               </button>
             </span>
           </>
         ) : (
           <>
             <button type="button" className={btn} onClick={() => setConfirmReset(true)}>
-              Reset to defaults
+              {t("preferences.footer.resetDefaults")}
             </button>
             <button type="button" className={btn} onClick={() => setOpen(false)}>
-              Close
+              {t("preferences.footer.close")}
             </button>
           </>
         )}

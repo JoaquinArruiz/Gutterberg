@@ -107,15 +107,15 @@ describe("collapsible sections", () => {
 describe("Print inspector", () => {
   it("opens Plan and Sheet and folds Page, and each folds on click", () => {
     render(<PrintInspector />);
-    expect(screen.getByText("All cards in order")).toBeTruthy();
-    expect(screen.getByText("Group cards by size")).toBeTruthy();
+    expect(screen.getByText("All pieces in order")).toBeTruthy();
+    expect(screen.getByText("Group pieces by size")).toBeTruthy();
     expect(screen.queryByText("Margin top")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /^Page$/ }));
     expect(screen.getByText("Margin top")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Plan$/ }));
-    expect(screen.queryByText("All cards in order")).toBeNull();
-    expect(screen.getByText("Group cards by size")).toBeTruthy();
+    expect(screen.queryByText("All pieces in order")).toBeNull();
+    expect(screen.getByText("Group pieces by size")).toBeTruthy();
   });
 
   it("remembers which sections are open across a restart of the view", () => {
@@ -125,7 +125,7 @@ describe("Print inspector", () => {
     first.unmount();
     render(<PrintInspector />);
     expect(screen.getByText("Margin top")).toBeTruthy();
-    expect(screen.queryByText("Group cards by size")).toBeNull();
+    expect(screen.queryByText("Group pieces by size")).toBeNull();
     expect(usePreferencesStore.getState().prefs.inspector.sections).toMatchObject({
       "print.page": true,
       "print.sheet": false,
@@ -143,21 +143,31 @@ describe("Print inspector", () => {
     expect(print().order).toBe("interleaved");
     fireEvent.click(screen.getByRole("checkbox", { name: /Auto-fill/ }));
     expect(print().autoFill).toBe(true);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Group cards by size/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Group pieces by size/ }));
     expect(print().groupBySize).toBe(false);
   });
 
   it("starts a custom selection from one of every card", () => {
     print().setCards([card(0, 0, 0), card(0, 0, 1)], null);
     fireEvent.click(render(<PrintInspector />).getByRole("radio", { name: /Custom selection/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Start from all cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Start from all pieces/ }));
     expect(Object.values(print().quantities)).toEqual([1, 1]);
   });
 
   it("explains an error that stops the plan, and offers the fixes", () => {
-    print().setSheets(null, "laid-out cards need 298.0 x 186.2 mm but the page is only 210 x 297 mm");
+    // As the engine sends it: a code with its values, and the English text as the fallback.
+    print().setSheets(null, {
+      code: "does_not_fit",
+      message: "laid-out cards need 298.0 x 186.2 mm but the output page is only 210.0 x 297.0 mm",
+      needed_w_mm: 298,
+      needed_h_mm: 186.2,
+      page_w_mm: 210,
+      page_h_mm: 297,
+    });
     render(<PrintInspector />);
-    expect(screen.getByRole("alert").textContent).toContain("laid-out cards need 298.0");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "The laid-out pieces need 298.0 × 186.2 mm but the sheet is only 210.0 × 297.0 mm.",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Auto-fit page" }));
     expect(useLayoutStore.getState().pageMode).toBe("fit");
   });
@@ -211,7 +221,7 @@ describe("Card library", () => {
   it("prints 9 copies of one card: select it, set the copies, and only it is printed", () => {
     render(<CardLibrary />);
     fireEvent.click(thumbs()[0]);
-    typeNumber(screen.getByRole("textbox", { name: "Copies of the selected cards" }), "9");
+    typeNumber(screen.getByRole("textbox", { name: "Copies of the selected pieces" }), "9");
     expect(print().mode).toBe("custom");
     expect(print().quantities).toEqual({ [key(cards[0])]: 9 });
     expect(within(thumbs()[0]).getByText("×9")).toBeTruthy();
@@ -232,7 +242,7 @@ describe("Card library", () => {
     render(<CardLibrary />);
     for (const [i, n] of [4, 2, 3].entries()) {
       fireEvent.click(thumbs()[i]);
-      typeNumber(screen.getByRole("textbox", { name: "Copies of the selected cards" }), String(n));
+      typeNumber(screen.getByRole("textbox", { name: "Copies of the selected pieces" }), String(n));
     }
     expect(Object.values(print().quantities)).toEqual([4, 2, 3]);
   });
@@ -256,7 +266,7 @@ describe("Card library", () => {
   it("says what to do when there are no cards, and shows an engine error", () => {
     print().setCards([], null);
     const r = render(<CardLibrary />);
-    expect(screen.getByText(/No cards yet/)).toBeTruthy();
+    expect(screen.getByText(/No pieces yet/)).toBeTruthy();
     act(() => print().setCards([], "page 3 does not exist"));
     expect(screen.getByText("page 3 does not exist")).toBeTruthy();
     r.unmount();
@@ -289,7 +299,7 @@ describe("Sheet preview", () => {
     render(<SheetPreview />);
     await act(async () => {});
     expect(screen.getByText("Sheet 1 of 2")).toBeTruthy();
-    expect(screen.getByTestId("sheet-summary").textContent).toBe("2 sheets, 11 cards");
+    expect(screen.getByTestId("sheet-summary").textContent).toBe("2 sheets, 11 pieces");
     expect(screen.getByTestId("sheet-page").children).toHaveLength(9);
     fireEvent.click(screen.getByRole("button", { name: "Next sheet" }));
     expect(screen.getByText("Sheet 2 of 2")).toBeTruthy();
@@ -316,9 +326,9 @@ describe("Sheet preview", () => {
     const r = render(<SheetPreview />);
     expect(screen.getByText(/Nothing to print yet/)).toBeTruthy();
     r.unmount();
-    print().setSheets(null, "cards do not fit");
+    print().setSheets(null, "pieces do not fit");
     render(<SheetPreview />);
-    expect(screen.getByText(/cards do not fit/)).toBeTruthy();
+    expect(screen.getByText(/pieces do not fit/)).toBeTruthy();
   });
 });
 
@@ -326,15 +336,15 @@ describe("stage switch", () => {
   it("shows Cards and Print tabs, and switches between them", () => {
     render(<EditorToolbar />);
     const tabs = screen.getByRole("tablist", { name: "Stage" });
-    expect(within(tabs).getByRole("tab", { name: "Cards" }).getAttribute("aria-selected")).toBe("true");
+    expect(within(tabs).getByRole("tab", { name: "Source" }).getAttribute("aria-selected")).toBe("true");
     expect(screen.getByTitle(/Zoom in/)).toBeTruthy();
     fireEvent.click(within(tabs).getByRole("tab", { name: "Print" }));
     expect(useUiStore.getState().stage).toBe("print");
     // The page editor's tools and views do not apply to the Print stage.
     expect(screen.queryByTitle(/Zoom in/)).toBeNull();
-    expect(screen.queryByRole("tablist", { name: "Workspace" })).toBeNull();
+    expect(screen.queryByRole("tablist", { name: "View" })).toBeNull();
     expect(screen.getByRole("button", { name: /Export PDF/ })).toBeTruthy();
-    fireEvent.click(within(tabs).getByRole("tab", { name: "Cards" }));
+    fireEvent.click(within(tabs).getByRole("tab", { name: "Source" }));
     expect(useUiStore.getState().stage).toBe("cards");
     expect(screen.getByTitle(/Zoom in/)).toBeTruthy();
   });
@@ -352,7 +362,7 @@ describe("compact number fields", () => {
   it("keep long names out of the layout in the library header, with one pair of steppers", () => {
     print().setCards([card(0, 0, 0)], null);
     render(<CardLibrary />);
-    expect(isScreenReaderOnly("Copies of the selected cards")).toBe(true);
+    expect(isScreenReaderOnly("Copies of the selected pieces")).toBe(true);
     expect(isScreenReaderOnly("Show only page")).toBe(true);
     // The copies field is stepped by the library's own buttons; the field adds none of its own.
     expect(screen.queryByRole("button", { name: /Increase Copies/ })).toBeNull();
@@ -522,7 +532,7 @@ describe("sheet previews strip", () => {
       act(() => print().setSheets([sheet(4), sheet(9), sheet(9)], null));
       expect(screen.getByTestId("sheet-page").children).toHaveLength(4);
       expect(screen.getByText("Sheet 1 of 3")).toBeTruthy();
-      expect(screen.getByTestId("sheet-summary").textContent).toBe("3 sheets, 22 cards");
+      expect(screen.getByTestId("sheet-summary").textContent).toBe("3 sheets, 22 pieces");
       // ...while the previews above still show the sheets as they were, and say so.
       expect(thumbs()).toHaveLength(2);
       expect(screen.getByText("Previews out of date")).toBeTruthy();

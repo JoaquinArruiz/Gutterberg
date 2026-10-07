@@ -1,6 +1,7 @@
-use crate::state::AppState;
+use crate::state::{internal, AppState};
 use card_core::geometry::Rect;
 use card_core::render_worker::RenderKind;
+use card_core::ErrorInfo;
 use serde::Deserialize;
 use tauri::{ipc::Response, AppHandle, State};
 
@@ -34,14 +35,13 @@ pub async fn render_page(
     kind: Kind,
     page_index: usize,
     width_px: u32,
-) -> Result<Response, String> {
+) -> Result<Response, ErrorInfo> {
     let worker = state.worker(&app)?;
     let png = tauri::async_runtime::spawn_blocking(move || {
         worker.render_page(kind.into(), page_index, width_px)
     })
     .await
-    .map_err(|e| e.to_string())?
-    .map_err(|e| e.to_string())?;
+    .map_err(internal)??;
     Ok(Response::new(png))
 }
 
@@ -56,7 +56,7 @@ pub async fn render_region(
     page_index: usize,
     region: Rect,
     full_width_px: u32,
-) -> Result<Response, String> {
+) -> Result<Response, ErrorInfo> {
     if cfg!(debug_assertions) {
         eprintln!("[render] request {kind:?} region of page {page_index} @ {full_width_px}px");
     }
@@ -65,7 +65,6 @@ pub async fn render_region(
         worker.render_region(kind.into(), page_index, region, full_width_px)
     })
     .await
-    .map_err(|e| e.to_string())?
-    .map_err(|e| e.to_string())?;
+    .map_err(internal)??;
     Ok(Response::new(png))
 }

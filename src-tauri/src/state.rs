@@ -1,4 +1,5 @@
 use card_core::render_worker::RenderWorker;
+use card_core::{Error, ErrorInfo, ErrorParam};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Manager};
@@ -12,8 +13,8 @@ pub struct AppState {
 impl AppState {
     /// Start the render thread (which binds pdfium) on first use so a missing
     /// library becomes a UI error instead of a crash at startup.
-    pub fn worker(&self, app: &AppHandle) -> Result<Arc<RenderWorker>, String> {
-        let mut slot = self.worker.lock().map_err(|e| e.to_string())?;
+    pub fn worker(&self, app: &AppHandle) -> Result<Arc<RenderWorker>, ErrorInfo> {
+        let mut slot = self.worker.lock().map_err(internal)?;
         if let Some(w) = slot.as_ref() {
             return Ok(w.clone());
         }
@@ -30,21 +31,30 @@ impl AppState {
                 .join("resources")
                 .join("pdfium"),
         );
-        let w = Arc::new(RenderWorker::spawn(dirs).map_err(|e| e.to_string())?);
+        let w = Arc::new(RenderWorker::spawn(dirs)?);
         *slot = Some(w.clone());
         Ok(w)
     }
 
-    pub fn set_path(&self, p: PathBuf) -> Result<(), String> {
-        *self.path.lock().map_err(|e| e.to_string())? = Some(p);
+    pub fn set_path(&self, p: PathBuf) -> Result<(), ErrorInfo> {
+        *self.path.lock().map_err(internal)? = Some(p);
         Ok(())
     }
 
-    pub fn path(&self) -> Result<PathBuf, String> {
+    pub fn path(&self) -> Result<PathBuf, ErrorInfo> {
         self.path
             .lock()
-            .map_err(|e| e.to_string())?
+            .map_err(internal)?
             .clone()
-            .ok_or_else(|| "no PDF is open".to_string())
+            .ok_or_else(|| Error::NoDocument.into())
     }
+}
+
+/// A failure that is the app's, not the user's (a poisoned lock, a stopped task).
+pub fn internal(e: impl std::fmt::Display) -> ErrorInfo {
+    let message = e.to_string();
+    let mut info = ErrorInfo::new("internal", &message);
+    info.params
+        .insert("detail".into(), ErrorParam::Text(message));
+    info
 }

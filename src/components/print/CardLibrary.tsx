@@ -1,9 +1,11 @@
 import { Minus, Plus, RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { cardIdKey } from "../../lib/card";
 import { moveCards, orientCards, turnCards } from "../../lib/card-edits";
 import { rangeLabel } from "../../lib/document-layout";
+import { formatError } from "../../lib/errors";
 import { commonQuantity, filterCards } from "../../lib/library";
 import { MAX_QUANTITY } from "../../lib/print-request";
 import { useLibraryCards } from "../../lib/use-library-cards";
@@ -27,11 +29,12 @@ const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[va
 type FilterChoice = "all" | "page" | `group:${number}`;
 
 /**
- * Every card of the page groups, as a windowed grid of thumbnails (only the rows near the view are
+ * Every piece of the page groups, as a windowed grid of thumbnails (only the rows near the view are
  * mounted). Click selects, Ctrl/Cmd toggles, Shift selects a range; the copies field sets how many
- * of each selected card to print.
+ * of each selected piece to print.
  */
 export function CardLibrary() {
+  const { t } = useTranslation();
   const hasDocument = useDocumentStore((s) => s.pages.length > 0);
   const groups = useLayoutStore((s) => s.groups);
   const P = usePrintStore(
@@ -89,7 +92,12 @@ export function CardLibrary() {
     P.filter.kind === "group" ? `group:${P.filter.index}` : P.filter.kind === "page" ? "page" : "all";
   const groupOptions = groups.flatMap((g, i) =>
     g.kind === "grid" && g.selection
-      ? [{ value: `group:${i}` as FilterChoice, label: `${rangeLabel(g.pages)} (${g.grid.rows}×${g.grid.columns})` }]
+      ? [
+          {
+            value: `group:${i}` as FilterChoice,
+            label: t("library.group", { range: rangeLabel(g.pages), rows: g.grid.rows, columns: g.grid.columns }),
+          },
+        ]
       : [],
   );
   const pageCount = useDocumentStore((s) => s.pages.length);
@@ -118,34 +126,34 @@ export function CardLibrary() {
   const copies = P.mode === "custom" ? commonQuantity(P.quantities, picked) : null;
   const allMode = P.mode === "all";
 
-  if (!hasDocument) return <Empty>Open a PDF to see its cards.</Empty>;
+  if (!hasDocument) return <Empty>{t("library.openPdf")}</Empty>;
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="card-library" data-hint-target="card-library">
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--border)] p-2">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-[var(--muted)]">Show</span>
+          <span className="text-[var(--muted)]">{t("library.show")}</span>
           <Select
-            label="Filter cards by group"
+            label={t("library.filterLabel")}
             value={filterValue}
             onChange={(v) => {
               if (v === "all") P.setFilter({ kind: "all" });
               else if (v !== "page") P.setFilter({ kind: "group", index: Number(v.slice("group:".length)) });
             }}
             options={[
-              { value: "all" as FilterChoice, label: "All cards" },
+              { value: "all" as FilterChoice, label: t("library.all") },
               // Shown while a single page is filtered, so the menu says what is on screen.
               ...(P.filter.kind === "page"
-                ? [{ value: "page" as FilterChoice, label: `Page ${P.filter.page + 1}` }]
+                ? [{ value: "page" as FilterChoice, label: t("common.page", { n: P.filter.page + 1 }) }]
                 : []),
               ...groupOptions,
             ]}
           />
           <span className="ml-auto flex items-center gap-1 text-[var(--muted)]">
-            Page
+            {t("library.page")}
             <NumberField
               hideLabel
-              label="Show only page"
+              label={t("library.showOnlyPage")}
               value={P.filter.kind === "page" ? P.filter.page + 1 : null}
               min={1}
               max={pageCount}
@@ -155,27 +163,27 @@ export function CardLibrary() {
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
           <button type="button" className={smallBtn} onClick={() => P.selectAll(keys)} disabled={keys.length === 0}>
-            Select all
+            {t("library.selectAll")}
           </button>
           <button
             type="button"
             className={smallBtn}
             onClick={P.clearSelection}
             disabled={picked.length === 0}
-            title="Clear the selection"
+            title={t("library.clearTitle")}
           >
-            Clear
+            {t("library.clear")}
           </button>
           <span className="text-[var(--muted)]">
-            {picked.length} of {shown.length} selected
+            {t("library.selected", { selected: picked.length, total: shown.length })}
           </span>
         </div>
         <div className="flex items-center gap-1.5" data-hint-target="copies">
-          <span className="text-[var(--muted)]">Copies</span>
+          <span className="text-[var(--muted)]">{t("library.copies")}</span>
           <button
             type="button"
             className={smallBtn}
-            aria-label="One copy fewer"
+            aria-label={t("library.copiesFewer")}
             disabled={picked.length === 0}
             onClick={() => P.adjustQuantity(picked, -1)}
           >
@@ -184,7 +192,7 @@ export function CardLibrary() {
           <NumberField
             hideLabel
             hideSteppers
-            label="Copies of the selected cards"
+            label={t("library.copiesLabel")}
             value={copies}
             min={0}
             max={MAX_QUANTITY}
@@ -194,7 +202,7 @@ export function CardLibrary() {
           <button
             type="button"
             className={smallBtn}
-            aria-label="One copy more"
+            aria-label={t("library.copiesMore")}
             disabled={picked.length === 0}
             onClick={() => P.adjustQuantity(picked, 1)}
           >
@@ -202,12 +210,12 @@ export function CardLibrary() {
           </button>
         </div>
         <div className="flex flex-wrap items-center gap-1.5" data-testid="card-turn">
-          <span className="text-[var(--muted)]">Turn</span>
+          <span className="text-[var(--muted)]">{t("library.turn")}</span>
           <button
             type="button"
             className={smallBtn}
-            aria-label="Turn left"
-            title="Turn the selected cards 90° counter-clockwise (Shift+R)"
+            aria-label={t("library.turnLeft")}
+            title={t("library.turnLeftTitle")}
             disabled={picked.length === 0}
             onClick={() => turn(-90)}
           >
@@ -216,8 +224,8 @@ export function CardLibrary() {
           <button
             type="button"
             className={smallBtn}
-            aria-label="Turn right"
-            title="Turn the selected cards 90° clockwise (R)"
+            aria-label={t("library.turnRight")}
+            title={t("library.turnRightTitle")}
             disabled={picked.length === 0}
             onClick={() => turn(90)}
           >
@@ -226,27 +234,23 @@ export function CardLibrary() {
           <button
             type="button"
             className={smallBtn}
-            title="Turn the selected cards that are wider than tall, so they are all portrait"
+            title={t("library.makePortraitTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("portrait")}
           >
-            Make all portrait
+            {t("library.makePortrait")}
           </button>
           <button
             type="button"
             className={smallBtn}
-            title="Turn the selected cards that are taller than wide, so they are all landscape"
+            title={t("library.makeLandscapeTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("landscape")}
           >
-            Make all landscape
+            {t("library.makeLandscape")}
           </button>
         </div>
-        <p className="text-[var(--muted)]">
-          {allMode
-            ? "Every card prints once. Change the copies of a card to print a custom selection."
-            : "Only cards with copies are printed."}
-        </p>
+        <p className="text-[var(--muted)]">{allMode ? t("library.modeAll") : t("library.modeCustom")}</p>
       </div>
 
       <div
@@ -256,11 +260,11 @@ export function CardLibrary() {
         data-testid="card-library-scroll"
       >
         {P.cardsError ? (
-          <p className="p-3 text-red-400">{P.cardsError}</p>
+          <p className="p-3 text-red-400">{formatError(P.cardsError)}</p>
         ) : cardCount === 0 ? (
-          <Empty>No cards yet. Draw the card region on a page in the Cards stage.</Empty>
+          <Empty>{t("library.emptyNone")}</Empty>
         ) : shown.length === 0 ? (
-          <Empty>No cards match this filter.</Empty>
+          <Empty>{t("library.emptyFilter")}</Empty>
         ) : (
           <div className="relative" style={{ height: rows * rowHeight }}>
             {Array.from({ length: Math.max(0, last - first + 1) }, (_, i) => first + i).map((row) => (

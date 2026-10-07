@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { type AppError, toAppError } from "../lib/errors";
 import { emitHintEvent } from "../lib/hint-events";
 import { openPdf, type PageSize, pickPdf } from "../lib/tauri";
 
@@ -7,7 +8,7 @@ type DocumentState = {
   pages: PageSize[]; // points; pages.length is the page count
   currentPage: number; // 0-based
   loading: boolean;
-  error: string | null;
+  error: AppError | null;
   openDialog: () => Promise<void>;
   setCurrentPage: (i: number) => void;
 };
@@ -28,7 +29,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       set({ path, pages: info.pages, currentPage: 0, loading: false });
       emitHintEvent("pdf-opened");
     } catch (e) {
-      set({ loading: false, error: String(e) });
+      set({ loading: false, error: toAppError(e) });
     }
   },
 

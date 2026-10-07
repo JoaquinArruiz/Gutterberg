@@ -14,13 +14,6 @@ export type PanelOrientation = "vertical" | "horizontal";
 
 export const PANEL_IDS: PanelId[] = ["pages", "properties"];
 export const REGION_POSITIONS: RegionPosition[] = ["left", "right", "top", "bottom"];
-export const POSITION_LABEL: Record<PanelPosition, string> = {
-  left: "Left",
-  right: "Right",
-  top: "Top",
-  bottom: "Bottom",
-  hidden: "Hidden",
-};
 
 export interface PanelConfig {
   id: PanelId;
@@ -44,7 +37,6 @@ export interface WorkspaceLayoutPrefs {
 export const PANEL_DEFS: Record<
   PanelId,
   {
-    title: string;
     /** Positions this panel supports. Properties is a vertical form, so no top/bottom. */
     positions: PanelPosition[];
     defaultPosition: PanelPosition;
@@ -55,7 +47,6 @@ export const PANEL_DEFS: Record<
   }
 > = {
   pages: {
-    title: "Pages",
     positions: ["left", "right", "top", "bottom", "hidden"],
     defaultPosition: "left",
     defaultOrder: 0,
@@ -63,7 +54,6 @@ export const PANEL_DEFS: Record<
     minSize: { vertical: 150, horizontal: 100 },
   },
   properties: {
-    title: "Properties",
     positions: ["left", "right", "hidden"],
     defaultPosition: "right",
     defaultOrder: 0,
@@ -214,13 +204,6 @@ export function constrainLayout(
 }
 
 export type LayoutPresetId = "classic" | "right-sidebar" | "pages-top" | "focus" | "custom";
-export const PRESET_LABEL: Record<LayoutPresetId, string> = {
-  classic: "Classic",
-  "right-sidebar": "Right sidebar",
-  "pages-top": "Pages on top",
-  focus: "Focus (no panels)",
-  custom: "Custom",
-};
 export const LAYOUT_PRESETS: Exclude<LayoutPresetId, "custom">[] = ["classic", "right-sidebar", "pages-top", "focus"];
 
 const PRESET_PANELS: Record<Exclude<LayoutPresetId, "custom">, [PanelPosition, number][]> = {

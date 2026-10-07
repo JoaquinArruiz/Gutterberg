@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { OrientedRect } from "../../lib/card";
 import {
   type NormalizedRect,
@@ -8,6 +9,7 @@ import {
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
+import { formatError } from "../../lib/errors";
 import { drawCard, isTooSmall, moveCard, resizeCard, rotateCardTo } from "../../lib/freeform";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import type { PageSize } from "../../lib/tauri";
@@ -55,6 +57,7 @@ const HOLD_TOLERANCE_PX = 4;
 const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 
 export function EditorViewport() {
+  const { t } = useTranslation();
   const pages = useDocumentStore((s) => s.pages);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const error = useDocumentStore((s) => s.error);
@@ -354,7 +357,7 @@ export function EditorViewport() {
           className="pointer-events-none absolute bottom-6 left-1/2 size-px"
         />
         {error ? (
-          <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
+          <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{formatError(error)}</p>
         ) : page && pageRect ? (
           <>
             {output ? (
@@ -364,7 +367,7 @@ export function EditorViewport() {
             )}
             <svg
               role="img"
-              aria-label="Page canvas"
+              aria-label={t("viewport.pageCanvas")}
               className="absolute inset-0 h-full w-full select-none"
               style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
               onPointerDown={onPointerDown}
@@ -421,14 +424,14 @@ export function EditorViewport() {
             )}
             {!output && skipped && (
               <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
-                This page is skipped: it is left out of the export.
+                {t("viewport.pageSkipped")}
               </p>
             )}
             {output && <OutputNotice />}
           </>
         ) : (
           <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
-            {loading ? "Opening…" : "Open a PDF to get started (Ctrl/Cmd+O)"}
+            {loading ? t("viewport.opening") : t("viewport.openHint")}
           </p>
         )}
       </div>

@@ -1,6 +1,8 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { cardIdKey } from "../../lib/card";
 import { formatCardSize, scaleCards, scaleForSize } from "../../lib/card-edits";
+import { formatDecimal } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useLibraryCards } from "../../lib/use-library-cards";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -15,11 +17,12 @@ const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[va
 const SAME_SIZE_PT = 0.5;
 
 /**
- * The size the selected cards print at. Cards keep their size unless it is set here: a real size in the
+ * The size the selected pieces print at. Pieces keep their size unless it is set here: a real size in the
  * user's unit (e.g. 63 × 88 mm) or a percentage, stored as one scale per card and shown wherever the size
  * is shown, so a scale is never hidden.
  */
 export function SelectedCardsSection() {
+  const { t } = useTranslation();
   const cards = useLibraryCards();
   const selected = usePrintStore((s) => s.selection.selected);
   const edits = useLayoutStore((s) => s.cardEdits);
@@ -40,25 +43,27 @@ export function SelectedCardsSection() {
   const apply = (s: number) => setEdits(scaleCards(edits, keys, s));
 
   return (
-    <CollapsibleSection id="print.cards" title="Selected cards">
+    <CollapsibleSection id="print.cards" title={t("print.selected.title")}>
       {!first ? (
-        <p className="text-[var(--muted)]">Select cards in the library to turn them or set their real size.</p>
+        <p className="text-[var(--muted)]">{t("print.selected.empty")}</p>
       ) : (
         <>
           <div className="flex justify-between gap-2" data-testid="card-size-summary">
             <span className="text-[var(--muted)]">
-              {picked.length === 1 ? "Printed size" : `${picked.length} cards`}
+              {picked.length === 1
+                ? t("print.selected.printedSize")
+                : t("print.selected.count", { count: picked.length })}
             </span>
             <span className="tabular-nums">
               {picked.length === 1
                 ? formatCardSize(first, unit)
                 : scale === null
-                  ? "different sizes"
-                  : `${(scale * 100).toFixed(1)}%`}
+                  ? t("print.selected.differentSizes")
+                  : `${formatDecimal(scale * 100, 1)}%`}
             </span>
           </div>
           <MeasurementInput
-            label="Width"
+            label={t("common.width")}
             precise
             min={1}
             disabled={!sameSource}
@@ -66,7 +71,7 @@ export function SelectedCardsSection() {
             onChange={(mm) => apply(scaleForSize(first.source, "width", mm))}
           />
           <MeasurementInput
-            label="Height"
+            label={t("common.height")}
             precise
             min={1}
             disabled={!sameSource}
@@ -74,7 +79,7 @@ export function SelectedCardsSection() {
             onChange={(mm) => apply(scaleForSize(first.source, "height", mm))}
           />
           <NumberField
-            label="Scale"
+            label={t("print.selected.scale")}
             value={scale === null ? null : scale * 100}
             decimals={1}
             min={10}
@@ -92,13 +97,11 @@ export function SelectedCardsSection() {
               disabled={picked.every((c) => c.scale === 1)}
               onClick={() => apply(1)}
             >
-              Back to the size on the page
+              {t("print.selected.backToPage")}
             </button>
           </div>
           <p className="text-[var(--muted)]">
-            {sameSource
-              ? "Setting a width or height keeps the card's shape. 100% is the size on the page."
-              : "These cards differ in size: set a percentage, or select cards of one size to give a real size."}
+            {sameSource ? t("print.selected.sameNote") : t("print.selected.differNote")}
           </p>
         </>
       )}

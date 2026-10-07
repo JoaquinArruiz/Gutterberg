@@ -15,4 +15,4 @@ pub mod sample;
 pub mod sheet;
 pub mod units;
 
-pub use error::{Error, Result};
+pub use error::{Error, ErrorInfo, ErrorParam, Result};

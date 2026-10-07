@@ -56,7 +56,7 @@ describe("buildExportPlan", () => {
     expect(job.grid.fit_page).toBe(false);
   });
 
-  it("reports pages without a card region instead of exporting them", () => {
+  it("reports pages without a piece region instead of exporting them", () => {
     const g = setSkipped(defaultGroups(3), 1, true);
     const { jobs, issues } = buildExportPlan(g, settings);
     expect(jobs).toEqual([]);
@@ -68,14 +68,14 @@ describe("buildExportPlan", () => {
     expect(buildExportPlan(g, settings)).toEqual({ jobs: [], issues: [] });
   });
 
-  it("sends a page with only freeform cards to the Print stage instead of exporting it empty", () => {
+  it("sends a page with only freeform pieces to the Print tab instead of exporting it empty", () => {
     const own = { 0: [{ center: { x: 0.5, y: 0.5 }, width: 0.2, height: 0.3, angle_deg: 4 }] };
     const { jobs, issues } = buildExportPlan(defaultGroups(1), settings, own);
     expect(jobs).toEqual([]);
-    expect(issues).toEqual([{ page_index: 0, message: expect.stringContaining("Print stage") }]);
+    expect(issues).toEqual([{ page_index: 0, code: "freeform_only", message: expect.stringContaining("Print tab") }]);
   });
 
-  it("re-spaces the grid of a page that also has freeform cards, and leaves those cards to the Print stage", () => {
+  it("re-spaces the grid of a page that also has freeform pieces, and leaves those pieces to the Print tab", () => {
     const g = updateGridGroup(defaultGroups(1), 0, (x) => ({ ...x, selection: sel }));
     const own = { 0: [{ center: { x: 0.5, y: 0.5 }, width: 0.2, height: 0.3, angle_deg: 4 }] };
     const { jobs, issues } = buildExportPlan(g, settings, own);

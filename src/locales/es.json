@@ -1,0 +1,487 @@
+{
+  "views": {
+    "source": "Original",
+    "output": "Vista previa",
+    "split": "Dividida"
+  },
+  "toolbar": {
+    "openPdf": "Abrir PDF",
+    "stageTabs": "Pestañas",
+    "stages": {
+      "source": "Origen",
+      "print": "Imprimir"
+    },
+    "tools": {
+      "select": "Región de cuadrícula",
+      "card": "Herramienta Pieza",
+      "pan": "Desplazar"
+    },
+    "toolTitle": "{{label}} ({{key}})",
+    "undo": "Deshacer (Ctrl+Z)",
+    "redo": "Rehacer (Mayús+Ctrl+Z)",
+    "zoomOut": "Alejar (-)",
+    "zoomIn": "Acercar (+)",
+    "fitPage": "Ajustar página (0)",
+    "viewTabs": "Vista",
+    "preferences": "Preferencias (Ctrl+,)",
+    "preferencesLabel": "Preferencias",
+    "exportPdf": "Exportar PDF",
+    "exporting": "Exportando…",
+    "everyPageSkipped": "Todas las páginas están omitidas",
+    "includeOnePage": "Todas las páginas están omitidas. Incluye al menos una página para exportar.",
+    "nothingToPrint": "Aún no hay nada que imprimir. Elige piezas y asígnales copias.",
+    "exportedPages_one": "Se exportó {{count}} página a {{path}}",
+    "exportedPages_other": "Se exportaron {{count}} páginas a {{path}}",
+    "exportedSheets_one": "Se exportó {{count}} hoja a {{path}}",
+    "exportedSheets_other": "Se exportaron {{count}} hojas a {{path}}",
+    "issues": {
+      "label": "Problemas de exportación",
+      "close": "Cerrar",
+      "planTitle": "No se puede exportar el plan",
+      "pagesTitle_one": "No se puede exportar {{count}} página",
+      "pagesTitle_other": "No se pueden exportar {{count}} páginas",
+      "page": "Página {{n}}:",
+      "fixPrint": "Corrígelos y vuelve a exportar. Las piezas nunca se escalan para que quepan.",
+      "fixSource": "Corrige estas páginas u omítelas, y vuelve a exportar."
+    }
+  },
+  "files": {
+    "pdfFilter": "PDF",
+    "suffixSpaced": "espaciado",
+    "suffixPrint": "impresion",
+    "fallbackName": "piezas"
+  },
+  "common": {
+    "page": "Página {{n}}",
+    "pages": "Páginas {{first}}–{{last}}",
+    "cancel": "Cancelar",
+    "apply": "Aplicar",
+    "close": "Cerrar",
+    "x": "X",
+    "y": "Y",
+    "width": "Ancho",
+    "height": "Alto",
+    "columns": "Columnas",
+    "rows": "Filas"
+  },
+  "status": {
+    "page": "Página {{current}} / {{total}}",
+    "noDocument": "Sin documento",
+    "zoom": "Zoom {{percent}}%"
+  },
+  "viewport": {
+    "opening": "Abriendo…",
+    "openHint": "Abre un PDF para empezar (Ctrl/Cmd+O)",
+    "pageCanvas": "Lienzo de la página",
+    "pageSkipped": "Esta página está omitida: no se incluye en la exportación."
+  },
+  "preview": {
+    "title": "Vista previa",
+    "titleManual": "Vista previa (manual)",
+    "outOfDate": "Vista previa desactualizada",
+    "selectRegion": "Selecciona en la página la región de las piezas para ver la vista previa del resultado.",
+    "overflow": "La disposición excede la página por {{width}} en horizontal y {{height}} en vertical. Las piezas nunca se escalan: cambia el tamaño o la orientación de la página, o reduce las separaciones o los márgenes.",
+    "refresh": "Actualizar vista previa",
+    "refreshStale": "Actualizar vista previa (desactualizada)"
+  },
+  "panels": {
+    "menu": "Paneles",
+    "titles": {
+      "pages": "Páginas",
+      "properties": "Propiedades"
+    },
+    "titleHidden": "{{title}} (oculto)",
+    "expand": "Expandir {{title}}",
+    "collapse": "Contraer {{title}}",
+    "options": "Opciones del panel {{title}}",
+    "hide": "Ocultar",
+    "move": {
+      "left": "Mover a la izquierda",
+      "right": "Mover a la derecha",
+      "top": "Mover arriba",
+      "bottom": "Mover abajo"
+    },
+    "positions": {
+      "left": "Izquierda",
+      "right": "Derecha",
+      "top": "Arriba",
+      "bottom": "Abajo",
+      "hidden": "Oculto"
+    },
+    "presets": {
+      "classic": "Clásico",
+      "right-sidebar": "Barra lateral derecha",
+      "pages-top": "Páginas arriba",
+      "focus": "Enfoque (sin paneles)",
+      "custom": "Personalizado"
+    }
+  },
+  "gapFields": {
+    "link": "Vincular horizontal / vertical",
+    "gap": "Separación",
+    "horizontal": "Horizontal",
+    "vertical": "Vertical"
+  },
+  "source": {
+    "noDocument": "No hay ningún documento abierto.",
+    "sections": {
+      "page": "Página",
+      "skipped": "Página omitida",
+      "layout": "Disposición de origen",
+      "gap": "Separación de origen",
+      "output": "Salida",
+      "selection": "Posición de la selección"
+    },
+    "size": "Tamaño",
+    "total": "Total",
+    "skippedRange_one": "{{range}} se omite de la exportación.",
+    "skippedRange_other": "{{range}} se omiten de la exportación.",
+    "includePage": "Incluir esta página",
+    "skipPage": "Omitir esta página",
+    "sharedGrid_one": "{{range}} tiene esta cuadrícula.",
+    "sharedGrid_other": "{{range}} comparten esta cuadrícula.",
+    "pieceWidth": "Ancho de la pieza",
+    "pieceHeight": "Alto de la pieza",
+    "dragRegion": "Arrastra sobre la página para seleccionar la región que ocupan las piezas.",
+    "gapNote": "Separación que ya hay entre las piezas en el PDF.",
+    "outputNote": "La separación de salida entre piezas, el tamaño y los márgenes de la página, y qué piezas van en cada hoja se configuran en la pestaña Imprimir.",
+    "openPrint": "Abrir la pestaña Imprimir"
+  },
+  "freeform": {
+    "title": "Piezas libres",
+    "none": "No hay piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
+    "count_one": "{{count}} pieza libre en esta página. Se imprime desde la pestaña Imprimir.",
+    "count_other": "{{count}} piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
+    "chooseTool": "Elige la Herramienta Pieza (C) para moverlas, cambiar su tamaño o girarlas.",
+    "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°.",
+    "piece": "Pieza",
+    "angle": "Ángulo",
+    "delete": "Eliminar pieza"
+  },
+  "pages": {
+    "applyGrid": "Aplicar esta cuadrícula a…",
+    "include": "Incluir la página {{n}}",
+    "skippedTitle": "Omitida: no se incluye en la exportación",
+    "includedTitle": "Incluida en la exportación",
+    "badge": {
+      "skipped": "Omitida",
+      "noRegion": "Sin región",
+      "pieces_one": "{{count}} pieza",
+      "pieces_other": "{{count}} piezas"
+    }
+  },
+  "applyGrid": {
+    "dialog": "Aplicar esta cuadrícula a",
+    "title": "Aplicar esta cuadrícula a…",
+    "description": "Copia la cuadrícula y la región de piezas de la página {{page}} ({{rows}}×{{columns}}). Cada destino se convierte en su propio grupo, así que después puedes editarlo por separado.",
+    "onlyThisPage": "Solo esta página (separarla de su grupo)",
+    "pagesRange": "Páginas",
+    "fromPage": "Desde la página",
+    "toPage": "Hasta la página",
+    "to": "a",
+    "sameSize": "Todas las páginas del mismo tamaño (las páginas omitidas siguen omitidas)",
+    "skippedNoGrid": "Esta página está omitida, así que no tiene cuadrícula que copiar."
+  },
+  "library": {
+    "openPdf": "Abre un PDF para ver sus piezas.",
+    "show": "Mostrar",
+    "filterLabel": "Filtrar piezas por grupo",
+    "all": "Todas las piezas",
+    "group": "{{range}} ({{rows}}×{{columns}})",
+    "page": "Página",
+    "showOnlyPage": "Mostrar solo la página",
+    "selectAll": "Seleccionar todas",
+    "clear": "Borrar",
+    "clearTitle": "Borrar la selección",
+    "selected": "{{selected}} de {{total}} seleccionadas",
+    "copies": "Copias",
+    "copiesFewer": "Una copia menos",
+    "copiesMore": "Una copia más",
+    "copiesLabel": "Copias de las piezas seleccionadas",
+    "turn": "Girar",
+    "turnLeft": "Girar a la izquierda",
+    "turnRight": "Girar a la derecha",
+    "turnLeftTitle": "Girar las piezas seleccionadas 90° en sentido antihorario (Mayús+R)",
+    "turnRightTitle": "Girar las piezas seleccionadas 90° en sentido horario (R)",
+    "makePortrait": "Todas verticales",
+    "makePortraitTitle": "Gira las piezas seleccionadas que son más anchas que altas, para que todas queden verticales",
+    "makeLandscape": "Todas horizontales",
+    "makeLandscapeTitle": "Gira las piezas seleccionadas que son más altas que anchas, para que todas queden horizontales",
+    "modeAll": "Cada pieza se imprime una vez. Cambia las copias de una pieza para imprimir una selección personalizada.",
+    "modeCustom": "Solo se imprimen las piezas con copias.",
+    "emptyNone": "Aún no hay piezas. Dibuja la región de piezas en una página de la pestaña Origen.",
+    "emptyFilter": "Ninguna pieza coincide con este filtro.",
+    "thumb": {
+      "gridPosition": "f{{row}} c{{column}}",
+      "freeformPosition": "#{{n}}",
+      "label": "p{{page}} · {{position}}",
+      "title": "Página {{page}}, {{position}} · {{size}}",
+      "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°"
+    }
+  },
+  "print": {
+    "error": {
+      "note": "Las piezas nunca se escalan. Cambia la página, las separaciones o los márgenes, o ajusta la página automáticamente.",
+      "autoFit": "Ajustar la página automáticamente",
+      "switchOrientation": "Cambiar la orientación"
+    },
+    "sections": {
+      "plan": "Plan",
+      "sheet": "Hoja",
+      "page": "Página"
+    },
+    "plan": {
+      "all": "Todas las piezas en orden",
+      "allHint": "Cada pieza una vez, tal como las dispone el origen.",
+      "custom": "Selección personalizada",
+      "customHint": "Solo las piezas a las que les des copias, p. ej. 4 × A, 2 × B, 3 × C.",
+      "startFromAll": "Empezar con todas las piezas (1 de cada una)",
+      "autoFill": "Rellenar automáticamente",
+      "autoFillHint": "Repite las piezas hasta llenar la última hoja.",
+      "order": "Orden de las copias",
+      "grouped": "Agrupadas",
+      "groupedHint": "A A A A, B B, C C C",
+      "interleaved": "Intercaladas",
+      "interleavedHint": "A B C, A B C, A C, A",
+      "orderNote": "El orden solo importa cuando la cuadrícula de la hoja no es la del origen."
+    },
+    "sheet": {
+      "grid": "Cuadrícula",
+      "gridLabel": "Cuadrícula de la hoja",
+      "gridSame": "Igual que el origen",
+      "gridAuto": "Automática (las que quepan)",
+      "gridCustom": "Filas × columnas",
+      "sameNote": "«Igual que el origen» es para todas las piezas en orden, tal como están en la página: sin rellenado automático y sin piezas libres, giradas, redimensionadas o reordenadas. En su lugar se usa Automática.",
+      "groupBySize": "Agrupar piezas por tamaño",
+      "groupBySizeHint": "Las piezas de distinto tamaño tienen sus propias hojas. Desactivado: una sola cuadrícula compartida, con casillas tan grandes como la pieza más grande.",
+      "outputGap": "Separación de salida",
+      "outputGapNote": "Separación final entre piezas. Independiente de la separación de origen.",
+      "size": "Hoja"
+    },
+    "page": {
+      "sizeLabel": "Tamaño",
+      "sizeAria": "Tamaño de página",
+      "modes": {
+        "same": "Igual que el origen",
+        "a4": "A4",
+        "letter": "Carta",
+        "legal": "Legal",
+        "custom": "Personalizado",
+        "fit": "Ajustar a las piezas automáticamente"
+      },
+      "orientation": "Orientación",
+      "portrait": "Vertical",
+      "landscape": "Horizontal",
+      "margin": {
+        "top": "Margen superior",
+        "right": "Margen derecho",
+        "bottom": "Margen inferior",
+        "left": "Margen izquierdo"
+      }
+    },
+    "selected": {
+      "title": "Piezas seleccionadas",
+      "empty": "Selecciona piezas en la biblioteca de piezas para girarlas o fijar su tamaño real.",
+      "printedSize": "Tamaño impreso",
+      "count_one": "{{count}} pieza",
+      "count_other": "{{count}} piezas",
+      "differentSizes": "tamaños distintos",
+      "scale": "Escala",
+      "backToPage": "Volver al tamaño de la página",
+      "sameNote": "Al fijar un ancho o un alto se mantiene la proporción de la pieza. 100% es el tamaño de la página.",
+      "differNote": "Estas piezas tienen tamaños distintos: fija un porcentaje, o selecciona piezas de un mismo tamaño para darles un tamaño real."
+    }
+  },
+  "sheets": {
+    "hide": "Ocultar las vistas previas de las hojas",
+    "show": "Mostrar las vistas previas de las hojas",
+    "previous": "Hoja anterior",
+    "next": "Hoja siguiente",
+    "position": "Hoja {{current}} de {{total}}",
+    "none": "Sin hojas",
+    "sheetCount_one": "{{count}} hoja",
+    "sheetCount_other": "{{count}} hojas",
+    "pieceCount_one": "{{count}} pieza",
+    "pieceCount_other": "{{count}} piezas",
+    "summary": "{{sheets}}, {{pieces}}",
+    "outOfDate": "Vistas previas desactualizadas",
+    "openPdf": "Abre un PDF para planificar las hojas.",
+    "planning": "Planificando las hojas…",
+    "nothing": "Aún no hay nada que imprimir. Elige piezas en la biblioteca de piezas y asígnales copias, o vuelve a poner el plan en todas las piezas.",
+    "thumb": "Hoja {{n}}"
+  },
+  "preferences": {
+    "title": "Preferencias",
+    "close": "Cerrar preferencias",
+    "navLabel": "Secciones de preferencias",
+    "sections": {
+      "General": "General",
+      "Workspace": "Espacio de trabajo",
+      "Preview": "Vista previa",
+      "Appearance": "Apariencia",
+      "About": "Acerca de"
+    },
+    "units": {
+      "mm": "Milímetros (mm)",
+      "cm": "Centímetros (cm)",
+      "in": "Pulgadas (in)"
+    },
+    "general": {
+      "unit": "Unidad de medida",
+      "unitNote": "Solo cambia cómo se muestran y se escriben las longitudes. El documento nunca se modifica.",
+      "language": "Idioma",
+      "languageSystem": "Sistema",
+      "languageNote": "Los cambios se aplican de inmediato. Sistema usa el idioma de tu computadora.",
+      "decimal": "Separador decimal",
+      "decimalAuto": "Automático (según el idioma)",
+      "decimalDot": "Punto (63.5)",
+      "decimalComma": "Coma (63,5)",
+      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción.",
+      "helpTips": "Consejos",
+      "enableTips": "Activar todos los consejos",
+      "allTipsOn": "Todos los consejos están activados.",
+      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Actívalo para volver a verlo.",
+      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Actívalos para volver a verlos."
+    },
+    "workspace": {
+      "visibleViews": "Vistas visibles",
+      "visibleNote": "El selector de vistas muestra estas, en este orden. Al menos una debe seguir activada.",
+      "showView": "Mostrar la vista {{view}}",
+      "moveEarlier": "Mover {{view}} antes",
+      "moveLater": "Mover {{view}} después",
+      "defaultView": "Vista predeterminada",
+      "lastUsed": "La última usada",
+      "defaultNote": "Se usa al abrir un documento. Cambiar de vista mientras editas no la modifica.",
+      "layout": "Disposición",
+      "preset": "Preajuste",
+      "presetLabel": "Preajuste de disposición",
+      "panelRow": "Panel {{panel}}",
+      "panelPosition": "Posición del panel {{panel}}",
+      "layoutNote": "Los cambios se aplican de inmediato. El menú Paneles de la barra de herramientas siempre puede recuperar un panel oculto.",
+      "behavior": "Comportamiento",
+      "rememberSizes": "Recordar el tamaño de los paneles",
+      "rememberCollapsed": "Recordar los paneles contraídos",
+      "resetLayout": "Restablecer la disposición del espacio de trabajo",
+      "resetNote": "Restaura la posición y el tamaño de los paneles, las vistas visibles y la vista predeterminada. Se conservan las unidades, el idioma, el tema y la vista previa en vivo."
+    },
+    "livePreview": {
+      "title": "Vista previa en vivo",
+      "always": "Siempre activada",
+      "alwaysHint": "La vista previa sigue cada cambio.",
+      "manual": "Manual",
+      "manualHint": "La vista previa se actualiza solo cuando pulsas Actualizar vista previa.",
+      "note": "Con Manual, la vista Vista previa se actualiza cada vez que la abres, y la vista Dividida tiene un botón de actualizar (un punto en él indica que la vista previa está desactualizada). Este cambio se aplica de inmediato al documento abierto."
+    },
+    "appearance": {
+      "theme": "Tema",
+      "system": "Sistema",
+      "light": "Claro",
+      "dark": "Oscuro"
+    },
+    "about": {
+      "title": "Acerca de",
+      "createdBy": "Creado por Joaquin Arruiz"
+    },
+    "footer": {
+      "confirm": "¿Restablecer todas las preferencias? Se restauran los ajustes predeterminados de la aplicación. Tu documento no se ve afectado.",
+      "cancel": "Cancelar",
+      "reset": "Restablecer",
+      "resetDefaults": "Restablecer valores predeterminados",
+      "close": "Cerrar"
+    },
+    "layoutPreview": {
+      "label": "Vista previa de la disposición",
+      "editor": "Editor"
+    }
+  },
+  "hintUi": {
+    "previous": "Consejo anterior",
+    "next": "Consejo siguiente",
+    "skip": "Omitir",
+    "done": "Listo",
+    "dismiss": "Cerrar consejo",
+    "dismissTitle": "Cerrar (no se volverá a mostrar)"
+  },
+  "hints": {
+    "first-pdf-tour": {
+      "mark": {
+        "title": "Marca las piezas",
+        "text": "Arrastra un rectángulo alrededor de todas las piezas de la página."
+      },
+      "grid": {
+        "title": "Define la cuadrícula",
+        "text": "Indica cuántas columnas y filas de piezas hay."
+      },
+      "overlay": {
+        "title": "Revisa la superposición",
+        "text": "Las líneas de la cuadrícula deben coincidir con las piezas. Si no es así, arrastra los controles del rectángulo para ajustarlo."
+      },
+      "goPrint": {
+        "title": "Ve a Imprimir",
+        "text": "Abre la pestaña Imprimir para elegir qué piezas van en cada hoja."
+      }
+    },
+    "freeform-tool": {
+      "one": {
+        "title": "Una pieza a la vez",
+        "text": "Arrastra sobre la página para dibujar una pieza y haz clic en una pieza para editarla: arrastra su interior para moverla, sus controles para cambiar su tamaño y el punto que tiene encima para girarla (Mayús ajusta a pasos de 15°). Estas piezas se imprimen desde la pestaña Imprimir."
+      }
+    },
+    "live-preview-output": {
+      "main": {
+        "text": "La vista previa en vivo está desactivada, así que esta vista previa no se genera automáticamente. Pulsa el botón de actualizar (abajo a la derecha) para generarla. Puedes cambiar esto en Preferencias > Vista previa.",
+        "action": "Abrir preferencias"
+      }
+    },
+    "live-preview-sheets": {
+      "main": {
+        "text": "La vista previa en vivo está desactivada, así que la fila de vistas previas de las hojas de arriba no se redibuja cuando cambias el plan. Pulsa el botón de actualizar (arriba a la derecha) para actualizarla. La hoja grande siempre sigue el plan. Puedes cambiar esto en Preferencias > Vista previa.",
+        "action": "Abrir preferencias"
+      }
+    },
+    "print-stage-intro": {
+      "library": {
+        "title": "Elige piezas",
+        "text": "Selecciona las piezas que quieras en la biblioteca de piezas de la izquierda."
+      },
+      "copies": {
+        "title": "Define las copias",
+        "text": "Asigna a cada pieza el número de copias que necesites, o deja «Todas las piezas en orden» para imprimir cada pieza una vez."
+      },
+      "sheet": {
+        "title": "Hoja y página",
+        "text": "Ajusta la disposición de la hoja, la separación y la página en el inspector de la derecha."
+      },
+      "export": {
+        "title": "Exporta",
+        "text": "Cuando las hojas se vean bien, exporta el PDF."
+      }
+    }
+  },
+  "errors": {
+    "at_page": "Página {{page}}: {{error}}",
+    "does_not_fit": "Las piezas dispuestas necesitan {{needed_w_mm}} × {{needed_h_mm}} mm, pero la hoja mide solo {{page_w_mm}} × {{page_h_mm}} mm.",
+    "page_out_of_range": "La página {{page}} no existe (el documento tiene {{count}} páginas).",
+    "unsupported_rotation": "La página {{page}} tiene una rotación de {{rotate}}°; solo se admiten múltiplos de 90°.",
+    "unsupported_user_unit": "La página {{page}} tiene un /UserUnit de {{unit}}; solo se admite 1.",
+    "pdf": "Error de PDF: {{detail}}",
+    "io": "Error de archivo: {{detail}}",
+    "invalid_grid": "Cuadrícula no válida: {{detail}}",
+    "invalid_sheet": "Hoja no válida: {{detail}}",
+    "pdfium": "Error de renderizado: {{detail}}",
+    "malformed": "El PDF está mal formado: {{detail}}",
+    "superseded": "Una solicitud más reciente reemplazó a esta.",
+    "worker_stopped": "El motor de renderizado se detuvo. Reinicia la aplicación.",
+    "no_document": "No hay ningún PDF abierto.",
+    "same_file": "Elige un archivo distinto del que está abierto.",
+    "no_pages": "No hay páginas incluidas en la exportación.",
+    "nothing_to_print": "No hay nada que imprimir.",
+    "internal": "Algo falló dentro de la aplicación: {{detail}}",
+    "freeform_only": "Esta página solo tiene piezas libres: imprímela desde la pestaña Imprimir.",
+    "no_region": "No hay ninguna región de piezas seleccionada."
+  },
+  "numberField": {
+    "decrease": "Disminuir {{label}}",
+    "increase": "Aumentar {{label}}"
+  }
+}

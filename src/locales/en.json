@@ -1,0 +1,487 @@
+{
+  "views": {
+    "source": "Original",
+    "output": "Preview",
+    "split": "Split"
+  },
+  "toolbar": {
+    "openPdf": "Open PDF",
+    "stageTabs": "Stage",
+    "stages": {
+      "source": "Source",
+      "print": "Print"
+    },
+    "tools": {
+      "select": "Grid region",
+      "card": "Piece tool",
+      "pan": "Pan"
+    },
+    "toolTitle": "{{label}} ({{key}})",
+    "undo": "Undo (Ctrl+Z)",
+    "redo": "Redo (Shift+Ctrl+Z)",
+    "zoomOut": "Zoom out (-)",
+    "zoomIn": "Zoom in (+)",
+    "fitPage": "Fit page (0)",
+    "viewTabs": "View",
+    "preferences": "Preferences (Ctrl+,)",
+    "preferencesLabel": "Preferences",
+    "exportPdf": "Export PDF",
+    "exporting": "Exporting…",
+    "everyPageSkipped": "Every page is skipped",
+    "includeOnePage": "Every page is skipped. Include at least one page to export.",
+    "nothingToPrint": "Nothing to print yet. Choose pieces and give them copies.",
+    "exportedPages_one": "Exported {{count}} page to {{path}}",
+    "exportedPages_other": "Exported {{count}} pages to {{path}}",
+    "exportedSheets_one": "Exported {{count}} sheet to {{path}}",
+    "exportedSheets_other": "Exported {{count}} sheets to {{path}}",
+    "issues": {
+      "label": "Export problems",
+      "close": "Close",
+      "planTitle": "The plan can't be exported",
+      "pagesTitle_one": "{{count}} page can't be exported",
+      "pagesTitle_other": "{{count}} pages can't be exported",
+      "page": "Page {{n}}:",
+      "fixPrint": "Fix these, then export again. Pieces are never scaled to fit.",
+      "fixSource": "Fix these pages, or skip them, then export again."
+    }
+  },
+  "files": {
+    "pdfFilter": "PDF",
+    "suffixSpaced": "spaced",
+    "suffixPrint": "print",
+    "fallbackName": "pieces"
+  },
+  "common": {
+    "page": "Page {{n}}",
+    "pages": "Pages {{first}}–{{last}}",
+    "cancel": "Cancel",
+    "apply": "Apply",
+    "close": "Close",
+    "x": "X",
+    "y": "Y",
+    "width": "Width",
+    "height": "Height",
+    "columns": "Columns",
+    "rows": "Rows"
+  },
+  "status": {
+    "page": "Page {{current}} / {{total}}",
+    "noDocument": "No document",
+    "zoom": "Zoom {{percent}}%"
+  },
+  "viewport": {
+    "opening": "Opening…",
+    "openHint": "Open a PDF to get started (Ctrl/Cmd+O)",
+    "pageCanvas": "Page canvas",
+    "pageSkipped": "This page is skipped: it is left out of the export."
+  },
+  "preview": {
+    "title": "Preview",
+    "titleManual": "Preview (manual)",
+    "outOfDate": "Preview out of date",
+    "selectRegion": "Select the piece region on the page to preview the result.",
+    "overflow": "Layout exceeds the page by {{width}} horizontally and {{height}} vertically. Pieces are never scaled: change the page size or orientation, or reduce spacing or margins.",
+    "refresh": "Refresh preview",
+    "refreshStale": "Refresh preview (out of date)"
+  },
+  "panels": {
+    "menu": "Panels",
+    "titles": {
+      "pages": "Pages",
+      "properties": "Properties"
+    },
+    "titleHidden": "{{title}} (hidden)",
+    "expand": "Expand {{title}}",
+    "collapse": "Collapse {{title}}",
+    "options": "{{title}} panel options",
+    "hide": "Hide",
+    "move": {
+      "left": "Move left",
+      "right": "Move right",
+      "top": "Move to top",
+      "bottom": "Move to bottom"
+    },
+    "positions": {
+      "left": "Left",
+      "right": "Right",
+      "top": "Top",
+      "bottom": "Bottom",
+      "hidden": "Hidden"
+    },
+    "presets": {
+      "classic": "Classic",
+      "right-sidebar": "Right sidebar",
+      "pages-top": "Pages on top",
+      "focus": "Focus (no panels)",
+      "custom": "Custom"
+    }
+  },
+  "gapFields": {
+    "link": "Link horizontal / vertical",
+    "gap": "Gap",
+    "horizontal": "Horizontal",
+    "vertical": "Vertical"
+  },
+  "source": {
+    "noDocument": "No document open.",
+    "sections": {
+      "page": "Page",
+      "skipped": "Skipped page",
+      "layout": "Source layout",
+      "gap": "Source gap",
+      "output": "Output",
+      "selection": "Selection position"
+    },
+    "size": "Size",
+    "total": "Total",
+    "skippedRange_one": "{{range}} is left out of the export.",
+    "skippedRange_other": "{{range}} are left out of the export.",
+    "includePage": "Include this page",
+    "skipPage": "Skip this page",
+    "sharedGrid_one": "{{range}} has this grid.",
+    "sharedGrid_other": "{{range}} share this grid.",
+    "pieceWidth": "Piece width",
+    "pieceHeight": "Piece height",
+    "dragRegion": "Drag on the page to select the region the pieces occupy.",
+    "gapNote": "Gap already between pieces in the PDF.",
+    "outputNote": "The output gap between pieces, the page size and margins, and which pieces go on which sheet, are set in the Print tab.",
+    "openPrint": "Open the Print tab"
+  },
+  "freeform": {
+    "title": "Freeform pieces",
+    "none": "No freeform pieces on this page. They are printed from the Print tab.",
+    "count_one": "{{count}} freeform piece on this page. It is printed from the Print tab.",
+    "count_other": "{{count}} freeform pieces on this page. They are printed from the Print tab.",
+    "chooseTool": "Choose the Piece tool (C) to move, resize or rotate them.",
+    "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°.",
+    "piece": "Piece",
+    "angle": "Angle",
+    "delete": "Delete piece"
+  },
+  "pages": {
+    "applyGrid": "Apply this grid to…",
+    "include": "Include page {{n}}",
+    "skippedTitle": "Skipped: left out of the export",
+    "includedTitle": "Included in the export",
+    "badge": {
+      "skipped": "Skipped",
+      "noRegion": "No region",
+      "pieces_one": "{{count}} piece",
+      "pieces_other": "{{count}} pieces"
+    }
+  },
+  "applyGrid": {
+    "dialog": "Apply this grid to",
+    "title": "Apply this grid to…",
+    "description": "Copies the grid and piece region of page {{page}} ({{rows}}×{{columns}}). Each target becomes its own group, so you can then edit it on its own.",
+    "onlyThisPage": "Only this page (detach it from its group)",
+    "pagesRange": "Pages",
+    "fromPage": "From page",
+    "toPage": "To page",
+    "to": "to",
+    "sameSize": "All pages of the same size (skipped pages stay skipped)",
+    "skippedNoGrid": "This page is skipped, so it has no grid to copy."
+  },
+  "library": {
+    "openPdf": "Open a PDF to see its pieces.",
+    "show": "Show",
+    "filterLabel": "Filter pieces by group",
+    "all": "All pieces",
+    "group": "{{range}} ({{rows}}×{{columns}})",
+    "page": "Page",
+    "showOnlyPage": "Show only page",
+    "selectAll": "Select all",
+    "clear": "Clear",
+    "clearTitle": "Clear the selection",
+    "selected": "{{selected}} of {{total}} selected",
+    "copies": "Copies",
+    "copiesFewer": "One copy fewer",
+    "copiesMore": "One copy more",
+    "copiesLabel": "Copies of the selected pieces",
+    "turn": "Turn",
+    "turnLeft": "Turn left",
+    "turnRight": "Turn right",
+    "turnLeftTitle": "Turn the selected pieces 90° counter-clockwise (Shift+R)",
+    "turnRightTitle": "Turn the selected pieces 90° clockwise (R)",
+    "makePortrait": "Make all portrait",
+    "makePortraitTitle": "Turn the selected pieces that are wider than tall, so they are all portrait",
+    "makeLandscape": "Make all landscape",
+    "makeLandscapeTitle": "Turn the selected pieces that are taller than wide, so they are all landscape",
+    "modeAll": "Every piece prints once. Change the copies of a piece to print a custom selection.",
+    "modeCustom": "Only pieces with copies are printed.",
+    "emptyNone": "No pieces yet. Draw the piece region on a page in the Source tab.",
+    "emptyFilter": "No pieces match this filter.",
+    "thumb": {
+      "gridPosition": "r{{row}} c{{column}}",
+      "freeformPosition": "#{{n}}",
+      "label": "p{{page}} · {{position}}",
+      "title": "Page {{page}}, {{position}} · {{size}}",
+      "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°"
+    }
+  },
+  "print": {
+    "error": {
+      "note": "Pieces are never scaled. Change the page, spacing or margins, or auto-fit the page.",
+      "autoFit": "Auto-fit page",
+      "switchOrientation": "Switch orientation"
+    },
+    "sections": {
+      "plan": "Plan",
+      "sheet": "Sheet",
+      "page": "Page"
+    },
+    "plan": {
+      "all": "All pieces in order",
+      "allHint": "Every piece once, as the source lays them out.",
+      "custom": "Custom selection",
+      "customHint": "Only the pieces you give copies, e.g. 4 × A, 2 × B, 3 × C.",
+      "startFromAll": "Start from all pieces (1 each)",
+      "autoFill": "Auto-fill",
+      "autoFillHint": "Repeat the pieces until the last sheet is full.",
+      "order": "Order of copies",
+      "grouped": "Grouped",
+      "groupedHint": "A A A A, B B, C C C",
+      "interleaved": "Interleaved",
+      "interleavedHint": "A B C, A B C, A C, A",
+      "orderNote": "The order only matters when the sheet grid is not the source's."
+    },
+    "sheet": {
+      "grid": "Grid",
+      "gridLabel": "Sheet grid",
+      "gridSame": "Same as source",
+      "gridAuto": "Auto (as many as fit)",
+      "gridCustom": "Rows × columns",
+      "sameNote": "“Same as source” is for all pieces in order, as the page has them: no auto-fill, and no freeform, turned, resized or reordered pieces. Auto is used instead.",
+      "groupBySize": "Group pieces by size",
+      "groupBySizeHint": "Pieces of different sizes get their own sheets. Off: one shared grid, slots as large as the largest piece.",
+      "outputGap": "Output gap",
+      "outputGapNote": "Final gap between pieces. Independent of the source gap.",
+      "size": "Sheet"
+    },
+    "page": {
+      "sizeLabel": "Size",
+      "sizeAria": "Page size",
+      "modes": {
+        "same": "Same as source",
+        "a4": "A4",
+        "letter": "Letter",
+        "legal": "Legal",
+        "custom": "Custom",
+        "fit": "Auto-fit to pieces"
+      },
+      "orientation": "Orientation",
+      "portrait": "Portrait",
+      "landscape": "Landscape",
+      "margin": {
+        "top": "Margin top",
+        "right": "Margin right",
+        "bottom": "Margin bottom",
+        "left": "Margin left"
+      }
+    },
+    "selected": {
+      "title": "Selected pieces",
+      "empty": "Select pieces in the piece library to turn them or set their real size.",
+      "printedSize": "Printed size",
+      "count_one": "{{count}} piece",
+      "count_other": "{{count}} pieces",
+      "differentSizes": "different sizes",
+      "scale": "Scale",
+      "backToPage": "Back to the size on the page",
+      "sameNote": "Setting a width or height keeps the piece's shape. 100% is the size on the page.",
+      "differNote": "These pieces differ in size: set a percentage, or select pieces of one size to give a real size."
+    }
+  },
+  "sheets": {
+    "hide": "Hide sheet previews",
+    "show": "Show sheet previews",
+    "previous": "Previous sheet",
+    "next": "Next sheet",
+    "position": "Sheet {{current}} of {{total}}",
+    "none": "No sheets",
+    "sheetCount_one": "{{count}} sheet",
+    "sheetCount_other": "{{count}} sheets",
+    "pieceCount_one": "{{count}} piece",
+    "pieceCount_other": "{{count}} pieces",
+    "summary": "{{sheets}}, {{pieces}}",
+    "outOfDate": "Previews out of date",
+    "openPdf": "Open a PDF to plan the sheets.",
+    "planning": "Planning the sheets…",
+    "nothing": "Nothing to print yet. Choose pieces in the piece library and give them copies, or switch the plan back to all pieces.",
+    "thumb": "Sheet {{n}}"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "close": "Close preferences",
+    "navLabel": "Preferences sections",
+    "sections": {
+      "General": "General",
+      "Workspace": "Workspace",
+      "Preview": "Preview",
+      "Appearance": "Appearance",
+      "About": "About"
+    },
+    "units": {
+      "mm": "Millimeters (mm)",
+      "cm": "Centimeters (cm)",
+      "in": "Inches (in)"
+    },
+    "general": {
+      "unit": "Measurement unit",
+      "unitNote": "Only changes how lengths are shown and typed. The document itself is never altered.",
+      "language": "Language",
+      "languageSystem": "System",
+      "languageNote": "Changes apply immediately. System follows the language of your computer.",
+      "decimal": "Decimal separator",
+      "decimalAuto": "Automatic (from the language)",
+      "decimalDot": "Dot (63.5)",
+      "decimalComma": "Comma (63,5)",
+      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to.",
+      "helpTips": "Help tips",
+      "enableTips": "Enable all help tips",
+      "allTipsOn": "All help tips are enabled.",
+      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Enable it to see it again.",
+      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Enable them to see them again."
+    },
+    "workspace": {
+      "visibleViews": "Visible views",
+      "visibleNote": "The view switcher shows these, in this order. At least one must stay enabled.",
+      "showView": "Show {{view}} view",
+      "moveEarlier": "Move {{view}} earlier",
+      "moveLater": "Move {{view}} later",
+      "defaultView": "Default view",
+      "lastUsed": "Last used",
+      "defaultNote": "Used when a document opens. Switching views while editing does not change it.",
+      "layout": "Layout",
+      "preset": "Preset",
+      "presetLabel": "Layout preset",
+      "panelRow": "{{panel}} panel",
+      "panelPosition": "{{panel}} panel position",
+      "layoutNote": "Changes apply immediately. The Panels menu in the toolbar can always bring a hidden panel back.",
+      "behavior": "Behavior",
+      "rememberSizes": "Remember panel sizes",
+      "rememberCollapsed": "Remember collapsed panels",
+      "resetLayout": "Reset workspace layout",
+      "resetNote": "Restores panel positions and sizes, the visible views and the default view. Units, language, theme and Live Preview are kept."
+    },
+    "livePreview": {
+      "title": "Live preview",
+      "always": "Always on",
+      "alwaysHint": "The preview follows every change.",
+      "manual": "Manual",
+      "manualHint": "The preview updates only when you press Refresh preview.",
+      "note": "With Manual, the Preview view refreshes each time you open it, and the Split view has a refresh button (a dot on it means the preview is out of date). Changing this applies to the open document immediately."
+    },
+    "appearance": {
+      "theme": "Theme",
+      "system": "System",
+      "light": "Light",
+      "dark": "Dark"
+    },
+    "about": {
+      "title": "About",
+      "createdBy": "Created by Joaquin Arruiz"
+    },
+    "footer": {
+      "confirm": "Reset all preferences? This restores the default application settings. Your document is not affected.",
+      "cancel": "Cancel",
+      "reset": "Reset",
+      "resetDefaults": "Reset to defaults",
+      "close": "Close"
+    },
+    "layoutPreview": {
+      "label": "Layout preview",
+      "editor": "Editor"
+    }
+  },
+  "hintUi": {
+    "previous": "Previous tip",
+    "next": "Next tip",
+    "skip": "Skip",
+    "done": "Done",
+    "dismiss": "Dismiss tip",
+    "dismissTitle": "Dismiss (won't show again)"
+  },
+  "hints": {
+    "first-pdf-tour": {
+      "mark": {
+        "title": "Mark the pieces",
+        "text": "Drag a rectangle around all the pieces on the page."
+      },
+      "grid": {
+        "title": "Set the grid",
+        "text": "Enter how many columns and rows of pieces there are."
+      },
+      "overlay": {
+        "title": "Check the overlay",
+        "text": "The grid lines should sit on the pieces. If not, drag the rectangle's handles to adjust it."
+      },
+      "goPrint": {
+        "title": "Go to Print",
+        "text": "Open the Print tab to choose which pieces go on which sheet."
+      }
+    },
+    "freeform-tool": {
+      "one": {
+        "title": "One piece at a time",
+        "text": "Drag on the page to draw a piece, and click a piece to edit it: drag its body to move it, its handles to resize it and the dot above it to rotate it (Shift snaps to 15°). These pieces are printed from the Print tab."
+      }
+    },
+    "live-preview-output": {
+      "main": {
+        "text": "Live preview is off, so this preview isn't generated automatically. Press the refresh button (bottom right) to generate it. You can change this in Preferences > Preview.",
+        "action": "Open Preferences"
+      }
+    },
+    "live-preview-sheets": {
+      "main": {
+        "text": "Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the refresh button (top right) to update it. The large sheet always follows the plan. You can change this in Preferences > Preview.",
+        "action": "Open Preferences"
+      }
+    },
+    "print-stage-intro": {
+      "library": {
+        "title": "Choose pieces",
+        "text": "Pick the pieces you want in the piece library on the left."
+      },
+      "copies": {
+        "title": "Set copies",
+        "text": "Give each piece the number of copies you need, or keep “All pieces in order” to print every piece once."
+      },
+      "sheet": {
+        "title": "Sheet and page",
+        "text": "Adjust the sheet layout, spacing and page in the inspector on the right."
+      },
+      "export": {
+        "title": "Export",
+        "text": "When the sheets look right, export the PDF."
+      }
+    }
+  },
+  "errors": {
+    "at_page": "Page {{page}}: {{error}}",
+    "does_not_fit": "The laid-out pieces need {{needed_w_mm}} × {{needed_h_mm}} mm but the sheet is only {{page_w_mm}} × {{page_h_mm}} mm.",
+    "page_out_of_range": "Page {{page}} does not exist (the document has {{count}} pages).",
+    "unsupported_rotation": "Page {{page}} has a rotation of {{rotate}}°; only multiples of 90° are supported.",
+    "unsupported_user_unit": "Page {{page}} has a /UserUnit of {{unit}}; only 1 is supported.",
+    "pdf": "PDF error: {{detail}}",
+    "io": "File error: {{detail}}",
+    "invalid_grid": "Invalid grid: {{detail}}",
+    "invalid_sheet": "Invalid sheet: {{detail}}",
+    "pdfium": "Rendering error: {{detail}}",
+    "malformed": "The PDF is malformed: {{detail}}",
+    "superseded": "A newer request replaced this one.",
+    "worker_stopped": "The renderer stopped. Restart the app.",
+    "no_document": "No PDF is open.",
+    "same_file": "Choose a different file than the one that is open.",
+    "no_pages": "No pages are included in the export.",
+    "nothing_to_print": "There is nothing to print.",
+    "internal": "Something went wrong inside the app: {{detail}}",
+    "freeform_only": "This page has only freeform pieces: print it from the Print tab.",
+    "no_region": "No piece region is selected."
+  },
+  "numberField": {
+    "decrease": "Decrease {{label}}",
+    "increase": "Increase {{label}}"
+  }
+}

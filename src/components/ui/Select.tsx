@@ -140,12 +140,13 @@ export function Select<T extends string>({
   };
 
   return (
-    <div className={`relative inline-block ${className}`} data-testid={testId}>
+    <div className={`relative inline-block min-w-0 max-w-full ${className}`} data-testid={testId}>
       <button
         ref={btn}
         type="button"
         role="combobox"
         aria-label={label}
+        title={current?.label}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? `${id}-list` : undefined}

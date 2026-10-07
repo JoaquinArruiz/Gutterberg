@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { cardIdKey } from "../lib/card";
 import { keyAfterDelete, remapRecord } from "../lib/card-edits";
+import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { emitHintEvent } from "../lib/hint-events";
 import {
   adjustQuantity,
@@ -34,10 +35,10 @@ type PrintState = PrintPlan & {
   selection: Selection;
   /** Every card of the page groups, in page order (`compute_cards`). */
   cards: Card[];
-  cardsError: string | null;
+  cardsError: AppError | null;
   /** The sheets the plan produces (`compute_sheets`); null until computed. */
   sheets: OutputSheet[] | null;
-  sheetsError: string | null;
+  sheetsError: AppError | null;
   /** The sheets as of the last "refresh": what the preview shows while Live Preview is off. */
   sheetsSnapshot: OutputSheet[] | null;
   currentSheet: number;
@@ -58,8 +59,9 @@ type PrintState = PrintPlan & {
   clickCard: (key: string, visible: string[], modifier: "none" | "toggle" | "range") => void;
   selectAll: (keys: string[]) => void;
   clearSelection: () => void;
-  setCards: (cards: Card[], error: string | null) => void;
-  setSheets: (sheets: OutputSheet[] | null, error: string | null) => void;
+  /** `error` is whatever the failed call rejected with (or null); it is kept as an `AppError`. */
+  setCards: (cards: Card[], error: unknown) => void;
+  setSheets: (sheets: OutputSheet[] | null, error: unknown) => void;
   setCurrentSheet: (i: number) => void;
   /** Freeze the current sheets as the preview (the refresh button). */
   updateSheetsPreview: () => void;
@@ -103,16 +105,16 @@ export const usePrintStore = create<PrintState>((set) => ({
   clickCard: (key, visible, modifier) => set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) })),
   selectAll: (keys) => set({ selection: { selected: keys, anchor: keys[0] ?? null } }),
   clearSelection: () => set({ selection: EMPTY_SELECTION }),
-  setCards: (cards, cardsError) =>
+  setCards: (cards, error) =>
     set((s) => ({
       cards,
-      cardsError,
+      cardsError: toAppErrorOrNull(error),
       selection: pruneSelection(s.selection, new Set(cards.map((c) => cardIdKey(c.id)))),
     })),
-  setSheets: (sheets, sheetsError) =>
+  setSheets: (sheets, error) =>
     set((s) => ({
       sheets,
-      sheetsError,
+      sheetsError: toAppErrorOrNull(error),
       currentSheet: Math.min(s.currentSheet, Math.max(0, (sheets?.length ?? 1) - 1)),
     })),
   setCurrentSheet: (currentSheet) => set({ currentSheet }),

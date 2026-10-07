@@ -1,5 +1,7 @@
 import { create } from "zustand";
+import { applyLocale } from "../i18n";
 import { type HintId, hintVersion } from "../lib/hints";
+import { type DecimalPreference, type LanguagePreference, resolveLanguage, resolveSeparator } from "../lib/locale";
 import type { MeasurementUnit } from "../lib/measurement";
 import {
   type AppPreferences,
@@ -86,6 +88,8 @@ type PreferencesState = {
   /** Bumped when sizes are reset so resizable groups remount with the new defaults. Not persisted. */
   layoutEpoch: number;
   setUnit: (unit: MeasurementUnit) => void;
+  setLanguage: (language: LanguagePreference) => void;
+  setDecimal: (decimal: DecimalPreference) => void;
   setVisibleMode: (mode: WorkspaceMode, enabled: boolean) => void;
   moveVisibleMode: (mode: WorkspaceMode, dir: -1 | 1) => void;
   setDefaultMode: (mode: DefaultWorkspace) => void;
@@ -120,6 +124,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
     // Every change goes through normalize (repairs invariants) and is saved.
     const commit = (next: AppPreferences) => {
       const prefs = normalizePreferences(next);
+      applyLocale(prefs.locale);
       set({ prefs });
       try {
         storage.setItem(PREFERENCES_KEY, JSON.stringify(prefs));
@@ -132,10 +137,14 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       edit((p) => ({ ...p, workspace: { ...p.workspace, layout: f(p.workspace.layout) } }));
     const bumpEpoch = () => set((s) => ({ layoutEpoch: s.layoutEpoch + 1 }));
 
+    const prefs = loadPreferences(storage);
+    applyLocale(prefs.locale);
     return {
-      prefs: loadPreferences(storage),
+      prefs,
       layoutEpoch: 0,
       setUnit: (unit) => edit((p) => ({ ...p, measurement: { unit } })),
+      setLanguage: (language) => edit((p) => ({ ...p, locale: { ...p.locale, language } })),
+      setDecimal: (decimal) => edit((p) => ({ ...p, locale: { ...p.locale, decimal } })),
       setVisibleMode: (mode, enabled) =>
         edit((p) => ({
           ...p,
@@ -208,5 +217,15 @@ export function createPreferencesStore(storage: KeyValueStorage) {
 
 export const usePreferencesStore = createPreferencesStore(browserStorage());
 
-/** Unit currently chosen for displaying/typing measurements. */
-export const useUnit = () => usePreferencesStore((s) => s.prefs.measurement.unit);
+/** The decimal separator numbers are shown with (the setting, or the language's own for Automatic). */
+export const useDecimalSeparator = () =>
+  usePreferencesStore((s) => resolveSeparator(s.prefs.locale.decimal, resolveLanguage(s.prefs.locale.language)));
+
+/**
+ * Unit currently chosen for displaying/typing measurements. It also follows the decimal separator, so
+ * every component that formats a measurement redraws when that setting changes.
+ */
+export const useUnit = () => {
+  useDecimalSeparator();
+  return usePreferencesStore((s) => s.prefs.measurement.unit);
+};

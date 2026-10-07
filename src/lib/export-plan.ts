@@ -11,9 +11,12 @@ export type ExportPlan = {
   issues: PageIssue[];
 };
 
+/** A page the UI already knows cannot be exported, worded from the catalog like the engine's own. */
+const issue = (page: number, code: string, message: string): PageIssue => ({ page_index: page, message, code });
+
 /**
- * The Cards stage re-spaces grids only. Freeform cards are printed from the Print stage, so a page that
- * has nothing but freeform cards is reported rather than silently exported empty.
+ * The Source tab re-spaces grids only. Freeform pieces are printed from the Print tab, so a page that
+ * has nothing but freeform pieces is reported rather than silently exported empty.
  */
 export function buildExportPlan(
   groups: PageGroup[],
@@ -27,11 +30,11 @@ export function buildExportPlan(
       if (g.kind === "skip") continue;
       if (!g.selection) {
         const own = freeform[page]?.length ?? 0;
-        issues.push({
-          page_index: page,
-          message:
-            own > 0 ? "this page has only freeform cards: print it from the Print stage" : "no card region is selected",
-        });
+        issues.push(
+          own > 0
+            ? issue(page, "freeform_only", "this page has only freeform pieces: print it from the Print tab")
+            : issue(page, "no_region", "no piece region is selected"),
+        );
       } else {
         jobs.push({ page_index: page, grid: gridPayload(g.selection, g.grid, settings) });
       }

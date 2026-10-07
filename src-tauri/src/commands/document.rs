@@ -1,5 +1,6 @@
-use crate::state::AppState;
+use crate::state::{internal, AppState};
 use card_core::render::DocumentInfo;
+use card_core::ErrorInfo;
 use std::path::PathBuf;
 use tauri::{AppHandle, State};
 
@@ -10,14 +11,13 @@ pub async fn open_pdf(
     app: AppHandle,
     state: State<'_, AppState>,
     path: String,
-) -> Result<DocumentInfo, String> {
+) -> Result<DocumentInfo, ErrorInfo> {
     let worker = state.worker(&app)?;
     let path = PathBuf::from(path);
     let opened = path.clone();
     let info = tauri::async_runtime::spawn_blocking(move || worker.open(opened))
         .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())?;
+        .map_err(internal)??;
     state.set_path(path)?;
     Ok(info)
 }

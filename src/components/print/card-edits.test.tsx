@@ -135,7 +135,7 @@ describe("setting a real size", () => {
 
   it("asks for a selection first", () => {
     render(<PrintInspector />);
-    expect(within(section()).getByText(/Select cards in the library/)).toBeTruthy();
+    expect(within(section()).getByText(/Select pieces in the piece library/)).toBeTruthy();
   });
 
   it("sets 63 x 88 mm on a card of 64 x 89.4 mm, and shows the percentage everywhere", () => {

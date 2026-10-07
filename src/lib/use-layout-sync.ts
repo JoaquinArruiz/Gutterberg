@@ -31,7 +31,7 @@ export function useLayoutSync() {
     const t = setTimeout(() => {
       computeLayout(page, gridPayload(selection, grid, settings))
         .then((r) => !stale && setResult(r, null))
-        .catch((e) => !stale && setResult(null, String(e)));
+        .catch((e) => !stale && setResult(null, e));
     }, 16);
     return () => {
       stale = true;

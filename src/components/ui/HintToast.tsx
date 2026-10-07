@@ -1,5 +1,6 @@
 import { ChevronLeft, ChevronRight, Info, X } from "lucide-react";
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Joyride, type Options } from "react-joyride";
 import { runHintAction } from "../../lib/hint-actions";
 import { onHintEvent } from "../../lib/hint-events";
@@ -21,6 +22,7 @@ type CardProps = {
 
 /** The tip itself: the same look whether it floats where the caller put it or sits next to its target. */
 function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", onKeyDown }: CardProps) {
+  const { t } = useTranslation();
   const last = index === total - 1;
   const stepped = total > 1;
   return (
@@ -33,22 +35,22 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
     >
       <Info size={15} className="mt-0.5 shrink-0 text-[var(--accent)]" />
       <div className="min-w-0 flex-1">
-        {step.title && <p className="font-semibold">{step.title}</p>}
-        <p>{step.text}</p>
+        {step.title && <p className="font-semibold">{t(step.title)}</p>}
+        <p>{t(step.text)}</p>
         {step.action && (
           <button
             type="button"
             onClick={() => step.action && runHintAction(step.action.run)}
             className="mt-1.5 text-[var(--accent)] hover:underline"
           >
-            {step.action.label}
+            {t(step.action.label)}
           </button>
         )}
         {stepped && (
           <div className="mt-2 flex items-center gap-1.5 text-[var(--muted)]">
             <button
               type="button"
-              aria-label="Previous tip"
+              aria-label={t("hintUi.previous")}
               disabled={index === 0}
               onClick={() => onGo(index - 1)}
               className={`${iconBtn} disabled:opacity-40`}
@@ -69,15 +71,15 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
             </span>
             {!last && (
               <button type="button" onClick={onDismiss} className="ml-auto hover:text-[var(--fg)] hover:underline">
-                Skip
+                {t("hintUi.skip")}
               </button>
             )}
             {last ? (
               <button type="button" onClick={onDismiss} className="ml-auto text-[var(--accent)] hover:underline">
-                Done
+                {t("hintUi.done")}
               </button>
             ) : (
-              <button type="button" aria-label="Next tip" onClick={() => onGo(index + 1)} className={iconBtn}>
+              <button type="button" aria-label={t("hintUi.next")} onClick={() => onGo(index + 1)} className={iconBtn}>
                 <ChevronRight size={13} />
               </button>
             )}
@@ -86,8 +88,8 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
       </div>
       <button
         type="button"
-        aria-label="Dismiss tip"
-        title="Dismiss (won't show again)"
+        aria-label={t("hintUi.dismiss")}
+        title={t("hintUi.dismissTitle")}
         onClick={onDismiss}
         className={`${iconBtn} -mr-1 -mt-0.5`}
       >

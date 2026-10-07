@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { OutputSheet } from "../../lib/sheet-api";
 import { PlacedCard } from "./PlacedCard";
 
@@ -16,6 +17,7 @@ function SheetThumb({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation();
   const ref = useRef<HTMLButtonElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -40,7 +42,7 @@ function SheetThumb({
       type="button"
       ref={ref}
       onClick={onSelect}
-      aria-label={`Sheet ${index + 1}`}
+      aria-label={t("sheets.thumb", { n: index + 1 })}
       aria-current={active}
       data-testid="sheet-thumb"
       className={`flex shrink-0 flex-col items-center gap-1 rounded p-1.5 ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
@@ -57,7 +59,7 @@ function SheetThumb({
   );
 }
 
-/** The sheets as a row of small previews, like the page thumbnails of the Cards stage. */
+/** The sheets as a row of small previews, like the page thumbnails of the Source tab. */
 export function SheetStrip({
   sheets,
   current,

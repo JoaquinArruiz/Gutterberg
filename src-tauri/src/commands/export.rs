@@ -1,5 +1,6 @@
-use crate::state::AppState;
+use crate::state::{internal, AppState};
 use card_core::export::{export_pdf, validate_export_file, ExportJob, PageIssue, PageJob};
+use card_core::ErrorInfo;
 use std::path::{Path, PathBuf};
 use tauri::State;
 
@@ -20,6 +21,14 @@ pub(crate) fn same_file(input: &Path, output: &Path) -> bool {
     }
 }
 
+/// The output would overwrite the PDF that is open.
+pub(crate) fn same_file_error() -> ErrorInfo {
+    ErrorInfo::new(
+        "same_file",
+        "choose a different file than the one that is open",
+    )
+}
+
 /// Export the open PDF: one output page per job, each with its own grid, writing
 /// `output_path`. Pages without a job (skipped pages) are left out. Returns the number of
 /// pages written.
@@ -28,21 +37,23 @@ pub async fn export_document(
     state: State<'_, AppState>,
     pages: Vec<PageJob>,
     output_path: String,
-) -> Result<usize, String> {
+) -> Result<usize, ErrorInfo> {
     let input = state.path()?;
     let output = PathBuf::from(output_path);
     if same_file(&input, &output) {
-        return Err("choose a different file than the one that is open".into());
+        return Err(same_file_error());
     }
     if pages.is_empty() {
-        return Err("no pages are included in the export".into());
+        return Err(ErrorInfo::new(
+            "no_pages",
+            "no pages are included in the export",
+        ));
     }
     let job = ExportJob { pages };
     let written = job.pages.len();
     tauri::async_runtime::spawn_blocking(move || export_pdf(&input, &output, &job))
         .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())?;
+        .map_err(internal)??;
     Ok(written)
 }
 
@@ -52,10 +63,10 @@ pub async fn export_document(
 pub async fn validate_export(
     state: State<'_, AppState>,
     pages: Vec<PageJob>,
-) -> Result<Vec<PageIssue>, String> {
+) -> Result<Vec<PageIssue>, ErrorInfo> {
     let input = state.path()?;
     tauri::async_runtime::spawn_blocking(move || validate_export_file(&input, &pages))
         .await
-        .map_err(|e| e.to_string())?
-        .map_err(|e| e.to_string())
+        .map_err(internal)?
+        .map_err(Into::into)
 }

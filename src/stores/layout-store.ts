@@ -17,6 +17,7 @@ import {
   setSkipped,
   updateGridGroup,
 } from "../lib/document-layout";
+import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { emitHintEvent } from "../lib/hint-events";
 import type { LayoutResult } from "../lib/layout-api";
 import { sessionDefaults } from "../lib/preferences";
@@ -78,7 +79,7 @@ type LayoutState = OutputSettings & {
   /** Placements from the Rust layout engine for the current page; null if no region or the grid is invalid. */
   result: LayoutResult | null;
   /** Why `result` is null despite a region. */
-  layoutError: string | null;
+  layoutError: AppError | null;
   /** A new document: one default group over all its pages, and no history. */
   resetDocument: (pageCount: number) => void;
   setSelection: (page: number, r: NormalizedRect | null) => void;
@@ -102,7 +103,8 @@ type LayoutState = OutputSettings & {
   setLive: (live: boolean) => void;
   updatePreview: () => void;
   clearSnapshot: () => void;
-  setResult: (result: LayoutResult | null, error: string | null) => void;
+  /** `error` is whatever the failed call rejected with (or null); it is kept as an `AppError`. */
+  setResult: (result: LayoutResult | null, error: unknown) => void;
 };
 
 /** The part of the state that undo/redo records and restores. */
@@ -207,7 +209,7 @@ export const useLayoutStore = create<LayoutState>()(
       setLive: (live) => set({ live }),
       updatePreview: () => set((s) => ({ snapshot: s.result })),
       clearSnapshot: () => set({ snapshot: null }),
-      setResult: (result, layoutError) => set({ result, layoutError }),
+      setResult: (result, error) => set({ result, layoutError: toAppErrorOrNull(error) }),
     }),
     {
       partialize: undoable,

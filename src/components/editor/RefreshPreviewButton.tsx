@@ -1,4 +1,5 @@
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useLayoutStore } from "../../stores/layout-store";
 
 /**
@@ -35,12 +36,13 @@ export function RefreshButton({
   disabled: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className={className}>
       <button
         type="button"
-        aria-label="Refresh preview"
-        title={stale ? "Refresh preview (out of date)" : "Refresh preview"}
+        aria-label={t("preview.refresh")}
+        title={stale ? t("preview.refreshStale") : t("preview.refresh")}
         disabled={disabled}
         onClick={onClick}
         className="relative flex h-8 w-8 items-center justify-center rounded border border-[var(--border)] bg-[var(--panel)] text-[var(--fg)] shadow-md shadow-black/30 hover:bg-[var(--hover)] disabled:opacity-40"

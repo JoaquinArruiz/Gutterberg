@@ -13,11 +13,13 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useStore } from "zustand";
+import { t as translate } from "../../i18n";
 import { includedPages } from "../../lib/document-layout";
+import { type AppError, formatError, toAppError } from "../../lib/errors";
 import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
 import { emitHintEvent } from "../../lib/hint-events";
-import { WORKSPACE_LABEL } from "../../lib/preferences";
 import { buildPrintRequest } from "../../lib/print-request";
 import { exportPrint, validatePrint } from "../../lib/sheet-api";
 import { exportDocument, pickExportPath, validateExport } from "../../lib/tauri";
@@ -31,23 +33,31 @@ import { planOf, usePrintStore } from "../../stores/print-store";
 import { type Stage, useUiStore } from "../../stores/ui-store";
 import { PanelsMenu } from "../workspace/PanelsMenu";
 
-const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
-  { id: "select", label: "Grid region", key: "V", Icon: MousePointer2 },
-  { id: "card", label: "Card", key: "C", Icon: RectangleVertical },
-  { id: "pan", label: "Pan", key: "H", Icon: Hand },
-];
+const TOOLS = [
+  { id: "select", label: "toolbar.tools.select", key: "V", Icon: MousePointer2 },
+  { id: "card", label: "toolbar.tools.card", key: "C", Icon: RectangleVertical },
+  { id: "pan", label: "toolbar.tools.pan", key: "H", Icon: Hand },
+] as const satisfies { id: Tool; label: string; key: string; Icon: typeof Hand }[];
 
-const STAGES: { id: Stage; label: string }[] = [
-  { id: "cards", label: "Cards" },
-  { id: "print", label: "Print" },
-];
+const STAGES = [
+  { id: "cards", label: "toolbar.stages.source" },
+  { id: "print", label: "toolbar.stages.print" },
+] as const satisfies { id: Stage; label: string }[];
 
 /** One line in the list of reasons an export cannot start. `page` is null for a problem with the plan itself. */
-type ExportIssue = { page: number | null; message: string };
+type ExportIssue = { page: number | null; error: AppError };
 
-const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
+/** The line in the toolbar after an export. Worded when drawn, so changing the language updates it. */
+type Status = { ok: boolean; text: () => string };
+
+const base =
+  "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded py-1 hover:bg-[var(--hover)] disabled:opacity-40";
+const btn = `${base} px-2`;
+/** Buttons with only an icon are tighter, so the whole toolbar fits the minimum window width in Spanish too. */
+const iconBtn = `${base} px-1.5`;
 
 export function EditorToolbar() {
+  const { t } = useTranslation();
   const openDialog = useDocumentStore((s) => s.openDialog);
   const pages = useDocumentStore((s) => s.pages);
   const loading = useDocumentStore((s) => s.loading);
@@ -57,38 +67,38 @@ export function EditorToolbar() {
   const canUndo = useStore(useLayoutStore.temporal, (s) => s.pastStates.length > 0);
   const canRedo = useStore(useLayoutStore.temporal, (s) => s.futureStates.length > 0);
   const [exporting, setExporting] = useState(false);
-  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [status, setStatus] = useState<Status | null>(null);
   // Pages that would make the export fail, found before the save dialog opens.
   const [issues, setIssues] = useState<ExportIssue[]>([]);
   const stage = useUiStore((s) => s.stage);
   const setStage = useUiStore((s) => s.setStage);
 
-  /** Cards stage: every included page with its own grid, as before. */
+  /** Source tab: every included page with its own grid, as before. */
   const exportCards = async (source: string) => {
     const state = useLayoutStore.getState();
     const plan = buildExportPlan(state.groups, state, state.freeform);
     if (plan.jobs.length === 0 && plan.issues.length === 0) {
-      setStatus({ ok: false, text: "Every page is skipped. Include at least one page to export." });
+      setStatus({ ok: false, text: () => translate("toolbar.includeOnePage") });
       return;
     }
     const remote = plan.jobs.length ? await validateExport(plan.jobs) : [];
     const found = mergeIssues(plan.issues, remote);
     if (found.length > 0) {
-      setIssues(found.map((i) => ({ page: i.page_index, message: i.message })));
+      setIssues(found.map((i) => ({ page: i.page_index, error: toAppError(i) })));
       return;
     }
     const out = await pickExportPath(source);
     if (!out) return;
     const n = await exportDocument(plan.jobs, out);
-    setStatus({ ok: true, text: `Exported ${n} page${n === 1 ? "" : "s"} to ${out}` });
+    setStatus({ ok: true, text: () => translate("toolbar.exportedPages", { count: n, path: out }) });
   };
 
-  /** Print stage: the sheets the plan produces. The same planner runs for the check and the export. */
+  /** Print tab: the sheets the plan produces. The same planner runs for the check and the export. */
   const exportSheets = async (source: string) => {
     const layout = useLayoutStore.getState();
     const print = usePrintStore.getState();
     if (!print.sheets?.length && !print.sheetsError) {
-      setStatus({ ok: false, text: "Nothing to print yet. Choose cards and give them copies." });
+      setStatus({ ok: false, text: () => translate("toolbar.nothingToPrint") });
       return;
     }
     const req = buildPrintRequest(
@@ -105,18 +115,18 @@ export function EditorToolbar() {
     try {
       const found = await validatePrint(req);
       if (found.length > 0) {
-        setIssues(found.map((i) => ({ page: i.page_index, message: i.message })));
+        setIssues(found.map((i) => ({ page: i.page_index, error: toAppError(i) })));
         return;
       }
     } catch (e) {
-      // The plan itself does not work (for example cards that do not fit the sheet).
-      setIssues([{ page: null, message: String(e) }]);
+      // The plan itself does not work (for example pieces that do not fit the sheet).
+      setIssues([{ page: null, error: toAppError(e) }]);
       return;
     }
     const out = await pickExportPath(source, "print");
     if (!out) return;
     const n = await exportPrint(req, out);
-    setStatus({ ok: true, text: `Exported ${n} sheet${n === 1 ? "" : "s"} to ${out}` });
+    setStatus({ ok: true, text: () => translate("toolbar.exportedSheets", { count: n, path: out }) });
   };
 
   const doExport = async () => {
@@ -128,7 +138,8 @@ export function EditorToolbar() {
       emitHintEvent("export-started");
       await (stage === "print" ? exportSheets(path) : exportCards(path));
     } catch (e) {
-      setStatus({ ok: false, text: String(e) });
+      const error = toAppError(e);
+      setStatus({ ok: false, text: () => formatError(error) });
     } finally {
       setExporting(false);
     }
@@ -144,11 +155,18 @@ export function EditorToolbar() {
   const empty = pages.length === 0;
   return (
     <header className="relative flex h-9 shrink-0 items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2">
-      <button type="button" onClick={openDialog} disabled={loading} className={btn}>
-        <FileText size={14} /> Open PDF
+      <button type="button" onClick={openDialog} disabled={loading} title={t("toolbar.openPdf")} className={btn}>
+        <FileText size={14} />
+        {/* Below 1100px only the icon shows (the name is still its tooltip and accessible name). */}
+        <span className="max-[1100px]:sr-only">{t("toolbar.openPdf")}</span>
       </button>
-      <div className="mx-2 h-4 w-px bg-[var(--border)]" />
-      <div role="tablist" aria-label="Stage" data-hint-target="stage-tabs" className="flex items-center gap-1">
+      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+      <div
+        role="tablist"
+        aria-label={t("toolbar.stageTabs")}
+        data-hint-target="stage-tabs"
+        className="flex items-center gap-1"
+      >
         {STAGES.map(({ id, label }) => (
           <button
             type="button"
@@ -159,45 +177,45 @@ export function EditorToolbar() {
             disabled={empty}
             className={`${btn} ${stage === id ? "bg-[var(--active)]" : ""}`}
           >
-            {label}
+            {t(label)}
           </button>
         ))}
       </div>
-      <div className="mx-2 h-4 w-px bg-[var(--border)]" />
+      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
       {stage === "cards" &&
         TOOLS.map(({ id, label, key, Icon }) => (
           <button
             type="button"
             key={id}
-            title={`${label} (${key})`}
+            title={t("toolbar.toolTitle", { label: t(label), key })}
             onClick={() => setTool(id)}
-            className={`${btn} ${tool === id ? "bg-[var(--active)]" : ""}`}
+            className={`${iconBtn} ${tool === id ? "bg-[var(--active)]" : ""}`}
           >
             <Icon size={14} />
           </button>
         ))}
-      <div className="mx-2 h-4 w-px bg-[var(--border)]" />
-      <button type="button" title="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} className={btn}>
+      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+      <button type="button" title={t("toolbar.undo")} onClick={undo} disabled={!canUndo} className={iconBtn}>
         <Undo2 size={14} />
       </button>
-      <button type="button" title="Redo (Shift+Ctrl+Z)" onClick={redo} disabled={!canRedo} className={btn}>
+      <button type="button" title={t("toolbar.redo")} onClick={redo} disabled={!canRedo} className={iconBtn}>
         <Redo2 size={14} />
       </button>
       {stage === "cards" && (
         <>
-          <div className="mx-2 h-4 w-px bg-[var(--border)]" />
-          <button type="button" title="Zoom out (-)" onClick={zoomOut} disabled={empty} className={btn}>
+          <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+          <button type="button" title={t("toolbar.zoomOut")} onClick={zoomOut} disabled={empty} className={iconBtn}>
             <ZoomOut size={14} />
           </button>
-          <button type="button" title="Zoom in (+)" onClick={zoomIn} disabled={empty} className={btn}>
+          <button type="button" title={t("toolbar.zoomIn")} onClick={zoomIn} disabled={empty} className={iconBtn}>
             <ZoomIn size={14} />
           </button>
-          <button type="button" title="Fit page (0)" onClick={fitPage} disabled={empty} className={btn}>
+          <button type="button" title={t("toolbar.fitPage")} onClick={fitPage} disabled={empty} className={iconBtn}>
             <Maximize size={14} />
           </button>
-          <div className="mx-2 h-4 w-px bg-[var(--border)]" />
+          <div className="mx-1 h-4 w-px bg-[var(--border)]" />
           {visibleModes.length > 1 && (
-            <div role="tablist" aria-label="Workspace" className="flex items-center gap-1">
+            <div role="tablist" aria-label={t("toolbar.viewTabs")} className="flex items-center gap-1">
               {visibleModes.map((id) => (
                 <button
                   type="button"
@@ -206,13 +224,13 @@ export function EditorToolbar() {
                   aria-selected={viewMode === id}
                   onClick={() => {
                     switchWorkspace(id);
-                    // Clicking Output (even when already there) refreshes a manual preview.
+                    // Clicking Preview (even when already there) refreshes a manual preview.
                     if (id === "output") useLayoutStore.getState().updatePreview();
                   }}
                   disabled={empty}
                   className={`${btn} ${viewMode === id ? "bg-[var(--active)]" : ""}`}
                 >
-                  {WORKSPACE_LABEL[id]}
+                  {t(`views.${id}`)}
                 </button>
               ))}
             </div>
@@ -222,19 +240,19 @@ export function EditorToolbar() {
       <div className="flex-1" />
       {status && (
         <span
-          title={status.text}
+          title={status.text()}
           className={`mr-2 max-w-[40ch] truncate text-[11px] ${status.ok ? "text-[var(--muted)]" : "text-red-400"}`}
         >
-          {status.text}
+          {status.text()}
         </span>
       )}
       <PanelsMenu />
       <button
         type="button"
-        title="Preferences (Ctrl+,)"
-        aria-label="Preferences"
+        title={t("toolbar.preferences")}
+        aria-label={t("toolbar.preferencesLabel")}
         onClick={() => setPrefsOpen(true)}
-        className={`${btn} mr-1`}
+        className={`${iconBtn} mr-1`}
       >
         <Settings size={14} />
       </button>
@@ -243,25 +261,25 @@ export function EditorToolbar() {
         onClick={doExport}
         data-hint-target="export-button"
         disabled={!path || includedCount === 0 || exporting}
-        title={includedCount === 0 ? "Every page is skipped" : "Export PDF"}
-        className="flex items-center gap-1.5 rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"
+        title={includedCount === 0 ? t("toolbar.everyPageSkipped") : t("toolbar.exportPdf")}
+        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"
       >
-        <Download size={14} /> {exporting ? "Exporting…" : "Export PDF"}
+        <Download size={14} /> {exporting ? t("toolbar.exporting") : t("toolbar.exportPdf")}
       </button>
       {issues.length > 0 && (
         <section
-          aria-label="Export problems"
+          aria-label={t("toolbar.issues.label")}
           className="absolute right-2 top-10 z-50 w-96 max-w-[90vw] rounded border border-red-400/50 bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
         >
           <div className="mb-1 flex items-center justify-between font-medium text-red-300">
             <span>
               {issues.length === 1 && issues[0].page === null
-                ? "The plan can't be exported"
-                : `${issues.length} page${issues.length === 1 ? "" : "s"} can't be exported`}
+                ? t("toolbar.issues.planTitle")
+                : t("toolbar.issues.pagesTitle", { count: issues.length })}
             </span>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={t("toolbar.issues.close")}
               onClick={() => setIssues([])}
               className="rounded p-0.5 hover:bg-[var(--hover)]"
             >
@@ -270,23 +288,23 @@ export function EditorToolbar() {
           </div>
           <ul className="max-h-72 overflow-y-auto">
             {issues.map((i) => (
-              <li key={`${i.page}:${i.message}`}>
+              <li key={`${i.page}:${i.error.message}`}>
                 <button
                   type="button"
                   disabled={i.page === null}
                   onClick={() => i.page !== null && setCurrentPage(i.page)}
                   className="w-full rounded px-1.5 py-1 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent"
                 >
-                  {i.page !== null && <span className="font-medium">Page {i.page + 1}: </span>}
-                  <span className="text-[var(--muted)]">{i.message}</span>
+                  {i.page !== null && (
+                    <span className="font-medium">{t("toolbar.issues.page", { n: i.page + 1 })} </span>
+                  )}
+                  <span className="text-[var(--muted)]">{formatError(i.error)}</span>
                 </button>
               </li>
             ))}
           </ul>
           <p className="mt-1 text-[var(--muted)]">
-            {stage === "print"
-              ? "Fix these, then export again. Cards are never scaled to fit."
-              : "Fix these pages, or skip them, then export again."}
+            {stage === "print" ? t("toolbar.issues.fixPrint") : t("toolbar.issues.fixSource")}
           </p>
         </section>
       )}
