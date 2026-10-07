@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { CardIdSchema, cardIdKey, DEFAULT_DOCUMENT_ID, freeformCardId, gridCardId, OrientedRectSchema } from "./card";
+import {
+  CardIdSchema,
+  cardIdKey,
+  DEFAULT_DOCUMENT_ID,
+  freeformCardId,
+  gridCardId,
+  OrientedRectSchema,
+  orientedBounds,
+} from "./card";
 import { orientedFromPoints, orientedToPoints } from "./coordinates";
 
 describe("CardId", () => {
@@ -47,5 +55,25 @@ describe("OrientedRect", () => {
     expect(back.width).toBeCloseTo(r.width, 12);
     expect(back.height).toBeCloseTo(r.height, 12);
     expect(back.angle_deg).toBe(7);
+  });
+});
+
+describe("orientedBounds", () => {
+  it("is the rect itself when it is not rotated", () => {
+    const r = { center: { x: 50, y: 40 }, width: 20, height: 30, angle_deg: 0 };
+    expect(orientedBounds(r)).toEqual({ x: 40, y: 25, width: 20, height: 30 });
+  });
+
+  it("swaps width and height for a quarter turn", () => {
+    const b = orientedBounds({ center: { x: 50, y: 40 }, width: 20, height: 30, angle_deg: 90 });
+    expect([b.width, b.height].map((v) => Math.round(v * 1e9) / 1e9)).toEqual([30, 20]);
+  });
+
+  it("grows around the same centre for a tilt", () => {
+    const b = orientedBounds({ center: { x: 50, y: 40 }, width: 20, height: 30, angle_deg: 7 });
+    expect(b.width).toBeGreaterThan(20);
+    expect(b.height).toBeGreaterThan(30);
+    expect(b.x + b.width / 2).toBeCloseTo(50, 9);
+    expect(b.y + b.height / 2).toBeCloseTo(40, 9);
   });
 });

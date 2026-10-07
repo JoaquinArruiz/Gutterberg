@@ -4,11 +4,13 @@ import type { MeasurementUnit } from "../lib/measurement";
 import {
   type AppPreferences,
   DEFAULT_PREFERENCES,
+  DEFAULT_PRINT_LAYOUT,
   type DefaultWorkspace,
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
   normalizePreferences,
+  type PrintLayoutPrefs,
   type ThemePreference,
   toggleMode,
   type WorkspaceMode,
@@ -69,7 +71,11 @@ export function loadPreferences(storage: KeyValueStorage): AppPreferences {
         ...(l.rememberCollapsed && collapsed ? { collapsed } : {}),
       })),
     };
-    return { ...prefs, workspace: { ...prefs.workspace, layout } };
+    return {
+      ...prefs,
+      workspace: { ...prefs.workspace, layout },
+      print: l.rememberSizes ? prefs.print : DEFAULT_PREFERENCES.print,
+    };
   } catch {
     return DEFAULT_PREFERENCES;
   }
@@ -92,6 +98,10 @@ type PreferencesState = {
   dismissHint: (id: HintId) => void;
   /** Show every help tip again. */
   resetHints: () => void;
+  /** Remember that inspector section `id` was opened or closed. */
+  setSectionOpen: (id: string, open: boolean) => void;
+  /** Persist the widths the user dragged in the Print stage. */
+  savePrintLayout: (layout: Partial<PrintLayoutPrefs>) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
   applyLayoutPreset: (preset: Exclude<LayoutPresetId, "custom">) => void;
@@ -155,6 +165,17 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           },
         })),
       resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: [] } })),
+      setSectionOpen: (id, open) => {
+        if (get().prefs.inspector.sections[id] !== open)
+          edit((p) => ({ ...p, inspector: { sections: { ...p.inspector.sections, [id]: open } } }));
+      },
+      savePrintLayout: (layout) => {
+        if (!get().prefs.workspace.layout.rememberSizes) return;
+        const cur = get().prefs.print.layout;
+        const next = { ...cur, ...layout };
+        if (next.libraryWidth !== cur.libraryWidth || next.inspectorWidth !== cur.inspectorWidth)
+          edit((p) => ({ ...p, print: { layout: next } }));
+      },
       setPanelPosition: (id, position) => editLayout((l) => setPanelPosition(l, id, position)),
       setPanelCollapsed: (id, collapsed) => editLayout((l) => setPanelCollapsed(l, id, collapsed)),
       applyLayoutPreset: (preset) => {
@@ -180,6 +201,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         edit((p) => ({
           ...p,
           workspace: { ...DEFAULT_PREFERENCES.workspace, layout: defaultLayout() },
+          print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
         }));
         bumpEpoch();
       },

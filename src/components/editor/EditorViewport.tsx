@@ -9,7 +9,6 @@ import {
 } from "../../lib/coordinates";
 import { type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import { usePreviewResult } from "../../lib/view-page";
-import { startSession } from "../../lib/workspace";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import {
@@ -102,15 +101,6 @@ export function EditorViewport() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
-
-  // New document: one default group over its pages, no history, and fit.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `pages` is the trigger (a document was opened), not a value read
-  useEffect(() => {
-    useEditorStore.getState().reset();
-    useLayoutStore.getState().resetDocument(useDocumentStore.getState().pages.length);
-    useLayoutStore.getState().clearSnapshot();
-    startSession(); // new document = new session: workspace and Live Preview start from preferences
-  }, [pages]);
 
   // Keep the page fitted while in fit mode (resize, page change, new document).
   useEffect(() => {

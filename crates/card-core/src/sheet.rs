@@ -8,10 +8,10 @@
 //! carries an explicit `scale`; a card that does not fit the sheet is an error, never shrunk.
 //! Export (`export::export_sheets`) turns the sheets into a PDF without rasterising anything.
 
-use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind};
+use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Point, Rect};
-use crate::layout::source_cards;
+use crate::layout::{calculate_fitting_layout, source_cards, LayoutResult};
 use crate::units::{mm_to_pt, pt_to_mm};
 use serde::{Deserialize, Serialize};
 
@@ -125,6 +125,20 @@ pub struct CardSetting {
     pub scale: f64,
 }
 
+fn check_range(range: PageRange, total_pages: usize) -> Result<()> {
+    if range.first > range.last {
+        return Err(Error::InvalidSheet(format!(
+            "page range {}..{} is empty",
+            range.first + 1,
+            range.last + 1
+        )));
+    }
+    if range.last >= total_pages {
+        return Err(Error::PageOutOfRange(range.last, total_pages));
+    }
+    Ok(())
+}
+
 /// Every card of the page groups, in page order (row-major within a grid). Skipped pages give
 /// none. Grid cards are unrotated with scale 1.0; a freeform group's cards map one to one onto
 /// each page of its range.
@@ -136,16 +150,7 @@ pub fn extract_cards(
     let mut cards = Vec::new();
     for g in groups {
         let range = g.pages;
-        if range.first > range.last {
-            return Err(Error::InvalidSheet(format!(
-                "page range {}..{} is empty",
-                range.first + 1,
-                range.last + 1
-            )));
-        }
-        if range.last >= pages.len() {
-            return Err(Error::PageOutOfRange(range.last, pages.len()));
-        }
+        check_range(range, pages.len())?;
         let in_range = pages[range.first..=range.last].iter();
         for (page_index, &page) in (range.first..).zip(in_range) {
             match &g.kind {
@@ -178,6 +183,9 @@ pub enum SheetPage {
     Size(PageSize),
     /// Margins + the rows x columns block + gaps. Needs `rows` and `columns`.
     Fit,
+    /// The size of the source page of the first card. Resolved by [`plan_sheets`]; `paginate`
+    /// itself needs a concrete size.
+    SameAsSource,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
@@ -226,6 +234,8 @@ pub struct PaginateOptions {
     /// One group of sheets per card size, each with a grid that fits it. When off, every
     /// card shares one grid whose slots are as large as the largest card.
     pub group_by_size: bool,
+    /// Repeat the requested cards, in order, until the last sheet of each group is full.
+    pub auto_fill: bool,
 }
 
 impl Default for PaginateOptions {
@@ -233,6 +243,7 @@ impl Default for PaginateOptions {
         Self {
             order: Order::Grouped,
             group_by_size: true,
+            auto_fill: false,
         }
     }
 }
@@ -272,6 +283,11 @@ fn validate(spec: &SheetSpec) -> Result<()> {
     }
     if spec.rows == Some(0) || spec.columns == Some(0) {
         return Err(Error::InvalidSheet("rows and columns must be >= 1".into()));
+    }
+    if spec.page == SheetPage::SameAsSource {
+        return Err(Error::InvalidSheet(
+            "the page size must be resolved first (use plan_sheets)".into(),
+        ));
     }
     if let SheetPage::Size(p) = spec.page {
         if !(p.width_pt > 0.0 && p.height_pt > 0.0) {
@@ -340,8 +356,12 @@ fn does_not_fit(needed_w: f64, needed_h: f64, page_w: f64, page_h: f64) -> Error
 }
 
 /// Lays out one group of cards that share a grid.
-fn lay_out(entries: &[Entry], order: Order, spec: &SheetSpec) -> Result<Vec<OutputSheet>> {
-    let copies = copy_order(entries, order);
+fn lay_out(
+    entries: &[Entry],
+    options: &PaginateOptions,
+    spec: &SheetSpec,
+) -> Result<Vec<OutputSheet>> {
+    let mut copies = copy_order(entries, options.order);
     if copies.is_empty() {
         return Ok(Vec::new());
     }
@@ -393,6 +413,7 @@ fn lay_out(entries: &[Entry], order: Order, spec: &SheetSpec) -> Result<Vec<Outp
             }
             (page, cols, rows)
         }
+        SheetPage::SameAsSource => unreachable!("rejected by validate"),
         SheetPage::Fit => {
             // `validate` guarantees both counts.
             let (cols, rows) = (spec.columns.unwrap_or(1), spec.rows.unwrap_or(1));
@@ -411,6 +432,13 @@ fn lay_out(entries: &[Entry], order: Order, spec: &SheetSpec) -> Result<Vec<Outp
     let origin_y = m_top + ((page.height_pt - m_top - m_bottom - bh) / 2.0).max(0.0);
 
     let per_sheet = cols * rows;
+    if options.auto_fill {
+        // Go round the requested sequence again until the last sheet is full.
+        let n = copies.len();
+        for k in n..n.div_ceil(per_sheet) * per_sheet {
+            copies.push(copies[k % n]);
+        }
+    }
     let sheets = copies
         .chunks(per_sheet)
         .map(|chunk| {
@@ -497,7 +525,7 @@ pub fn paginate(
 
     let mut sheets = Vec::new();
     for g in &groups {
-        sheets.extend(lay_out(g, options.order, spec)?);
+        sheets.extend(lay_out(g, options, spec)?);
     }
     Ok(sheets)
 }
@@ -523,7 +551,104 @@ pub fn plan_sheets(
             None => (card, 1),
         })
         .collect();
-    paginate(&cards, spec, options)
+    let spec = match spec.page {
+        SheetPage::SameAsSource => {
+            // The first card that is actually printed decides the page size.
+            let Some((first, _)) = cards.iter().find(|(_, quantity)| *quantity > 0) else {
+                return Ok(Vec::new());
+            };
+            SheetSpec {
+                page: SheetPage::Size(pages[first.id.page_index()]),
+                ..*spec
+            }
+        }
+        _ => *spec,
+    };
+    paginate(&cards, &spec, options)
+}
+
+/// How the print stage lays cards out.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PrintLayout {
+    /// Every grid page becomes one sheet with its own grid and the spacing, margins and
+    /// page of its group: exactly what the Cards stage exports. Per-card settings and
+    /// pagination options do not apply.
+    SameAsSource,
+    /// Cards go through [`plan_sheets`] with this sheet.
+    Grid { spec: SheetSpec },
+}
+
+/// The sheet for one source page laid out by `calculate_layout` (all cards in order,
+/// sheet grid = source grid).
+pub fn sheet_from_layout(
+    document_id: DocumentId,
+    page_index: usize,
+    columns: usize,
+    layout: &LayoutResult,
+) -> OutputSheet {
+    OutputSheet {
+        page: layout.output_page,
+        placements: layout
+            .placements
+            .iter()
+            .map(|p| SheetPlacement {
+                card_id: CardId::Grid {
+                    document_id,
+                    page_index,
+                    row: p.index / columns,
+                    column: p.index % columns,
+                },
+                source: OrientedRect::from_rect(p.source),
+                destination: p.destination,
+                turn: Turn::R0,
+                scale: 1.0,
+            })
+            .collect(),
+    }
+}
+
+/// One sheet per grid page, as the Cards stage lays it out. Freeform groups have no grid and
+/// give no sheet here.
+pub fn source_sheets(
+    document_id: DocumentId,
+    pages: &[PageSize],
+    groups: &[PageGroup],
+) -> Result<Vec<OutputSheet>> {
+    let mut sheets = Vec::new();
+    for g in groups {
+        check_range(g.pages, pages.len())?;
+        if let PageGroupKind::Grid { grid } = &g.kind {
+            let in_range = pages[g.pages.first..=g.pages.last].iter();
+            for (page_index, &page) in (g.pages.first..).zip(in_range) {
+                let layout = calculate_fitting_layout(page, grid)?;
+                sheets.push(sheet_from_layout(
+                    document_id,
+                    page_index,
+                    grid.columns,
+                    &layout,
+                ));
+            }
+        }
+    }
+    Ok(sheets)
+}
+
+/// The output sheets of the print stage for `layout`.
+pub fn plan_print(
+    document_id: DocumentId,
+    pages: &[PageSize],
+    groups: &[PageGroup],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+) -> Result<Vec<OutputSheet>> {
+    match layout {
+        PrintLayout::SameAsSource => source_sheets(document_id, pages, groups),
+        PrintLayout::Grid { spec } => {
+            plan_sheets(document_id, pages, groups, settings, spec, options)
+        }
+    }
 }
 
 /// A 2x3 affine map in top-left page coordinates:

@@ -21,13 +21,13 @@ export async function openPdf(path: string): Promise<DocumentInfo> {
   return DocumentInfoSchema.parse(await invoke("open_pdf", { path }));
 }
 
-export async function pickExportPath(inputPath: string): Promise<string | null> {
+export async function pickExportPath(inputPath: string, suffix = "spaced"): Promise<string | null> {
   const name =
     inputPath
       .split(/[\\/]/)
       .pop()
       ?.replace(/\.pdf$/i, "") ?? "cards";
-  return save({ defaultPath: `${name}-spaced.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
+  return save({ defaultPath: `${name}-${suffix}.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
 }
 
 /** Mirrors card_core::layout::GridLayout. */

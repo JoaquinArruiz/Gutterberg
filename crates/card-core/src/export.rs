@@ -12,11 +12,14 @@
 //!
 //! so text, vector art and embedded images keep their original encoding.
 
-use crate::card::{CardId, DocumentId, OrientedRect, DEFAULT_DOCUMENT_ID};
+use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
-use crate::layout::{calculate_layout, GridLayout, LayoutResult};
-use crate::sheet::{card_transform, Affine, OutputSheet, SheetPlacement, Turn};
+use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
+use crate::sheet::{
+    card_transform, plan_print, sheet_from_layout, Affine, CardSetting, OutputSheet,
+    PaginateOptions, PrintLayout, SheetPlacement,
+};
 use crate::units::pt_to_mm;
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
 use serde::{Deserialize, Serialize};
@@ -281,11 +284,8 @@ fn fmt(v: f64) -> String {
     }
 }
 
-/// Export `input` according to `job`, writing `output`.
-pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
-    let mut doc = Document::load(input)?;
-    export_document(&mut doc, job)?;
-    // Write beside the target, then rename, so a failed export never leaves a truncated file.
+/// Write `doc` beside `output`, then rename, so a failed export never leaves a truncated file.
+fn save_atomically(doc: &mut Document, output: &Path) -> Result<()> {
     let name = output
         .file_name()
         .ok_or_else(|| Error::Malformed("output path has no file name".into()))?
@@ -302,20 +302,31 @@ pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
     result
 }
 
+/// Export `input` according to `job`, writing `output`.
+pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
+    let mut doc = Document::load(input)?;
+    export_document(&mut doc, job)?;
+    save_atomically(&mut doc, output)
+}
+
+/// Export `sheets` built from the single document at `input` (document id 0), writing `output`.
+pub fn export_sheets_file(input: &Path, output: &Path, sheets: &[OutputSheet]) -> Result<()> {
+    let mut doc = export_sheets(vec![(DEFAULT_DOCUMENT_ID, Document::load(input)?)], sheets)?;
+    save_atomically(&mut doc, output)
+}
+
+/// The displayed size of every page of `doc`: what the layout and export work from. A page that
+/// cannot be exported (unsupported rotation, unreadable boxes) is an `Err` for that page only.
+pub fn page_sizes(doc: &Document) -> Vec<Result<PageSize>> {
+    (0..doc.get_pages().len())
+        .map(|page_index| page_size(doc, page_index))
+        .collect()
+}
+
 /// The layout of one page, or the reason it cannot be exported. Cards that do not fit
 /// the output page are an error, never shrunk.
 fn fitting_layout(frame: &PageFrame, grid: &GridLayout) -> Result<LayoutResult> {
-    let layout = calculate_layout(frame.size(), grid, None)?;
-    if let Some(o) = layout.overflow {
-        let out = layout.output_page;
-        return Err(Error::DoesNotFit {
-            needed_w_mm: pt_to_mm(out.width_pt) + o.width_mm,
-            needed_h_mm: pt_to_mm(out.height_pt) + o.height_mm,
-            page_w_mm: pt_to_mm(out.width_pt),
-            page_h_mm: pt_to_mm(out.height_pt),
-        });
-    }
-    Ok(layout)
+    calculate_fitting_layout(frame.size(), grid)
 }
 
 /// A page that would make the export fail, found before anything is written.
@@ -350,6 +361,93 @@ pub fn validate_export(doc: &Document, jobs: &[PageJob]) -> Vec<PageIssue> {
         }
     }
     issues
+}
+
+/// Checks that every source page the sheets draw from can be wrapped, as [`export_sheets`]
+/// will: one issue per page that cannot (missing, rotated by something other than a quarter
+/// turn, unreadable boxes, from a document that was not provided).
+pub fn validate_sheets(doc: &Document, sheets: &[OutputSheet]) -> Vec<PageIssue> {
+    let source_pages = doc.get_pages();
+    let mut issues: Vec<PageIssue> = Vec::new();
+    let mut seen: std::collections::HashSet<(DocumentId, usize)> = Default::default();
+    for p in sheets.iter().flat_map(|s| &s.placements) {
+        let key = (p.card_id.document_id(), p.card_id.page_index());
+        if !seen.insert(key) {
+            continue;
+        }
+        let checked = if key.0 != DEFAULT_DOCUMENT_ID {
+            Err(Error::Malformed(format!(
+                "document {} was not provided",
+                key.0
+            )))
+        } else {
+            source_pages
+                .get(&(key.1 as u32 + 1))
+                .ok_or(Error::PageOutOfRange(key.1, source_pages.len()))
+                .and_then(|&id| PageFrame::read(doc, id, key.1))
+                .map(|_| ())
+        };
+        if let Err(e) = checked {
+            issues.push(PageIssue {
+                page_index: key.1,
+                message: e.to_string(),
+            });
+        }
+    }
+    issues.sort_by_key(|i| i.page_index);
+    issues
+}
+
+/// Plans the print sheets from the PDF at `input` itself, the way the export will: page sizes
+/// come from the file, and a page the groups use that the exporter cannot read is returned as an
+/// issue (with no sheets) instead of failing the whole plan. Issues also cover sheets that draw
+/// from unreadable pages, so an empty list means the export will not fail on the pages.
+pub fn plan_print_file(
+    input: &Path,
+    groups: &[PageGroup],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
+    let doc = Document::load(input)?;
+    let sizes = page_sizes(&doc);
+    let mut issues = Vec::new();
+    for g in groups.iter().filter(|g| g.kind != PageGroupKind::Skip) {
+        if g.pages.last >= sizes.len() {
+            return Err(Error::PageOutOfRange(g.pages.last, sizes.len()));
+        }
+        for (page_index, size) in (g.pages.first..).zip(&sizes[g.pages.first..=g.pages.last]) {
+            if let Err(e) = size {
+                issues.push(PageIssue {
+                    page_index,
+                    message: e.to_string(),
+                });
+            }
+        }
+    }
+    if !issues.is_empty() {
+        return Ok((Vec::new(), issues));
+    }
+    // Pages nothing draws from may be unreadable; they never reach the planner.
+    let sizes: Vec<PageSize> = sizes
+        .into_iter()
+        .map(|s| {
+            s.unwrap_or(PageSize {
+                width_pt: 0.0,
+                height_pt: 0.0,
+            })
+        })
+        .collect();
+    let sheets = plan_print(
+        DEFAULT_DOCUMENT_ID,
+        &sizes,
+        groups,
+        settings,
+        layout,
+        options,
+    )?;
+    let issues = validate_sheets(&doc, &sheets);
+    Ok((sheets, issues))
 }
 
 /// [`validate_export`] for the PDF at `input`.
@@ -542,25 +640,12 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
             .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))?;
         let frame = PageFrame::read(doc, src_id, pj.page_index)?;
         let layout = fitting_layout(&frame, &pj.grid)?;
-        sheets.push(OutputSheet {
-            page: layout.output_page,
-            placements: layout
-                .placements
-                .iter()
-                .map(|p| SheetPlacement {
-                    card_id: CardId::Grid {
-                        document_id: DEFAULT_DOCUMENT_ID,
-                        page_index: pj.page_index,
-                        row: p.index / pj.grid.columns,
-                        column: p.index % pj.grid.columns,
-                    },
-                    source: OrientedRect::from_rect(p.source),
-                    destination: p.destination,
-                    turn: Turn::R0,
-                    scale: 1.0,
-                })
-                .collect(),
-        });
+        sheets.push(sheet_from_layout(
+            DEFAULT_DOCUMENT_ID,
+            pj.page_index,
+            pj.grid.columns,
+            &layout,
+        ));
     }
     export_sheets_into(doc, DEFAULT_DOCUMENT_ID, Vec::new(), &sheets)
 }

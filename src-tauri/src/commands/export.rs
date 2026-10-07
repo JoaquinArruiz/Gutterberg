@@ -5,7 +5,7 @@ use tauri::State;
 
 /// Whether `output` is the same file as `input`, after resolving symlinks and `..`.
 /// The output may not exist yet, so its folder is resolved instead.
-fn same_file(input: &Path, output: &Path) -> bool {
+pub(crate) fn same_file(input: &Path, output: &Path) -> bool {
     let resolved = output.canonicalize().or_else(|_| {
         let name = output.file_name().ok_or(std::io::ErrorKind::InvalidInput)?;
         let dir = output

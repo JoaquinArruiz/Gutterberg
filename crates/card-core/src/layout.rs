@@ -254,6 +254,22 @@ pub fn calculate_layout(
     })
 }
 
+/// [`calculate_layout`] for a grid that has to fit its output page: cards that do not fit are
+/// an error ([`Error::DoesNotFit`]), never shrunk. Export and the print planner both use it.
+pub fn calculate_fitting_layout(source_page: PageSize, grid: &GridLayout) -> Result<LayoutResult> {
+    let layout = calculate_layout(source_page, grid, None)?;
+    if let Some(o) = layout.overflow {
+        let out = layout.output_page;
+        return Err(Error::DoesNotFit {
+            needed_w_mm: pt_to_mm(out.width_pt) + o.width_mm,
+            needed_h_mm: pt_to_mm(out.height_pt) + o.height_mm,
+            page_w_mm: pt_to_mm(out.width_pt),
+            page_h_mm: pt_to_mm(out.height_pt),
+        });
+    }
+    Ok(layout)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

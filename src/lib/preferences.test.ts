@@ -117,3 +117,40 @@ describe("sessionDefaults", () => {
     expect(sessionDefaults({ ...DEFAULT_PREFERENCES, preview: { livePreview: "manual" } }).live).toBe(false);
   });
 });
+
+describe("inspector sections and the Print layout", () => {
+  it("defaults to nothing remembered and the standard widths", () => {
+    expect(DEFAULT_PREFERENCES.inspector.sections).toEqual({});
+    expect(DEFAULT_PREFERENCES.print.layout).toEqual({ libraryWidth: 320, inspectorWidth: 300 });
+  });
+
+  it("keeps boolean section states and drops the rest", () => {
+    const p = normalizePreferences({
+      inspector: { sections: { plan: true, sheet: false, bad: "yes", n: 1, [`${"x".repeat(41)}`]: true, "": true } },
+    });
+    expect(p.inspector.sections).toEqual({ plan: true, sheet: false });
+    expect(normalizePreferences({ inspector: { sections: [true] } }).inspector.sections).toEqual({});
+    expect(normalizePreferences({ inspector: "open" }).inspector.sections).toEqual({});
+  });
+
+  it("limits how many section states are remembered", () => {
+    const many = Object.fromEntries(Array.from({ length: 200 }, (_, i) => [`s${i}`, true]));
+    expect(Object.keys(normalizePreferences({ inspector: { sections: many } }).inspector.sections)).toHaveLength(64);
+  });
+
+  it("clamps Print panel widths and repairs bad ones", () => {
+    const p = normalizePreferences({ print: { layout: { libraryWidth: 50, inspectorWidth: 9999 } } });
+    expect(p.print.layout).toEqual({ libraryWidth: 200, inspectorWidth: 700 });
+    const bad = normalizePreferences({ print: { layout: { libraryWidth: "wide", inspectorWidth: Number.NaN } } });
+    expect(bad.print.layout).toEqual(DEFAULT_PREFERENCES.print.layout);
+  });
+
+  it("adds both to a version 3 file without losing what it has", () => {
+    const v3 = { version: 3, measurement: { unit: "cm" }, help: { dismissedHints: [] } };
+    const p = migratePreferences(v3);
+    expect(p.measurement.unit).toBe("cm");
+    expect(p.version).toBe(4);
+    expect(p.inspector).toEqual(DEFAULT_PREFERENCES.inspector);
+    expect(p.print).toEqual(DEFAULT_PREFERENCES.print);
+  });
+});

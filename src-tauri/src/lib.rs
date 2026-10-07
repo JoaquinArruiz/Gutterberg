@@ -8,7 +8,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::document::open_pdf,
             commands::layout::compute_layout,
+            commands::sheets::compute_cards,
             commands::sheets::compute_sheets,
+            commands::sheets::validate_print,
+            commands::sheets::export_print,
             commands::export::export_document,
             commands::export::validate_export,
             commands::render::render_page,

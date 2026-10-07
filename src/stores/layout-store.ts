@@ -214,7 +214,7 @@ type GridSettings = Pick<
 >;
 
 /** Output page in points for the explicit modes; null for `same` (and `fit`, which Rust sizes itself). */
-function outputPage(s: GridSettings) {
+export function outputPage(s: GridSettings) {
   let size: { width: number; height: number } | null = null;
   if (s.pageMode === "a4" || s.pageMode === "letter" || s.pageMode === "legal") size = PAGE_PRESETS_MM[s.pageMode];
   else if (s.pageMode === "custom") size = { width: s.customWidthMm, height: s.customHeightMm };

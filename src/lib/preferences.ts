@@ -11,9 +11,9 @@ import { type HintId, isHintId } from "./hints";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
 import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
-// v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints.
-// Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 3;
+// v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
+// inspector.sections and print.layout. Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 4;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -44,7 +44,26 @@ export interface AppPreferences {
     /** Tips the user has closed; they stay hidden until "Reset help tips". */
     dismissedHints: HintId[];
   };
+  inspector: {
+    /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
+    sections: Record<string, boolean>;
+  };
+  print: {
+    /** The Print stage's own layout: widths in px of the card library and of the inspector. */
+    layout: PrintLayoutPrefs;
+  };
 }
+
+export interface PrintLayoutPrefs {
+  libraryWidth: number;
+  inspectorWidth: number;
+}
+
+export const DEFAULT_PRINT_LAYOUT: PrintLayoutPrefs = { libraryWidth: 320, inspectorWidth: 300 };
+export const PRINT_PANEL_LIMITS = { min: 200, max: 700 };
+
+/** Most open/closed states remembered; section ids are short fixed names, so this is generous. */
+const MAX_SECTIONS = 64;
 
 export const DEFAULT_PREFERENCES: AppPreferences = {
   version: PREFERENCES_VERSION,
@@ -53,6 +72,8 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
   help: { dismissedHints: [] },
+  inspector: { sections: {} },
+  print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -63,6 +84,22 @@ const oneOf = <T extends string>(v: unknown, allowed: readonly T[], fallback: T)
 /** First mode from `WORKSPACE_MODES` priority that is visible. */
 export const fallbackMode = (visible: WorkspaceMode[]): WorkspaceMode =>
   WORKSPACE_MODES.find((m) => visible.includes(m)) ?? WORKSPACE_MODES[0];
+
+/** Section ids with a boolean state; anything else is dropped. */
+function normalizeSections(raw: unknown): Record<string, boolean> {
+  if (!isObj(raw)) return {};
+  const out: Record<string, boolean> = {};
+  for (const [id, open] of Object.entries(raw)) {
+    if (Object.keys(out).length >= MAX_SECTIONS) break;
+    if (typeof open === "boolean" && id.length > 0 && id.length <= 40) out[id] = open;
+  }
+  return out;
+}
+
+const width = (v: unknown, fallback: number) =>
+  typeof v === "number" && Number.isFinite(v)
+    ? Math.round(Math.min(Math.max(v, PRINT_PANEL_LIMITS.min), PRINT_PANEL_LIMITS.max))
+    : fallback;
 
 /**
  * Raw (possibly partial, stale, hand-edited or corrupt) data -> valid preferences.
@@ -77,6 +114,9 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const p = isObj(r.preview) ? r.preview : {};
   const a = isObj(r.appearance) ? r.appearance : {};
   const h = isObj(r.help) ? r.help : {};
+  const ins = isObj(r.inspector) ? r.inspector : {};
+  const pr = isObj(r.print) ? r.print : {};
+  const pl = isObj(pr.layout) ? pr.layout : {};
 
   // Visible modes: valid, de-duplicated, order kept. Never empty.
   const seen = new Set<WorkspaceMode>();
@@ -102,6 +142,13 @@ export function normalizePreferences(raw: unknown): AppPreferences {
       dismissedHints: Array.isArray(h.dismissedHints)
         ? [...new Set(h.dismissedHints.filter(isHintId))]
         : d.help.dismissedHints,
+    },
+    inspector: { sections: normalizeSections(ins.sections) },
+    print: {
+      layout: {
+        libraryWidth: width(pl.libraryWidth, d.print.layout.libraryWidth),
+        inspectorWidth: width(pl.inspectorWidth, d.print.layout.inspectorWidth),
+      },
     },
   };
 }

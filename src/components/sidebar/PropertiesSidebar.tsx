@@ -4,93 +4,34 @@ import { rangeLabel } from "../../lib/document-layout";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
-import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
-import { MAX_GAP_MM, MAX_MARGIN_MM, type PageMode, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
+import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
-import { Select } from "../ui/Select";
-
-function GapFields({
-  linked,
-  onLink,
-  x,
-  y,
-  onX,
-  onY,
-}: {
-  linked: boolean;
-  onLink: (l: boolean) => void;
-  x: number;
-  y: number;
-  onX: (v: number) => void;
-  onY: (v: number) => void;
-}) {
-  const f = { min: 0, max: MAX_GAP_MM };
-  return (
-    <>
-      <label className="flex items-center gap-2 text-[var(--muted)]">
-        <input type="checkbox" checked={linked} onChange={(e) => onLink(e.target.checked)} />
-        Link horizontal / vertical
-      </label>
-      <MeasurementInput label={linked ? "Gap" : "Horizontal"} value={x} onChange={onX} {...f} />
-      {!linked && <MeasurementInput label="Vertical" value={y} onChange={onY} {...f} />}
-    </>
-  );
-}
-
-const PAGE_MODES: { id: PageMode; label: string }[] = [
-  { id: "same", label: "Same as source" },
-  { id: "a4", label: "A4" },
-  { id: "letter", label: "Letter" },
-  { id: "legal", label: "Legal" },
-  { id: "custom", label: "Custom" },
-  { id: "fit", label: "Auto-fit to cards" },
-];
 
 const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <section className="mb-5">
-    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">{title}</div>
-    <div className="flex flex-col gap-1.5">{children}</div>
-  </section>
-);
-
+/** The Cards stage inspector: where the cards are on the viewed page. What to print is the Print stage's. */
 export function PropertiesSidebar() {
   const page = useDocumentStore((s) => s.pages[s.currentPage]);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const group = useCurrentGroup();
   const L = useLayoutStore(
     useShallow((s) => ({
-      gapXMm: s.gapXMm,
-      gapYMm: s.gapYMm,
-      gapLinked: s.gapLinked,
-      pageMode: s.pageMode,
-      orientation: s.orientation,
-      customWidthMm: s.customWidthMm,
-      customHeightMm: s.customHeightMm,
-      margins: s.margins,
-      result: s.result,
       layoutError: s.layoutError,
-      setGapX: s.setGapX,
-      setGapY: s.setGapY,
-      setGapLinked: s.setGapLinked,
-      setPageMode: s.setPageMode,
-      setOrientation: s.setOrientation,
-      setCustomSize: s.setCustomSize,
-      setMargin: s.setMargin,
       setGrid: s.setGrid,
       setSelection: s.setSelection,
       setSkipped: s.setSkipped,
     })),
   );
-  const { layoutError } = L;
+  const setStage = useUiStore((s) => s.setStage);
   const grid = group?.kind === "grid" ? group.grid : null;
   const selection = group?.kind === "grid" ? group.selection : null;
   const setSelection = (r: NormalizedRect | null) => L.setSelection(currentPage, r);
-  const shown = usePreviewResult();
   const unit = useUnit();
   const fmt = (mm: number, decimals?: number) => formatMeasurement(mm, unit, decimals);
 
@@ -109,17 +50,17 @@ export function PropertiesSidebar() {
 
   return (
     <div className="h-full overflow-y-auto p-3">
-      <Section title="Page">
+      <CollapsibleSection id="cards.page" title="Page">
         <div className="flex justify-between">
           <span className="text-[var(--muted)]">Size</span>
           <span className="tabular-nums">
             {fmt(pw)} × {fmt(ph)}
           </span>
         </div>
-      </Section>
+      </CollapsibleSection>
 
       {group?.kind === "skip" && (
-        <Section title="Skipped page">
+        <CollapsibleSection id="cards.skipped" title="Skipped page">
           <p className="text-[var(--muted)]">
             {rangeLabel(group.pages)} {group.pages.first === group.pages.last ? "is" : "are"} left out of the export.
           </p>
@@ -128,12 +69,12 @@ export function PropertiesSidebar() {
               Include this page
             </button>
           </div>
-        </Section>
+        </CollapsibleSection>
       )}
 
       {group?.kind === "grid" && grid && spec && (
         <>
-          <Section title="Source layout">
+          <CollapsibleSection id="cards.layout" title="Source layout">
             <p className="text-[var(--muted)]">
               {rangeLabel(group.pages)}
               {group.pages.first === group.pages.last ? " has" : " share"} this grid.
@@ -176,9 +117,9 @@ export function PropertiesSidebar() {
                 Skip this page
               </button>
             </div>
-          </Section>
+          </CollapsibleSection>
 
-          <Section title="Source spacing">
+          <CollapsibleSection id="cards.spacing" title="Source spacing">
             <GapFields
               linked={grid.sourceGapLinked}
               onLink={(sourceGapLinked) => L.setGrid(currentPage, { sourceGapLinked })}
@@ -188,111 +129,24 @@ export function PropertiesSidebar() {
               onY={(sourceGapYMm) => L.setGrid(currentPage, { sourceGapYMm })}
             />
             <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
-          </Section>
+          </CollapsibleSection>
         </>
       )}
 
-      <Section title="Output spacing">
-        <GapFields
-          linked={L.gapLinked}
-          onLink={L.setGapLinked}
-          x={L.gapXMm}
-          y={L.gapYMm}
-          onX={L.setGapX}
-          onY={L.setGapY}
-        />
-        <p className="text-[var(--muted)]">Final gap between cards. Independent of the source gap.</p>
-      </Section>
-
-      <Section title="Output page">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[var(--muted)]">Size</span>
-          <Select
-            label="Page size"
-            value={L.pageMode}
-            onChange={L.setPageMode}
-            options={PAGE_MODES.map((m) => ({ value: m.id, label: m.label }))}
-          />
+      <CollapsibleSection id="cards.output" title="Output">
+        <p className="text-[var(--muted)]">
+          Spacing between cards, page size and margins, and which cards go on which sheet, are set in the Print stage.
+        </p>
+        <div>
+          <button type="button" className={smallBtn} onClick={() => setStage("print")}>
+            Open Print stage
+          </button>
         </div>
-        {L.pageMode === "custom" && (
-          <>
-            <MeasurementInput
-              label="Width"
-              min={10}
-              value={L.customWidthMm}
-              onChange={(w) => L.setCustomSize(w, undefined)}
-            />
-            <MeasurementInput
-              label="Height"
-              min={10}
-              value={L.customHeightMm}
-              onChange={(h) => L.setCustomSize(undefined, h)}
-            />
-          </>
-        )}
-        {L.pageMode !== "same" && L.pageMode !== "fit" && (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-[var(--muted)]">Orientation</span>
-            <Select
-              label="Orientation"
-              value={L.orientation}
-              onChange={L.setOrientation}
-              options={[
-                { value: "portrait", label: "Portrait" },
-                { value: "landscape", label: "Landscape" },
-              ]}
-            />
-          </div>
-        )}
-        {(["top", "right", "bottom", "left"] as const).map((side) => (
-          <MeasurementInput
-            key={side}
-            label={`Margin ${side}`}
-            min={0}
-            max={MAX_MARGIN_MM}
-            value={L.margins[side]}
-            onChange={(v) => L.setMargin(side, v)}
-          />
-        ))}
-        {shown && (
-          <div className="flex justify-between">
-            <span className="text-[var(--muted)]">Result</span>
-            <span className="tabular-nums">
-              {fmt(ptToMm(shown.output_page.width_pt))} × {fmt(ptToMm(shown.output_page.height_pt))}
-            </span>
-          </div>
-        )}
-        {L.result?.overflow && (
-          <div className="rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300">
-            <p>
-              ⚠ Layout exceeds the page by {fmt(L.result.overflow.width_mm)} horizontally and{" "}
-              {fmt(L.result.overflow.height_mm)} vertically. Cards are never scaled.
-            </p>
-            <p className="mt-1">
-              Change the page size or orientation, reduce spacing or margins, or auto-fit the page. Export is disabled
-              until it fits.
-            </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <button type="button" className={smallBtn} onClick={() => L.setPageMode("fit")}>
-                Auto-fit page
-              </button>
-              {L.pageMode !== "same" && L.pageMode !== "fit" && (
-                <button
-                  type="button"
-                  className={smallBtn}
-                  onClick={() => L.setOrientation(L.orientation === "portrait" ? "landscape" : "portrait")}
-                >
-                  Switch orientation
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-        {layoutError && <p className="text-red-400">{layoutError}</p>}
-      </Section>
+        {L.layoutError && <p className="text-red-400">{L.layoutError}</p>}
+      </CollapsibleSection>
 
       {selection && (
-        <Section title="Selection position">
+        <CollapsibleSection id="cards.selection" title="Selection position">
           <MeasurementInput
             label="X"
             precise
@@ -311,7 +165,7 @@ export function PropertiesSidebar() {
               {fmt(selection.width * pw)} × {fmt(selection.height * ph)}
             </span>
           </div>
-        </Section>
+        </CollapsibleSection>
       )}
     </div>
   );

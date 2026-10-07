@@ -63,3 +63,12 @@ export const OrientedRectSchema = z.object({
   angle_deg: z.number(),
 });
 export type OrientedRect = z.infer<typeof OrientedRectSchema>;
+
+/** The smallest axis-aligned box around `r` (same units as `r`): what a card image is cut from. */
+export function orientedBounds(r: OrientedRect): { x: number; y: number; width: number; height: number } {
+  const a = (r.angle_deg * Math.PI) / 180;
+  const [sin, cos] = [Math.abs(Math.sin(a)), Math.abs(Math.cos(a))];
+  const width = r.width * cos + r.height * sin;
+  const height = r.width * sin + r.height * cos;
+  return { x: r.center.x - width / 2, y: r.center.y - height / 2, width, height };
+}

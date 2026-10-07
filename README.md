@@ -18,6 +18,7 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 10 – Export correctness** (page boxes, rotated pages, catalog cleanup, atomic save)
 - [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
 - [x] **Milestone 12 – Sheet engine** (`extract_cards`, `paginate` with quantities, order, size groups, turn and scale, `export_sheets` from several PDFs, `compute_sheets`; Rust only)
+- [x] **Milestone 13 – Print stage** (Cards | Print switch, card library with copies per card, plan and auto-fill, sheet preview, collapsible inspector, export from the sheets)
 
 ## Architecture
 
@@ -34,7 +35,9 @@ keeping the original card size and the original vector content.
   `paginate` puts `(Card, quantity)` pairs on `OutputSheet`s (grouped or interleaved order, one
   group of sheets per card size or one shared grid, per-card `turn` and explicit `scale`), and
   `card_transform` is the single piece of matrix maths for placing a card. A card that does
-  not fit is an error, never shrunk.
+  not fit is an error, never shrunk. `plan_print` is what the Print stage runs: either
+  `SameAsSource` (each source page on its own sheet, exactly what the Cards stage exports) or
+  `plan_sheets` with a sheet grid, per-card copies and `auto_fill`.
 - `export` – wraps each source page unmodified as a Form XObject and paints each
   card with `q 1 0 0 1 dx dy cm <rect> re W n /Src Do Q` (translate + clip, no
   rasterisation). `ExportJob` holds a grid per page, so each section of a
@@ -85,6 +88,7 @@ pnpm tauri dev
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
+| Cards \| Print | tabs in the toolbar. Print: card library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview, and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
 | Skip a page / include it | checkbox on its thumbnail (skipped pages are left out of the export) |
 | Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
 | Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons; a whole drag is one step |

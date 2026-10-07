@@ -210,3 +210,45 @@ describe("help tips", () => {
     expect(st.getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
   });
 });
+
+describe("inspector sections", () => {
+  it("remember which sections are open across a restart", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().setSectionOpen("print.page", true);
+    st.getState().setSectionOpen("print.plan", false);
+    const back = createPreferencesStore(storage).getState().prefs.inspector.sections;
+    expect(back).toEqual({ "print.page": true, "print.plan": false });
+  });
+
+  it("survive Reset workspace but not Reset all preferences", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().setSectionOpen("print.page", true);
+    st.getState().resetWorkspace();
+    expect(st.getState().prefs.inspector.sections).toEqual({ "print.page": true });
+    st.getState().resetToDefaults();
+    expect(st.getState().prefs.inspector.sections).toEqual({});
+  });
+});
+
+describe("Print stage layout", () => {
+  it("remembers dragged widths across a restart", () => {
+    const storage = memory();
+    createPreferencesStore(storage).getState().savePrintLayout({ libraryWidth: 410 });
+    const back = createPreferencesStore(storage).getState().prefs.print.layout;
+    expect(back).toEqual({ libraryWidth: 410, inspectorWidth: 300 });
+  });
+
+  it("ignores widths when 'remember sizes' is off, and Reset workspace restores them", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().savePrintLayout({ inspectorWidth: 450 });
+    st.getState().setRememberSizes(false);
+    expect(createPreferencesStore(storage).getState().prefs.print.layout.inspectorWidth).toBe(300);
+    st.getState().savePrintLayout({ inspectorWidth: 500 });
+    expect(st.getState().prefs.print.layout.inspectorWidth).toBe(450); // not saved while off
+    st.getState().setRememberSizes(true);
+    st.getState().resetWorkspace();
+    expect(st.getState().prefs.print.layout).toEqual({ libraryWidth: 320, inspectorWidth: 300 });
+  });
+});

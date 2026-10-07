@@ -119,6 +119,7 @@ fn grouped_and_interleaved_orders_with_unequal_quantities() {
         let options = PaginateOptions {
             order,
             group_by_size: true,
+            ..PaginateOptions::default()
         };
         paginate(&cards, &a4_sheet(), &options).unwrap()
     };
@@ -163,6 +164,7 @@ fn mixed_sizes_share_one_grid_when_grouping_is_off() {
     let options = PaginateOptions {
         order: Order::Grouped,
         group_by_size: false,
+        ..PaginateOptions::default()
     };
     let sheets = paginate(&cards, &a4_sheet(), &options).unwrap();
     assert_eq!(sheets.len(), 1);
@@ -194,6 +196,7 @@ fn order_applies_within_each_size_group() {
     let options = PaginateOptions {
         order: Order::Interleaved,
         group_by_size: true,
+        ..PaginateOptions::default()
     };
     let sheets = paginate(&cards, &a4_sheet(), &options).unwrap();
     assert_eq!(order(&sheets), [0, 2, 0, 2, 1, 1]);
@@ -790,4 +793,429 @@ fn the_default_plan_prints_every_card_once_in_order() {
         first.destination.width,
         first.source.as_rect().unwrap().width * 0.5,
     );
+}
+
+#[test]
+fn auto_fill_repeats_the_requested_cards_until_the_last_sheet_is_full() {
+    let cards = [
+        (card(0, 63.5, 88.0), 1),
+        (card(1, 63.5, 88.0), 1),
+        (card(2, 63.5, 88.0), 1),
+    ];
+    let fill = PaginateOptions {
+        auto_fill: true,
+        ..PaginateOptions::default()
+    };
+    let sheets = paginate(&cards, &a4_sheet(), &fill).unwrap();
+    // 3 cards on a 3 x 3 sheet go round three times.
+    assert_eq!(order(&sheets), [0, 1, 2, 0, 1, 2, 0, 1, 2]);
+
+    // 10 cards fill the second sheet too: 18 in all, starting again at the first card.
+    let ten = [(card(0, 63.5, 88.0), 7), (card(1, 63.5, 88.0), 3)];
+    let sheets = paginate(&ten, &a4_sheet(), &fill).unwrap();
+    assert_eq!(
+        sheets
+            .iter()
+            .map(|s| s.placements.len())
+            .collect::<Vec<_>>(),
+        [9, 9]
+    );
+    assert_eq!(order(&sheets)[..10], [0, 0, 0, 0, 0, 0, 0, 1, 1, 1]);
+    assert_eq!(order(&sheets)[10..13], [0, 0, 0]);
+
+    // Without it the last sheet is left partly empty, and a full sheet is left alone.
+    let plain = paginate(&ten, &a4_sheet(), &PaginateOptions::default()).unwrap();
+    assert_eq!(
+        plain.iter().map(|s| s.placements.len()).collect::<Vec<_>>(),
+        [9, 1]
+    );
+    let nine = paginate(&[(card(0, 63.5, 88.0), 9)], &a4_sheet(), &fill).unwrap();
+    assert_eq!(nine.len(), 1);
+    assert!(paginate(&[], &a4_sheet(), &fill).unwrap().is_empty());
+}
+
+#[test]
+fn auto_fill_fills_each_size_group_separately() {
+    let cards = [(card(0, 63.5, 88.0), 2), (card(1, 88.0, 63.5), 1)];
+    let fill = PaginateOptions {
+        auto_fill: true,
+        ..PaginateOptions::default()
+    };
+    let sheets = paginate(&cards, &a4_sheet(), &fill).unwrap();
+    // Portrait: 3 x 3 = 9; landscape: 2 x 4 = 8.
+    assert_eq!(
+        sheets
+            .iter()
+            .map(|s| s.placements.len())
+            .collect::<Vec<_>>(),
+        [9, 8]
+    );
+}
+
+#[test]
+fn the_page_size_can_follow_the_source_page() {
+    let letter = PageSize {
+        width_pt: 612.0,
+        height_pt: 792.0,
+    };
+    let groups = [grid_group(0, 1, sample_grid(0.0))];
+    let spec = SheetSpec {
+        page: SheetPage::SameAsSource,
+        ..a4_sheet()
+    };
+    let opts = PaginateOptions::default();
+    // The first printed card's page decides the size.
+    let sheets = plan_sheets(0, &[letter, A4], &groups, &[], &spec, &opts).unwrap();
+    assert_eq!(sheets[0].page, letter);
+    // paginate itself wants a concrete size.
+    let direct = paginate(&[(card(0, 63.5, 88.0), 1)], &spec, &opts);
+    assert!(matches!(direct, Err(Error::InvalidSheet(_))));
+    // With nothing to print there is no page to size.
+    let none: Vec<_> = (0..9)
+        .map(|column| CardSetting {
+            id: CardId::Grid {
+                document_id: 0,
+                page_index: 0,
+                row: column / 3,
+                column: column % 3,
+            },
+            quantity: 0,
+            turn: Turn::R0,
+            scale: 1.0,
+        })
+        .collect();
+    let one_page = [grid_group(0, 0, sample_grid(0.0))];
+    assert!(plan_sheets(0, &[A4], &one_page, &none, &spec, &opts)
+        .unwrap()
+        .is_empty());
+}
+
+fn sample_page() -> PageSize {
+    card_core::export::page_size(&sample_pdf(), 0).unwrap()
+}
+
+fn content_of(doc: &Document) -> String {
+    let id = *doc.get_pages().values().next().unwrap();
+    String::from_utf8(doc.get_page_content(id)).unwrap()
+}
+
+#[test]
+fn same_as_source_is_what_the_cards_stage_exports() {
+    use card_core::export::{export_document, ExportJob, PageJob};
+    use card_core::sheet::{plan_print, PrintLayout};
+    let page = sample_page();
+    let mut grid = sample_grid(3.0);
+    grid.margin_top_mm = 4.0;
+    grid.margin_left_mm = 2.0;
+    let groups = [grid_group(0, 0, grid)];
+
+    let sheets = plan_print(
+        0,
+        &[page],
+        &groups,
+        &[],
+        &PrintLayout::SameAsSource,
+        &PaginateOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(sheets.len(), 1);
+    let via_print = export_sheets(vec![(0, sample_pdf())], &sheets).unwrap();
+
+    let mut old = sample_pdf();
+    let job = ExportJob {
+        pages: vec![PageJob {
+            page_index: 0,
+            grid,
+        }],
+    };
+    export_document(&mut old, &job).unwrap();
+    // Identical page content, down to the byte.
+    assert_eq!(content_of(&via_print), content_of(&old));
+    let size = |d: &Document| {
+        let id = *d.get_pages().values().next().unwrap();
+        format!(
+            "{:?}",
+            d.get_dictionary(id).unwrap().get(b"MediaBox").unwrap()
+        )
+    };
+    assert_eq!(size(&via_print), size(&old));
+}
+
+#[test]
+fn same_as_source_makes_one_sheet_per_grid_page_and_skips_the_rest() {
+    use card_core::sheet::source_sheets;
+    let mut two_by_two = sample_grid(2.0);
+    two_by_two.rows = 2;
+    two_by_two.columns = 2;
+    let groups = [
+        PageGroup {
+            pages: PageRange { first: 0, last: 0 },
+            kind: PageGroupKind::Skip,
+        },
+        grid_group(1, 2, sample_grid(2.0)),
+        grid_group(3, 3, two_by_two),
+    ];
+    let sheets = source_sheets(0, &[A4; 4], &groups).unwrap();
+    let counts: Vec<_> = sheets.iter().map(|s| s.placements.len()).collect();
+    assert_eq!(counts, [9, 9, 4]);
+    assert_eq!(sheets[2].placements[0].card_id.page_index(), 3);
+
+    // A grid that does not fit its page is an error, never shrunk.
+    let too_wide = [grid_group(0, 0, sample_grid(30.0))];
+    assert!(matches!(
+        source_sheets(0, &[A4], &too_wide),
+        Err(Error::DoesNotFit { .. })
+    ));
+}
+
+#[test]
+fn print_layouts_deserialise_from_the_ipc_shapes() {
+    use card_core::sheet::PrintLayout;
+    let same: PrintLayout =
+        serde_json::from_value(serde_json::json!({"kind": "same_as_source"})).unwrap();
+    assert_eq!(same, PrintLayout::SameAsSource);
+    let grid: PrintLayout = serde_json::from_value(serde_json::json!({
+        "kind": "grid",
+        "spec": {"page": {"kind": "same_as_source"}, "columns": 3}
+    }))
+    .unwrap();
+    let PrintLayout::Grid { spec } = grid else {
+        panic!("not a grid layout")
+    };
+    assert_eq!(
+        (spec.page, spec.columns, spec.rows),
+        (SheetPage::SameAsSource, Some(3), None)
+    );
+    let options: PaginateOptions =
+        serde_json::from_value(serde_json::json!({"auto_fill": true})).unwrap();
+    assert!(options.auto_fill && options.group_by_size);
+}
+
+#[test]
+fn sheets_are_validated_against_the_pdf_before_exporting() {
+    use card_core::export::{page_sizes, validate_sheets};
+    use card_core::sample::set_rotate;
+    let doc = sample_pdf();
+    let sheets = run(&[(card(0, 63.5, 88.0), 2)]);
+    assert!(validate_sheets(&doc, &sheets).is_empty());
+
+    // A page the exporter cannot read is named; a document that was not provided too.
+    let mut odd = sample_pdf();
+    set_rotate(&mut odd, 45);
+    let issues = validate_sheets(&odd, &sheets);
+    assert_eq!(issues.len(), 1);
+    assert_eq!(issues[0].page_index, 0);
+    assert!(page_sizes(&odd)[0].is_err());
+    assert_eq!(page_sizes(&doc).len(), 1);
+    let elsewhere = run(&[(card_in(5, 0, 63.5, 88.0), 1)]);
+    assert_eq!(validate_sheets(&doc, &elsewhere).len(), 1);
+}
+
+#[test]
+fn a_file_export_matches_the_in_memory_one_and_leaves_no_temp_file() {
+    use card_core::export::export_sheets_file;
+    let dir = std::env::temp_dir().join(format!("card-core-sheets-file-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (src, out) = (dir.join("in.pdf"), dir.join("out.pdf"));
+    sample_pdf().save(&src).unwrap();
+    let sheets = run(&[(card(0, 63.5, 88.0), 10)]);
+    export_sheets_file(&src, &out, &sheets).unwrap();
+    let written = Document::load(&out).unwrap();
+    assert_eq!(written.get_pages().len(), 2);
+    let direct = export_sheets(vec![(0, sample_pdf())], &sheets).unwrap();
+    assert_eq!(content_of(&written), content_of(&direct));
+    let leftovers: Vec<_> = std::fs::read_dir(&dir)
+        .unwrap()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".tmp"))
+        .collect();
+    assert!(leftovers.is_empty());
+}
+
+#[test]
+fn planning_from_the_file_reports_unreadable_pages_only_when_they_are_used() {
+    use card_core::export::plan_print_file;
+    use card_core::sample::set_rotate;
+    use card_core::sheet::PrintLayout;
+    let dir = std::env::temp_dir().join(format!("card-core-plan-file-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let (good, odd) = (dir.join("good.pdf"), dir.join("odd.pdf"));
+    sample_pdf().save(&good).unwrap();
+    let mut doc = sample_pdf();
+    set_rotate(&mut doc, 45);
+    doc.save(&odd).unwrap();
+    let opts = PaginateOptions::default();
+    let layout = PrintLayout::SameAsSource;
+    let used = [grid_group(0, 0, sample_grid(3.0))];
+
+    let (sheets, issues) = plan_print_file(&good, &used, &[], &layout, &opts).unwrap();
+    assert_eq!((sheets.len(), issues.len()), (1, 0));
+
+    // The unreadable page is named, and nothing is planned from it.
+    let (sheets, issues) = plan_print_file(&odd, &used, &[], &layout, &opts).unwrap();
+    assert!(sheets.is_empty());
+    assert_eq!(issues.iter().map(|i| i.page_index).collect::<Vec<_>>(), [0]);
+
+    // Skipped, it does not matter.
+    let skipped = [PageGroup {
+        pages: PageRange { first: 0, last: 0 },
+        kind: PageGroupKind::Skip,
+    }];
+    let (sheets, issues) = plan_print_file(&odd, &skipped, &[], &layout, &opts).unwrap();
+    assert!(sheets.is_empty() && issues.is_empty());
+
+    // A group past the end of the document is an error.
+    let beyond = [grid_group(0, 3, sample_grid(3.0))];
+    assert!(plan_print_file(&good, &beyond, &[], &layout, &opts).is_err());
+}
+
+#[test]
+fn the_requests_the_frontend_sends_deserialise_and_plan() {
+    use card_core::sheet::PrintLayout;
+    // Written by the frontend's request builder; src/lib/print-request.test.ts checks it still
+    // produces exactly this, so the two sides cannot drift apart unnoticed.
+    let text = include_str!("data/print_request.json");
+    let v: serde_json::Value = serde_json::from_str(text).unwrap();
+    let groups: Vec<PageGroup> = serde_json::from_value(v["groups"].clone()).unwrap();
+    let settings: Vec<CardSetting> = serde_json::from_value(v["settings"].clone()).unwrap();
+    let layout: PrintLayout = serde_json::from_value(v["layout"].clone()).unwrap();
+    let options: PaginateOptions = serde_json::from_value(v["options"].clone()).unwrap();
+    assert_eq!(options.order, Order::Interleaved);
+    assert!(options.auto_fill && options.group_by_size);
+
+    let pages = [A4; 3];
+    // The library: one row of three cards on page 2, nothing from the skipped pages.
+    let cards = extract_cards(0, &pages, &groups).unwrap();
+    assert_eq!(cards.len(), 3);
+    assert!(cards.iter().all(|c| c.id.page_index() == 1));
+
+    // The plan: 4 x first card, 1 x third, none of the second; interleaved, filled up to the 2 x 3
+    // sheet by going round the sequence again.
+    let sheets =
+        card_core::sheet::plan_print(0, &pages, &groups, &settings, &layout, &options).unwrap();
+    assert_eq!(sheets.len(), 1);
+    assert_eq!(sheets[0].placements.len(), 6);
+    let columns: Vec<_> = sheets[0]
+        .placements
+        .iter()
+        .map(|p| column(p.card_id))
+        .collect();
+    assert_eq!(columns, [0, 2, 0, 0, 0, 0]);
+    // An A4 sheet with the 3 mm gap between cards from the request.
+    assert!((sheets[0].page.width_pt - A4.width_pt).abs() < 1e-3);
+    let d = &sheets[0].placements;
+    let card_w = d[0].destination.width;
+    close(
+        d[1].destination.x - d[0].destination.x,
+        card_w + mm_to_pt(3.0),
+    );
+}
+
+/// The print stage's own requests: a 3 x 3 source page, per-card settings, an A4 sheet of "as many
+/// as fit" (3 x 3 of the 63.5 x 88 mm cards).
+mod print_examples {
+    use super::*;
+    use card_core::sheet::{plan_print, PrintLayout};
+
+    fn id(row: usize, column: usize) -> CardId {
+        CardId::Grid {
+            document_id: 0,
+            page_index: 0,
+            row,
+            column,
+        }
+    }
+
+    /// Settings for all nine cards: `copies` for the ones listed, none for the rest.
+    fn settings(copies: &[((usize, usize), usize)]) -> Vec<CardSetting> {
+        (0..9)
+            .map(|i| CardSetting {
+                id: id(i / 3, i % 3),
+                quantity: copies
+                    .iter()
+                    .find(|(rc, _)| *rc == (i / 3, i % 3))
+                    .map_or(0, |(_, n)| *n),
+                turn: Turn::R0,
+                scale: 1.0,
+            })
+            .collect()
+    }
+
+    fn auto_a4() -> PrintLayout {
+        PrintLayout::Grid {
+            spec: SheetSpec {
+                page: SheetPage::Size(A4),
+                ..a4_sheet()
+            },
+        }
+    }
+
+    fn plan(copies: &[((usize, usize), usize)], options: PaginateOptions) -> Vec<OutputSheet> {
+        let groups = [grid_group(0, 0, sample_grid(0.0))];
+        plan_print(0, &[A4], &groups, &settings(copies), &auto_a4(), &options).unwrap()
+    }
+
+    fn cards_in_order(sheets: &[OutputSheet]) -> Vec<(usize, usize)> {
+        sheets
+            .iter()
+            .flat_map(|s| &s.placements)
+            .map(|p| match p.card_id {
+                CardId::Grid { row, column, .. } => (row, column),
+                CardId::Freeform { .. } => unreachable!(),
+            })
+            .collect()
+    }
+
+    #[test]
+    fn nine_copies_of_card_one_fill_one_three_by_three_page() {
+        let sheets = plan(&[((0, 0), 9)], PaginateOptions::default());
+        assert_eq!(sheets.len(), 1);
+        assert_eq!(cards_in_order(&sheets), vec![(0, 0); 9]);
+        let d: Vec<_> = sheets[0].placements.iter().map(|p| p.destination).collect();
+        // Three columns and three rows, edge to edge.
+        close(d[2].x - d[0].x, 2.0 * d[0].width);
+        close(d[6].y - d[0].y, 2.0 * d[0].height);
+    }
+
+    #[test]
+    fn three_chosen_cards_fill_one_page_with_auto_fill() {
+        let pick = [((0, 0), 1), ((1, 1), 1), ((2, 2), 1)];
+        let one_each = plan(&pick, PaginateOptions::default());
+        assert_eq!(one_each[0].placements.len(), 3);
+        let filled = plan(
+            &pick,
+            PaginateOptions {
+                auto_fill: true,
+                ..PaginateOptions::default()
+            },
+        );
+        assert_eq!(filled.len(), 1);
+        assert_eq!(
+            cards_in_order(&filled),
+            [(0, 0), (1, 1), (2, 2)].repeat(3),
+            "three round trips of the chosen cards fill the 9 slots"
+        );
+    }
+
+    #[test]
+    fn four_two_and_three_copies_in_both_orders() {
+        let copies = [((0, 0), 4), ((0, 1), 2), ((0, 2), 3)];
+        let [a, b, c] = [(0, 0), (0, 1), (0, 2)];
+        let grouped = plan(&copies, PaginateOptions::default());
+        assert_eq!(cards_in_order(&grouped), [a, a, a, a, b, b, c, c, c]);
+        let interleaved = plan(
+            &copies,
+            PaginateOptions {
+                order: Order::Interleaved,
+                ..PaginateOptions::default()
+            },
+        );
+        assert_eq!(cards_in_order(&interleaved), [a, b, c, a, b, c, a, c, a]);
+    }
+
+    #[test]
+    fn nothing_is_printed_for_cards_without_copies() {
+        let sheets = plan(&[], PaginateOptions::default());
+        assert!(sheets.is_empty());
+    }
 }
