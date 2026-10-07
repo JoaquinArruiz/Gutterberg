@@ -52,14 +52,28 @@ export async function exportDocument(grid: GridPayload, pageCount: number, outpu
   return invoke<number>("export_document", { grid, pageCount, outputPath });
 }
 
+/**
+ * Mirrors the backend's render kinds. A newer viewport or magnifier request drops older queued
+ * ones of the same kind (they reject with `isSuperseded`); thumbnails run after everything else.
+ */
+export type RenderKind = "viewport" | "magnifier" | "thumbnail" | "page";
+
+/** True when the backend skipped this request because a newer one of the same kind replaced it. */
+export const isSuperseded = (e: unknown) => String(e) === "superseded";
+
 /** Renders a page to a PNG blob URL. Caller owns the URL (revokeObjectURL). */
-export async function renderPage(pageIndex: number, widthPx: number): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_page", { pageIndex, widthPx });
+export async function renderPage(kind: RenderKind, pageIndex: number, widthPx: number): Promise<string> {
+  const bytes = await invoke<ArrayBuffer>("render_page", { kind, pageIndex, widthPx });
   return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
 }
 
 /** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
-export async function renderRegion(pageIndex: number, region: NormalizedRect, fullWidthPx: number): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_region", { pageIndex, region, fullWidthPx });
+export async function renderRegion(
+  kind: RenderKind,
+  pageIndex: number,
+  region: NormalizedRect,
+  fullWidthPx: number,
+): Promise<string> {
+  const bytes = await invoke<ArrayBuffer>("render_region", { kind, pageIndex, region, fullWidthPx });
   return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
 }

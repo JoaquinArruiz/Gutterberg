@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { NormalizedRect, Point, Rect } from "./coordinates";
 import { renderRegion } from "./tauri";
 
+const REGION_DEBOUNCE_MS = 60;
+
 type RegionImage = { url: string; region: NormalizedRect };
 
 /**
@@ -50,17 +52,21 @@ export function useRegionImage({
       height: Math.min(1, anchor.y + hy) - y0,
     };
     let cancelled = false;
-    renderRegion(pageIndex, region, fullWidthPx)
-      .then((url) => {
-        if (cancelled) return URL.revokeObjectURL(url);
-        setImg((prev) => {
-          if (prev) setTimeout(() => URL.revokeObjectURL(prev.url), 1000);
-          return { url, region };
-        });
-      })
-      .catch(() => {});
+    // Debounced: a pinch or fast drag only renders once it settles; the previous image stays meanwhile.
+    const t = setTimeout(() => {
+      renderRegion("magnifier", pageIndex, region, fullWidthPx)
+        .then((url) => {
+          if (cancelled) return URL.revokeObjectURL(url);
+          setImg((prev) => {
+            if (prev) setTimeout(() => URL.revokeObjectURL(prev.url), 1000);
+            return { url, region };
+          });
+        })
+        .catch(() => {});
+    }, REGION_DEBOUNCE_MS);
     return () => {
       cancelled = true;
+      clearTimeout(t);
     };
   }, [docKey, pageIndex, anchor.x, anchor.y, hx, hy, fullWidthPx]);
 

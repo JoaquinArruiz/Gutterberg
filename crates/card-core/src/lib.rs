@@ -9,6 +9,7 @@ pub mod export;
 pub mod geometry;
 pub mod layout;
 pub mod render;
+pub mod render_worker;
 pub mod sample;
 pub mod units;
 

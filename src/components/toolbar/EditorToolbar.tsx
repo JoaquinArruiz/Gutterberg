@@ -19,9 +19,12 @@ const TOOLS: { id: Tool; label: string; key: string; Icon: typeof Hand }[] = [
 const btn = "flex items-center gap-1.5 rounded px-2 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 
 export function EditorToolbar() {
-  const { openDialog, pages, loading, path } = useDocumentStore();
-  const { selection } = useEditorStore();
-  const { result } = useLayoutStore();
+  const openDialog = useDocumentStore((s) => s.openDialog);
+  const pages = useDocumentStore((s) => s.pages);
+  const loading = useDocumentStore((s) => s.loading);
+  const path = useDocumentStore((s) => s.path);
+  const selection = useEditorStore((s) => s.selection);
+  const result = useLayoutStore((s) => s.result);
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -41,7 +44,9 @@ export function EditorToolbar() {
     }
   };
 
-  const { tool, setTool, viewMode } = useEditorStore();
+  const tool = useEditorStore((s) => s.tool);
+  const setTool = useEditorStore((s) => s.setTool);
+  const viewMode = useEditorStore((s) => s.viewMode);
   // The switcher is the ordered list from Preferences; with a single view there is nothing to switch.
   const visibleModes = usePreferencesStore((s) => s.prefs.workspace.visibleModes);
   const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);

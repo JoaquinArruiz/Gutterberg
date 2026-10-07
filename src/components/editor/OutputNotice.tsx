@@ -9,7 +9,10 @@ import { HintToast } from "../ui/HintToast";
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
 export function OutputNotice() {
   const selection = useEditorStore((s) => s.selection);
-  const { layoutError, live, result, snapshot } = useLayoutStore();
+  const layoutError = useLayoutStore((s) => s.layoutError);
+  const live = useLayoutStore((s) => s.live);
+  const result = useLayoutStore((s) => s.result);
+  const snapshot = useLayoutStore((s) => s.snapshot);
   const shown = usePreviewResult();
   const unit = useUnit();
   // Manual mode: the settings changed since the preview was generated.

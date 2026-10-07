@@ -26,6 +26,12 @@ pub enum Error {
     },
     #[error("pdfium error: {0}")]
     Pdfium(String),
+    #[error("superseded")]
+    Superseded,
+    #[error("render thread stopped")]
+    WorkerStopped,
+    #[error("no PDF is open")]
+    NoDocument,
     #[error("malformed PDF: {0}")]
     Malformed(String),
 }

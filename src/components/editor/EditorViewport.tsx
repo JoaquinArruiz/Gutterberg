@@ -35,8 +35,16 @@ const HOLD_TOLERANCE_PX = 4;
 const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 
 export function EditorViewport() {
-  const { pages, currentPage, path, error, loading } = useDocumentStore();
-  const { viewport, tool, selection, fitMode, viewMode } = useEditorStore();
+  const pages = useDocumentStore((s) => s.pages);
+  const currentPage = useDocumentStore((s) => s.currentPage);
+  const path = useDocumentStore((s) => s.path);
+  const error = useDocumentStore((s) => s.error);
+  const loading = useDocumentStore((s) => s.loading);
+  const viewport = useEditorStore((s) => s.viewport);
+  const tool = useEditorStore((s) => s.tool);
+  const selection = useEditorStore((s) => s.selection);
+  const fitMode = useEditorStore((s) => s.fitMode);
+  const viewMode = useEditorStore((s) => s.viewMode);
   const previewResult = usePreviewResult();
   const rows = useLayoutStore((s) => s.rows);
   const sourceGapXMm = useLayoutStore((s) => s.sourceGapXMm);

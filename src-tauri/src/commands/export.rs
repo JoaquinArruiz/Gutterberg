@@ -23,6 +23,10 @@ pub async fn export_document(
             .map(|page_index| PageJob { page_index, grid })
             .collect(),
     };
-    export_pdf(&input, &output, &job).map_err(|e| e.to_string())?;
-    Ok(job.pages.len())
+    let written = job.pages.len();
+    tauri::async_runtime::spawn_blocking(move || export_pdf(&input, &output, &job))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())?;
+    Ok(written)
 }
