@@ -58,15 +58,20 @@ report existing issues; don't let them hide new ones.
 Use these in every label, hint, message and doc. Internal names (`CardId`, `card-core`, file
 and type names) stay as they are.
 
-| Use | Meaning | Not |
-| --- | --- | --- |
-| **Source** tab | Working on the pages of the source PDFs: mark where the pieces are, skip pages | "Cards" tab |
-| **Print** tab | Choosing what goes on the sheets, and exporting | |
-| **Original / Preview / Split** | The views inside the Source tab: the page as it is, the re-spaced result, both | "Source / Output" views |
-| **piece** | Anything cut out of a page: a card, token, tile, board segment | "card" (except in examples, e.g. "poker cards") |
-| **piece library**, **piece tool**, **freeform pieces** | The Print tab's list, the tool that draws one piece, pieces drawn one by one | card library, card tool, freeform cards |
-| **sheet** | One page of the output PDF | "output page" in the UI |
-| **source gap / output gap** | Space between pieces already in the PDF / wanted in the output | |
+| Use (English) | Español (neutral) | Meaning | Not |
+| --- | --- | --- | --- |
+| **Source** tab | **Origen** | Working on the pages of the source PDFs: mark where the pieces are, skip pages | "Cards" tab |
+| **Print** tab | **Imprimir** | Choosing what goes on the sheets, and exporting | |
+| **Original / Preview / Split** | **Original / Vista previa / Dividida** | The views inside the Source tab: the page as it is, the re-spaced result, both | "Source / Output" views |
+| **piece** | **pieza** | Anything cut out of a page: a card, token, tile, board segment | "card" (except in examples, e.g. "poker cards") |
+| **piece library**, **piece tool**, **freeform pieces** | **biblioteca de piezas**, **herramienta de pieza**, **piezas libres** | The Print tab's list, the tool that draws one piece, pieces drawn one by one | card library, card tool, freeform cards |
+| **sheet** | **hoja** | One page of the output PDF | "output page" in the UI |
+| **source gap / output gap** | **separación de origen / separación de salida** | Space between pieces already in the PDF / wanted in the output | |
+| **help tip** | **consejo** | A hint toast or tour step | |
+
+User-facing text lives in `src/locales/en.json` and `src/locales/es.json` (from M21): add
+every new string to both, never hard-code text in components. Spanish is neutral Latin
+American Spanish (`tú`, no voseo, no `vosotros`); the owner reviews it.
 
 Pieces are rectangles (optionally rotated). Round or custom shapes are not supported; a round
 token is marked and printed with its rectangle.

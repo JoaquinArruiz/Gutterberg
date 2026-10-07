@@ -18,7 +18,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M18](M18.md) | Freeform cards: per-card rectangles, rotation, turn, sort, real size (done) | L | M13 |
 | [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
-| [M21](M21.md) | Terminology: Source / Print tabs, Original / Preview / Split views, "pieces" | S | M18, M20 |
+| [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals | M | M18, M20 |
 
 \* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
   Don't start it or build anything for it unless asked.
@@ -57,6 +57,7 @@ Source PDF → Cards stage → extract_cards → card library
 | Releases | Before the first public release: a license (leaning PolyForm Noncommercial, which includes a no-liability clause) or interim terms of use with a no-warranty disclaimer; ship third-party license notices, respect PDF permission flags (refuse locked files, never strip protection), and explain unsigned-build warnings if builds are unsigned (M15) |
 | Help tips | One catalog of hints (`src/lib/hints.ts`), shown with `<HintToast hint=… />`; a hint is one step or a short tour; tours point at the UI with React Joyride (MIT) and advance on app events (M20) |
 | Words | Tabs **Source / Print**; views **Original / Preview / Split**; the generic noun is **piece** (cards, tokens, tiles). Glossary in `CLAUDE.md`; renamed in M21 |
+| Languages | English and neutral Latin American Spanish (`tú`), chosen in Preferences (System / English / Español); decimal separator is a preference (Automatic / Dot / Comma) and number fields accept both; Rust errors reach the UI as codes (M21) |
 | Shapes | Pieces are rectangles (optionally rotated) for now; round or custom shapes are a possible later feature, not planned |
 | Sidebar | Split per stage in M13 (output settings move to the Print tab), built from collapsible sections that remember their state |
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
