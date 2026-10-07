@@ -509,28 +509,58 @@ describe("sheet previews strip", () => {
       expect(screen.queryByText("Preview out of date")).toBeNull();
     });
 
-    it("keeps showing the old sheets until refreshed, and says they are out of date", () => {
+    it("redraws the large sheet at once, and only the row of previews waits for a refresh", () => {
       print().setSheets([sheet(9), sheet(2)], null);
       render(<SheetPreview />);
-      act(() => print().setSheets([sheet(9), sheet(9), sheet(9)], null));
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(9);
+
+      // Copies change: the sheet in front and its numbers follow the plan immediately...
+      act(() => print().setSheets([sheet(4), sheet(9), sheet(9)], null));
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(4);
+      expect(screen.getByText("Sheet 1 of 3")).toBeTruthy();
+      expect(screen.getByTestId("sheet-summary").textContent).toBe("3 sheets, 22 cards");
+      // ...while the previews above still show the sheets as they were, and say so.
       expect(thumbs()).toHaveLength(2);
-      expect(screen.getByText("Sheet 1 of 2")).toBeTruthy();
-      expect(screen.getByText("Preview out of date")).toBeTruthy();
+      expect(screen.getByText("Previews out of date")).toBeTruthy();
       expect(screen.getByRole("button", { name: "Refresh preview" }).getAttribute("title")).toContain("out of date");
 
-      fireEvent.click(screen.getByRole("button", { name: /Refresh preview/ }));
+      fireEvent.click(screen.getByRole("button", { name: "Refresh preview" }));
       expect(thumbs()).toHaveLength(3);
-      expect(screen.getByText("Sheet 1 of 3")).toBeTruthy();
-      expect(screen.queryByText("Preview out of date")).toBeNull();
+      expect(screen.queryByText("Previews out of date")).toBeNull();
     });
 
-    it("refreshes both the strip and the large sheet", () => {
+    it("shows the chosen sheet large straight away, previews or not", () => {
+      print().setSheets([sheet(9), sheet(2), sheet(5)], null);
+      render(<SheetPreview />);
+      act(() => print().setSheets([sheet(9), sheet(2), sheet(5)], null)); // a new plan, previews not refreshed
+      fireEvent.click(thumbs()[2]);
+      expect(screen.getByText("Sheet 3 of 3")).toBeTruthy();
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(5);
+      fireEvent.click(screen.getByRole("button", { name: "Previous sheet" }));
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(2);
+      expect(thumbs()[1].getAttribute("aria-current")).toBe("true");
+    });
+
+    it("keeps the sheet in front valid when the plan shrinks under frozen previews", () => {
+      print().setSheets([sheet(2), sheet(2), sheet(2)], null);
+      render(<SheetPreview />);
+      fireEvent.click(thumbs()[2]);
+      act(() => print().setSheets([sheet(3)], null));
+      expect(screen.getByText("Sheet 1 of 1")).toBeTruthy();
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(3);
+      expect(thumbs()).toHaveLength(3); // the frozen row, until refreshed
+    });
+
+    it("needs no tip or refresh button when the previews are hidden", () => {
       print().setSheets([sheet(2)], null);
       render(<SheetPreview />);
+      fireEvent.click(screen.getByRole("button", { name: "Hide sheet previews" }));
+      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.queryByRole("button", { name: "Refresh preview" })).toBeNull();
       act(() => print().setSheets([sheet(5)], null));
-      expect(screen.getByTestId("sheet-page").children).toHaveLength(2);
-      fireEvent.click(screen.getByRole("button", { name: /Refresh preview/ }));
       expect(screen.getByTestId("sheet-page").children).toHaveLength(5);
+      fireEvent.click(screen.getByRole("button", { name: "Show sheet previews" }));
+      expect(screen.getByTestId("hint-live-preview-manual")).toBeTruthy();
     });
 
     it("lets the tip be closed for good, keeping the refresh button", () => {

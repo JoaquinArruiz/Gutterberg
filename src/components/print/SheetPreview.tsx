@@ -17,8 +17,10 @@ const MAX_ZOOM_PX_PER_PT = 16 * CSS_PX_PER_PT;
 export const STRIP_SECTION_ID = "print.sheet-strip";
 
 /**
- * The sheets the plan produces: a row of small previews (hideable) and one sheet large. Both follow
- * the plan live when Live Preview is on; when it is off they show the sheets as of the last refresh.
+ * The sheets the plan produces: one sheet large, and a row of small previews of all of them
+ * (hideable). The large sheet always follows the plan: it is redrawn when copies change and when
+ * another sheet is chosen. Only the row of previews obeys Live Preview: with it off, the row shows
+ * the sheets as of the last refresh.
  */
 export function SheetPreview() {
   const ref = useRef<HTMLDivElement>(null);
@@ -34,8 +36,8 @@ export function SheetPreview() {
   const stripOpen = usePreferencesStore((s) => s.prefs.inspector.sections[STRIP_SECTION_ID] ?? true);
   const setSectionOpen = usePreferencesStore((s) => s.setSectionOpen);
 
-  // With Live Preview off the preview is frozen; the first plan after entering the stage is shown at once.
-  const shown = live ? planned : snapshot;
+  // With Live Preview off the row of previews is frozen; the first plan after entering the stage is shown at once.
+  const previews = live ? planned : snapshot;
   const stale = !live && planned !== null && snapshot !== planned;
   useEffect(() => {
     if (!live && snapshot === null && planned !== null) refresh();
@@ -50,10 +52,11 @@ export function SheetPreview() {
     return () => ro.disconnect();
   }, [hasDocument]);
 
-  const total = shown?.length ?? 0;
+  // The sheet and its numbers always come from the current plan.
+  const total = planned?.length ?? 0;
   const index = Math.min(current, Math.max(0, total - 1));
-  const sheet = shown?.[index];
-  const cardCount = shown?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
+  const sheet = planned?.[index];
+  const cardCount = planned?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
 
   let content: React.ReactNode = null;
   if (sheet && box.width > 0) {
@@ -120,14 +123,22 @@ export function SheetPreview() {
         <span className="ml-auto text-[var(--muted)]" data-testid="sheet-summary">
           {total} sheet{total === 1 ? "" : "s"}, {cardCount} card{cardCount === 1 ? "" : "s"}
         </span>
+        {!live && stripOpen && (
+          <>
+            {stale && <span className="text-[10px] font-semibold text-amber-400">Previews out of date</span>}
+            <RefreshButton stale={stale} disabled={planned === null} onClick={refresh} />
+          </>
+        )}
       </div>
-      {stripOpen && shown && total > 0 && <SheetStrip sheets={shown} current={index} onSelect={setCurrent} />}
+      {stripOpen && previews && previews.length > 0 && (
+        <SheetStrip sheets={previews} current={index} onSelect={setCurrent} />
+      )}
       <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--canvas)]">
         {!hasDocument ? (
           <Message>Open a PDF to plan the sheets.</Message>
         ) : error ? (
           <Message tone="error">{error}</Message>
-        ) : shown === null ? (
+        ) : planned === null ? (
           <Message>Planning the sheets…</Message>
         ) : total === 0 ? (
           <Message>
@@ -137,28 +148,16 @@ export function SheetPreview() {
         ) : (
           content
         )}
-        {!live && hasDocument && (
-          <>
-            <HintToast
-              id="live-preview-manual"
-              className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]"
-              action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
-            >
-              Live preview is off, so the sheets are not redrawn as you change the plan. Press the refresh button
-              (bottom right) to update them. You can change this in Preferences &gt; Preview.
-            </HintToast>
-            {stale && (
-              <span className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
-                Preview out of date
-              </span>
-            )}
-            <RefreshButton
-              className="absolute bottom-3 right-3 z-20"
-              stale={stale}
-              disabled={planned === null}
-              onClick={refresh}
-            />
-          </>
+        {!live && stripOpen && hasDocument && (
+          <HintToast
+            id="live-preview-manual"
+            className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]"
+            action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
+          >
+            Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the
+            refresh button (top right) to update it. The large sheet always follows the plan. You can change this in
+            Preferences &gt; Preview.
+          </HintToast>
         )}
       </div>
     </div>
