@@ -249,7 +249,7 @@ export function EditorViewport() {
             {output ? (
               <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
             ) : (
-              <PagePreview screen={pageRect} />
+              <PagePreview screen={pageRect} box={box} />
             )}
             <svg
               role="img"
