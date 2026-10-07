@@ -188,7 +188,7 @@
     "filterLabel": "Filtrar piezas por grupo",
     "all": "Todas las piezas",
     "group": "{{range}} ({{rows}}×{{columns}})",
-    "page": "Página",
+    "page": "Pág.",
     "showOnlyPage": "Mostrar solo la página",
     "selectAll": "Seleccionar todas",
     "clear": "Borrar",

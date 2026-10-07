@@ -134,7 +134,7 @@ export function CardLibrary() {
         <div className="flex items-center gap-2">
           <span className="shrink-0 text-[var(--muted)]">{t("library.show")}</span>
           <Select
-            className="min-w-0 flex-1"
+            className="min-w-0 flex-1 [&>button]:min-w-0"
             label={t("library.filterLabel")}
             value={filterValue}
             onChange={(v) => {
@@ -150,6 +150,8 @@ export function CardLibrary() {
               ...groupOptions,
             ]}
           />
+        </div>
+        <div className="flex items-center gap-2">
           <span className="flex shrink-0 items-center gap-1 text-[var(--muted)]">
             {t("library.page")}
             <NumberField
