@@ -14,8 +14,12 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M14](M14.md) | Project files, several PDFs and presets | M | M13 |
 | [M15](M15.md) | Distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (outline) | M | M12 |
-| [M17](M17.md) | Auto-detect card grids and card outlines (outline) | L | M11, M18 |
+| [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
 | [M18](M18.md) | Freeform cards: per-card rectangles, rotation, turn, sort, real size | L | M13 |
+| [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
+
+\* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
+  Don't start it or build anything for it unless asked.
 
 M18 was added after the rest were numbered: do it right after M13 (before M14 if you
 like). The numbers are names, not the order.
@@ -48,4 +52,5 @@ Source PDF → Cards stage → extract_cards → card library
 | Distribution | Stays at M15 |
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
+| AI | Optional AI Mode (M19*): off by default and hidden when off; buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect cards" button, results are always editable proposals. Decision after M18 |
 | License | Undecided; the owner will choose later. No `LICENSE` file until then (all rights reserved) |
