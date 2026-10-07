@@ -16,7 +16,9 @@ const EPS_PT = 0.01;
  * (never on gaps, margins or page size): changing spacing just repositions crops.
  */
 export function OutputPreview({ screen, k, result }: { screen: Rect; k: number; result: LayoutResult | null }) {
-  const { path, currentPage, pages } = useDocumentStore();
+  const path = useDocumentStore((s) => s.path);
+  const currentPage = useDocumentStore((s) => s.currentPage);
+  const pages = useDocumentStore((s) => s.pages);
   const page = pages[currentPage];
   const dpr = window.devicePixelRatio || 1;
   const widthPx = page ? Math.min(MAX_RENDER_PX, Math.max(16, Math.round(page.width_pt * k * dpr))) : 0;

@@ -23,7 +23,7 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
   const dpr = window.devicePixelRatio || 1;
   const size = pages[index];
   const widthCss = orientation === "vertical" ? THUMB_WIDTH : (THUMB_HEIGHT * size.width_pt) / size.height_pt;
-  const url = usePageImage(visible ? path : null, index, Math.round(widthCss * dpr));
+  const url = usePageImage(visible ? path : null, index, Math.round(widthCss * dpr), 0, "thumbnail");
   const active = index === currentPage;
 
   return (

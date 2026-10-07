@@ -12,7 +12,8 @@ import { useDocumentStore } from "../../stores/document-store";
  * The base shows (blurry) until the detail crop lands, so there is no blank frame.
  */
 export function PagePreview({ screen, box }: { screen: Rect; box: Size }) {
-  const { path, currentPage } = useDocumentStore();
+  const path = useDocumentStore((s) => s.path);
+  const currentPage = useDocumentStore((s) => s.currentPage);
   const dpr = window.devicePixelRatio || 1;
   const baseWidth = Math.min(BASE_MAX_PX, Math.max(16, Math.round(screen.width * dpr)));
   const base = usePageImage(path, currentPage, baseWidth, 150);

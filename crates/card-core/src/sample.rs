@@ -5,7 +5,7 @@
 use crate::geometry::Rect;
 use crate::layout::GridLayout;
 use crate::units::mm_to_pt;
-use lopdf::{dictionary, Document, Object, Stream};
+use lopdf::{dictionary, Dictionary, Document, Object, Stream};
 
 pub const A4_MM: (f64, f64) = (210.0, 297.0);
 pub const CARD_MM: (f64, f64) = (63.5, 88.0);
@@ -33,6 +33,90 @@ pub fn sample_grid(gap_mm: f64) -> GridLayout {
         output_page: None,
         fit_page: false,
     }
+}
+
+/// The grid for [`sample_pdf`] after it has been viewed through `page_box` (`[x0, y0, x1, y1]`,
+/// CropBox/MediaBox in page space) and a clockwise `rotate` of 0, 90, 180 or 270. Bounds are
+/// normalised against the displayed (rotated) page, as the UI does.
+pub fn sample_grid_for(page_box: [f64; 4], rotate: i64, gap_mm: f64) -> GridLayout {
+    let (pw, ph) = (mm_to_pt(A4_MM.0), mm_to_pt(A4_MM.1));
+    let (cw, ch) = (mm_to_pt(CARD_MM.0), mm_to_pt(CARD_MM.1));
+    // The card block in page space, relative to the page box, bottom-left origin.
+    let u0 = (pw - cw * 3.0) / 2.0 - page_box[0];
+    let v0 = (ph - ch * 3.0) / 2.0 - page_box[1];
+    let (u1, v1) = (u0 + cw * 3.0, v0 + ch * 3.0);
+    let (w, h) = (page_box[2] - page_box[0], page_box[3] - page_box[1]);
+    // Clockwise rotation of a point, then the displayed page size.
+    let map = |u: f64, v: f64| match rotate {
+        90 => (v, w - u),
+        180 => (w - u, h - v),
+        270 => (h - v, u),
+        _ => (u, v),
+    };
+    let (dw, dh) = if rotate % 180 == 0 { (w, h) } else { (h, w) };
+    let (a, b) = (map(u0, v0), map(u1, v1));
+    let (x0, x1) = (a.0.min(b.0), a.0.max(b.0));
+    let (y0, y1) = (a.1.min(b.1), a.1.max(b.1));
+    GridLayout {
+        bounds: Rect::new(x0 / dw, (dh - y1) / dh, (x1 - x0) / dw, (y1 - y0) / dh),
+        ..sample_grid(gap_mm)
+    }
+}
+
+fn first_page_mut(doc: &mut Document) -> &mut Dictionary {
+    let id = *doc.get_pages().values().next().expect("a page");
+    doc.get_dictionary_mut(id).expect("page dictionary")
+}
+
+/// Show the sample page rotated clockwise by `angle` degrees.
+pub fn set_rotate(doc: &mut Document, angle: i64) {
+    first_page_mut(doc).set("Rotate", angle);
+}
+
+/// Give the sample page a CropBox.
+pub fn set_crop_box(doc: &mut Document, b: [f64; 4]) {
+    let v: Vec<Object> = b.iter().map(|x| Object::Real(*x as f32)).collect();
+    first_page_mut(doc).set("CropBox", v);
+}
+
+/// Move the page's MediaBox (and Rotate, if any) up to the `/Pages` node, so the page
+/// inherits them.
+pub fn inherit_page_attributes(doc: &mut Document) {
+    let page = first_page_mut(doc);
+    let moved: Vec<_> = [&b"MediaBox"[..], b"Rotate"]
+        .iter()
+        .filter_map(|k| page.remove(k).map(|v| (k.to_vec(), v)))
+        .collect();
+    let parent = page.get(b"Parent").and_then(|p| p.as_reference()).unwrap();
+    let node = doc.get_dictionary_mut(parent).unwrap();
+    for (k, v) in moved {
+        node.set(k, v);
+    }
+}
+
+/// Add a one-entry outline whose destination is the sample page.
+pub fn add_outlines(doc: &mut Document) {
+    let page_id = *doc.get_pages().values().next().expect("a page");
+    let root = doc.new_object_id();
+    let item = doc.add_object(dictionary! {
+        "Title" => Object::string_literal("Cards"),
+        "Parent" => root,
+        "Dest" => vec![page_id.into(), "Fit".into()],
+    });
+    doc.objects.insert(
+        root,
+        Object::Dictionary(dictionary! {
+            "Type" => "Outlines", "First" => item, "Last" => item, "Count" => 1,
+        }),
+    );
+    let catalog = doc
+        .trailer
+        .get(b"Root")
+        .and_then(|r| r.as_reference())
+        .unwrap();
+    doc.get_dictionary_mut(catalog)
+        .unwrap()
+        .set("Outlines", root);
 }
 
 pub fn sample_pdf() -> Document {

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { BASE_MAX_PX, covers, MAX_CROP_PX, needsDetail, planCrop, scaleIsOk, visibleNormalized } from "./view-region";
+import {
+  BASE_MAX_PX,
+  covers,
+  MAX_CROP_PX,
+  needsDetail,
+  planCrop,
+  quantizeWidth,
+  scaleIsOk,
+  visibleNormalized,
+} from "./view-region";
 
 const box = { width: 1280, height: 800 };
 const A4 = { w: 793.7, h: 1122.5 }; // CSS px at 100%
@@ -80,5 +89,21 @@ describe("view-region", () => {
     expect(scaleIsOk(4000, 4700)).toBe(true);
     expect(scaleIsOk(4000, 4900)).toBe(false);
     expect(scaleIsOk(4000, 1900)).toBe(false);
+  });
+});
+
+describe("quantizeWidth", () => {
+  it("rounds up to a quarter-octave step", () => {
+    expect(quantizeWidth(1000)).toBeGreaterThanOrEqual(1000);
+    expect(quantizeWidth(1000)).toBeLessThan(1000 * 2 ** 0.25);
+    expect(quantizeWidth(1024)).toBeCloseTo(1024);
+    expect(quantizeWidth(1025)).toBeCloseTo(1024 * 2 ** 0.25);
+  });
+  it("maps nearby widths to the same scale", () => {
+    expect(quantizeWidth(1100)).toBe(quantizeWidth(1150));
+    expect(quantizeWidth(1100)).not.toBe(quantizeWidth(1400));
+  });
+  it("passes non-positive widths through as 0", () => {
+    expect(quantizeWidth(0)).toBe(0);
   });
 });

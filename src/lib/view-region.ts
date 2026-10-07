@@ -90,5 +90,11 @@ export function covers(region: NormalizedRect, pageRect: Rect, box: Size): boole
  * `neededWidth`? Up to ~19% of upscaling is tolerated (a quarter-octave), so a
  * zoom gesture doesn't re-render on every step. Much smaller is wasteful.
  */
+/**
+ * Rounds a page-scale width up to a quarter-octave step, so small zoom changes
+ * ask for the same scale and the request is not repeated.
+ */
+export const quantizeWidth = (w: number) => (w > 0 ? 2 ** (Math.ceil(Math.log2(w) * 4) / 4) : 0);
+
 export const scaleIsOk = (renderedWidth: number, neededWidth: number) =>
   neededWidth <= renderedWidth * 2 ** 0.25 && neededWidth >= renderedWidth * 0.5;

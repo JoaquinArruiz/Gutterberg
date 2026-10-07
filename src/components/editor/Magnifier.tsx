@@ -3,6 +3,7 @@ import { cardRects, type GridSpec } from "../../lib/grid";
 import { type Handle, handlePoint } from "../../lib/selection";
 import type { PageSize } from "../../lib/tauri";
 import { useRegionImage } from "../../lib/use-region-image";
+import { quantizeWidth } from "../../lib/view-region";
 import { useDocumentStore } from "../../stores/document-store";
 
 /** Magnification of the loupe. While it is open, handle drags are slowed by the same factor. */
@@ -59,7 +60,8 @@ export function Magnifier({
   box: Size;
   active: boolean;
 }) {
-  const { path, currentPage } = useDocumentStore();
+  const path = useDocumentStore((s) => s.path);
+  const currentPage = useDocumentStore((s) => s.currentPage);
   const dpr = window.devicePixelRatio || 1;
   const W = pageRect.width * MAG;
   const H = pageRect.height * MAG;
@@ -71,7 +73,7 @@ export function Magnifier({
     focus: f,
     pageRect,
     reachPx: REACH_PX,
-    fullWidthPx: Math.min(MAX_FULL_WIDTH_PX, Math.round(W * dpr)),
+    fullWidthPx: Math.min(MAX_FULL_WIDTH_PX, Math.round(quantizeWidth(W * dpr))),
   });
   if (!active) return null;
 

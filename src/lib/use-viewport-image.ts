@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { NormalizedRect, Rect, Size } from "./coordinates";
-import { renderRegion } from "./tauri";
+import { isSuperseded, renderRegion } from "./tauri";
 import { covers, planCrop, scaleIsOk } from "./view-region";
 
 export type ViewportImage = { url: string; region: NormalizedRect; fullWidthPx: number; key: string };
@@ -76,7 +76,7 @@ export function useViewportImage({
     const t = setTimeout(() => {
       if (inflight.current) return; // the running render's completion bumps `tick` and re-evaluates
       inflight.current = true;
-      renderRegion(pageIndex, plan.send, plan.fullWidthPx)
+      renderRegion("viewport", pageIndex, plan.send, plan.fullWidthPx)
         .then((url) => {
           if (!alive.current || keyRef.current !== key) return URL.revokeObjectURL(url);
           setImg((prev) => {
@@ -84,8 +84,8 @@ export function useViewportImage({
             return { url, region: plan.region, fullWidthPx: plan.fullWidthPx, key };
           });
         })
-        .catch(() => {
-          failed.current = signature;
+        .catch((e) => {
+          if (!isSuperseded(e)) failed.current = signature;
         })
         .finally(() => {
           inflight.current = false;

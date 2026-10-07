@@ -46,6 +46,11 @@ pub fn bind_pdfium(lib_dirs: &[std::path::PathBuf]) -> Result<Pdfium> {
 
 pub fn document_info(pdfium: &Pdfium, path: &Path) -> Result<DocumentInfo> {
     let doc = pdfium.load_pdf_from_file(path, None).map_err(pdfium_err)?;
+    document_info_in(&doc)
+}
+
+/// Like [`document_info`] on an already-loaded document (no re-parse).
+pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
     let pages = doc
         .pages()
         .iter()

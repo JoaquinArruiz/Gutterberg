@@ -12,8 +12,10 @@ pub enum Error {
     InvalidGrid(String),
     #[error("page {0} does not exist (document has {1} pages)")]
     PageOutOfRange(usize, usize),
-    #[error("page {0} has a /Rotate of {1}; rotated pages are not supported yet")]
+    #[error("page {} has a /Rotate of {}; only multiples of 90 are supported", .0 + 1, .1)]
     UnsupportedRotation(usize, i64),
+    #[error("page {} has /UserUnit {}; only 1 is supported", .0 + 1, .1)]
+    UnsupportedUserUnit(usize, f64),
     #[error(
         "laid-out cards need {needed_w_mm:.1} x {needed_h_mm:.1} mm but the output page is only \
          {page_w_mm:.1} x {page_h_mm:.1} mm"
@@ -26,6 +28,12 @@ pub enum Error {
     },
     #[error("pdfium error: {0}")]
     Pdfium(String),
+    #[error("superseded")]
+    Superseded,
+    #[error("render thread stopped")]
+    WorkerStopped,
+    #[error("no PDF is open")]
+    NoDocument,
     #[error("malformed PDF: {0}")]
     Malformed(String),
 }
