@@ -53,6 +53,24 @@ report existing issues; don't let them hide new ones.
 - When a milestone is finished, tick it in the README status list and update its brief if
   the plan changed.
 
+## Glossary (words the user sees)
+
+Use these in every label, hint, message and doc. Internal names (`CardId`, `card-core`, file
+and type names) stay as they are.
+
+| Use | Meaning | Not |
+| --- | --- | --- |
+| **Source** tab | Working on the pages of the source PDFs: mark where the pieces are, skip pages | "Cards" tab |
+| **Print** tab | Choosing what goes on the sheets, and exporting | |
+| **Original / Preview / Split** | The views inside the Source tab: the page as it is, the re-spaced result, both | "Source / Output" views |
+| **piece** | Anything cut out of a page: a card, token, tile, board segment | "card" (except in examples, e.g. "poker cards") |
+| **piece library**, **piece tool**, **freeform pieces** | The Print tab's list, the tool that draws one piece, pieces drawn one by one | card library, card tool, freeform cards |
+| **sheet** | One page of the output PDF | "output page" in the UI |
+| **source gap / output gap** | Space between pieces already in the PDF / wanted in the output | |
+
+Pieces are rectangles (optionally rotated). Round or custom shapes are not supported; a round
+token is marked and printed with its rectangle.
+
 ## Git and tooling rules (set by the owner)
 
 - The package manager is **pnpm**. Never use npm or npx; use `pnpm exec` for one-off tools.
