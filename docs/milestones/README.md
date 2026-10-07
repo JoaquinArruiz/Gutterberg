@@ -12,7 +12,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
 | [M13](M13.md) | Print stage UI: Cards → Print switch, card library, quantities, sheet preview | L | M9, M12 |
 | [M14](M14.md) | Project files, several PDFs and presets | M | M13 |
-| [M15](M15.md) | Distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
+| [M15](M15.md) | Rename to Gutterberg, then distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (outline) | M | M12 |
 | [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
 | [M18](M18.md) | Freeform cards: per-card rectangles, rotation, turn, sort, real size | L | M13 |
@@ -50,6 +50,7 @@ Source PDF → Cards stage → extract_cards → card library
 | Quantities and order | Any quantity per card; Grouped / Interleaved toggle |
 | Mixed card sizes | Automatic size groups (own sheets per size), with a toggle to turn it off (shared grid, slots sized to the largest card) |
 | Distribution | Stays at M15 |
+| Name | The app becomes **Gutterberg**; the rename is step 0 of M15, before the first public build |
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
 | AI | Optional AI Mode (M19*): off by default and hidden when off; buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect cards" button, results are always editable proposals. Decision after M18 |
