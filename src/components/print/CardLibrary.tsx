@@ -96,7 +96,7 @@ export function CardLibrary() {
   return (
     <div className="flex h-full min-h-0 flex-col" data-testid="card-library">
       <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--border)] p-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-[var(--muted)]">Show</span>
           <Select
             label="Filter cards by group"
@@ -116,15 +116,14 @@ export function CardLibrary() {
           />
           <span className="ml-auto flex items-center gap-1 text-[var(--muted)]">
             Page
-            <span className="w-14">
-              <NumberField
-                label="Show only page"
-                value={P.filter.kind === "page" ? P.filter.page + 1 : null}
-                min={1}
-                max={pageCount}
-                onCommit={(p) => P.setFilter({ kind: "page", page: p - 1 })}
-              />
-            </span>
+            <NumberField
+              hideLabel
+              label="Show only page"
+              value={P.filter.kind === "page" ? P.filter.page + 1 : null}
+              min={1}
+              max={pageCount}
+              onCommit={(p) => P.setFilter({ kind: "page", page: p - 1 })}
+            />
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -155,16 +154,16 @@ export function CardLibrary() {
           >
             <Minus size={12} />
           </button>
-          <span className="w-14">
-            <NumberField
-              label="Copies of the selected cards"
-              value={copies}
-              min={0}
-              max={MAX_QUANTITY}
-              disabled={picked.length === 0}
-              onCommit={(n) => P.setQuantity(picked, n)}
-            />
-          </span>
+          <NumberField
+            hideLabel
+            hideSteppers
+            label="Copies of the selected cards"
+            value={copies}
+            min={0}
+            max={MAX_QUANTITY}
+            disabled={picked.length === 0}
+            onCommit={(n) => P.setQuantity(picked, n)}
+          />
           <button
             type="button"
             className={smallBtn}

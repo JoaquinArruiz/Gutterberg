@@ -9,6 +9,7 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { useUiStore } from "../../stores/ui-store";
+import { ApplyGridDialog } from "../sidebar/ApplyGridDialog";
 import { EditorToolbar } from "../toolbar/EditorToolbar";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { CardLibrary } from "./CardLibrary";
@@ -338,5 +339,75 @@ describe("stage switch", () => {
     useDocumentStore.setState({ path: null, pages: [] });
     render(<EditorToolbar />);
     expect(screen.getByRole("tab", { name: "Print" }).hasAttribute("disabled")).toBe(true);
+  });
+});
+
+describe("compact number fields", () => {
+  const isScreenReaderOnly = (text: string) => screen.getByText(text).className.includes("sr-only");
+
+  it("keep long names out of the layout in the library header, with one pair of steppers", () => {
+    print().setCards([card(0, 0, 0)], null);
+    render(<CardLibrary />);
+    expect(isScreenReaderOnly("Copies of the selected cards")).toBe(true);
+    expect(isScreenReaderOnly("Show only page")).toBe(true);
+    // The copies field is stepped by the library's own buttons; the field adds none of its own.
+    expect(screen.queryByRole("button", { name: /Increase Copies/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Decrease Copies/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "One copy more" })).toBeTruthy();
+    // The page filter keeps its own -/+.
+    expect(screen.getByRole("button", { name: "Increase Show only page" })).toBeTruthy();
+  });
+});
+
+describe("Apply this grid to…", () => {
+  beforeEach(() => {
+    // jsdom has no <dialog> modal support; opening it just marks it open.
+    HTMLDialogElement.prototype.showModal = function showModal() {
+      this.setAttribute("open", "");
+    };
+    HTMLDialogElement.prototype.close = function close() {
+      this.removeAttribute("open");
+    };
+    useDocumentStore.setState({ pages: [A4, A4, A4, A4], currentPage: 0 });
+    useLayoutStore.getState().resetDocument(4);
+    useLayoutStore.getState().setSelection(0, { x: 0, y: 0, width: 1, height: 1 });
+  });
+
+  const ranges = () => useLayoutStore.getState().groups.map((g) => `${g.kind}:${g.pages.first}-${g.pages.last}`);
+
+  it("shows the page range fields on one row, without their long names", () => {
+    render(<ApplyGridDialog open onClose={() => {}} />);
+    const from = screen.getByRole("textbox", { name: "From page" });
+    const to = screen.getByRole("textbox", { name: "To page" });
+    expect(screen.getByText("From page").className).toContain("sr-only");
+    expect(screen.getByText("To page").className).toContain("sr-only");
+    expect(from.closest("div")).toBe(to.closest("div"));
+    expect(screen.getByText("Pages", { selector: "label" })).toBeTruthy();
+  });
+
+  it("copies the grid to a range of pages", () => {
+    const onClose = vi.fn();
+    render(<ApplyGridDialog open onClose={onClose} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Pages" }));
+    typeNumber(screen.getByRole("textbox", { name: "From page" }), "3");
+    typeNumber(screen.getByRole("textbox", { name: "To page" }), "4");
+    expect(screen.getByText("Pages 3–4")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(ranges()).toEqual(["grid:0-1", "grid:2-3"]);
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("detaches only the viewed page", () => {
+    render(<ApplyGridDialog open onClose={() => {}} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Only this page/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(ranges()).toEqual(["grid:0-0", "grid:1-3"]);
+  });
+
+  it("applies to every page of the same size by default", () => {
+    render(<ApplyGridDialog open onClose={() => {}} />);
+    expect(screen.getByText("Pages 1–4")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(ranges()).toEqual(["grid:0-3"]);
   });
 });

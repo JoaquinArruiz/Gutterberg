@@ -64,17 +64,19 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
               <input type="radio" name="target" checked={target === "page"} onChange={() => setTarget("page")} />
               Only this page (detach it from its group)
             </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" name="target" checked={target === "range"} onChange={() => setTarget("range")} />
-              Pages
-              <span className="w-16">
-                <NumberField label="From page" value={from} onCommit={setFrom} min={1} max={pages.length} />
-              </span>
-              to
-              <span className="w-16">
-                <NumberField label="To page" value={to} onCommit={setTo} min={1} max={pages.length} />
-              </span>
-            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="radio"
+                name="target"
+                id="apply-range"
+                checked={target === "range"}
+                onChange={() => setTarget("range")}
+              />
+              <label htmlFor="apply-range">Pages</label>
+              <NumberField hideLabel label="From page" value={from} onCommit={setFrom} min={1} max={pages.length} />
+              <span>to</span>
+              <NumberField hideLabel label="To page" value={to} onCommit={setTo} min={1} max={pages.length} />
+            </div>
             <label className="flex items-center gap-2">
               <input
                 type="radio"

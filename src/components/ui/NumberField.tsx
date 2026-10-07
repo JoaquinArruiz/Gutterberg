@@ -16,6 +16,8 @@ export function NumberField({
   suffix,
   disabled,
   label,
+  hideLabel,
+  hideSteppers,
 }: {
   value: number | null;
   onCommit: (v: number) => void;
@@ -28,7 +30,12 @@ export function NumberField({
   coarseStep?: number;
   suffix?: string;
   disabled?: boolean;
+  /** Accessible name; also the visible caption unless `hideLabel`. */
   label: string;
+  /** Keep the label for screen readers only, for fields whose caption is already in the layout. */
+  hideLabel?: boolean;
+  /** Leave out the built-in -/+ buttons, when the surroundings step the value another way. */
+  hideSteppers?: boolean;
 }) {
   const fmt = (v: number | null) => (v === null ? "" : v.toFixed(decimals));
   const [text, setText] = useState(fmt(value));
@@ -63,19 +70,21 @@ export function NumberField({
   };
 
   return (
-    <label className="flex items-center justify-between gap-2">
-      <span className="text-[var(--muted)]">{label}</span>
+    <label className={`flex items-center gap-2 ${hideLabel ? "" : "justify-between"}`}>
+      <span className={hideLabel ? "sr-only" : "text-[var(--muted)]"}>{label}</span>
       <span className="flex items-center gap-1">
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={`Decrease ${label}`}
-          disabled={disabled || value === null || (min !== undefined && value <= min)}
-          onClick={(e) => nudge(-1, e)}
-          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
-        >
-          −
-        </button>
+        {!hideSteppers && (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Decrease ${label}`}
+            disabled={disabled || value === null || (min !== undefined && value <= min)}
+            onClick={(e) => nudge(-1, e)}
+            className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
+          >
+            −
+          </button>
+        )}
         <input
           aria-label={label}
           disabled={disabled}
@@ -103,16 +112,18 @@ export function NumberField({
           }}
           className="w-14 rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 text-right tabular-nums outline-none focus:border-[var(--accent)] disabled:opacity-40"
         />
-        <button
-          type="button"
-          tabIndex={-1}
-          aria-label={`Increase ${label}`}
-          disabled={disabled || value === null || (max !== undefined && value >= max)}
-          onClick={(e) => nudge(1, e)}
-          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
-        >
-          +
-        </button>
+        {!hideSteppers && (
+          <button
+            type="button"
+            tabIndex={-1}
+            aria-label={`Increase ${label}`}
+            disabled={disabled || value === null || (max !== undefined && value >= max)}
+            onClick={(e) => nudge(1, e)}
+            className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
+          >
+            +
+          </button>
+        )}
         {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
       </span>
     </label>
