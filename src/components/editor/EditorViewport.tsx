@@ -144,6 +144,11 @@ export function EditorViewport() {
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page) return;
+    // Stop the webview from starting a native text/image selection (WebKit paints it
+    // blue over the page while dragging). This also skips the focus change, so blur
+    // the focused field by hand: sidebar inputs commit on blur.
+    e.preventDefault();
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     const p = local(e);
     const ed = useEditorStore.getState();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -254,8 +259,8 @@ export function EditorViewport() {
             <svg
               role="img"
               aria-label="Page canvas"
-              className="absolute inset-0 h-full w-full"
-              style={{ cursor, touchAction: "none" }}
+              className="absolute inset-0 h-full w-full select-none"
+              style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
