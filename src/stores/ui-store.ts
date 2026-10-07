@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance";
+export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance" | "About";
 
 /** Transient UI state (not persisted). */
 export const useUiStore = create<{

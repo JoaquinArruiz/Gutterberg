@@ -26,7 +26,7 @@ import { type PrefsSection, useUiStore } from "../../stores/ui-store";
 import { Select } from "../ui/Select";
 import { LayoutPreview } from "./LayoutPreview";
 
-const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance"];
+const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "About"];
 type Section = PrefsSection;
 
 const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
@@ -332,6 +332,12 @@ export function PreferencesDialog() {
                   label={t[0].toUpperCase() + t.slice(1)}
                 />
               ))}
+            </Field>
+          )}
+
+          {section === "About" && (
+            <Field label="About">
+              <p>Created by Joaquin Arruiz</p>
             </Field>
           )}
         </div>
