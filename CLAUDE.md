@@ -59,3 +59,4 @@ report existing issues; don't let them hide new ones.
   never put Claude's name in commit messages, branch names, code or docs. No
   `Co-Authored-By` or session-link lines.
 - Do not create branches or pull requests unless asked.
+- Do not add a `LICENSE` file or license headers; the owner will choose the license later.

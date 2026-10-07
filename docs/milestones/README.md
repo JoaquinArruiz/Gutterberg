@@ -5,13 +5,13 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
 | --- | --- | --- | --- |
-| [M8](M8.md) | Foundations: CI, LICENSE, CSP, pinned pdfium | S | — |
+| [M8](M8.md) | Foundations: CI, CSP, pinned pdfium | S | — |
 | [M9](M9.md) | Render pipeline: open-document cache, stale-request skip, magnifier fix, selectors | M | M8 |
 | [M10](M10.md) | Export correctness: page boxes, catalog cleanup, atomic save, limits, rotated pages | M | M8 |
 | [M11](M11.md) | Document model: page include/skip, grid per page range, pre-flight, undo/redo | L | M10 |
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
 | [M13](M13.md) | Print stage UI: Cards → Print switch, card library, quantities, sheet preview | L | M9, M12 |
-| [M14](M14.md) | Project files and presets | M | M13 |
+| [M14](M14.md) | Project files, several PDFs and presets | M | M13 |
 | [M15](M15.md) | Distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (outline) | M | M12 |
 | [M17](M17.md) | Auto-detect the card grid (outline) | L | M11 |
@@ -32,3 +32,14 @@ Today's re-space export is the Print stage's default plan ("all cards in order, 
 Source PDF → Cards stage → extract_cards → card library
           → Print stage (plan) → paginate → output sheets → export_sheets → PDF
 ```
+
+## Decisions made by the owner
+
+| Topic | Decision |
+| --- | --- |
+| Sheet builder UI | Cards / Print tabs at the top (not a popup dialog) |
+| Card sources | Cards from any page, and from several PDFs (multi-PDF UI in M14) |
+| Quantities and order | Any quantity per card; Grouped / Interleaved toggle |
+| Mixed card sizes | Automatic size groups (own sheets per size), with a toggle to turn it off (shared grid, slots sized to the largest card) |
+| Distribution | Stays at M15 |
+| License | Undecided; the owner will choose later. No `LICENSE` file until then (all rights reserved) |
