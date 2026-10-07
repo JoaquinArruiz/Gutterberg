@@ -9,7 +9,11 @@ import { Popover } from "./Popover";
  * test id / data attributes expose where the panel sits and how it is oriented.
  */
 export function PanelFrame({
-  panel, position, orientation, regionCollapsed, children,
+  panel,
+  position,
+  orientation,
+  regionCollapsed,
+  children,
 }: {
   panel: PanelConfig;
   position: RegionPosition;
@@ -33,12 +37,16 @@ export function PanelFrame({
     return (
       <section {...attrs} className="flex h-full w-full flex-col items-center bg-[var(--panel)] py-1">
         <button
-          aria-label={`Expand ${title}`} title={`Expand ${title}`}
+          type="button"
+          aria-label={`Expand ${title}`}
+          title={`Expand ${title}`}
           onClick={() => setCollapsed(id, false)}
           className="flex flex-col items-center gap-2 rounded px-1 py-1 hover:bg-[var(--hover)]"
         >
           <ChevronRight size={14} />
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] [writing-mode:vertical-rl]">{title}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)] [writing-mode:vertical-rl]">
+            {title}
+          </span>
         </button>
       </section>
     );
@@ -48,6 +56,7 @@ export function PanelFrame({
     <section {...attrs} className="flex h-full w-full min-h-0 min-w-0 flex-col bg-[var(--panel)]">
       <header className="flex h-7 shrink-0 items-center gap-1 px-2">
         <button
+          type="button"
           aria-label={collapsed ? `Expand ${title}` : `Collapse ${title}`}
           aria-expanded={!collapsed}
           onClick={() => setCollapsed(id, !collapsed)}
@@ -55,7 +64,9 @@ export function PanelFrame({
         >
           {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
         </button>
-        <span className="flex-1 truncate text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">{title}</span>
+        <span className="flex-1 truncate text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+          {title}
+        </span>
         <Popover
           label={`${title} panel options`}
           triggerClassName="rounded p-0.5 hover:bg-[var(--hover)]"

@@ -1,21 +1,25 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  type NormalizedRect,
+  type Point,
+  pageScreenRect,
+  pxPerPoint,
+  rectToScreen,
+  screenToDocument,
+} from "../../lib/coordinates";
+import { type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
+import { usePreviewResult } from "../../lib/view-page";
+import { startSession } from "../../lib/workspace";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import {
-  pageScreenRect, rectToScreen, screenToDocument, type NormalizedRect, type Point,
-} from "../../lib/coordinates";
-import { moveRect, rectFromPoints, resizeRect, type Handle } from "../../lib/selection";
+import { useLayoutStore } from "../../stores/layout-store";
+import { GridOverlay } from "./GridOverlay";
+import { MAG, Magnifier } from "./Magnifier";
+import { OutputNotice } from "./OutputNotice";
+import { OutputPane } from "./OutputPane";
+import { OutputPreview } from "./OutputPreview";
 import { PagePreview } from "./PagePreview";
 import { SelectionRect } from "./SelectionRect";
-import { GridOverlay } from "./GridOverlay";
-import { OutputPreview } from "./OutputPreview";
-import { OutputPane } from "./OutputPane";
-import { Magnifier, MAG } from "./Magnifier";
-import { OutputNotice } from "./OutputNotice";
-import { usePreviewResult } from "../../lib/view-page";
-import { pxPerPoint } from "../../lib/coordinates";
-import { useLayoutStore } from "../../stores/layout-store";
-import { startSession } from "../../lib/workspace";
 
 type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
@@ -51,6 +55,7 @@ export function EditorViewport() {
     if (hold.current) window.clearTimeout(hold.current.timer);
     hold.current = null;
   };
+  // biome-ignore lint/correctness/useExhaustiveDependencies: endHold only touches a ref; cleanup on unmount
   useEffect(() => endHold, []);
 
   const page = pages[currentPage];
@@ -80,6 +85,7 @@ export function EditorViewport() {
   }, []);
 
   // New document: forget the selection and fit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `path` is the trigger (new document), not a value read
   useEffect(() => {
     useEditorStore.getState().reset();
     useLayoutStore.getState().clearSnapshot();
@@ -94,7 +100,11 @@ export function EditorViewport() {
   // Space = temporary pan.
   useEffect(() => {
     const typing = (e: KeyboardEvent) => e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName);
-    const down = (e: KeyboardEvent) => e.code === "Space" && !typing(e) && (e.preventDefault(), setSpaceDown(true));
+    const down = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || typing(e)) return;
+      e.preventDefault();
+      setSpaceDown(true);
+    };
     const up = (e: KeyboardEvent) => e.code === "Space" && setSpaceDown(false);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
@@ -165,7 +175,9 @@ export function EditorViewport() {
             if (!cur.selection) return;
             // Rebase the drag here so the handle doesn't jump, then slow it down.
             drag.current = {
-              kind: "resize", handle: d.handle, fine: true,
+              kind: "resize",
+              handle: d.handle,
+              fine: true,
               start: screenToDocument(lastPointer.current, cur.viewport, page),
               rect: cur.selection,
             };
@@ -229,43 +241,57 @@ export function EditorViewport() {
   const split = viewMode === "split" && !!page;
   return (
     <div className="flex h-full w-full">
-    <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
-      {error ? (
-        <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
-      ) : page && pageRect ? (
-        <>
-          {output ? (
-            <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
-          ) : (
-            <PagePreview screen={pageRect} />
-          )}
-          <svg
-            className="absolute inset-0 h-full w-full"
-            style={{ cursor, touchAction: "none" }}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerLeave={() => !drag.current && setLoupe(null)}
-          >
-            {!output && selection && <GridOverlay selection={selection} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }} viewport={viewport} page={page} />}
-            {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
-          </svg>
-          {!output && loupe && selection && (
-            <Magnifier
-              handle={loupe.handle} active={loupe.active} selection={selection} page={page} pageRect={pageRect}
-              box={box} grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
-            />
-          )}
-          {output && <OutputNotice />}
-        </>
-      ) : (
-        <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
-          {loading ? "Opening…" : "Open a PDF to get started (Ctrl/Cmd+O)"}
-        </p>
-      )}
-    </div>
-    {split && <div className="w-px shrink-0 bg-[var(--border)]" />}
-    {split && <OutputPane />}
+      <div ref={ref} data-viewport className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]">
+        {error ? (
+          <p className="absolute inset-0 flex items-center justify-center p-8 text-red-400">{error}</p>
+        ) : page && pageRect ? (
+          <>
+            {output ? (
+              <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
+            ) : (
+              <PagePreview screen={pageRect} />
+            )}
+            <svg
+              role="img"
+              aria-label="Page canvas"
+              className="absolute inset-0 h-full w-full"
+              style={{ cursor, touchAction: "none" }}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={() => !drag.current && setLoupe(null)}
+            >
+              {!output && selection && (
+                <GridOverlay
+                  selection={selection}
+                  grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
+                  viewport={viewport}
+                  page={page}
+                />
+              )}
+              {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
+            </svg>
+            {!output && loupe && selection && (
+              <Magnifier
+                handle={loupe.handle}
+                active={loupe.active}
+                selection={selection}
+                page={page}
+                pageRect={pageRect}
+                box={box}
+                grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
+              />
+            )}
+            {output && <OutputNotice />}
+          </>
+        ) : (
+          <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
+            {loading ? "Opening…" : "Open a PDF to get started (Ctrl/Cmd+O)"}
+          </p>
+        )}
+      </div>
+      {split && <div className="w-px shrink-0 bg-[var(--border)]" />}
+      {split && <OutputPane />}
     </div>
   );
 }

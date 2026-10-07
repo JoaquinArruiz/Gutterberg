@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  documentToScreen, fitViewport, normalizedToPdf, pageScreenRect, pdfToNormalized,
-  rectToScreen, screenToDocument, zoomAt, type ViewportState,
+  documentToScreen,
+  fitViewport,
+  normalizedToPdf,
+  pageScreenRect,
+  pdfToNormalized,
+  rectToScreen,
+  screenToDocument,
+  type ViewportState,
+  zoomAt,
 } from "./coordinates";
-import { moveRect, resizeRect, rectFromPoints } from "./selection";
+import { moveRect, rectFromPoints, resizeRect } from "./selection";
 import { mmToPt, ptToMm } from "./units";
 
 const A4 = { width_pt: mmToPt(210), height_pt: mmToPt(297) };

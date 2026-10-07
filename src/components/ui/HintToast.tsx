@@ -8,7 +8,10 @@ import { useHint } from "../../stores/preferences-store";
  * dismissed, so callers can mount it unconditionally wherever the tip applies.
  */
 export function HintToast({
-  id, children, action, className = "",
+  id,
+  children,
+  action,
+  className = "",
 }: {
   id: HintId;
   children: React.ReactNode;
@@ -28,12 +31,13 @@ export function HintToast({
       <div className="min-w-0 flex-1">
         <p>{children}</p>
         {action && (
-          <button onClick={action.onClick} className="mt-1.5 text-[var(--accent)] hover:underline">
+          <button type="button" onClick={action.onClick} className="mt-1.5 text-[var(--accent)] hover:underline">
             {action.label}
           </button>
         )}
       </div>
       <button
+        type="button"
         aria-label="Dismiss tip"
         title="Dismiss (won't show again)"
         onClick={dismiss}

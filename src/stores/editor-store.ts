@@ -1,7 +1,14 @@
 import { create } from "zustand";
 import {
-  clamp, fitViewport, MAX_ZOOM, MIN_ZOOM, zoomAt,
-  type NormalizedRect, type Point, type Size, type ViewportState,
+  clamp,
+  fitViewport,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  type NormalizedRect,
+  type Point,
+  type Size,
+  type ViewportState,
+  zoomAt,
 } from "../lib/coordinates";
 import { sessionDefaults, type WorkspaceMode } from "../lib/preferences";
 import type { PageSize } from "../lib/tauri";

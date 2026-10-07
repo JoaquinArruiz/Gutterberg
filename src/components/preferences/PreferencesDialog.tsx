@@ -1,18 +1,30 @@
 import { ArrowDown, ArrowUp, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { MEASUREMENT_UNITS, UNIT_LABEL, type MeasurementUnit } from "../../lib/measurement";
+import { MEASUREMENT_UNITS, type MeasurementUnit, UNIT_LABEL } from "../../lib/measurement";
 import {
-  THEMES, WORKSPACE_LABEL, WORKSPACE_MODES,
-  type DefaultWorkspace, type LivePreviewPreference, type ThemePreference, type WorkspaceMode,
+  type DefaultWorkspace,
+  type LivePreviewPreference,
+  THEMES,
+  type ThemePreference,
+  WORKSPACE_LABEL,
+  WORKSPACE_MODES,
+  type WorkspaceMode,
 } from "../../lib/preferences";
 import {
-  canPlace, detectPreset, LAYOUT_PRESETS, PANEL_DEFS, PANEL_IDS, POSITION_LABEL, PRESET_LABEL,
-  type LayoutPresetId, type PanelPosition,
+  canPlace,
+  detectPreset,
+  LAYOUT_PRESETS,
+  type LayoutPresetId,
+  PANEL_DEFS,
+  PANEL_IDS,
+  type PanelPosition,
+  POSITION_LABEL,
+  PRESET_LABEL,
 } from "../../lib/workspace-layout";
+import { usePreferencesStore } from "../../stores/preferences-store";
+import { type PrefsSection, useUiStore } from "../../stores/ui-store";
 import { Select } from "../ui/Select";
 import { LayoutPreview } from "./LayoutPreview";
-import { usePreferencesStore } from "../../stores/preferences-store";
-import { useUiStore, type PrefsSection } from "../../stores/ui-store";
 
 const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance"];
 type Section = PrefsSection;
@@ -27,8 +39,20 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 );
 
 function Radio<T extends string>({
-  name, value, current, onSelect, label, hint,
-}: { name: string; value: T; current: T; onSelect: (v: T) => void; label: string; hint?: string }) {
+  name,
+  value,
+  current,
+  onSelect,
+  label,
+  hint,
+}: {
+  name: string;
+  value: T;
+  current: T;
+  onSelect: (v: T) => void;
+  label: string;
+  hint?: string;
+}) {
   return (
     <label className="flex items-start gap-2">
       <input type="radio" name={name} checked={current === value} onChange={() => onSelect(value)} className="mt-0.5" />
@@ -80,7 +104,12 @@ export function PreferencesDialog() {
     >
       <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-2.5">
         <h2 className="text-sm font-semibold">Preferences</h2>
-        <button aria-label="Close preferences" onClick={() => setOpen(false)} className="rounded p-1 hover:bg-[var(--hover)]">
+        <button
+          type="button"
+          aria-label="Close preferences"
+          onClick={() => setOpen(false)}
+          className="rounded p-1 hover:bg-[var(--hover)]"
+        >
           <X size={14} />
         </button>
       </div>
@@ -89,6 +118,7 @@ export function PreferencesDialog() {
         <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label="Preferences sections">
           {SECTIONS.map((s) => (
             <button
+              type="button"
               key={s}
               onClick={() => setSection(s)}
               aria-current={section === s}
@@ -118,17 +148,18 @@ export function PreferencesDialog() {
             <Field label="Help tips">
               <div>
                 <button
+                  type="button"
                   className={btn}
                   disabled={prefs.help.dismissedHints.length === 0}
                   onClick={store.resetHints}
                 >
-                  Reset help tips
+                  Enable all help tips
                 </button>
               </div>
               <p className="text-[var(--muted)]">
                 {prefs.help.dismissedHints.length === 0
-                  ? "No tips are hidden."
-                  : `${prefs.help.dismissedHints.length} tip${prefs.help.dismissedHints.length === 1 ? " is" : "s are"} hidden. Reset to show them again.`}
+                  ? "All help tips are enabled."
+                  : `${prefs.help.dismissedHints.length} help tip${prefs.help.dismissedHints.length === 1 ? " is" : "s are"} hidden because you closed ${prefs.help.dismissedHints.length === 1 ? "it" : "them"}. Enable them to see ${prefs.help.dismissedHints.length === 1 ? "it" : "them"} again.`}
               </p>
             </Field>
           )}
@@ -136,7 +167,9 @@ export function PreferencesDialog() {
           {section === "Workspace" && (
             <>
               <Field label="Visible views">
-                <p className="text-[var(--muted)]">The view switcher shows these, in this order. At least one must stay enabled.</p>
+                <p className="text-[var(--muted)]">
+                  The view switcher shows these, in this order. At least one must stay enabled.
+                </p>
                 {[...visibleModes, ...hiddenModes].map((mode: WorkspaceMode) => {
                   const on = visibleModes.includes(mode);
                   const i = visibleModes.indexOf(mode);
@@ -155,17 +188,23 @@ export function PreferencesDialog() {
                       {on && (
                         <>
                           <button
+                            type="button"
                             aria-label={`Move ${WORKSPACE_LABEL[mode]} earlier`}
                             disabled={i === 0}
                             onClick={() => store.moveVisibleMode(mode, -1)}
                             className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
-                          ><ArrowUp size={13} /></button>
+                          >
+                            <ArrowUp size={13} />
+                          </button>
                           <button
+                            type="button"
                             aria-label={`Move ${WORKSPACE_LABEL[mode]} later`}
                             disabled={i === visibleModes.length - 1}
                             onClick={() => store.moveVisibleMode(mode, 1)}
                             className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-30"
-                          ><ArrowDown size={13} /></button>
+                          >
+                            <ArrowDown size={13} />
+                          </button>
                         </>
                       )}
                     </div>
@@ -197,7 +236,9 @@ export function PreferencesDialog() {
                         value={preset}
                         onChange={(v) => v !== "custom" && store.applyLayoutPreset(v)}
                         options={[
-                          ...(preset === "custom" ? [{ value: "custom" as const, label: PRESET_LABEL.custom, disabled: true }] : []),
+                          ...(preset === "custom"
+                            ? [{ value: "custom" as const, label: PRESET_LABEL.custom, disabled: true }]
+                            : []),
                           ...LAYOUT_PRESETS.map((id) => ({ value: id as LayoutPresetId, label: PRESET_LABEL[id] })),
                         ]}
                       />
@@ -209,7 +250,9 @@ export function PreferencesDialog() {
                           label={`${PANEL_DEFS[id].title} panel position`}
                           value={layout.panels.find((p) => p.id === id)?.position ?? "hidden"}
                           onChange={(pos) => store.setPanelPosition(id, pos)}
-                          options={PANEL_DEFS[id].positions.filter((pos) => canPlace(id, pos)).map((pos) => ({ value: pos, label: POSITION_LABEL[pos] }))}
+                          options={PANEL_DEFS[id].positions
+                            .filter((pos) => canPlace(id, pos))
+                            .map((pos) => ({ value: pos, label: POSITION_LABEL[pos] }))}
                         />
                       </div>
                     ))}
@@ -223,18 +266,29 @@ export function PreferencesDialog() {
 
               <Field label="Behavior">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={layout.rememberSizes} onChange={(e) => store.setRememberSizes(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={layout.rememberSizes}
+                    onChange={(e) => store.setRememberSizes(e.target.checked)}
+                  />
                   Remember panel sizes
                 </label>
                 <label className="flex items-center gap-2">
-                  <input type="checkbox" checked={layout.rememberCollapsed} onChange={(e) => store.setRememberCollapsed(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    checked={layout.rememberCollapsed}
+                    onChange={(e) => store.setRememberCollapsed(e.target.checked)}
+                  />
                   Remember collapsed panels
                 </label>
                 <div>
-                  <button className={btn} onClick={store.resetWorkspace}>Reset workspace layout</button>
+                  <button type="button" className={btn} onClick={store.resetWorkspace}>
+                    Reset workspace layout
+                  </button>
                 </div>
                 <p className="text-[var(--muted)]">
-                  Restores panel positions and sizes, the visible views and the default view. Units, theme and Live Preview are kept.
+                  Restores panel positions and sizes, the visible views and the default view. Units, theme and Live
+                  Preview are kept.
                 </p>
               </Field>
             </>
@@ -243,16 +297,25 @@ export function PreferencesDialog() {
           {section === "Preview" && (
             <Field label="Live preview">
               <Radio<LivePreviewPreference>
-                name="live" value="always" current={prefs.preview.livePreview} onSelect={store.setLivePreview}
-                label="Always on" hint="The output follows every change."
+                name="live"
+                value="always"
+                current={prefs.preview.livePreview}
+                onSelect={store.setLivePreview}
+                label="Always on"
+                hint="The output follows every change."
               />
               <Radio<LivePreviewPreference>
-                name="live" value="manual" current={prefs.preview.livePreview} onSelect={store.setLivePreview}
-                label="Manual" hint="The output updates only when you press Update preview."
+                name="live"
+                value="manual"
+                current={prefs.preview.livePreview}
+                onSelect={store.setLivePreview}
+                label="Manual"
+                hint="The output updates only when you press Update preview."
               />
               <p className="text-[var(--muted)]">
-                With Manual, the Output tab refreshes the preview each time you open it, and the Split view has a refresh button
-                (a dot on it means the preview is out of date). Changing this applies to the open document immediately.
+                With Manual, the Output tab refreshes the preview each time you open it, and the Split view has a
+                refresh button (a dot on it means the preview is out of date). Changing this applies to the open
+                document immediately.
               </p>
             </Field>
           )}
@@ -261,7 +324,11 @@ export function PreferencesDialog() {
             <Field label="Theme">
               {THEMES.map((t) => (
                 <Radio<ThemePreference>
-                  key={t} name="theme" value={t} current={prefs.appearance.theme} onSelect={store.setTheme}
+                  key={t}
+                  name="theme"
+                  value={t}
+                  current={prefs.appearance.theme}
+                  onSelect={store.setTheme}
                   label={t[0].toUpperCase() + t.slice(1)}
                 />
               ))}
@@ -273,19 +340,33 @@ export function PreferencesDialog() {
       <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">
         {confirmReset ? (
           <>
-            <span>Reset all preferences? This restores the default application settings. Your document is not affected.</span>
+            <span>
+              Reset all preferences? This restores the default application settings. Your document is not affected.
+            </span>
             <span className="flex gap-2">
-              <button className={btn} onClick={() => setConfirmReset(false)}>Cancel</button>
+              <button type="button" className={btn} onClick={() => setConfirmReset(false)}>
+                Cancel
+              </button>
               <button
+                type="button"
                 className={`${btn} border-red-400/60 text-red-300`}
-                onClick={() => { store.resetToDefaults(); setConfirmReset(false); }}
-              >Reset</button>
+                onClick={() => {
+                  store.resetToDefaults();
+                  setConfirmReset(false);
+                }}
+              >
+                Reset
+              </button>
             </span>
           </>
         ) : (
           <>
-            <button className={btn} onClick={() => setConfirmReset(true)}>Reset to defaults</button>
-            <button className={btn} onClick={() => setOpen(false)}>Close</button>
+            <button type="button" className={btn} onClick={() => setConfirmReset(true)}>
+              Reset to defaults
+            </button>
+            <button type="button" className={btn} onClick={() => setOpen(false)}>
+              Close
+            </button>
           </>
         )}
       </div>

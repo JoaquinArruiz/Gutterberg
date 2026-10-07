@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 
+const read = () => ({ width: window.innerWidth, height: window.innerHeight });
+
 export function useWindowSize() {
-  const read = () => ({ width: window.innerWidth, height: window.innerHeight });
   const [size, setSize] = useState(read);
   useEffect(() => {
     const on = () => setSize(read());

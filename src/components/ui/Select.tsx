@@ -9,7 +9,12 @@ export type SelectOption<T extends string> = { value: T; label: string; disabled
  * The list is position: fixed, so scrolling or overflow-hidden containers never clip it.
  */
 export function Select<T extends string>({
-  value, options, onChange, label, className = "", testId,
+  value,
+  options,
+  onChange,
+  label,
+  className = "",
+  testId,
 }: {
   value: T;
   options: SelectOption<T>[];
@@ -28,7 +33,12 @@ export function Select<T extends string>({
   const current = options.find((o) => o.value === value);
 
   const openList = () => {
-    setActive(Math.max(0, options.findIndex((o) => o.value === value)));
+    setActive(
+      Math.max(
+        0,
+        options.findIndex((o) => o.value === value),
+      ),
+    );
     setOpen(true);
   };
   const close = () => setOpen(false);
@@ -54,6 +64,7 @@ export function Select<T extends string>({
     });
   }, [open, options.length]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `close` only sets state; listeners are bound per open
   useEffect(() => {
     if (!open) return;
     const down = (e: PointerEvent) => {
@@ -72,8 +83,10 @@ export function Select<T extends string>({
   }, [open]);
 
   // Keep the keyboard-active option in view.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pos` re-runs this once the list is positioned/rendered
   useEffect(() => {
-    if (open) list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
+    if (open)
+      list.current?.querySelector<HTMLElement>(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
   }, [open, active, pos]);
 
   const move = (dir: 1 | -1) => {
@@ -94,13 +107,35 @@ export function Select<T extends string>({
       return;
     }
     switch (e.key) {
-      case "ArrowDown": e.preventDefault(); move(1); break;
-      case "ArrowUp": e.preventDefault(); move(-1); break;
-      case "Home": e.preventDefault(); setActive(0); break;
-      case "End": e.preventDefault(); setActive(options.length - 1); break;
-      case "Enter": case " ": e.preventDefault(); pick(options[active]); break;
-      case "Escape": e.preventDefault(); e.stopPropagation(); close(); break; // don't also close a parent dialog
-      case "Tab": close(); break;
+      case "ArrowDown":
+        e.preventDefault();
+        move(1);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        move(-1);
+        break;
+      case "Home":
+        e.preventDefault();
+        setActive(0);
+        break;
+      case "End":
+        e.preventDefault();
+        setActive(options.length - 1);
+        break;
+      case "Enter":
+      case " ":
+        e.preventDefault();
+        pick(options[active]);
+        break;
+      case "Escape":
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+        break; // don't also close a parent dialog
+      case "Tab":
+        close();
+        break;
     }
   };
 
@@ -120,7 +155,10 @@ export function Select<T extends string>({
         className="flex w-full min-w-28 items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-left outline-none hover:border-[var(--muted)] focus-visible:border-[var(--accent)] aria-expanded:border-[var(--accent)]"
       >
         <span className="truncate">{current?.label ?? ""}</span>
-        <ChevronDown size={12} className={`shrink-0 text-[var(--muted)] transition-transform ${open ? "rotate-180" : ""}`} />
+        <ChevronDown
+          size={12}
+          className={`shrink-0 text-[var(--muted)] transition-transform ${open ? "rotate-180" : ""}`}
+        />
       </button>
       {open && pos && (
         <div
@@ -132,6 +170,7 @@ export function Select<T extends string>({
           className="z-[60] overflow-y-auto rounded border border-[var(--border)] bg-[var(--panel)] p-1 shadow-xl shadow-black/40"
         >
           {options.map((o, i) => (
+            // biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/useFocusableInteractive: keyboard handled on the trigger via aria-activedescendant
             <div
               key={o.value}
               id={`${id}-opt-${i}`}

@@ -15,7 +15,11 @@ export type PanelOrientation = "vertical" | "horizontal";
 export const PANEL_IDS: PanelId[] = ["pages", "properties"];
 export const REGION_POSITIONS: RegionPosition[] = ["left", "right", "top", "bottom"];
 export const POSITION_LABEL: Record<PanelPosition, string> = {
-  left: "Left", right: "Right", top: "Top", bottom: "Bottom", hidden: "Hidden",
+  left: "Left",
+  right: "Right",
+  top: "Top",
+  bottom: "Bottom",
+  hidden: "Hidden",
 };
 
 export interface PanelConfig {
@@ -98,7 +102,9 @@ export function normalizeLayout(raw: unknown): WorkspaceLayoutPrefs {
   const panels = PANEL_IDS.map((id): PanelConfig => {
     const def = PANEL_DEFS[id];
     const p = rawPanels.find((x) => x.id === id) ?? {};
-    const position = def.positions.includes(p.position as PanelPosition) ? (p.position as PanelPosition) : def.defaultPosition;
+    const position = def.positions.includes(p.position as PanelPosition)
+      ? (p.position as PanelPosition)
+      : def.defaultPosition;
     const stackSize: PanelConfig["stackSize"] = {};
     if (isObj(p.stackSize)) {
       for (const pos of REGION_POSITIONS) {
@@ -131,7 +137,8 @@ export function normalizeLayout(raw: unknown): WorkspaceLayoutPrefs {
   };
 }
 
-const byOrder = (a: PanelConfig, b: PanelConfig) => a.order - b.order || PANEL_IDS.indexOf(a.id) - PANEL_IDS.indexOf(b.id);
+const byOrder = (a: PanelConfig, b: PanelConfig) =>
+  a.order - b.order || PANEL_IDS.indexOf(a.id) - PANEL_IDS.indexOf(b.id);
 
 /** Panels of each region, in display order. Hidden panels appear nowhere. */
 export function regionsOf(panels: PanelConfig[]): Record<RegionPosition, PanelConfig[]> {
@@ -143,7 +150,11 @@ export function regionsOf(panels: PanelConfig[]): Record<RegionPosition, PanelCo
 export const canPlace = (id: PanelId, position: PanelPosition) => PANEL_DEFS[id].positions.includes(position);
 
 /** Move a panel. Unsupported positions are ignored. It joins the end of the destination's stack. */
-export function setPanelPosition(layout: WorkspaceLayoutPrefs, id: PanelId, position: PanelPosition): WorkspaceLayoutPrefs {
+export function setPanelPosition(
+  layout: WorkspaceLayoutPrefs,
+  id: PanelId,
+  position: PanelPosition,
+): WorkspaceLayoutPrefs {
   const cur = layout.panels.find((p) => p.id === id);
   if (!cur || cur.position === position || !canPlace(id, position)) return layout;
   const last = Math.max(-1, ...layout.panels.filter((p) => p.id !== id && p.position === position).map((p) => p.order));
@@ -153,7 +164,11 @@ export function setPanelPosition(layout: WorkspaceLayoutPrefs, id: PanelId, posi
   };
 }
 
-export const setPanelCollapsed = (layout: WorkspaceLayoutPrefs, id: PanelId, collapsed: boolean): WorkspaceLayoutPrefs => ({
+export const setPanelCollapsed = (
+  layout: WorkspaceLayoutPrefs,
+  id: PanelId,
+  collapsed: boolean,
+): WorkspaceLayoutPrefs => ({
   ...layout,
   panels: layout.panels.map((p) => {
     if (p.id !== id) return p;
@@ -192,7 +207,9 @@ export function constrainLayout(
   if (collapseAxis.size === 0) return layout;
   return {
     ...layout,
-    panels: layout.panels.map((p) => (p.position !== "hidden" && collapseAxis.has(p.position) ? { ...p, collapsed: true } : p)),
+    panels: layout.panels.map((p) =>
+      p.position !== "hidden" && collapseAxis.has(p.position) ? { ...p, collapsed: true } : p,
+    ),
   };
 }
 
@@ -208,14 +225,29 @@ export const LAYOUT_PRESETS: Exclude<LayoutPresetId, "custom">[] = ["classic", "
 
 const PRESET_PANELS: Record<Exclude<LayoutPresetId, "custom">, [PanelPosition, number][]> = {
   //                      pages            properties
-  classic: [["left", 0], ["right", 0]],
-  "right-sidebar": [["right", 0], ["right", 1]],
-  "pages-top": [["top", 0], ["right", 0]],
-  focus: [["hidden", 0], ["hidden", 1]],
+  classic: [
+    ["left", 0],
+    ["right", 0],
+  ],
+  "right-sidebar": [
+    ["right", 0],
+    ["right", 1],
+  ],
+  "pages-top": [
+    ["top", 0],
+    ["right", 0],
+  ],
+  focus: [
+    ["hidden", 0],
+    ["hidden", 1],
+  ],
 };
 
 /** Apply a preset's positions/order, keeping remembered sizes and the "remember" switches. */
-export function applyPreset(layout: WorkspaceLayoutPrefs, preset: Exclude<LayoutPresetId, "custom">): WorkspaceLayoutPrefs {
+export function applyPreset(
+  layout: WorkspaceLayoutPrefs,
+  preset: Exclude<LayoutPresetId, "custom">,
+): WorkspaceLayoutPrefs {
   return {
     ...layout,
     panels: layout.panels.map((p) => {
@@ -232,7 +264,10 @@ export function detectPreset(layout: WorkspaceLayoutPrefs): LayoutPresetId {
     const matches = layout.panels.every((p) => {
       const [position, order] = PRESET_PANELS[preset][PANEL_IDS.indexOf(p.id)];
       // Compare the slot within the region, not the raw `order` number; hidden panels have no slot.
-      return p.position === position && (position === "hidden" || regions[position].findIndex((x) => x.id === p.id) === order);
+      return (
+        p.position === position &&
+        (position === "hidden" || regions[position].findIndex((x) => x.id === p.id) === order)
+      );
     });
     if (matches) return preset;
   }

@@ -1,20 +1,29 @@
-import { useDocumentStore } from "../../stores/document-store";
-import { useEditorStore } from "../../stores/editor-store";
-import { MAX_GAP_MM, MAX_MARGIN_MM, useLayoutStore, type PageMode } from "../../stores/layout-store";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
+import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { usePreviewResult } from "../../lib/view-page";
-import { formatMeasurement } from "../../lib/measurement";
+import { useDocumentStore } from "../../stores/document-store";
+import { useEditorStore } from "../../stores/editor-store";
+import { MAX_GAP_MM, MAX_MARGIN_MM, type PageMode, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { MeasurementInput } from "../ui/MeasurementInput";
-import { Select } from "../ui/Select";
 import { NumberField } from "../ui/NumberField";
+import { Select } from "../ui/Select";
 
 function GapFields({
-  linked, onLink, x, y, onX, onY,
+  linked,
+  onLink,
+  x,
+  y,
+  onX,
+  onY,
 }: {
-  linked: boolean; onLink: (l: boolean) => void;
-  x: number; y: number; onX: (v: number) => void; onY: (v: number) => void;
+  linked: boolean;
+  onLink: (l: boolean) => void;
+  x: number;
+  y: number;
+  onX: (v: number) => void;
+  onY: (v: number) => void;
 }) {
   const f = { min: 0, max: MAX_GAP_MM };
   return (
@@ -75,7 +84,9 @@ export function PropertiesSidebar() {
       <Section title="Page">
         <div className="flex justify-between">
           <span className="text-[var(--muted)]">Size</span>
-          <span className="tabular-nums">{fmt(pw)} × {fmt(ph)}</span>
+          <span className="tabular-nums">
+            {fmt(pw)} × {fmt(ph)}
+          </span>
         </div>
       </Section>
 
@@ -83,34 +94,44 @@ export function PropertiesSidebar() {
         <NumberField label="Columns" value={columns} onCommit={setColumns} min={1} max={MAX_GRID} />
         <NumberField label="Rows" value={rows} onCommit={setRows} min={1} max={MAX_GRID} />
         <MeasurementInput
-          label="Card width" precise min={1}
+          label="Card width"
+          precise
+          min={1}
           value={card ? card.width : null}
           disabled={!selection}
           onChange={(w) => selection && setSelection(selectionForCardSize(selection, page, grid, { width: w }))}
         />
         <MeasurementInput
-          label="Card height" precise min={1}
+          label="Card height"
+          precise
+          min={1}
           value={card ? card.height : null}
           disabled={!selection}
           onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, grid, { height: h }))}
         />
-        {!selection && (
-          <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>
-        )}
+        {!selection && <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>}
       </Section>
 
       <Section title="Source spacing">
         <GapFields
-          linked={L.sourceGapLinked} onLink={L.setSourceGapLinked}
-          x={L.sourceGapXMm} y={L.sourceGapYMm} onX={L.setSourceGapX} onY={L.setSourceGapY}
+          linked={L.sourceGapLinked}
+          onLink={L.setSourceGapLinked}
+          x={L.sourceGapXMm}
+          y={L.sourceGapYMm}
+          onX={L.setSourceGapX}
+          onY={L.setSourceGapY}
         />
         <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
       </Section>
 
       <Section title="Output spacing">
         <GapFields
-          linked={L.gapLinked} onLink={L.setGapLinked}
-          x={L.gapXMm} y={L.gapYMm} onX={L.setGapX} onY={L.setGapY}
+          linked={L.gapLinked}
+          onLink={L.setGapLinked}
+          x={L.gapXMm}
+          y={L.gapYMm}
+          onX={L.setGapX}
+          onY={L.setGapY}
         />
         <p className="text-[var(--muted)]">Final gap between cards. Independent of the source gap.</p>
       </Section>
@@ -119,29 +140,50 @@ export function PropertiesSidebar() {
         <div className="flex items-center justify-between gap-2">
           <span className="text-[var(--muted)]">Size</span>
           <Select
-            label="Page size" value={L.pageMode} onChange={L.setPageMode}
+            label="Page size"
+            value={L.pageMode}
+            onChange={L.setPageMode}
             options={PAGE_MODES.map((m) => ({ value: m.id, label: m.label }))}
           />
         </div>
         {L.pageMode === "custom" && (
           <>
-            <MeasurementInput label="Width" min={10} value={L.customWidthMm} onChange={(w) => L.setCustomSize(w, undefined)} />
-            <MeasurementInput label="Height" min={10} value={L.customHeightMm} onChange={(h) => L.setCustomSize(undefined, h)} />
+            <MeasurementInput
+              label="Width"
+              min={10}
+              value={L.customWidthMm}
+              onChange={(w) => L.setCustomSize(w, undefined)}
+            />
+            <MeasurementInput
+              label="Height"
+              min={10}
+              value={L.customHeightMm}
+              onChange={(h) => L.setCustomSize(undefined, h)}
+            />
           </>
         )}
         {L.pageMode !== "same" && L.pageMode !== "fit" && (
           <div className="flex items-center justify-between gap-2">
             <span className="text-[var(--muted)]">Orientation</span>
             <Select
-              label="Orientation" value={L.orientation} onChange={L.setOrientation}
-              options={[{ value: "portrait", label: "Portrait" }, { value: "landscape", label: "Landscape" }]}
+              label="Orientation"
+              value={L.orientation}
+              onChange={L.setOrientation}
+              options={[
+                { value: "portrait", label: "Portrait" },
+                { value: "landscape", label: "Landscape" },
+              ]}
             />
           </div>
         )}
         {(["top", "right", "bottom", "left"] as const).map((side) => (
           <MeasurementInput
-            key={side} label={`Margin ${side}`} min={0} max={MAX_MARGIN_MM}
-            value={L.margins[side]} onChange={(v) => L.setMargin(side, v)}
+            key={side}
+            label={`Margin ${side}`}
+            min={0}
+            max={MAX_MARGIN_MM}
+            value={L.margins[side]}
+            onChange={(v) => L.setMargin(side, v)}
           />
         ))}
         {shown && (
@@ -155,14 +197,23 @@ export function PropertiesSidebar() {
         {L.result?.overflow && (
           <div className="rounded border border-red-400/50 bg-red-400/10 p-2 text-red-300">
             <p>
-              ⚠ Layout exceeds the page by {fmt(L.result.overflow.width_mm)} horizontally
-              and {fmt(L.result.overflow.height_mm)} vertically. Cards are never scaled.
+              ⚠ Layout exceeds the page by {fmt(L.result.overflow.width_mm)} horizontally and{" "}
+              {fmt(L.result.overflow.height_mm)} vertically. Cards are never scaled.
             </p>
-            <p className="mt-1">Change the page size or orientation, reduce spacing or margins, or auto-fit the page. Export is disabled until it fits.</p>
+            <p className="mt-1">
+              Change the page size or orientation, reduce spacing or margins, or auto-fit the page. Export is disabled
+              until it fits.
+            </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              <button className={smallBtn} onClick={() => L.setPageMode("fit")}>Auto-fit page</button>
+              <button type="button" className={smallBtn} onClick={() => L.setPageMode("fit")}>
+                Auto-fit page
+              </button>
               {L.pageMode !== "same" && L.pageMode !== "fit" && (
-                <button className={smallBtn} onClick={() => L.setOrientation(L.orientation === "portrait" ? "landscape" : "portrait")}>
+                <button
+                  type="button"
+                  className={smallBtn}
+                  onClick={() => L.setOrientation(L.orientation === "portrait" ? "landscape" : "portrait")}
+                >
                   Switch orientation
                 </button>
               )}
@@ -175,16 +226,22 @@ export function PropertiesSidebar() {
       {selection && (
         <Section title="Selection position">
           <MeasurementInput
-            label="X" precise value={selection.x * pw}
+            label="X"
+            precise
+            value={selection.x * pw}
             onChange={(x) => setSelection(selectionAtMm(selection, page, { x }))}
           />
           <MeasurementInput
-            label="Y" precise value={selection.y * ph}
+            label="Y"
+            precise
+            value={selection.y * ph}
             onChange={(y) => setSelection(selectionAtMm(selection, page, { y }))}
           />
           <div className="flex justify-between">
             <span className="text-[var(--muted)]">Total</span>
-            <span className="tabular-nums">{fmt(selection.width * pw)} × {fmt(selection.height * ph)}</span>
+            <span className="tabular-nums">
+              {fmt(selection.width * pw)} × {fmt(selection.height * ph)}
+            </span>
           </div>
         </Section>
       )}

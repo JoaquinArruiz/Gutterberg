@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useDocumentStore } from "../../stores/document-store";
 import { usePageImage } from "../../lib/use-page-image";
 import type { PanelOrientation } from "../../lib/workspace-layout";
+import { useDocumentStore } from "../../stores/document-store";
 
 const THUMB_WIDTH = 120; // vertical list: fixed width
 const THUMB_HEIGHT = 84; // horizontal strip: fixed height, width follows the page aspect
@@ -28,15 +28,13 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
 
   return (
     <button
+      type="button"
       ref={ref}
       onClick={() => setCurrentPage(index)}
       className={`flex shrink-0 flex-col items-center gap-1 rounded p-1.5 ${orientation === "vertical" ? "mx-auto w-[132px]" : ""} ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
     >
-      <div
-        className="bg-white/5"
-        style={{ width: widthCss, aspectRatio: `${size.width_pt} / ${size.height_pt}` }}
-      >
-        {url && <img src={url} draggable={false} className="h-full w-full" />}
+      <div className="bg-white/5" style={{ width: widthCss, aspectRatio: `${size.width_pt} / ${size.height_pt}` }}>
+        {url && <img src={url} alt={`Page ${index + 1}`} draggable={false} className="h-full w-full" />}
       </div>
       <span className="text-[11px] text-[var(--muted)]">{index + 1}</span>
     </button>
@@ -57,6 +55,7 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
       data-testid="pages-list"
     >
       {pages.map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: pages have no id; the index is their identity
         <Thumbnail key={i} index={i} orientation={orientation} />
       ))}
     </div>

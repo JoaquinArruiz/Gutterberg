@@ -10,9 +10,7 @@
     "frontendDist": "../dist"
   },
   "app": {
-    "windows": [
-      { "title": "PDF Card Editor", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 560 }
-    ],
+    "windows": [{ "title": "PDF Card Editor", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 560 }],
     "security": { "csp": null }
   },
   "bundle": {

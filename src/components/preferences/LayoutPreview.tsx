@@ -1,6 +1,7 @@
-import { PANEL_DEFS, regionsOf, type PanelConfig, type RegionPosition } from "../../lib/workspace-layout";
+import { PANEL_DEFS, type PanelConfig, type RegionPosition, regionsOf } from "../../lib/workspace-layout";
 
-const BLOCK = "flex items-center justify-center overflow-hidden rounded-sm border border-[var(--accent)]/60 bg-[var(--accent)]/20 text-[8px] font-semibold uppercase tracking-wide";
+const BLOCK =
+  "flex items-center justify-center overflow-hidden rounded-sm border border-[var(--accent)]/60 bg-[var(--accent)]/20 text-[8px] font-semibold uppercase tracking-wide";
 
 /** Tiny schematic of the panel arrangement (no real content), driven by the same config as the editor. */
 export function LayoutPreview({ panels }: { panels: PanelConfig[] }) {
@@ -9,12 +10,15 @@ export function LayoutPreview({ panels }: { panels: PanelConfig[] }) {
     regions[pos].length === 0 ? null : (
       <div data-testid={`layout-preview-${pos}`} className="flex gap-0.5" style={{ flexDirection: "column", ...style }}>
         {regions[pos].map((p) => (
-          <div key={p.id} className={`${BLOCK} flex-1`}>{PANEL_DEFS[p.id].title.slice(0, 4)}</div>
+          <div key={p.id} className={`${BLOCK} flex-1`}>
+            {PANEL_DEFS[p.id].title.slice(0, 4)}
+          </div>
         ))}
       </div>
     );
   return (
     <div
+      role="img"
       aria-label="Layout preview"
       className="flex h-28 w-48 flex-col gap-0.5 rounded border border-[var(--border)] bg-[var(--bg)] p-1"
     >

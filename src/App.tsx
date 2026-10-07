@@ -1,18 +1,18 @@
 import { useEffect } from "react";
 import { EditorViewport } from "./components/editor/EditorViewport";
+import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
-import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { StatusBar } from "./components/toolbar/StatusBar";
-import { useDocumentStore } from "./stores/document-store";
-import { useEditorStore } from "./stores/editor-store";
+import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
+import { resolveStartMode } from "./lib/preferences";
+import { applyTheme } from "./lib/theme";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { zoomActions } from "./lib/zoom-actions";
-import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
-import { applyTheme } from "./lib/theme";
-import { resolveStartMode } from "./lib/preferences";
+import { useDocumentStore } from "./stores/document-store";
+import { useEditorStore } from "./stores/editor-store";
+import { useLayoutStore } from "./stores/layout-store";
 import { usePreferencesStore } from "./stores/preferences-store";
 import { useUiStore } from "./stores/ui-store";
-import { useLayoutStore } from "./stores/layout-store";
 
 export default function App() {
   useLayoutSync();
@@ -28,7 +28,8 @@ export default function App() {
   const prefs = usePreferencesStore((s) => s.prefs);
   const viewMode = useEditorStore((s) => s.viewMode);
   useEffect(() => {
-    if (!prefs.workspace.visibleModes.includes(viewMode)) useEditorStore.getState().setViewMode(resolveStartMode(prefs));
+    if (!prefs.workspace.visibleModes.includes(viewMode))
+      useEditorStore.getState().setViewMode(resolveStartMode(prefs));
   }, [prefs, viewMode]);
 
   useEffect(() => {
@@ -48,13 +49,32 @@ export default function App() {
       }
       if (mod || e.altKey || (e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName))) return;
       switch (e.key) {
-        case "v": case "V": ed.setTool("select"); break;
-        case "h": case "H": ed.setTool("pan"); break;
-        case "+": case "=": zoomActions.zoomIn(); break;
-        case "-": zoomActions.zoomOut(); break;
-        case "0": zoomActions.fitPage(); break;
-        case "PageDown": case "ArrowRight": doc.setCurrentPage(doc.currentPage + 1); break;
-        case "PageUp": case "ArrowLeft": doc.setCurrentPage(doc.currentPage - 1); break;
+        case "v":
+        case "V":
+          ed.setTool("select");
+          break;
+        case "h":
+        case "H":
+          ed.setTool("pan");
+          break;
+        case "+":
+        case "=":
+          zoomActions.zoomIn();
+          break;
+        case "-":
+          zoomActions.zoomOut();
+          break;
+        case "0":
+          zoomActions.fitPage();
+          break;
+        case "PageDown":
+        case "ArrowRight":
+          doc.setCurrentPage(doc.currentPage + 1);
+          break;
+        case "PageUp":
+        case "ArrowLeft":
+          doc.setCurrentPage(doc.currentPage - 1);
+          break;
       }
     };
     window.addEventListener("keydown", onKey);

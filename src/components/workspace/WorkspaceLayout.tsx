@@ -1,9 +1,19 @@
-import { useMemo, useRef, type ReactNode } from "react";
+import { type ReactNode, useMemo, useRef } from "react";
 import { useWindowSize } from "../../lib/use-window-size";
 import {
-  constrainLayout, HEADER_PX, isRegionCollapsed, MIN_EDITOR_H, MIN_EDITOR_W, panelOrientation,
-  regionMinSize, regionsOf, regionSize, STRIP_PX,
-  type PanelConfig, type PanelId, type RegionPosition,
+  constrainLayout,
+  HEADER_PX,
+  isRegionCollapsed,
+  MIN_EDITOR_H,
+  MIN_EDITOR_W,
+  type PanelConfig,
+  type PanelId,
+  panelOrientation,
+  type RegionPosition,
+  regionMinSize,
+  regionSize,
+  regionsOf,
+  STRIP_PX,
 } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { PagesPanel } from "../sidebar/PagesPanel";
@@ -40,7 +50,8 @@ function Region({ position, panels }: { position: RegionPosition; panels: PanelC
         orientation="vertical"
         className="h-full w-full"
         onLayoutChanged={(l, meta) => {
-          if (meta.isUserInteraction) for (const p of panels) if (l[p.id] !== undefined) saveStack(p.id, position, l[p.id]);
+          if (meta.isUserInteraction)
+            for (const p of panels) if (l[p.id] !== undefined) saveStack(p.id, position, l[p.id]);
         }}
       >
         {panels.flatMap((p, i) => [
@@ -82,7 +93,9 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
   // Latest px size of each region; written to preferences only after a user drag
   // (never for window resizes) and never for collapsed regions.
   const sizes = useRef<Partial<Record<RegionPosition, number>>>({});
-  const onRegionResize = (pos: RegionPosition, px: number) => void (sizes.current[pos] = px);
+  const onRegionResize = (pos: RegionPosition, px: number) => {
+    sizes.current[pos] = px;
+  };
   const commitSizes = (positions: RegionPosition[], user: boolean) => {
     if (!user) return;
     for (const pos of positions) {
@@ -118,9 +131,10 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
 
   // Structural signature: remount the groups only when panels move/collapse or sizes are reset,
   // not on every drag (so remembered sizes apply as defaults, and dragging stays smooth).
-  const sig = (["left", "right", "top", "bottom"] as RegionPosition[])
-    .map((pos) => `${pos}:${regions[pos].map((p) => p.id + (p.collapsed ? "c" : "")).join(",")}`)
-    .join("|") + `#${epoch}`;
+  const sig =
+    (["left", "right", "top", "bottom"] as RegionPosition[])
+      .map((pos) => `${pos}:${regions[pos].map((p) => p.id + (p.collapsed ? "c" : "")).join(",")}`)
+      .join("|") + `#${epoch}`;
 
   const middle =
     left || right ? (
@@ -131,7 +145,9 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
       >
         {left}
         {left && <ResizableHandle />}
-        <ResizablePanel id="editor" minSize={MIN_EDITOR_W}>{editor}</ResizablePanel>
+        <ResizablePanel id="editor" minSize={MIN_EDITOR_W}>
+          {editor}
+        </ResizablePanel>
         {right && <ResizableHandle />}
         {right}
       </ResizablePanelGroup>
@@ -148,11 +164,15 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
     >
       {top}
       {top && <ResizableHandle orientation="vertical" />}
-      <ResizablePanel id="middle" minSize={MIN_EDITOR_H}>{middle}</ResizablePanel>
+      <ResizablePanel id="middle" minSize={MIN_EDITOR_H}>
+        {middle}
+      </ResizablePanel>
       {bottom && <ResizableHandle orientation="vertical" />}
       {bottom}
     </ResizablePanelGroup>
   ) : (
-    <div key={sig} className="h-full w-full min-h-0 min-w-0">{middle}</div>
+    <div key={sig} className="h-full w-full min-h-0 min-w-0">
+      {middle}
+    </div>
   );
 }

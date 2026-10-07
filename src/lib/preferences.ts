@@ -7,7 +7,7 @@
 // the defaults, drops invalid values and repairs invariants, so the rest of the
 // app never sees an invalid state.
 
-import { isHintId, type HintId } from "./hints";
+import { type HintId, isHintId } from "./hints";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
 import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
 

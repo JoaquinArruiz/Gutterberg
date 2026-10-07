@@ -8,7 +8,13 @@ import { NumberField } from "./NumberField";
  * preference changes how the number looks, never what it is.
  */
 export function MeasurementInput({
-  label, value, onChange, min, max, disabled, precise,
+  label,
+  value,
+  onChange,
+  min,
+  max,
+  disabled,
+  precise,
 }: {
   label: string;
   /** Canonical mm, or null for an empty field. */

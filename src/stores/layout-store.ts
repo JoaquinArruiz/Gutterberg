@@ -2,8 +2,8 @@ import { create } from "zustand";
 import type { NormalizedRect } from "../lib/coordinates";
 import { clampCount } from "../lib/grid";
 import type { LayoutResult } from "../lib/layout-api";
-import type { GridPayload } from "../lib/tauri";
 import { sessionDefaults } from "../lib/preferences";
+import type { GridPayload } from "../lib/tauri";
 import { mmToPt } from "../lib/units";
 import { usePreferencesStore } from "./preferences-store";
 
@@ -118,8 +118,17 @@ export const useLayoutStore = create<LayoutState>((set) => ({
 
 type GridSettings = Pick<
   LayoutState,
-  | "rows" | "columns" | "gapXMm" | "gapYMm" | "sourceGapXMm" | "sourceGapYMm"
-  | "pageMode" | "orientation" | "customWidthMm" | "customHeightMm" | "margins"
+  | "rows"
+  | "columns"
+  | "gapXMm"
+  | "gapYMm"
+  | "sourceGapXMm"
+  | "sourceGapYMm"
+  | "pageMode"
+  | "orientation"
+  | "customWidthMm"
+  | "customHeightMm"
+  | "margins"
 >;
 
 /** Output page in points for the explicit modes; null for `same` (and `fit`, which Rust sizes itself). */

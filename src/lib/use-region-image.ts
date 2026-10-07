@@ -12,7 +12,12 @@ type RegionImage = { url: string; region: NormalizedRect };
  * so there is never a blank frame.
  */
 export function useRegionImage({
-  docKey, pageIndex, focus, pageRect, reachPx, fullWidthPx,
+  docKey,
+  pageIndex,
+  focus,
+  pageRect,
+  reachPx,
+  fullWidthPx,
 }: {
   docKey: string | null;
   pageIndex: number;
@@ -27,9 +32,10 @@ export function useRegionImage({
   const dx = (focus.x - anchor.x) * pageRect.width;
   const dy = (focus.y - anchor.y) * pageRect.height;
   const drifted = Math.hypot(dx, dy) > reachPx / 3;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: depend on coordinates, not the `focus` object identity
   useEffect(() => {
     if (drifted) setAnchor(focus);
-  }, [drifted, focus.x, focus.y]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [drifted, focus.x, focus.y]);
 
   const hx = reachPx / pageRect.width;
   const hy = reachPx / pageRect.height;
@@ -38,7 +44,8 @@ export function useRegionImage({
     const x0 = Math.max(0, anchor.x - hx);
     const y0 = Math.max(0, anchor.y - hy);
     const region = {
-      x: x0, y: y0,
+      x: x0,
+      y: y0,
       width: Math.min(1, anchor.x + hx) - x0,
       height: Math.min(1, anchor.y + hy) - y0,
     };
@@ -58,7 +65,14 @@ export function useRegionImage({
   }, [docKey, pageIndex, anchor.x, anchor.y, hx, hy, fullWidthPx]);
 
   // Free the last image on unmount.
-  useEffect(() => () => setImg((prev) => (prev && setTimeout(() => URL.revokeObjectURL(prev.url), 1000), null)), []);
+  useEffect(
+    () => () =>
+      setImg((prev) => {
+        if (prev) setTimeout(() => URL.revokeObjectURL(prev.url), 1000);
+        return null;
+      }),
+    [],
+  );
 
   return img;
 }

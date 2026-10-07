@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { openPdf, pickPdf, type PageSize } from "../lib/tauri";
+import { openPdf, type PageSize, pickPdf } from "../lib/tauri";
 
 type DocumentState = {
   path: string | null;

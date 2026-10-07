@@ -1,12 +1,27 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_PREFERENCES, migratePreferences, normalizePreferences } from "./preferences";
 import {
-  applyPreset, canPlace, constrainLayout, defaultLayout, detectPreset, isRegionCollapsed, MIN_EDITOR_W, normalizeLayout,
-  panelOrientation, regionsOf, regionSize, setPanelCollapsed, setPanelPosition, STRIP_PX, type WorkspaceLayoutPrefs,
+  applyPreset,
+  canPlace,
+  constrainLayout,
+  defaultLayout,
+  detectPreset,
+  isRegionCollapsed,
+  MIN_EDITOR_W,
+  normalizeLayout,
+  panelOrientation,
+  regionSize,
+  regionsOf,
+  STRIP_PX,
+  setPanelCollapsed,
+  setPanelPosition,
+  type WorkspaceLayoutPrefs,
 } from "./workspace-layout";
 
-const ids = (l: WorkspaceLayoutPrefs, pos: "left" | "right" | "top" | "bottom") => regionsOf(l.panels)[pos].map((p) => p.id);
-const move = (l: WorkspaceLayoutPrefs, id: "pages" | "properties", pos: Parameters<typeof setPanelPosition>[2]) => setPanelPosition(l, id, pos);
+const ids = (l: WorkspaceLayoutPrefs, pos: "left" | "right" | "top" | "bottom") =>
+  regionsOf(l.panels)[pos].map((p) => p.id);
+const move = (l: WorkspaceLayoutPrefs, id: "pages" | "properties", pos: Parameters<typeof setPanelPosition>[2]) =>
+  setPanelPosition(l, id, pos);
 
 describe("default layout", () => {
   it("is Pages left, Properties right", () => {
@@ -61,7 +76,13 @@ describe("placement", () => {
 
 describe("normalizeLayout", () => {
   it("repairs garbage, unsupported positions and missing panels", () => {
-    const l = normalizeLayout({ panels: [{ id: "properties", position: "top" }, { id: "nope", position: "left" }], regionSizes: { left: "x" } });
+    const l = normalizeLayout({
+      panels: [
+        { id: "properties", position: "top" },
+        { id: "nope", position: "left" },
+      ],
+      regionSizes: { left: "x" },
+    });
     expect(l.panels.map((p) => p.id)).toEqual(["pages", "properties"]);
     expect(l.panels.find((p) => p.id === "properties")?.position).toBe("right");
     expect(l.regionSizes).toEqual({});

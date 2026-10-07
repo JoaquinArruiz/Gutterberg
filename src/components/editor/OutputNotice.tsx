@@ -1,8 +1,8 @@
+import { formatMeasurement } from "../../lib/measurement";
+import { usePreviewResult } from "../../lib/view-page";
 import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
-import { formatMeasurement } from "../../lib/measurement";
 import { useUnit } from "../../stores/preferences-store";
-import { usePreviewResult } from "../../lib/view-page";
 import { useUiStore } from "../../stores/ui-store";
 import { HintToast } from "../ui/HintToast";
 
@@ -19,8 +19,8 @@ export function OutputNotice() {
     : !selection && !shown
       ? "Select the card region on the page to preview the output."
       : shown?.overflow
-          ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
-          : null;
+        ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
+        : null;
   const bad = !!layoutError || !!shown?.overflow;
   const showManualHint = !live && !shown && !!selection && !layoutError;
   return (
@@ -31,8 +31,8 @@ export function OutputNotice() {
           className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
           action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
         >
-          Live preview is off, so this preview isn&apos;t generated automatically. Press the refresh button (bottom right) to
-          generate it. You can change this in Preferences &gt; Preview.
+          Live preview is off, so this preview isn&apos;t generated automatically. Press the refresh button (bottom
+          right) to generate it. You can change this in Preferences &gt; Preview.
         </HintToast>
       )}
       {stale && (
@@ -40,11 +40,14 @@ export function OutputNotice() {
           Preview out of date
         </span>
       )}
-      {msg && <p
-      className={`pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit max-w-[80%] rounded bg-black/75 px-3 py-1.5 text-center ${bad ? "text-red-300" : "text-[var(--muted)]"}`}
-    >
-      {bad ? "⚠ " : ""}{msg}
-    </p>}
+      {msg && (
+        <p
+          className={`pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit max-w-[80%] rounded bg-black/75 px-3 py-1.5 text-center ${bad ? "text-red-300" : "text-[var(--muted)]"}`}
+        >
+          {bad ? "⚠ " : ""}
+          {msg}
+        </p>
+      )}
     </>
   );
 }

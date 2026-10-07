@@ -3,12 +3,20 @@ import { sessionDefaults } from "../lib/preferences";
 import { switchWorkspace } from "../lib/workspace";
 import { useEditorStore } from "./editor-store";
 import {
-  createPreferencesStore, PREFERENCES_KEY, usePreferencesStore, type KeyValueStorage,
+  createPreferencesStore,
+  type KeyValueStorage,
+  PREFERENCES_KEY,
+  usePreferencesStore,
 } from "./preferences-store";
 
 const memory = (initial?: string): KeyValueStorage & { data: Map<string, string> } => {
   const data = new Map<string, string>(initial ? [[PREFERENCES_KEY, initial]] : []);
-  return { data, getItem: (k) => data.get(k) ?? null, setItem: (k, v) => void data.set(k, v), removeItem: (k) => void data.delete(k) };
+  return {
+    data,
+    getItem: (k) => data.get(k) ?? null,
+    setItem: (k, v) => void data.set(k, v),
+    removeItem: (k) => void data.delete(k),
+  };
 };
 
 describe("first launch", () => {
@@ -123,9 +131,17 @@ describe("workspace layout in the store", () => {
     const storage = memory();
     const st = createPreferencesStore(storage);
     st.getState().setPanelCollapsed("pages", true);
-    expect(createPreferencesStore(storage).getState().prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed).toBe(true);
+    expect(
+      createPreferencesStore(storage)
+        .getState()
+        .prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed,
+    ).toBe(true);
     st.getState().setRememberCollapsed(false);
-    expect(createPreferencesStore(storage).getState().prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed).toBeUndefined();
+    expect(
+      createPreferencesStore(storage)
+        .getState()
+        .prefs.workspace.layout.panels.find((p) => p.id === "pages")?.collapsed,
+    ).toBeUndefined();
   });
 
   it("applying a preset updates positions", () => {

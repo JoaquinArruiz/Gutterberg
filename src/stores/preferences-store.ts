@@ -2,13 +2,28 @@ import { create } from "zustand";
 import type { HintId } from "../lib/hints";
 import type { MeasurementUnit } from "../lib/measurement";
 import {
-  applyPreset, defaultLayout, setPanelCollapsed, setPanelPosition,
-  type LayoutPresetId, type PanelId, type PanelPosition, type RegionPosition, type WorkspaceLayoutPrefs,
-} from "../lib/workspace-layout";
-import {
-  DEFAULT_PREFERENCES, migratePreferences, moveMode, normalizePreferences, toggleMode,
-  type AppPreferences, type DefaultWorkspace, type LivePreviewPreference, type ThemePreference, type WorkspaceMode,
+  type AppPreferences,
+  DEFAULT_PREFERENCES,
+  type DefaultWorkspace,
+  type LivePreviewPreference,
+  migratePreferences,
+  moveMode,
+  normalizePreferences,
+  type ThemePreference,
+  toggleMode,
+  type WorkspaceMode,
 } from "../lib/preferences";
+import {
+  applyPreset,
+  defaultLayout,
+  type LayoutPresetId,
+  type PanelId,
+  type PanelPosition,
+  type RegionPosition,
+  setPanelCollapsed,
+  setPanelPosition,
+  type WorkspaceLayoutPrefs,
+} from "../lib/workspace-layout";
 
 /** Minimal key/value storage (localStorage-shaped) so persistence is testable and swappable. */
 export interface KeyValueStorage {
@@ -112,12 +127,19 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       layoutEpoch: 0,
       setUnit: (unit) => edit((p) => ({ ...p, measurement: { unit } })),
       setVisibleMode: (mode, enabled) =>
-        edit((p) => ({ ...p, workspace: { ...p.workspace, visibleModes: toggleMode(p.workspace.visibleModes, mode, enabled) } })),
+        edit((p) => ({
+          ...p,
+          workspace: { ...p.workspace, visibleModes: toggleMode(p.workspace.visibleModes, mode, enabled) },
+        })),
       moveVisibleMode: (mode, dir) =>
-        edit((p) => ({ ...p, workspace: { ...p.workspace, visibleModes: moveMode(p.workspace.visibleModes, mode, dir) } })),
+        edit((p) => ({
+          ...p,
+          workspace: { ...p.workspace, visibleModes: moveMode(p.workspace.visibleModes, mode, dir) },
+        })),
       setDefaultMode: (defaultMode) => edit((p) => ({ ...p, workspace: { ...p.workspace, defaultMode } })),
       rememberMode: (lastMode) => {
-        if (get().prefs.workspace.lastMode !== lastMode) edit((p) => ({ ...p, workspace: { ...p.workspace, lastMode } }));
+        if (get().prefs.workspace.lastMode !== lastMode)
+          edit((p) => ({ ...p, workspace: { ...p.workspace, lastMode } }));
       },
       setLivePreview: (livePreview) => edit((p) => ({ ...p, preview: { livePreview } })),
       setTheme: (theme) => edit((p) => ({ ...p, appearance: { theme } })),
@@ -128,7 +150,9 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       dismissHint: (id) =>
         edit((p) => ({
           ...p,
-          help: { dismissedHints: p.help.dismissedHints.includes(id) ? p.help.dismissedHints : [...p.help.dismissedHints, id] },
+          help: {
+            dismissedHints: p.help.dismissedHints.includes(id) ? p.help.dismissedHints : [...p.help.dismissedHints, id],
+          },
         })),
       resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: [] } })),
       setPanelPosition: (id, position) => editLayout((l) => setPanelPosition(l, id, position)),

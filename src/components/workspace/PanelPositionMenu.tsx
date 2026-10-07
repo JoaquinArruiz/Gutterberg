@@ -1,7 +1,5 @@
 import { Check } from "lucide-react";
-import {
-  PANEL_DEFS, POSITION_LABEL, type PanelId, type PanelPosition,
-} from "../../lib/workspace-layout";
+import { PANEL_DEFS, type PanelId, type PanelPosition, POSITION_LABEL } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { menuItem } from "./Popover";
 
@@ -13,10 +11,14 @@ export function PanelPositionItems({ id, close }: { id: PanelId; close: () => vo
     <>
       {PANEL_DEFS[id].positions.map((pos: PanelPosition) => (
         <button
+          type="button"
           key={pos}
           role="menuitemradio"
           aria-checked={current === pos}
-          onClick={() => { setPosition(id, pos); close(); }}
+          onClick={() => {
+            setPosition(id, pos);
+            close();
+          }}
           className={menuItem}
         >
           <span className="w-3">{current === pos && <Check size={12} />}</span>

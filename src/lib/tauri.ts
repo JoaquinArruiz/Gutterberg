@@ -22,7 +22,11 @@ export async function openPdf(path: string): Promise<DocumentInfo> {
 }
 
 export async function pickExportPath(inputPath: string): Promise<string | null> {
-  const name = inputPath.split(/[\\/]/).pop()?.replace(/\.pdf$/i, "") ?? "cards";
+  const name =
+    inputPath
+      .split(/[\\/]/)
+      .pop()
+      ?.replace(/\.pdf$/i, "") ?? "cards";
   return save({ defaultPath: `${name}-spaced.pdf`, filters: [{ name: "PDF", extensions: ["pdf"] }] });
 }
 
@@ -44,11 +48,7 @@ export type GridPayload = {
 };
 
 /** Exports every page with the given grid via the Rust exporter. Resolves to the page count. */
-export async function exportDocument(
-  grid: GridPayload,
-  pageCount: number,
-  outputPath: string,
-): Promise<number> {
+export async function exportDocument(grid: GridPayload, pageCount: number, outputPath: string): Promise<number> {
   return invoke<number>("export_document", { grid, pageCount, outputPath });
 }
 

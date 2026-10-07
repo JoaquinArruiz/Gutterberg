@@ -25,7 +25,9 @@ export function RefreshPreviewButton({ className = "" }: { className?: string })
         className="relative flex h-8 w-8 items-center justify-center rounded border border-[var(--border)] bg-[var(--panel)] text-[var(--fg)] shadow-md shadow-black/30 hover:bg-[var(--hover)] disabled:opacity-40"
       >
         <RefreshCw size={15} className={stale ? "text-[var(--accent)]" : ""} />
-        {stale && <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--panel)] bg-[var(--accent)]" />}
+        {stale && (
+          <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full border-2 border-[var(--panel)] bg-[var(--accent)]" />
+        )}
       </button>
     </div>
   );

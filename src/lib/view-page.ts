@@ -8,8 +8,7 @@ import type { PageSize } from "./tauri";
  * The layout the output view shows: always current when Live Preview is on,
  * otherwise whatever "Update preview" last captured.
  */
-export const usePreviewResult = (): LayoutResult | null =>
-  useLayoutStore((s) => (s.live ? s.result : s.snapshot));
+export const usePreviewResult = (): LayoutResult | null => useLayoutStore((s) => (s.live ? s.result : s.snapshot));
 
 /** Page whose rect the main viewport pans/zooms: the output page in Output view, else the source page. */
 export function activeViewPage(): PageSize | undefined {

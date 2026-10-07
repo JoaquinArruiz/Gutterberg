@@ -26,7 +26,10 @@ export function moveRect(r: NormalizedRect, dx: number, dy: number): NormalizedR
 
 /** Drag `handle` by (dx, dy) normalized. Opposite edges stay put; min size enforced. */
 export function resizeRect(r: NormalizedRect, handle: Handle, dx: number, dy: number): NormalizedRect {
-  let left = r.x, top = r.y, right = r.x + r.width, bottom = r.y + r.height;
+  let left = r.x,
+    top = r.y,
+    right = r.x + r.width,
+    bottom = r.y + r.height;
   if (handle.includes("w")) left = clamp(left + dx, 0, right - MIN_SIZE);
   if (handle.includes("e")) right = clamp(right + dx, left + MIN_SIZE, 1);
   if (handle.includes("n")) top = clamp(top + dy, 0, bottom - MIN_SIZE);

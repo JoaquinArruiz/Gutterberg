@@ -1,9 +1,9 @@
-import { useDocumentStore } from "../../stores/document-store";
-import { useRegionImage } from "../../lib/use-region-image";
-import { cardRects, type GridSpec } from "../../lib/grid";
-import { handlePoint, type Handle } from "../../lib/selection";
 import type { NormalizedRect, Rect, Size } from "../../lib/coordinates";
+import { cardRects, type GridSpec } from "../../lib/grid";
+import { type Handle, handlePoint } from "../../lib/selection";
 import type { PageSize } from "../../lib/tauri";
+import { useRegionImage } from "../../lib/use-region-image";
+import { useDocumentStore } from "../../stores/document-store";
 
 /** Magnification of the loupe. While it is open, handle drags are slowed by the same factor. */
 export const MAG = 4;
@@ -43,7 +43,13 @@ function edgesPath(r: NormalizedRect, toLoupe: (x: number, y: number) => { x: nu
  * Pointer-transparent: it never steals the drag.
  */
 export function Magnifier({
-  handle, selection, grid, page, pageRect, box, active,
+  handle,
+  selection,
+  grid,
+  page,
+  pageRect,
+  box,
+  active,
 }: {
   handle: Handle;
   selection: NormalizedRect;
@@ -60,8 +66,12 @@ export function Magnifier({
   const f = handlePoint(selection, handle);
   // Only a small crop around the handle is rendered (at ×MAG), not the whole page.
   const img = useRegionImage({
-    docKey: path, pageIndex: currentPage, focus: f, pageRect,
-    reachPx: REACH_PX, fullWidthPx: Math.min(MAX_FULL_WIDTH_PX, Math.round(W * dpr)),
+    docKey: path,
+    pageIndex: currentPage,
+    focus: f,
+    pageRect,
+    reachPx: REACH_PX,
+    fullWidthPx: Math.min(MAX_FULL_WIDTH_PX, Math.round(W * dpr)),
   });
   if (!active) return null;
 
@@ -91,22 +101,39 @@ export function Magnifier({
       {img && (
         <img
           src={img.url}
+          alt=""
           draggable={false}
           style={{
-            position: "absolute", maxWidth: "none",
+            position: "absolute",
+            maxWidth: "none",
             // The crop is only ~REACH_PX*2*MAG px across whatever the zoom.
-            left: toLoupe(img.region.x, img.region.y).x, top: toLoupe(img.region.x, img.region.y).y,
-            width: img.region.width * W, height: img.region.height * H,
+            left: toLoupe(img.region.x, img.region.y).x,
+            top: toLoupe(img.region.x, img.region.y).y,
+            width: img.region.width * W,
+            height: img.region.height * H,
           }}
         />
       )}
-      <svg className="absolute inset-0" width={LOUPE} height={LOUPE}>
-        <path d={cards.map((c) => edgesPath(c, toLoupe)).join("")} fill="none" stroke="var(--accent)" strokeWidth={1} strokeDasharray="4 3" strokeOpacity={0.8} />
+      <svg aria-hidden="true" className="absolute inset-0" width={LOUPE} height={LOUPE}>
+        <path
+          d={cards.map((c) => edgesPath(c, toLoupe)).join("")}
+          fill="none"
+          stroke="var(--accent)"
+          strokeWidth={1}
+          strokeDasharray="4 3"
+          strokeOpacity={0.8}
+        />
         <path d={edgesPath(selection, toLoupe)} fill="none" stroke="var(--accent)" strokeWidth={1.5} />
       </svg>
       {/* Crosshair on the exact point being moved. */}
-      <div className="absolute bg-red-500/80" style={{ left: LOUPE / 2 - 0.5, top: LOUPE / 2 - 10, width: 1, height: 20 }} />
-      <div className="absolute bg-red-500/80" style={{ left: LOUPE / 2 - 10, top: LOUPE / 2 - 0.5, width: 20, height: 1 }} />
+      <div
+        className="absolute bg-red-500/80"
+        style={{ left: LOUPE / 2 - 0.5, top: LOUPE / 2 - 10, width: 1, height: 20 }}
+      />
+      <div
+        className="absolute bg-red-500/80"
+        style={{ left: LOUPE / 2 - 10, top: LOUPE / 2 - 0.5, width: 20, height: 1 }}
+      />
       <span className="absolute bottom-3 left-0 right-0 text-center text-[10px] font-semibold text-white [text-shadow:0_0_3px_#000]">
         ×{MAG}
       </span>

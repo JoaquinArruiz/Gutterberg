@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 
 /** Button + dropdown surface that closes on outside click or Escape. */
 export function Popover({
-  trigger, label, children, align = "right", triggerClassName, testId,
+  trigger,
+  label,
+  children,
+  align = "right",
+  triggerClassName,
+  testId,
 }: {
   trigger: React.ReactNode;
   label: string;
@@ -28,7 +33,15 @@ export function Popover({
 
   return (
     <div ref={ref} className="relative" data-testid={testId}>
-      <button aria-label={label} aria-haspopup="menu" aria-expanded={open} title={label} onClick={() => setOpen((o) => !o)} className={triggerClassName}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={label}
+        onClick={() => setOpen((o) => !o)}
+        className={triggerClassName}
+      >
         {trigger}
       </button>
       {open && (

@@ -11,10 +11,17 @@ export function useLayoutSync() {
   const selection = useEditorStore((s) => s.selection);
   const settings = useLayoutStore(
     useShallow((s) => ({
-      rows: s.rows, columns: s.columns, gapXMm: s.gapXMm, gapYMm: s.gapYMm,
-      sourceGapXMm: s.sourceGapXMm, sourceGapYMm: s.sourceGapYMm,
-      pageMode: s.pageMode, orientation: s.orientation,
-      customWidthMm: s.customWidthMm, customHeightMm: s.customHeightMm, margins: s.margins,
+      rows: s.rows,
+      columns: s.columns,
+      gapXMm: s.gapXMm,
+      gapYMm: s.gapYMm,
+      sourceGapXMm: s.sourceGapXMm,
+      sourceGapYMm: s.sourceGapYMm,
+      pageMode: s.pageMode,
+      orientation: s.orientation,
+      customWidthMm: s.customWidthMm,
+      customHeightMm: s.customHeightMm,
+      margins: s.margins,
     })),
   );
 

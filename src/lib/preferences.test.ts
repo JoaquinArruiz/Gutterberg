@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
-  DEFAULT_PREFERENCES, migratePreferences, moveMode, normalizePreferences, resolveStartMode, sessionDefaults,
-  toggleMode, type AppPreferences,
+  type AppPreferences,
+  DEFAULT_PREFERENCES,
+  migratePreferences,
+  moveMode,
+  normalizePreferences,
+  resolveStartMode,
+  sessionDefaults,
+  toggleMode,
 } from "./preferences";
 
 const withWorkspace = (w: Partial<AppPreferences["workspace"]>): AppPreferences => ({
@@ -20,7 +26,9 @@ describe("normalizePreferences", () => {
   });
 
   it("drops unknown and duplicate modes but keeps order", () => {
-    const p = normalizePreferences({ workspace: { visibleModes: ["split", "nope", "source", "split"], defaultMode: "split" } });
+    const p = normalizePreferences({
+      workspace: { visibleModes: ["split", "nope", "source", "split"], defaultMode: "split" },
+    });
     expect(p.workspace.visibleModes).toEqual(["split", "source"]);
   });
 
@@ -37,7 +45,9 @@ describe("normalizePreferences", () => {
 
   it("repairs invalid values field by field and keeps the valid ones", () => {
     const p = normalizePreferences({
-      measurement: { unit: "furlongs" }, preview: { livePreview: "always" }, appearance: { theme: "dark" },
+      measurement: { unit: "furlongs" },
+      preview: { livePreview: "always" },
+      appearance: { theme: "dark" },
     });
     expect(p.measurement.unit).toBe("mm");
     expect(p.preview.livePreview).toBe("always");
@@ -47,7 +57,9 @@ describe("normalizePreferences", () => {
 
 describe("help tips preference", () => {
   it("drops unknown or duplicate tip ids", () => {
-    const p = normalizePreferences({ help: { dismissedHints: ["live-preview-manual", "gone", "live-preview-manual", 3] } });
+    const p = normalizePreferences({
+      help: { dismissedHints: ["live-preview-manual", "gone", "live-preview-manual", 3] },
+    });
     expect(p.help.dismissedHints).toEqual(["live-preview-manual"]);
   });
 
@@ -93,7 +105,9 @@ describe("workspace", () => {
 
   it("'last used' reopens the last workspace, but only if it is still visible", () => {
     expect(resolveStartMode(withWorkspace({ defaultMode: "last", lastMode: "output" }))).toBe("output");
-    expect(resolveStartMode(withWorkspace({ visibleModes: ["source", "split"], defaultMode: "last", lastMode: "output" }))).toBe("source");
+    expect(
+      resolveStartMode(withWorkspace({ visibleModes: ["source", "split"], defaultMode: "last", lastMode: "output" })),
+    ).toBe("source");
   });
 });
 

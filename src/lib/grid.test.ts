@@ -53,7 +53,7 @@ describe("grid", () => {
     close(cardSizeMm(s, A4, g).width, 60);
     const r = cardRects(s, g, A4);
     close((r[1].x - (r[0].x + r[0].width)) * 210, 2);
-    close((r[2].x + r[2].width) - (s.x + s.width), 0);
+    close(r[2].x + r[2].width - (s.x + s.width), 0);
     const f = selectionForCardSize(s, A4, g, { width: 60 });
     close(f.width * 210, 184);
   });

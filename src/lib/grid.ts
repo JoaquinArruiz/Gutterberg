@@ -65,11 +65,7 @@ export function selectionForCardSize(
 }
 
 /** Move the selection's top-left corner to (x, y) mm, keeping it inside the page. */
-export function selectionAtMm(
-  sel: NormalizedRect,
-  page: PageSize,
-  pos: { x?: number; y?: number },
-): NormalizedRect {
+export function selectionAtMm(sel: NormalizedRect, page: PageSize, pos: { x?: number; y?: number }): NormalizedRect {
   const p = pageMm(page);
   return {
     ...sel,
