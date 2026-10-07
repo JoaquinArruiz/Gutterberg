@@ -18,7 +18,11 @@ pub async fn export_document(
     if output == input {
         return Err("choose a different file than the one that is open".into());
     }
-    let job = ExportJob { pages: (0..page_count).map(|page_index| PageJob { page_index, grid }).collect() };
+    let job = ExportJob {
+        pages: (0..page_count)
+            .map(|page_index| PageJob { page_index, grid })
+            .collect(),
+    };
     export_pdf(&input, &output, &job).map_err(|e| e.to_string())?;
     Ok(job.pages.len())
 }

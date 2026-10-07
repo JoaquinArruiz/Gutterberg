@@ -5,7 +5,12 @@ use lopdf::{Document, Object};
 
 fn export(gap: f64) -> Document {
     let mut doc = sample_pdf();
-    let job = ExportJob { pages: vec![PageJob { page_index: 0, grid: sample_grid(gap) }] };
+    let job = ExportJob {
+        pages: vec![PageJob {
+            page_index: 0,
+            grid: sample_grid(gap),
+        }],
+    };
     export_document(&mut doc, &job).unwrap();
     // Round-trip through bytes to prove it is a valid, loadable file.
     let mut buf = Vec::new();
@@ -34,16 +39,28 @@ fn export_is_one_page_with_nine_vector_placements() {
 
     // Clip rects keep the original card size exactly.
     for line in content.lines().filter(|l| l.ends_with(" re W n")) {
-        let n: Vec<f64> = line.split_whitespace().take(4).map(|v| v.parse().unwrap()).collect();
+        let n: Vec<f64> = line
+            .split_whitespace()
+            .take(4)
+            .map(|v| v.parse().unwrap())
+            .collect();
         assert!((pt_to_mm(n[2]) - CARD_MM.0).abs() < 1e-3, "{line}");
         assert!((pt_to_mm(n[3]) - CARD_MM.1).abs() < 1e-3, "{line}");
     }
 
     // The original page content (text + vector ops) is reused, not rasterised.
     let resources = doc.get_dictionary(id).unwrap().get(b"Resources").unwrap();
-    let xobj = resources.as_dict().unwrap().get(b"XObject").unwrap().as_dict().unwrap();
+    let xobj = resources
+        .as_dict()
+        .unwrap()
+        .get(b"XObject")
+        .unwrap()
+        .as_dict()
+        .unwrap();
     let form_id = xobj.get(b"Src").unwrap().as_reference().unwrap();
-    let Object::Stream(form) = doc.get_object(form_id).unwrap() else { panic!("not a stream") };
+    let Object::Stream(form) = doc.get_object(form_id).unwrap() else {
+        panic!("not a stream")
+    };
     let body = String::from_utf8_lossy(&form.decompressed_content().unwrap()).to_string();
     assert!(body.contains("Tj") && body.contains(" c\n"));
     assert!(!doc.objects.values().any(|o| matches!(o,
@@ -65,6 +82,11 @@ fn clip_is_applied_after_translation() {
 #[test]
 fn too_large_gap_is_an_error_not_a_shrink() {
     let mut doc = sample_pdf();
-    let job = ExportJob { pages: vec![PageJob { page_index: 0, grid: sample_grid(20.0) }] };
+    let job = ExportJob {
+        pages: vec![PageJob {
+            page_index: 0,
+            grid: sample_grid(20.0),
+        }],
+    };
     assert!(export_document(&mut doc, &job).is_err());
 }

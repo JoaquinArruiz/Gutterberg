@@ -38,12 +38,21 @@ fn main() {
             let l = card_core::layout::calculate_layout(size, &grid, None).unwrap();
             println!(
                 "source page {:.1} x {:.1} pt, card {:.2} x {:.2} mm, {} cards",
-                size.width_pt, size.height_pt, l.card_width_mm, l.card_height_mm, l.placements.len()
+                size.width_pt,
+                size.height_pt,
+                l.card_width_mm,
+                l.card_height_mm,
+                l.placements.len()
             );
             export_pdf(
                 Path::new(&a[1]),
                 Path::new(&a[2]),
-                &ExportJob { pages: vec![PageJob { page_index: page, grid }] },
+                &ExportJob {
+                    pages: vec![PageJob {
+                        page_index: page,
+                        grid,
+                    }],
+                },
             )
             .unwrap();
             println!("wrote {}", a[2]);

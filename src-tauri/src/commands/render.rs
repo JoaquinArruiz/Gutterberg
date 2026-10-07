@@ -30,6 +30,7 @@ pub async fn render_region(
 ) -> Result<Response, String> {
     let pdfium = state.pdfium(&app)?;
     let path = state.path()?;
-    let png = render_region_png(&pdfium, &path, page_index, region, full_width_px).map_err(|e| e.to_string())?;
+    let png = render_region_png(&pdfium, &path, page_index, region, full_width_px)
+        .map_err(|e| e.to_string())?;
     Ok(Response::new(png))
 }

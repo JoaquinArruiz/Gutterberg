@@ -2,11 +2,26 @@
 use card_core::geometry::Rect;
 use card_core::render::{bind_pdfium, document_info, render_page_png, render_region_png};
 use card_core::sample::sample_pdf;
+use pdfium_render::prelude::Pdfium;
+
+/// pdfium, or None (after a note) when it is missing; a missing pdfium fails under CI.
+fn pdfium_or_skip() -> Option<Pdfium> {
+    match bind_pdfium(&[]) {
+        Ok(p) => Some(p),
+        Err(e) => {
+            assert!(
+                std::env::var_os("CI").is_none(),
+                "pdfium not available in CI: {e}"
+            );
+            eprintln!("SKIPPED: pdfium not available (set PDFIUM_LIB_PATH)");
+            None
+        }
+    }
+}
 
 #[test]
 fn info_and_png_preview() {
-    let Ok(pdfium) = bind_pdfium(&[]) else {
-        eprintln!("SKIPPED: pdfium not available (set PDFIUM_LIB_PATH)");
+    let Some(pdfium) = pdfium_or_skip() else {
         return;
     };
     let path = std::env::temp_dir().join("card-core-render-test.pdf");
@@ -21,8 +36,7 @@ fn info_and_png_preview() {
 
 #[test]
 fn region_png_is_only_the_region() {
-    let Ok(pdfium) = bind_pdfium(&[]) else {
-        eprintln!("SKIPPED: pdfium not available (set PDFIUM_LIB_PATH)");
+    let Some(pdfium) = pdfium_or_skip() else {
         return;
     };
     let path = std::env::temp_dir().join("card-core-region-test.pdf");

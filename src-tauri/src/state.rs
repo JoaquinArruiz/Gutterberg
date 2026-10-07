@@ -25,17 +25,26 @@ impl AppState {
             dirs.push(d.join("resources").join("pdfium"));
             dirs.push(d.join("pdfium"));
         }
-        dirs.push(Path::new(env!("CARGO_MANIFEST_DIR")).join("resources").join("pdfium"));
+        dirs.push(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("resources")
+                .join("pdfium"),
+        );
         let p = Arc::new(card_core::render::bind_pdfium(&dirs).map_err(|e| e.to_string())?);
         *slot = Some(p.clone());
         Ok(p)
     }
 
-    pub fn set_path(&self, p: PathBuf) {
-        *self.path.lock().unwrap() = Some(p);
+    pub fn set_path(&self, p: PathBuf) -> Result<(), String> {
+        *self.path.lock().map_err(|e| e.to_string())? = Some(p);
+        Ok(())
     }
 
     pub fn path(&self) -> Result<PathBuf, String> {
-        self.path.lock().unwrap().clone().ok_or_else(|| "no PDF is open".to_string())
+        self.path
+            .lock()
+            .map_err(|e| e.to_string())?
+            .clone()
+            .ok_or_else(|| "no PDF is open".to_string())
     }
 }

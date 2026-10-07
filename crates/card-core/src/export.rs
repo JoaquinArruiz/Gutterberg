@@ -49,7 +49,12 @@ fn page_box(doc: &Document, page_id: ObjectId) -> Result<[f64; 4]> {
                     for (i, o) in arr.iter().enumerate() {
                         v[i] = doc.dereference(o)?.1.as_float()? as f64;
                     }
-                    return Ok([v[0].min(v[2]), v[1].min(v[3]), v[0].max(v[2]), v[1].max(v[3])]);
+                    return Ok([
+                        v[0].min(v[2]),
+                        v[1].min(v[3]),
+                        v[0].max(v[2]),
+                        v[1].max(v[3]),
+                    ]);
                 }
             }
         }
@@ -64,7 +69,9 @@ fn page_box(doc: &Document, page_id: ObjectId) -> Result<[f64; 4]> {
 fn inherited_rotate(doc: &Document, page_id: ObjectId) -> i64 {
     let mut current = page_id;
     for _ in 0..32 {
-        let Ok(dict) = doc.get_dictionary(current) else { return 0 };
+        let Ok(dict) = doc.get_dictionary(current) else {
+            return 0;
+        };
         if let Ok(r) = dict.get(b"Rotate") {
             if let Ok((_, o)) = doc.dereference(r) {
                 if let Ok(v) = o.as_i64() {
@@ -87,7 +94,10 @@ pub fn page_size(doc: &Document, page_index: usize) -> Result<PageSize> {
         .get(&(page_index as u32 + 1))
         .ok_or(Error::PageOutOfRange(page_index, pages.len()))?;
     let b = page_box(doc, id)?;
-    Ok(PageSize { width_pt: b[2] - b[0], height_pt: b[3] - b[1] })
+    Ok(PageSize {
+        width_pt: b[2] - b[0],
+        height_pt: b[3] - b[1],
+    })
 }
 
 /// Build the Form XObject that stands in for a whole source page.
@@ -166,7 +176,10 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
                 (id, bx)
             }
         };
-        let src_size = PageSize { width_pt: bx[2] - bx[0], height_pt: bx[3] - bx[1] };
+        let src_size = PageSize {
+            width_pt: bx[2] - bx[0],
+            height_pt: bx[3] - bx[1],
+        };
         let layout = calculate_layout(src_size, &pj.grid, None)?;
         let out = layout.output_page;
         if let Some(o) = layout.overflow {

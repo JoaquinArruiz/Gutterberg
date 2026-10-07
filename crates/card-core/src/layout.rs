@@ -99,7 +99,9 @@ fn validate(grid: &GridLayout) -> Result<()> {
         || b.x + b.width > 1.0 + 1e-9
         || b.y + b.height > 1.0 + 1e-9
     {
-        return Err(Error::InvalidGrid(format!("bounds outside the page: {b:?}")));
+        return Err(Error::InvalidGrid(format!(
+            "bounds outside the page: {b:?}"
+        )));
     }
     for g in [
         grid.gap_x_mm,
@@ -117,7 +119,9 @@ fn validate(grid: &GridLayout) -> Result<()> {
     }
     if let Some(p) = grid.output_page {
         if !(p.width_pt > 0.0 && p.height_pt > 0.0) {
-            return Err(Error::InvalidGrid("output page must have a positive size".into()));
+            return Err(Error::InvalidGrid(
+                "output page must have a positive size".into(),
+            ));
         }
     }
     Ok(())
@@ -141,7 +145,9 @@ pub fn source_cards(source_page: PageSize, grid: &GridLayout) -> Result<Vec<Sour
     let card_w = (region.width - gap_x * (cols - 1) as f64) / cols as f64;
     let card_h = (region.height - gap_y * (rows - 1) as f64) / rows as f64;
     if !(card_w > 0.0 && card_h > 0.0) {
-        return Err(Error::InvalidGrid("source gaps leave no room for the cards".into()));
+        return Err(Error::InvalidGrid(
+            "source gaps leave no room for the cards".into(),
+        ));
     }
     let mut cards = Vec::with_capacity(rows * cols);
     for r in 0..rows {
@@ -178,13 +184,19 @@ pub fn calculate_layout(
     let gap_x = mm_to_pt(grid.gap_x_mm);
     let gap_y = mm_to_pt(grid.gap_y_mm);
     let (m_top, m_right) = (mm_to_pt(grid.margin_top_mm), mm_to_pt(grid.margin_right_mm));
-    let (m_bottom, m_left) = (mm_to_pt(grid.margin_bottom_mm), mm_to_pt(grid.margin_left_mm));
+    let (m_bottom, m_left) = (
+        mm_to_pt(grid.margin_bottom_mm),
+        mm_to_pt(grid.margin_left_mm),
+    );
 
     let total_w = card_w * cols as f64 + gap_x * (cols - 1) as f64;
     let total_h = card_h * rows as f64 + gap_y * (rows - 1) as f64;
 
     let out = if grid.fit_page {
-        PageSize { width_pt: m_left + total_w + m_right, height_pt: m_top + total_h + m_bottom }
+        PageSize {
+            width_pt: m_left + total_w + m_right,
+            height_pt: m_top + total_h + m_bottom,
+        }
     } else {
         grid.output_page.or(output_page).unwrap_or(source_page)
     };
@@ -192,8 +204,10 @@ pub fn calculate_layout(
     // Small epsilon so an exactly-fitting layout isn't flagged by float noise.
     let over_w = (m_left + total_w + m_right - out.width_pt).max(0.0);
     let over_h = (m_top + total_h + m_bottom - out.height_pt).max(0.0);
-    let overflow = (over_w > 1e-6 || over_h > 1e-6)
-        .then(|| Overflow { width_mm: pt_to_mm(over_w), height_mm: pt_to_mm(over_h) });
+    let overflow = (over_w > 1e-6 || over_h > 1e-6).then(|| Overflow {
+        width_mm: pt_to_mm(over_w),
+        height_mm: pt_to_mm(over_h),
+    });
 
     // Centre inside the margins; when it doesn't fit, anchor at the margin.
     let origin_x = m_left + ((out.width_pt - m_left - m_right - total_w) / 2.0).max(0.0);
@@ -245,11 +259,17 @@ mod tests {
     }
 
     fn mm_page(w: f64, h: f64) -> PageSize {
-        PageSize { width_pt: mm_to_pt(w), height_pt: mm_to_pt(h) }
+        PageSize {
+            width_pt: mm_to_pt(w),
+            height_pt: mm_to_pt(h),
+        }
     }
 
     fn a4() -> PageSize {
-        PageSize { width_pt: 595.2756, height_pt: 841.8898 }
+        PageSize {
+            width_pt: 595.2756,
+            height_pt: 841.8898,
+        }
     }
 
     #[test]
@@ -294,7 +314,10 @@ mod tests {
         let o = l.overflow.expect("overflow reported");
         assert!((o.width_mm - 6.0).abs() < 1e-6 && (o.height_mm - 6.0).abs() < 1e-6);
         // Cards keep their size even when they don't fit.
-        assert_eq!(l.placements[0].source.width, l.placements[0].destination.width);
+        assert_eq!(
+            l.placements[0].source.width,
+            l.placements[0].destination.width
+        );
     }
 
     #[test]
@@ -311,10 +334,14 @@ mod tests {
             gap_y_mm: 0.0,
             ..base()
         };
-        let page = PageSize { width_pt: mm_to_pt(210.0), height_pt: mm_to_pt(297.0) };
+        let page = PageSize {
+            width_pt: mm_to_pt(210.0),
+            height_pt: mm_to_pt(297.0),
+        };
         let l = calculate_layout(page, &grid, None).unwrap();
         assert!((pt_to_mm(l.placements[0].source.width) - 60.0).abs() < 1e-9);
-        let src_gap = l.placements[1].source.x - (l.placements[0].source.x + l.placements[0].source.width);
+        let src_gap =
+            l.placements[1].source.x - (l.placements[0].source.x + l.placements[0].source.width);
         assert!((pt_to_mm(src_gap) - 2.0).abs() < 1e-9);
         let out_gap = l.placements[1].destination.x
             - (l.placements[0].destination.x + l.placements[0].destination.width);
@@ -428,8 +455,14 @@ mod tests {
         assert!(l.overflow.is_none());
         // Block centred in the 190 mm wide area right of the left margin.
         assert!((pt_to_mm(l.placements[0].destination.x) - (20.0 + 45.0)).abs() < 1e-6);
-        let tight = GridLayout { margin_right_mm: 100.0, ..grid };
-        assert!(calculate_layout(a4(), &tight, None).unwrap().overflow.is_some());
+        let tight = GridLayout {
+            margin_right_mm: 100.0,
+            ..grid
+        };
+        assert!(calculate_layout(a4(), &tight, None)
+            .unwrap()
+            .overflow
+            .is_some());
     }
 
     #[test]
