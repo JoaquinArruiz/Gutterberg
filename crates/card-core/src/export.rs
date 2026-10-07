@@ -34,36 +34,66 @@ pub struct ExportJob {
     pub pages: Vec<PageJob>,
 }
 
-/// Page box used as the coordinate frame (CropBox if present, else MediaBox),
-/// as `[x0, y0, x1, y1]`.
-fn page_box(doc: &Document, page_id: ObjectId) -> Result<[f64; 4]> {
+/// Cap on decompressed page content, so a small hostile stream can't exhaust memory.
+const MAX_CONTENT_BYTES: usize = 256 * 1024 * 1024;
+
+/// A box attribute (`MediaBox`, `CropBox`) of the page, inherited through `/Parent`.
+fn inherited_box(
+    doc: &Document,
+    page_id: ObjectId,
+    page_index: usize,
+    key: &[u8],
+) -> Result<Option<[f64; 4]>> {
     let mut current = page_id;
-    // Walk up /Parent for inherited attributes.
     for _ in 0..32 {
         let dict = doc.get_dictionary(current)?;
-        for key in [&b"CropBox"[..], &b"MediaBox"[..]] {
-            if let Ok(obj) = dict.get(key) {
-                let arr = doc.dereference(obj)?.1.as_array()?;
-                if arr.len() == 4 {
-                    let mut v = [0.0; 4];
-                    for (i, o) in arr.iter().enumerate() {
-                        v[i] = doc.dereference(o)?.1.as_float()? as f64;
-                    }
-                    return Ok([
-                        v[0].min(v[2]),
-                        v[1].min(v[3]),
-                        v[0].max(v[2]),
-                        v[1].max(v[3]),
-                    ]);
-                }
+        if let Ok(obj) = dict.get(key) {
+            let name = String::from_utf8_lossy(key);
+            let bad = || Error::Malformed(format!("page {}: invalid /{name}", page_index + 1));
+            let arr = doc.dereference(obj)?.1.as_array().map_err(|_| bad())?;
+            if arr.len() != 4 {
+                return Err(bad());
             }
+            let mut v = [0.0; 4];
+            for (i, o) in arr.iter().enumerate() {
+                v[i] = doc.dereference(o)?.1.as_float().map_err(|_| bad())? as f64;
+            }
+            return Ok(Some([
+                v[0].min(v[2]),
+                v[1].min(v[3]),
+                v[0].max(v[2]),
+                v[1].max(v[3]),
+            ]));
         }
         match dict.get(b"Parent").and_then(|p| p.as_reference()) {
             Ok(parent) => current = parent,
             Err(_) => break,
         }
     }
-    Err(Error::Malformed("page has no MediaBox".into()))
+    Ok(None)
+}
+
+/// The visible page box `[x0, y0, x1, y1]`: CropBox intersected with MediaBox (as pdfium
+/// does), each resolved separately with inheritance.
+fn page_box(doc: &Document, page_id: ObjectId, page_index: usize) -> Result<[f64; 4]> {
+    let media = inherited_box(doc, page_id, page_index, b"MediaBox")?
+        .ok_or_else(|| Error::Malformed(format!("page {} has no MediaBox", page_index + 1)))?;
+    let b = match inherited_box(doc, page_id, page_index, b"CropBox")? {
+        Some(c) => [
+            c[0].max(media[0]),
+            c[1].max(media[1]),
+            c[2].min(media[2]),
+            c[3].min(media[3]),
+        ],
+        None => media,
+    };
+    if b[2] - b[0] <= 0.0 || b[3] - b[1] <= 0.0 {
+        return Err(Error::Malformed(format!(
+            "page {} has an empty page box (CropBox and MediaBox do not overlap)",
+            page_index + 1
+        )));
+    }
+    Ok(b)
 }
 
 fn inherited_rotate(doc: &Document, page_id: ObjectId) -> i64 {
@@ -87,22 +117,114 @@ fn inherited_rotate(doc: &Document, page_id: ObjectId) -> i64 {
     0
 }
 
-/// Source page size in points (what the UI normalises against).
+/// How a source page is shown: its box in page space and its clockwise `/Rotate`.
+/// Everything the UI and the layout see (sizes, selection bounds) is in the displayed,
+/// rotated frame.
+#[derive(Debug, Clone, Copy)]
+struct PageFrame {
+    raw: [f64; 4],
+    rotate: i64,
+}
+
+impl PageFrame {
+    fn read(doc: &Document, page_id: ObjectId, page_index: usize) -> Result<Self> {
+        let rotate = inherited_rotate(doc, page_id);
+        if rotate % 90 != 0 {
+            return Err(Error::UnsupportedRotation(page_index, rotate));
+        }
+        if let Ok(u) = doc.get_dictionary(page_id)?.get(b"UserUnit") {
+            let unit = doc.dereference(u)?.1.as_float().unwrap_or(1.0);
+            if (unit - 1.0).abs() > 1e-6 {
+                return Err(Error::UnsupportedUserUnit(page_index, unit as f64));
+            }
+        }
+        Ok(Self {
+            raw: page_box(doc, page_id, page_index)?,
+            rotate,
+        })
+    }
+
+    fn size(&self) -> PageSize {
+        let (w, h) = (self.raw[2] - self.raw[0], self.raw[3] - self.raw[1]);
+        if self.rotate % 180 == 0 {
+            PageSize {
+                width_pt: w,
+                height_pt: h,
+            }
+        } else {
+            PageSize {
+                width_pt: h,
+                height_pt: w,
+            }
+        }
+    }
+
+    /// The frame cards are laid out in: the raw box when unrotated, else the displayed page
+    /// with its origin at (0, 0).
+    fn display_box(&self) -> [f64; 4] {
+        if self.rotate == 0 {
+            self.raw
+        } else {
+            let s = self.size();
+            [0.0, 0.0, s.width_pt, s.height_pt]
+        }
+    }
+
+    /// Form `/Matrix` that turns the raw box upright (clockwise `rotate`), landing it on
+    /// `display_box`. None when unrotated.
+    fn matrix(&self) -> Option<[f64; 6]> {
+        let [x0, y0, x1, y1] = self.raw;
+        match self.rotate {
+            90 => Some([0.0, -1.0, 1.0, 0.0, -y0, x1]),
+            180 => Some([-1.0, 0.0, 0.0, -1.0, x1, y1]),
+            270 => Some([0.0, 1.0, -1.0, 0.0, y1, -x0]),
+            _ => None,
+        }
+    }
+}
+
+/// Displayed source page size in points (what the UI normalises against).
 pub fn page_size(doc: &Document, page_index: usize) -> Result<PageSize> {
     let pages = doc.get_pages();
     let id = *pages
         .get(&(page_index as u32 + 1))
         .ok_or(Error::PageOutOfRange(page_index, pages.len()))?;
-    let b = page_box(doc, id)?;
-    Ok(PageSize {
-        width_pt: b[2] - b[0],
-        height_pt: b[3] - b[1],
-    })
+    Ok(PageFrame::read(doc, id, page_index)?.size())
+}
+
+/// Decompress the page's content streams. A stream that can't be decoded is an error
+/// (not copied raw), and the total is capped.
+fn page_content(doc: &Document, page_id: ObjectId, page_index: usize) -> Result<Vec<u8>> {
+    let fail = |e: lopdf::Error| {
+        Error::Malformed(format!(
+            "page {}: cannot decode its content ({e})",
+            page_index + 1
+        ))
+    };
+    let mut content = Vec::new();
+    for id in doc.get_page_contents(page_id) {
+        let stream = doc
+            .get_object(id)
+            .and_then(Object::as_stream)
+            .map_err(fail)?;
+        let remaining = MAX_CONTENT_BYTES.saturating_sub(content.len());
+        let data = stream
+            .decompressed_content_with_limit(remaining)
+            .map_err(fail)?;
+        content.extend_from_slice(&data);
+        content.push(b'\n');
+    }
+    Ok(content)
 }
 
 /// Build the Form XObject that stands in for a whole source page.
-fn page_to_form(doc: &mut Document, page_id: ObjectId, bbox: [f64; 4]) -> Result<ObjectId> {
-    let content = doc.get_page_content(page_id);
+fn page_to_form(
+    doc: &mut Document,
+    page_id: ObjectId,
+    page_index: usize,
+    frame: &PageFrame,
+) -> Result<ObjectId> {
+    let content = page_content(doc, page_id, page_index)?;
 
     // Merge inherited resources: nearest definition of each category wins.
     let (own, inherited_ids) = doc.get_page_resources(page_id)?;
@@ -122,13 +244,25 @@ fn page_to_form(doc: &mut Document, page_id: ObjectId, bbox: [f64; 4]) -> Result
         }
     }
 
-    let dict = dictionary! {
+    let reals = |v: &[f64]| {
+        v.iter()
+            .map(|x| Object::Real(*x as f32))
+            .collect::<Vec<_>>()
+    };
+    let mut dict = dictionary! {
         "Type" => "XObject",
         "Subtype" => "Form",
         "FormType" => 1,
-        "BBox" => bbox.iter().map(|v| Object::Real(*v as f32)).collect::<Vec<_>>(),
+        "BBox" => reals(&frame.raw),
         "Resources" => Object::Dictionary(resources),
     };
+    if let Some(m) = frame.matrix() {
+        dict.set("Matrix", reals(&m));
+    }
+    // Keep transparency blending (colour space, isolated/knockout) as the page had it.
+    if let Ok(group) = doc.get_dictionary(page_id)?.get(b"Group") {
+        dict.set("Group", group.clone());
+    }
     let mut stream = Stream::new(dict, content);
     let _ = stream.compress();
     Ok(doc.add_object(stream))
@@ -143,8 +277,21 @@ fn fmt(v: f64) -> String {
 pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
     let mut doc = Document::load(input)?;
     export_document(&mut doc, job)?;
-    doc.save(output)?;
-    Ok(())
+    // Write beside the target, then rename, so a failed export never leaves a truncated file.
+    let name = output
+        .file_name()
+        .ok_or_else(|| Error::Malformed("output path has no file name".into()))?
+        .to_string_lossy();
+    let tmp = output.with_file_name(format!(".{name}.{}.tmp", std::process::id()));
+    let result = doc
+        .save(&tmp)
+        .map(|_| ())
+        .map_err(Error::from)
+        .and_then(|()| std::fs::rename(&tmp, output).map_err(Error::from));
+    if result.is_err() {
+        let _ = std::fs::remove_file(&tmp);
+    }
+    result
 }
 
 pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
@@ -157,29 +304,23 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
 
     let mut new_page_ids: Vec<Object> = Vec::new();
     // Cache so a source page used twice is wrapped only once.
-    let mut forms: std::collections::HashMap<usize, (ObjectId, [f64; 4])> = Default::default();
+    let mut forms: std::collections::HashMap<usize, (ObjectId, PageFrame)> = Default::default();
 
     for pj in &job.pages {
         let src_id = *source_pages
             .get(&(pj.page_index as u32 + 1))
             .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))?;
-        let rot = inherited_rotate(doc, src_id);
-        if rot != 0 {
-            return Err(Error::UnsupportedRotation(pj.page_index, rot));
-        }
-        let (form_id, bx) = match forms.get(&pj.page_index) {
+        let (form_id, frame) = match forms.get(&pj.page_index) {
             Some(v) => *v,
             None => {
-                let bx = page_box(doc, src_id)?;
-                let id = page_to_form(doc, src_id, bx)?;
-                forms.insert(pj.page_index, (id, bx));
-                (id, bx)
+                let frame = PageFrame::read(doc, src_id, pj.page_index)?;
+                let id = page_to_form(doc, src_id, pj.page_index, &frame)?;
+                forms.insert(pj.page_index, (id, frame));
+                (id, frame)
             }
         };
-        let src_size = PageSize {
-            width_pt: bx[2] - bx[0],
-            height_pt: bx[3] - bx[1],
-        };
+        let bx = frame.display_box();
+        let src_size = frame.size();
         let layout = calculate_layout(src_size, &pj.grid, None)?;
         let out = layout.output_page;
         if let Some(o) = layout.overflow {
@@ -222,7 +363,40 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
         new_page_ids.push(Object::Reference(doc.add_object(page)));
     }
 
+    // Drop what pointed into the old pages (outlines, destinations, form fields, ...) so
+    // pruning removes the old pages and their content streams.
+    let catalog_id = doc.trailer.get(b"Root").and_then(|r| r.as_reference())?;
+    let names = doc
+        .catalog()?
+        .get(b"Names")
+        .ok()
+        .and_then(|n| n.as_reference().ok());
+    let catalog = doc.get_dictionary_mut(catalog_id)?;
+    for key in [
+        &b"Outlines"[..],
+        b"StructTreeRoot",
+        b"AcroForm",
+        b"OpenAction",
+        b"Dests",
+        b"PageLabels",
+    ] {
+        catalog.remove(key);
+    }
+    if let Ok(Object::Dictionary(n)) = catalog.get_mut(b"Names") {
+        n.remove(b"Dests");
+    }
+    if let Some(id) = names {
+        if let Ok(n) = doc.get_dictionary_mut(id) {
+            n.remove(b"Dests");
+        }
+    }
+
     let root = doc.get_dictionary_mut(pages_root)?;
+    // New pages define their own boxes; don't let the old root's inheritable attributes
+    // rotate or crop them.
+    for key in [&b"Rotate"[..], b"CropBox", b"MediaBox"] {
+        root.remove(key);
+    }
     root.set("Kids", Object::Array(new_page_ids.clone()));
     root.set("Count", new_page_ids.len() as i64);
     // Old page nodes are now unreachable; drop them (keeps shared fonts/images

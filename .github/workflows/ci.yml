@@ -33,3 +33,9 @@ jobs:
       - run: cargo test --workspace
         env:
           PDFIUM_LIB_PATH: ${{ github.workspace }}/src-tauri/resources/pdfium
+      - name: Validate exported fixtures with qpdf
+        run: |
+          sudo apt-get install -y qpdf
+          # The fixtures test leaves its exported PDFs in the temp dir.
+          ls /tmp/card-core-fixtures-*/*-out.pdf
+          for f in /tmp/card-core-fixtures-*/*-out.pdf; do qpdf --check "$f"; done

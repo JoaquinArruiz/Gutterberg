@@ -25,7 +25,8 @@ keeping the original card size and the original vector content.
 - `export` – wraps each source page unmodified as a Form XObject and paints each
   card with `q 1 0 0 1 dx dy cm <rect> re W n /Src Do Q` (translate + clip, no
   rasterisation). `ExportJob` holds a grid per page, so mixed layouts are
-  possible later.
+  possible later. Rotated pages and CropBox offsets are handled. Export rebuilds the
+  document, so it removes encryption and permissions, outlines and form fields.
 - `units` – mm <-> PDF points (`pt = mm * 72 / 25.4`).
 - `sample` – synthetic 3x3 A4 PnP page (63.5 x 88 mm cards) for tests/spike.
 
