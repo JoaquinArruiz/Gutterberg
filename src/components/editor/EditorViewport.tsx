@@ -12,7 +12,15 @@ import { usePreviewResult } from "../../lib/view-page";
 import { startSession } from "../../lib/workspace";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import {
+  beginEdit,
+  endEdit,
+  getCurrentSelection,
+  setCurrentSelection,
+  useCurrentGridGroup,
+  useCurrentGroup,
+  useLayoutStore,
+} from "../../stores/layout-store";
 import { GridOverlay } from "./GridOverlay";
 import { MAG, Magnifier } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
@@ -37,19 +45,22 @@ const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 export function EditorViewport() {
   const pages = useDocumentStore((s) => s.pages);
   const currentPage = useDocumentStore((s) => s.currentPage);
-  const path = useDocumentStore((s) => s.path);
   const error = useDocumentStore((s) => s.error);
   const loading = useDocumentStore((s) => s.loading);
   const viewport = useEditorStore((s) => s.viewport);
   const tool = useEditorStore((s) => s.tool);
-  const selection = useEditorStore((s) => s.selection);
+  const group = useCurrentGridGroup();
+  const skipped = useCurrentGroup()?.kind === "skip";
+  const selection = group?.selection ?? null;
   const fitMode = useEditorStore((s) => s.fitMode);
   const viewMode = useEditorStore((s) => s.viewMode);
   const previewResult = usePreviewResult();
-  const rows = useLayoutStore((s) => s.rows);
-  const sourceGapXMm = useLayoutStore((s) => s.sourceGapXMm);
-  const sourceGapYMm = useLayoutStore((s) => s.sourceGapYMm);
-  const columns = useLayoutStore((s) => s.columns);
+  const gridSpec = group && {
+    rows: group.grid.rows,
+    columns: group.grid.columns,
+    gapXMm: group.grid.sourceGapXMm,
+    gapYMm: group.grid.sourceGapYMm,
+  };
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
@@ -92,13 +103,14 @@ export function EditorViewport() {
     return () => ro.disconnect();
   }, []);
 
-  // New document: forget the selection and fit.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `path` is the trigger (new document), not a value read
+  // New document: one default group over its pages, no history, and fit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `pages` is the trigger (a document was opened), not a value read
   useEffect(() => {
     useEditorStore.getState().reset();
+    useLayoutStore.getState().resetDocument(useDocumentStore.getState().pages.length);
     useLayoutStore.getState().clearSnapshot();
     startSession(); // new document = new session: workspace and Live Preview start from preferences
-  }, [path]);
+  }, [pages]);
 
   // Keep the page fitted while in fit mode (resize, page change, new document).
   useEffect(() => {
@@ -165,14 +177,16 @@ export function EditorViewport() {
       setPanning(true);
       return;
     }
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !group) return; // a skipped page has no region to edit
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
-    if (hit && ed.selection) {
+    const current = getCurrentSelection();
+    beginEdit(); // the whole drag is one undo step
+    if (hit && current) {
       drag.current =
         hit === "body"
-          ? { kind: "move", start: doc, rect: ed.selection }
-          : { kind: "resize", handle: hit as Handle, start: doc, rect: ed.selection };
+          ? { kind: "move", start: doc, rect: current }
+          : { kind: "resize", handle: hit as Handle, start: doc, rect: current };
       if (hit !== "body") {
         const handle = hit as Handle;
         lastPointer.current = p;
@@ -185,14 +199,15 @@ export function EditorViewport() {
             const d = drag.current;
             if (d?.kind !== "resize") return;
             const cur = useEditorStore.getState();
-            if (!cur.selection) return;
+            const rect = getCurrentSelection();
+            if (!rect) return;
             // Rebase the drag here so the handle doesn't jump, then slow it down.
             drag.current = {
               kind: "resize",
               handle: d.handle,
               fine: true,
               start: screenToDocument(lastPointer.current, cur.viewport, page),
-              rect: cur.selection,
+              rect,
             };
             setLoupe({ handle: d.handle, active: true });
           }, HOLD_MS),
@@ -200,7 +215,7 @@ export function EditorViewport() {
       }
     } else {
       // Starting a new rectangle replaces the old one (so a bare click clears it).
-      ed.setSelection(null);
+      setCurrentSelection(null);
       drag.current = { kind: "create", anchor: doc };
     }
   };
@@ -226,11 +241,11 @@ export function EditorViewport() {
       return;
     }
     const doc = screenToDocument(p, ed.viewport, page);
-    if (d.kind === "create") ed.setSelection(rectFromPoints(d.anchor, doc));
-    else if (d.kind === "move") ed.setSelection(moveRect(d.rect, doc.x - d.start.x, doc.y - d.start.y));
+    if (d.kind === "create") setCurrentSelection(rectFromPoints(d.anchor, doc));
+    else if (d.kind === "move") setCurrentSelection(moveRect(d.rect, doc.x - d.start.x, doc.y - d.start.y));
     else {
       const k = d.fine ? 1 / MAG : 1;
-      ed.setSelection(resizeRect(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k));
+      setCurrentSelection(resizeRect(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k));
     }
   };
 
@@ -241,10 +256,11 @@ export function EditorViewport() {
     endHold();
     setLoupe(null);
     if (d?.kind === "create") {
-      const s = useEditorStore.getState().selection;
+      const s = getCurrentSelection();
       // A plain click (no real drag) clears the selection.
-      if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) useEditorStore.getState().setSelection(null);
+      if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) setCurrentSelection(null);
     }
+    endEdit();
   };
 
   const pageRect = viewPage ? pageScreenRect(viewport, viewPage) : null;
@@ -272,19 +288,15 @@ export function EditorViewport() {
               onPointerDown={onPointerDown}
               onPointerMove={onPointerMove}
               onPointerUp={onPointerUp}
+              onPointerCancel={onPointerUp}
               onPointerLeave={() => !drag.current && setLoupe(null)}
             >
-              {!output && selection && (
-                <GridOverlay
-                  selection={selection}
-                  grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
-                  viewport={viewport}
-                  page={page}
-                />
+              {!output && selection && gridSpec && (
+                <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
               )}
               {!output && selScreen && <SelectionRect screen={selScreen} movable={!panMode} />}
             </svg>
-            {!output && loupe && selection && (
+            {!output && loupe && selection && gridSpec && (
               <Magnifier
                 handle={loupe.handle}
                 active={loupe.active}
@@ -292,8 +304,13 @@ export function EditorViewport() {
                 page={page}
                 pageRect={pageRect}
                 box={box}
-                grid={{ rows, columns, gapXMm: sourceGapXMm, gapYMm: sourceGapYMm }}
+                grid={gridSpec}
               />
+            )}
+            {!output && skipped && (
+              <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
+                This page is skipped: it is left out of the export.
+              </p>
             )}
             {output && <OutputNotice />}
           </>

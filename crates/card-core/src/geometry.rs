@@ -21,6 +21,13 @@ impl Rect {
     }
 }
 
+/// A point with a top-left origin. Units depend on context, like [`Rect`].
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
 /// Size of a page in PDF points.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct PageSize {

@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M7 are done (see the README status list). Each brief below is sized for one session and
+M1–M11 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |

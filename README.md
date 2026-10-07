@@ -13,6 +13,10 @@ keeping the original card size and the original vector content.
 - [x] **Milestone 5 – Spacing preview** (gap in mm, Source/Output toggle driven by `compute_layout`)
 - [x] **Milestone 6 – Export wiring** (Export PDF button calls `export_document`)
 - [x] **Milestone 7 – Source spacing, output page and live preview** (source vs output gaps, margins, page size/orientation/auto-fit, overflow blocks export, Source/Output/Split views, optional live preview)
+- [x] **Milestone 8 – Foundations** (CI workflow, pinned and verified pdfium download, CSP, state locking)
+- [x] **Milestone 9 – Render pipeline** (dedicated pdfium thread, open-document cache, stale-request skipping)
+- [x] **Milestone 10 – Export correctness** (page boxes, rotated pages, catalog cleanup, atomic save)
+- [x] **Milestone 11 – Document model** (page groups: skip pages and give page ranges their own grid, pre-flight check before export, undo/redo, `CardId` / `OrientedRect`)
 
 ## Architecture
 
@@ -22,10 +26,14 @@ keeping the original card size and the original vector content.
   `CardPlacement { source, destination }` (points, top-left origin). Preview and
   export both consume it. Cards are never scaled; a gap that doesn't fit the
   output page is an error.
+- `card` – `CardId` (grid or freeform card, always with its `document_id`), `OrientedRect`
+  (a card's source area, rotated about its centre) and the page-group types. Grid cards
+  have `angle_deg = 0`; freeform cards are reserved for a later milestone.
 - `export` – wraps each source page unmodified as a Form XObject and paints each
   card with `q 1 0 0 1 dx dy cm <rect> re W n /Src Do Q` (translate + clip, no
-  rasterisation). `ExportJob` holds a grid per page, so mixed layouts are
-  possible later. Rotated pages and CropBox offsets are handled. Export rebuilds the
+  rasterisation). `ExportJob` holds a grid per page, so each section of a
+  document can have its own grid and skipped pages are simply not listed.
+  `validate_export` runs the same per-page checks without writing anything. Rotated pages and CropBox offsets are handled. Export rebuilds the
   document, so it removes encryption and permissions, outlines and form fields.
 - `units` – mm <-> PDF points (`pt = mm * 72 / 25.4`).
 - `sample` – synthetic 3x3 A4 PnP page (63.5 x 88 mm cards) for tests/spike.
@@ -68,6 +76,9 @@ pnpm tauri dev
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
+| Skip a page / include it | checkbox on its thumbnail (skipped pages are left out of the export) |
+| Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
+| Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons; a whole drag is one step |
 | Exact values | Layout panel: columns, rows, card width/height (mm) and selection X/Y. Enter commits, Esc reverts, ↑/↓ nudge |
 
 Geometry is stored normalized (0..1 of the page, top-left origin); all conversions live in

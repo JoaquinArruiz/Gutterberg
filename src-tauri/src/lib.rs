@@ -9,6 +9,7 @@ pub fn run() {
             commands::document::open_pdf,
             commands::layout::compute_layout,
             commands::export::export_document,
+            commands::export::validate_export,
             commands::render::render_page,
             commands::render::render_region,
         ])

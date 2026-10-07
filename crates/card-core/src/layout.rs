@@ -5,6 +5,7 @@
 //! (`destination`). The React preview and the PDF exporter must both consume
 //! this output rather than re-deriving spacing maths.
 
+use crate::card::{CardId, DocumentId, OrientedRect};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::units::{mm_to_pt, pt_to_mm};
@@ -58,6 +59,23 @@ pub struct SourceCard {
     pub column: usize,
     /// Points, top-left origin.
     pub rect: Rect,
+}
+
+impl SourceCard {
+    /// Identity of this card on `page_index` of `document_id`.
+    pub fn id(&self, document_id: DocumentId, page_index: usize) -> CardId {
+        CardId::Grid {
+            document_id,
+            page_index,
+            row: self.row,
+            column: self.column,
+        }
+    }
+
+    /// The source area as an oriented rectangle. Grid cards are never rotated.
+    pub fn oriented(&self) -> OrientedRect {
+        OrientedRect::from_rect(self.rect)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -239,6 +257,33 @@ pub fn calculate_layout(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn grid_cards_have_ids_and_unrotated_sources() {
+        let grid = GridLayout {
+            rows: 2,
+            columns: 3,
+            ..base()
+        };
+        let page = PageSize {
+            width_pt: 300.0,
+            height_pt: 200.0,
+        };
+        let cards = source_cards(page, &grid).unwrap();
+        let card = cards[4]; // row 1, column 1
+        assert_eq!(
+            card.id(7, 5),
+            CardId::Grid {
+                document_id: 7,
+                page_index: 5,
+                row: 1,
+                column: 1
+            }
+        );
+        let o = card.oriented();
+        assert_eq!(o.angle_deg, 0.0);
+        assert_eq!(o.as_rect(), Some(card.rect));
+    }
 
     fn base() -> GridLayout {
         GridLayout {

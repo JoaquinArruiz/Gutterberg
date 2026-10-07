@@ -14,7 +14,7 @@
 
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
-use crate::layout::{calculate_layout, GridLayout};
+use crate::layout::{calculate_layout, GridLayout, LayoutResult};
 use crate::units::pt_to_mm;
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
 use serde::{Deserialize, Serialize};
@@ -294,6 +294,61 @@ pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
     result
 }
 
+/// The layout of one page, or the reason it cannot be exported. Cards that do not fit
+/// the output page are an error, never shrunk.
+fn fitting_layout(frame: &PageFrame, grid: &GridLayout) -> Result<LayoutResult> {
+    let layout = calculate_layout(frame.size(), grid, None)?;
+    if let Some(o) = layout.overflow {
+        let out = layout.output_page;
+        return Err(Error::DoesNotFit {
+            needed_w_mm: pt_to_mm(out.width_pt) + o.width_mm,
+            needed_h_mm: pt_to_mm(out.height_pt) + o.height_mm,
+            page_w_mm: pt_to_mm(out.width_pt),
+            page_h_mm: pt_to_mm(out.height_pt),
+        });
+    }
+    Ok(layout)
+}
+
+/// A page that would make the export fail, found before anything is written.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct PageIssue {
+    /// 0-based source page index.
+    pub page_index: usize,
+    pub message: String,
+}
+
+/// Checks every job the way [`export_document`] will, and returns one issue per page
+/// that would fail (a missing page, an unsupported page, an invalid grid or cards that
+/// do not fit). An empty list means the export will not fail on layout.
+pub fn validate_export(doc: &Document, jobs: &[PageJob]) -> Vec<PageIssue> {
+    let source_pages = doc.get_pages();
+    let mut issues: Vec<PageIssue> = Vec::new();
+    for pj in jobs {
+        // One issue per page, even when several jobs list it.
+        if issues.iter().any(|i| i.page_index == pj.page_index) {
+            continue;
+        }
+        let checked = source_pages
+            .get(&(pj.page_index as u32 + 1))
+            .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))
+            .and_then(|&id| PageFrame::read(doc, id, pj.page_index))
+            .and_then(|frame| fitting_layout(&frame, &pj.grid));
+        if let Err(e) = checked {
+            issues.push(PageIssue {
+                page_index: pj.page_index,
+                message: e.to_string(),
+            });
+        }
+    }
+    issues
+}
+
+/// [`validate_export`] for the PDF at `input`.
+pub fn validate_export_file(input: &Path, jobs: &[PageJob]) -> Result<Vec<PageIssue>> {
+    Ok(validate_export(&Document::load(input)?, jobs))
+}
+
 pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
     let source_pages = doc.get_pages();
     let pages_root = doc
@@ -320,17 +375,8 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
             }
         };
         let bx = frame.display_box();
-        let src_size = frame.size();
-        let layout = calculate_layout(src_size, &pj.grid, None)?;
+        let layout = fitting_layout(&frame, &pj.grid)?;
         let out = layout.output_page;
-        if let Some(o) = layout.overflow {
-            return Err(Error::DoesNotFit {
-                needed_w_mm: pt_to_mm(out.width_pt) + o.width_mm,
-                needed_h_mm: pt_to_mm(out.height_pt) + o.height_mm,
-                page_w_mm: pt_to_mm(out.width_pt),
-                page_h_mm: pt_to_mm(out.height_pt),
-            });
-        }
 
         let mut ops = String::new();
         for p in &layout.placements {

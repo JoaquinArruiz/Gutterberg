@@ -181,3 +181,24 @@ pub fn sample_pdf() -> Document {
     doc.trailer.set("Root", catalog);
     doc
 }
+
+/// [`sample_pdf`] repeated `count` times (the pages share their content), for multi-page
+/// tests such as a rules page followed by card sections.
+pub fn sample_pdf_pages(count: usize) -> Document {
+    let mut doc = sample_pdf();
+    let first = *doc.get_pages().values().next().expect("sample has a page");
+    let pages_id = doc
+        .get_dictionary(first)
+        .and_then(|d| d.get(b"Parent"))
+        .and_then(|p| p.as_reference())
+        .expect("page has a parent");
+    let template = doc.get_dictionary(first).expect("page dictionary").clone();
+    let mut kids: Vec<Object> = vec![first.into()];
+    for _ in 1..count {
+        kids.push(doc.add_object(template.clone()).into());
+    }
+    let root = doc.get_dictionary_mut(pages_id).expect("pages dictionary");
+    root.set("Count", count as i64);
+    root.set("Kids", Object::Array(kids));
+    doc
+}

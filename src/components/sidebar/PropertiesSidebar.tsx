@@ -1,10 +1,12 @@
+import { useShallow } from "zustand/react/shallow";
+import type { NormalizedRect } from "../../lib/coordinates";
+import { rangeLabel } from "../../lib/document-layout";
 import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
-import { useEditorStore } from "../../stores/editor-store";
-import { MAX_GAP_MM, MAX_MARGIN_MM, type PageMode, useLayoutStore } from "../../stores/layout-store";
+import { MAX_GAP_MM, MAX_MARGIN_MM, type PageMode, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
@@ -57,11 +59,37 @@ const Section = ({ title, children }: { title: string; children: React.ReactNode
 );
 
 export function PropertiesSidebar() {
-  const { pages, currentPage } = useDocumentStore();
-  const { selection, setSelection } = useEditorStore();
-  const L = useLayoutStore();
-  const { rows, columns, setRows, setColumns, layoutError } = L;
-  const page = pages[currentPage];
+  const page = useDocumentStore((s) => s.pages[s.currentPage]);
+  const currentPage = useDocumentStore((s) => s.currentPage);
+  const group = useCurrentGroup();
+  const L = useLayoutStore(
+    useShallow((s) => ({
+      gapXMm: s.gapXMm,
+      gapYMm: s.gapYMm,
+      gapLinked: s.gapLinked,
+      pageMode: s.pageMode,
+      orientation: s.orientation,
+      customWidthMm: s.customWidthMm,
+      customHeightMm: s.customHeightMm,
+      margins: s.margins,
+      result: s.result,
+      layoutError: s.layoutError,
+      setGapX: s.setGapX,
+      setGapY: s.setGapY,
+      setGapLinked: s.setGapLinked,
+      setPageMode: s.setPageMode,
+      setOrientation: s.setOrientation,
+      setCustomSize: s.setCustomSize,
+      setMargin: s.setMargin,
+      setGrid: s.setGrid,
+      setSelection: s.setSelection,
+      setSkipped: s.setSkipped,
+    })),
+  );
+  const { layoutError } = L;
+  const grid = group?.kind === "grid" ? group.grid : null;
+  const selection = group?.kind === "grid" ? group.selection : null;
+  const setSelection = (r: NormalizedRect | null) => L.setSelection(currentPage, r);
   const shown = usePreviewResult();
   const unit = useUnit();
   const fmt = (mm: number, decimals?: number) => formatMeasurement(mm, unit, decimals);
@@ -74,8 +102,8 @@ export function PropertiesSidebar() {
     );
   }
 
-  const grid = { rows, columns, gapXMm: L.sourceGapXMm, gapYMm: L.sourceGapYMm };
-  const card = selection ? cardSizeMm(selection, page, grid) : null;
+  const spec = grid && { rows: grid.rows, columns: grid.columns, gapXMm: grid.sourceGapXMm, gapYMm: grid.sourceGapYMm };
+  const card = selection && spec ? cardSizeMm(selection, page, spec) : null;
   const pw = ptToMm(page.width_pt);
   const ph = ptToMm(page.height_pt);
 
@@ -90,39 +118,79 @@ export function PropertiesSidebar() {
         </div>
       </Section>
 
-      <Section title="Source layout">
-        <NumberField label="Columns" value={columns} onCommit={setColumns} min={1} max={MAX_GRID} />
-        <NumberField label="Rows" value={rows} onCommit={setRows} min={1} max={MAX_GRID} />
-        <MeasurementInput
-          label="Card width"
-          precise
-          min={1}
-          value={card ? card.width : null}
-          disabled={!selection}
-          onChange={(w) => selection && setSelection(selectionForCardSize(selection, page, grid, { width: w }))}
-        />
-        <MeasurementInput
-          label="Card height"
-          precise
-          min={1}
-          value={card ? card.height : null}
-          disabled={!selection}
-          onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, grid, { height: h }))}
-        />
-        {!selection && <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>}
-      </Section>
+      {group?.kind === "skip" && (
+        <Section title="Skipped page">
+          <p className="text-[var(--muted)]">
+            {rangeLabel(group.pages)} {group.pages.first === group.pages.last ? "is" : "are"} left out of the export.
+          </p>
+          <div>
+            <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, false)}>
+              Include this page
+            </button>
+          </div>
+        </Section>
+      )}
 
-      <Section title="Source spacing">
-        <GapFields
-          linked={L.sourceGapLinked}
-          onLink={L.setSourceGapLinked}
-          x={L.sourceGapXMm}
-          y={L.sourceGapYMm}
-          onX={L.setSourceGapX}
-          onY={L.setSourceGapY}
-        />
-        <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
-      </Section>
+      {group?.kind === "grid" && grid && spec && (
+        <>
+          <Section title="Source layout">
+            <p className="text-[var(--muted)]">
+              {rangeLabel(group.pages)}
+              {group.pages.first === group.pages.last ? " has" : " share"} this grid.
+            </p>
+            <NumberField
+              label="Columns"
+              value={grid.columns}
+              onCommit={(columns) => L.setGrid(currentPage, { columns })}
+              min={1}
+              max={MAX_GRID}
+            />
+            <NumberField
+              label="Rows"
+              value={grid.rows}
+              onCommit={(rows) => L.setGrid(currentPage, { rows })}
+              min={1}
+              max={MAX_GRID}
+            />
+            <MeasurementInput
+              label="Card width"
+              precise
+              min={1}
+              value={card ? card.width : null}
+              disabled={!selection}
+              onChange={(w) => selection && setSelection(selectionForCardSize(selection, page, spec, { width: w }))}
+            />
+            <MeasurementInput
+              label="Card height"
+              precise
+              min={1}
+              value={card ? card.height : null}
+              disabled={!selection}
+              onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, spec, { height: h }))}
+            />
+            {!selection && (
+              <p className="text-[var(--muted)]">Drag on the page to select the region the cards occupy.</p>
+            )}
+            <div>
+              <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, true)}>
+                Skip this page
+              </button>
+            </div>
+          </Section>
+
+          <Section title="Source spacing">
+            <GapFields
+              linked={grid.sourceGapLinked}
+              onLink={(sourceGapLinked) => L.setGrid(currentPage, { sourceGapLinked })}
+              x={grid.sourceGapXMm}
+              y={grid.sourceGapYMm}
+              onX={(sourceGapXMm) => L.setGrid(currentPage, { sourceGapXMm })}
+              onY={(sourceGapYMm) => L.setGrid(currentPage, { sourceGapYMm })}
+            />
+            <p className="text-[var(--muted)]">Gap already between cards in the PDF.</p>
+          </Section>
+        </>
+      )}
 
       <Section title="Output spacing">
         <GapFields

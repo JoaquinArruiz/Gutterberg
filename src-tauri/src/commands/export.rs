@@ -1,6 +1,5 @@
 use crate::state::AppState;
-use card_core::export::{export_pdf, ExportJob, PageJob};
-use card_core::layout::GridLayout;
+use card_core::export::{export_pdf, validate_export_file, ExportJob, PageIssue, PageJob};
 use std::path::{Path, PathBuf};
 use tauri::State;
 
@@ -21,13 +20,13 @@ fn same_file(input: &Path, output: &Path) -> bool {
     }
 }
 
-/// Export the open PDF with `grid` applied to every page, writing `output_path`.
-/// Returns the number of pages written.
+/// Export the open PDF: one output page per job, each with its own grid, writing
+/// `output_path`. Pages without a job (skipped pages) are left out. Returns the number of
+/// pages written.
 #[tauri::command]
 pub async fn export_document(
     state: State<'_, AppState>,
-    grid: GridLayout,
-    page_count: usize,
+    pages: Vec<PageJob>,
     output_path: String,
 ) -> Result<usize, String> {
     let input = state.path()?;
@@ -35,15 +34,28 @@ pub async fn export_document(
     if same_file(&input, &output) {
         return Err("choose a different file than the one that is open".into());
     }
-    let job = ExportJob {
-        pages: (0..page_count)
-            .map(|page_index| PageJob { page_index, grid })
-            .collect(),
-    };
+    if pages.is_empty() {
+        return Err("no pages are included in the export".into());
+    }
+    let job = ExportJob { pages };
     let written = job.pages.len();
     tauri::async_runtime::spawn_blocking(move || export_pdf(&input, &output, &job))
         .await
         .map_err(|e| e.to_string())?
         .map_err(|e| e.to_string())?;
     Ok(written)
+}
+
+/// Pre-flight: the pages that would make `export_document` fail for these jobs, found
+/// with the same checks, before the save dialog opens. Empty = good to export.
+#[tauri::command]
+pub async fn validate_export(
+    state: State<'_, AppState>,
+    pages: Vec<PageJob>,
+) -> Result<Vec<PageIssue>, String> {
+    let input = state.path()?;
+    tauri::async_runtime::spawn_blocking(move || validate_export_file(&input, &pages))
+        .await
+        .map_err(|e| e.to_string())?
+        .map_err(|e| e.to_string())
 }

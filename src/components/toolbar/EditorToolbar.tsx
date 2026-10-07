@@ -1,12 +1,27 @@
-import { Download, FileText, Hand, Maximize, MousePointer2, Settings, ZoomIn, ZoomOut } from "lucide-react";
+import {
+  Download,
+  FileText,
+  Hand,
+  Maximize,
+  MousePointer2,
+  Redo2,
+  Settings,
+  Undo2,
+  X,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import { useState } from "react";
+import { useStore } from "zustand";
+import { includedPages } from "../../lib/document-layout";
+import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
 import { WORKSPACE_LABEL } from "../../lib/preferences";
-import { exportDocument, pickExportPath } from "../../lib/tauri";
+import { exportDocument, type PageIssue, pickExportPath, validateExport } from "../../lib/tauri";
 import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
 import { useDocumentStore } from "../../stores/document-store";
 import { type Tool, useEditorStore } from "../../stores/editor-store";
-import { gridPayload, useLayoutStore } from "../../stores/layout-store";
+import { redo, undo, useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { PanelsMenu } from "../workspace/PanelsMenu";
@@ -23,19 +38,36 @@ export function EditorToolbar() {
   const pages = useDocumentStore((s) => s.pages);
   const loading = useDocumentStore((s) => s.loading);
   const path = useDocumentStore((s) => s.path);
-  const selection = useEditorStore((s) => s.selection);
-  const result = useLayoutStore((s) => s.result);
+  const setCurrentPage = useDocumentStore((s) => s.setCurrentPage);
+  const includedCount = useLayoutStore((s) => includedPages(s.groups).length);
+  const canUndo = useStore(useLayoutStore.temporal, (s) => s.pastStates.length > 0);
+  const canRedo = useStore(useLayoutStore.temporal, (s) => s.futureStates.length > 0);
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  // Pages that would make the export fail, found before the save dialog opens.
+  const [issues, setIssues] = useState<PageIssue[]>([]);
 
   const doExport = async () => {
-    if (!path || !selection) return;
+    if (!path) return;
     try {
-      const out = await pickExportPath(path);
-      if (!out) return;
       setExporting(true);
       setStatus(null);
-      const n = await exportDocument(gridPayload(selection, useLayoutStore.getState()), pages.length, out);
+      setIssues([]);
+      const state = useLayoutStore.getState();
+      const plan = buildExportPlan(state.groups, state);
+      if (plan.jobs.length === 0 && plan.issues.length === 0) {
+        setStatus({ ok: false, text: "Every page is skipped. Include at least one page to export." });
+        return;
+      }
+      const remote = plan.jobs.length ? await validateExport(plan.jobs) : [];
+      const found = mergeIssues(plan.issues, remote);
+      if (found.length > 0) {
+        setIssues(found);
+        return;
+      }
+      const out = await pickExportPath(path);
+      if (!out) return;
+      const n = await exportDocument(plan.jobs, out);
       setStatus({ ok: true, text: `Exported ${n} page${n === 1 ? "" : "s"} to ${out}` });
     } catch (e) {
       setStatus({ ok: false, text: String(e) });
@@ -53,7 +85,7 @@ export function EditorToolbar() {
   const { zoomIn, zoomOut, fitPage } = zoomActions;
   const empty = pages.length === 0;
   return (
-    <header className="flex h-9 shrink-0 items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2">
+    <header className="relative flex h-9 shrink-0 items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2">
       <button type="button" onClick={openDialog} disabled={loading} className={btn}>
         <FileText size={14} /> Open PDF
       </button>
@@ -69,6 +101,13 @@ export function EditorToolbar() {
           <Icon size={14} />
         </button>
       ))}
+      <div className="mx-2 h-4 w-px bg-[var(--border)]" />
+      <button type="button" title="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} className={btn}>
+        <Undo2 size={14} />
+      </button>
+      <button type="button" title="Redo (Shift+Ctrl+Z)" onClick={redo} disabled={!canRedo} className={btn}>
+        <Redo2 size={14} />
+      </button>
       <div className="mx-2 h-4 w-px bg-[var(--border)]" />
       <button type="button" title="Zoom out (-)" onClick={zoomOut} disabled={empty} className={btn}>
         <ZoomOut size={14} />
@@ -123,20 +162,47 @@ export function EditorToolbar() {
       <button
         type="button"
         onClick={doExport}
-        disabled={!selection || !result || !!result.overflow || exporting}
-        title={
-          !selection
-            ? "Select the card region first"
-            : !result
-              ? "The grid is not valid"
-              : result.overflow
-                ? "The cards do not fit the output page. Change the page, spacing or margins."
-                : "Export PDF"
-        }
+        disabled={!path || includedCount === 0 || exporting}
+        title={includedCount === 0 ? "Every page is skipped" : "Export PDF"}
         className="flex items-center gap-1.5 rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"
       >
         <Download size={14} /> {exporting ? "Exporting…" : "Export PDF"}
       </button>
+      {issues.length > 0 && (
+        <section
+          aria-label="Export problems"
+          className="absolute right-2 top-10 z-50 w-96 max-w-[90vw] rounded border border-red-400/50 bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
+        >
+          <div className="mb-1 flex items-center justify-between font-medium text-red-300">
+            <span>
+              {issues.length} page{issues.length === 1 ? "" : "s"} can&apos;t be exported
+            </span>
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setIssues([])}
+              className="rounded p-0.5 hover:bg-[var(--hover)]"
+            >
+              <X size={12} />
+            </button>
+          </div>
+          <ul className="max-h-72 overflow-y-auto">
+            {issues.map((i) => (
+              <li key={i.page_index}>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(i.page_index)}
+                  className="w-full rounded px-1.5 py-1 text-left hover:bg-[var(--hover)]"
+                >
+                  <span className="font-medium">Page {i.page_index + 1}:</span>{" "}
+                  <span className="text-[var(--muted)]">{i.message}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[var(--muted)]">Fix these pages, or skip them, then export again.</p>
+        </section>
+      )}
     </header>
   );
 }

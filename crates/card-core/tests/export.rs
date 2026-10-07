@@ -1,5 +1,6 @@
-use card_core::export::{export_document, page_size, ExportJob, PageJob};
-use card_core::sample::{sample_grid, sample_pdf, CARD_MM};
+use card_core::export::{export_document, page_size, validate_export, ExportJob, PageJob};
+use card_core::layout::GridLayout;
+use card_core::sample::{sample_grid, sample_pdf, sample_pdf_pages, CARD_MM};
 use card_core::units::pt_to_mm;
 use lopdf::{Document, Object};
 
@@ -87,6 +88,105 @@ fn too_large_gap_is_an_error_not_a_shrink() {
             page_index: 0,
             grid: sample_grid(20.0),
         }],
+    };
+    assert!(export_document(&mut doc, &job).is_err());
+}
+
+/// A 2x2 section of the sample cards: the top-left quarter of the 3x3 block.
+fn grid_2x2(gap: f64) -> GridLayout {
+    let mut g = sample_grid(gap);
+    g.rows = 2;
+    g.columns = 2;
+    g.bounds = card_core::geometry::Rect::new(
+        g.bounds.x,
+        g.bounds.y,
+        g.bounds.width * 2.0 / 3.0,
+        g.bounds.height * 2.0 / 3.0,
+    );
+    g
+}
+
+fn placements_per_page(doc: &Document) -> Vec<usize> {
+    doc.get_pages()
+        .values()
+        .map(|&id| {
+            String::from_utf8(doc.get_page_content(id))
+                .unwrap()
+                .matches("/Src Do")
+                .count()
+        })
+        .collect()
+}
+
+#[test]
+fn skipped_pages_are_left_out_and_each_section_uses_its_own_grid() {
+    // Page 0 is a rules page (skipped), page 1 a 3x3 section, page 2 a 2x2 section.
+    let mut doc = sample_pdf_pages(3);
+    let job = ExportJob {
+        pages: vec![
+            PageJob {
+                page_index: 1,
+                grid: sample_grid(3.0),
+            },
+            PageJob {
+                page_index: 2,
+                grid: grid_2x2(3.0),
+            },
+        ],
+    };
+    export_document(&mut doc, &job).unwrap();
+    assert_eq!(placements_per_page(&doc), vec![9, 4]);
+}
+
+#[test]
+fn validation_lists_every_failing_page_once() {
+    let doc = sample_pdf_pages(4);
+    let jobs = [
+        PageJob {
+            page_index: 0,
+            grid: sample_grid(3.0),
+        },
+        PageJob {
+            page_index: 1,
+            grid: sample_grid(20.0), // does not fit
+        },
+        PageJob {
+            page_index: 1,
+            grid: sample_grid(20.0),
+        },
+        PageJob {
+            page_index: 2,
+            grid: GridLayout {
+                rows: 0,
+                ..sample_grid(3.0)
+            },
+        },
+        PageJob {
+            page_index: 9, // not in the document
+            grid: sample_grid(3.0),
+        },
+    ];
+    let issues = validate_export(&doc, &jobs);
+    let pages: Vec<usize> = issues.iter().map(|i| i.page_index).collect();
+    assert_eq!(pages, vec![1, 2, 9]);
+    assert!(issues[0].message.contains("mm"), "{}", issues[0].message);
+}
+
+#[test]
+fn validation_agrees_with_export() {
+    let mut doc = sample_pdf_pages(2);
+    let ok = [PageJob {
+        page_index: 0,
+        grid: sample_grid(3.0),
+    }];
+    assert!(validate_export(&doc, &ok).is_empty());
+    let bad = [PageJob {
+        page_index: 1,
+        grid: sample_grid(20.0),
+    }];
+    assert_eq!(validate_export(&doc, &bad).len(), 1);
+    let job = ExportJob {
+        pages: bad.to_vec(),
     };
     assert!(export_document(&mut doc, &job).is_err());
 }

@@ -7,6 +7,7 @@
 //
 // Millimetres <-> points live in lib/units.ts.
 
+import type { OrientedRect } from "./card";
 import type { PageSize } from "./tauri";
 
 export type Point = { x: number; y: number };
@@ -87,4 +88,23 @@ export function fitViewport(box: Size, page: PageSize, padding = 24): ViewportSt
   );
   const k = pxPerPoint(zoom);
   return { zoom, panX: (box.width - page.width_pt * k) / 2, panY: (box.height - page.height_pt * k) / 2 };
+}
+
+/** An oriented rect held normalized to the page -> points (top-left origin). The angle is unchanged: it is applied in point space. */
+export function orientedToPoints(r: OrientedRect, page: PageSize): OrientedRect {
+  return {
+    center: { x: r.center.x * page.width_pt, y: r.center.y * page.height_pt },
+    width: r.width * page.width_pt,
+    height: r.height * page.height_pt,
+    angle_deg: r.angle_deg,
+  };
+}
+
+export function orientedFromPoints(r: OrientedRect, page: PageSize): OrientedRect {
+  return {
+    center: { x: r.center.x / page.width_pt, y: r.center.y / page.height_pt },
+    width: r.width / page.width_pt,
+    height: r.height / page.height_pt,
+    angle_deg: r.angle_deg,
+  };
 }

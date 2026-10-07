@@ -47,9 +47,21 @@ export type GridPayload = {
   fit_page: boolean;
 };
 
-/** Exports every page with the given grid via the Rust exporter. Resolves to the page count. */
-export async function exportDocument(grid: GridPayload, pageCount: number, outputPath: string): Promise<number> {
-  return invoke<number>("export_document", { grid, pageCount, outputPath });
+/** One output page: a source page and the grid it is cut with. Mirrors card_core::export::PageJob. */
+export type PageJob = { page_index: number; grid: GridPayload };
+
+/** A page that would make the export fail. Mirrors card_core::export::PageIssue. */
+export const PageIssueSchema = z.object({ page_index: z.number().int(), message: z.string() });
+export type PageIssue = z.infer<typeof PageIssueSchema>;
+
+/** Exports one output page per job via the Rust exporter (pages without a job are left out). Resolves to the page count. */
+export async function exportDocument(pages: PageJob[], outputPath: string): Promise<number> {
+  return invoke<number>("export_document", { pages, outputPath });
+}
+
+/** Pre-flight: runs the exporter's own checks on every job and lists the pages that would fail. Empty = good to export. */
+export async function validateExport(pages: PageJob[]): Promise<PageIssue[]> {
+  return z.array(PageIssueSchema).parse(await invoke("validate_export", { pages }));
 }
 
 /**

@@ -10,7 +10,7 @@ import { useLayoutSync } from "./lib/use-layout-sync";
 import { zoomActions } from "./lib/zoom-actions";
 import { useDocumentStore } from "./stores/document-store";
 import { useEditorStore } from "./stores/editor-store";
-import { useLayoutStore } from "./stores/layout-store";
+import { redo, undo, useLayoutStore } from "./stores/layout-store";
 import { usePreferencesStore } from "./stores/preferences-store";
 import { useUiStore } from "./stores/ui-store";
 
@@ -40,6 +40,15 @@ export default function App() {
       if (mod && e.key === ",") {
         e.preventDefault();
         useUiStore.getState().setPrefsOpen(true);
+        return;
+      }
+      const typing = e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName);
+      const key = e.key.toLowerCase();
+      // Inside a text field Ctrl+Z stays the field's own undo.
+      if (mod && !typing && (key === "z" || key === "y")) {
+        e.preventDefault();
+        if (key === "y" || e.shiftKey) redo();
+        else undo();
         return;
       }
       if (mod && e.key.toLowerCase() === "o") {

@@ -1,14 +1,14 @@
 import { formatMeasurement } from "../../lib/measurement";
 import { usePreviewResult } from "../../lib/view-page";
-import { useEditorStore } from "../../stores/editor-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGridGroup, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { HintToast } from "../ui/HintToast";
 
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
 export function OutputNotice() {
-  const selection = useEditorStore((s) => s.selection);
+  const selection = useCurrentGridGroup()?.selection ?? null;
+  const skipped = useCurrentGroup()?.kind === "skip";
   const layoutError = useLayoutStore((s) => s.layoutError);
   const live = useLayoutStore((s) => s.live);
   const result = useLayoutStore((s) => s.result);
@@ -17,13 +17,15 @@ export function OutputNotice() {
   const unit = useUnit();
   // Manual mode: the settings changed since the preview was generated.
   const stale = !live && !!snapshot && !!result && snapshot !== result;
-  const msg = layoutError
-    ? layoutError
-    : !selection && !shown
-      ? "Select the card region on the page to preview the output."
-      : shown?.overflow
-        ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
-        : null;
+  const msg = skipped
+    ? "This page is skipped: it is left out of the export."
+    : layoutError
+      ? layoutError
+      : !selection && !shown
+        ? "Select the card region on the page to preview the output."
+        : shown?.overflow
+          ? `Layout exceeds the page by ${formatMeasurement(shown.overflow.width_mm, unit)} horizontally and ${formatMeasurement(shown.overflow.height_mm, unit)} vertically. Cards are never scaled: change the page size or orientation, or reduce spacing or margins.`
+          : null;
   const bad = !!layoutError || !!shown?.overflow;
   const showManualHint = !live && !shown && !!selection && !layoutError;
   return (

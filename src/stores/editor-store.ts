@@ -4,7 +4,6 @@ import {
   fitViewport,
   MAX_ZOOM,
   MIN_ZOOM,
-  type NormalizedRect,
   type Point,
   type Size,
   type ViewportState,
@@ -24,8 +23,6 @@ type EditorState = {
   fitMode: boolean;
   tool: Tool;
   viewMode: ViewMode;
-  /** Card region, normalized to the page. The same region applies to every page for now. */
-  selection: NormalizedRect | null;
 
   fit: (box: Size, page: PageSize) => void;
   zoomBy: (factor: number, anchor: Point, page: PageSize) => void;
@@ -34,7 +31,6 @@ type EditorState = {
   setPan: (panX: number, panY: number) => void;
   setTool: (t: Tool) => void;
   setViewMode: (m: ViewMode) => void;
-  setSelection: (r: NormalizedRect | null) => void;
   reset: () => void;
 };
 
@@ -44,7 +40,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   tool: "select",
   // Session state: starts in the preferred workspace; switching never edits the preference.
   viewMode: sessionDefaults(usePreferencesStore.getState().prefs).viewMode,
-  selection: null,
 
   fit: (box, page) => set({ viewport: fitViewport(box, page), fitMode: true }),
   zoomBy: (factor, anchor, page) => {
@@ -59,6 +54,5 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setPan: (panX, panY) => set({ viewport: { ...get().viewport, panX, panY }, fitMode: false }),
   setTool: (tool) => set({ tool }),
   setViewMode: (viewMode) => set({ viewMode }),
-  setSelection: (selection) => set({ selection }),
-  reset: () => set({ selection: null, fitMode: true }),
+  reset: () => set({ fitMode: true }),
 }));
