@@ -64,7 +64,7 @@ and type names) stay as they are.
 | **Print** tab | **Imprimir** | Choosing what goes on the sheets, and exporting | |
 | **Original / Preview / Split** | **Original / Vista previa / Dividida** | The views inside the Source tab: the page as it is, the re-spaced result, both | "Source / Output" views |
 | **piece** | **pieza** | Anything cut out of a page: a card, token, tile, board segment | "card" (except in examples, e.g. "poker cards") |
-| **piece library**, **piece tool**, **freeform pieces** | **biblioteca de piezas**, **herramienta de pieza**, **piezas libres** | The Print tab's list, the tool that draws one piece, pieces drawn one by one | card library, card tool, freeform cards |
+| **piece library**, **piece tool**, **freeform pieces** | **biblioteca de piezas**, **Herramienta Pieza**, **piezas libres** | The Print tab's list, the tool that draws one piece, pieces drawn one by one | card library, card tool, freeform cards |
 | **sheet** | **hoja** | One page of the output PDF | "output page" in the UI |
 | **source gap / output gap** | **separación de origen / separación de salida** | Space between pieces already in the PDF / wanted in the output | |
 | **help tip** | **consejo** | A hint toast or tour step | |
