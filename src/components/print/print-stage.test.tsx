@@ -411,3 +411,154 @@ describe("Apply this grid to…", () => {
     expect(ranges()).toEqual(["grid:0-3"]);
   });
 });
+
+describe("sheet previews strip", () => {
+  const sheet = (n: number): OutputSheet => ({
+    page: A4,
+    placements: Array.from({ length: n }, (_, i) => ({
+      card_id: gridCardId(0, 0, 0, i),
+      source: card(0, 0, 0).source,
+      destination: { x: 60 * i, y: 10, width: 50, height: 70 },
+      turn: 0,
+      scale: 1,
+    })),
+  });
+  const thumbs = () => screen.queryAllByTestId("sheet-thumb");
+
+  describe("with Live Preview on", () => {
+    beforeEach(() => useLayoutStore.setState({ live: true }));
+
+    it("shows every sheet as a small preview and selects one on click", () => {
+      print().setSheets([sheet(9), sheet(4), sheet(1)], null);
+      render(<SheetPreview />);
+      expect(thumbs()).toHaveLength(3);
+      expect(thumbs()[0].getAttribute("aria-current")).toBe("true");
+      fireEvent.click(thumbs()[1]);
+      expect(print().currentSheet).toBe(1);
+      expect(screen.getByText("Sheet 2 of 3")).toBeTruthy();
+      expect(thumbs()[1].getAttribute("aria-current")).toBe("true");
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(4);
+    });
+
+    it("draws the cards of each sheet in its preview", async () => {
+      print().setSheets([sheet(3)], null);
+      render(<SheetPreview />);
+      await act(async () => {});
+      expect(within(thumbs()[0]).getAllByRole("presentation", { hidden: true }).length).toBe(3);
+    });
+
+    it("follows the plan as it changes", () => {
+      print().setSheets([sheet(9), sheet(4)], null);
+      render(<SheetPreview />);
+      expect(thumbs()).toHaveLength(2);
+      act(() => print().setSheets([sheet(9), sheet(9), sheet(2)], null));
+      expect(thumbs()).toHaveLength(3);
+      expect(screen.getByText("Sheet 1 of 3")).toBeTruthy();
+      act(() => print().setSheets([sheet(1)], null));
+      expect(thumbs()).toHaveLength(1);
+    });
+
+    it("has no refresh button, tip or out-of-date mark", () => {
+      print().setSheets([sheet(2)], null);
+      render(<SheetPreview />);
+      act(() => print().setSheets([sheet(3)], null));
+      expect(screen.queryByRole("button", { name: /Refresh preview/ })).toBeNull();
+      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.queryByText("Preview out of date")).toBeNull();
+    });
+
+    it("hides and shows the strip with the arrow, and remembers it", () => {
+      print().setSheets([sheet(2), sheet(2)], null);
+      const first = render(<SheetPreview />);
+      const arrow = screen.getByRole("button", { name: "Hide sheet previews" });
+      expect(arrow.getAttribute("aria-expanded")).toBe("true");
+      fireEvent.click(arrow);
+      expect(screen.queryByTestId("sheet-strip")).toBeNull();
+      expect(screen.getByRole("button", { name: "Show sheet previews" }).getAttribute("aria-expanded")).toBe("false");
+      // The sheet itself and its navigation stay.
+      expect(screen.getByText("Sheet 1 of 2")).toBeTruthy();
+      expect(screen.getByTestId("sheet-page")).toBeTruthy();
+      first.unmount();
+      render(<SheetPreview />);
+      expect(screen.queryByTestId("sheet-strip")).toBeNull();
+      fireEvent.click(screen.getByRole("button", { name: "Show sheet previews" }));
+      expect(thumbs()).toHaveLength(2);
+    });
+
+    it("has no strip when there is nothing to show", () => {
+      print().setSheets([], null);
+      render(<SheetPreview />);
+      expect(screen.queryByTestId("sheet-strip")).toBeNull();
+    });
+
+    it("says it is planning until the first plan arrives", () => {
+      render(<SheetPreview />);
+      expect(screen.getByText(/Planning the sheets/)).toBeTruthy();
+    });
+  });
+
+  describe("with Live Preview off", () => {
+    beforeEach(() => useLayoutStore.setState({ live: false }));
+
+    it("shows the first plan at once, with the tip and a refresh button", () => {
+      print().setSheets([sheet(9), sheet(2)], null);
+      render(<SheetPreview />);
+      expect(thumbs()).toHaveLength(2);
+      expect(screen.getByTestId("hint-live-preview-manual")).toBeTruthy();
+      expect(screen.getByRole("button", { name: /Refresh preview/ })).toBeTruthy();
+      expect(screen.queryByText("Preview out of date")).toBeNull();
+    });
+
+    it("keeps showing the old sheets until refreshed, and says they are out of date", () => {
+      print().setSheets([sheet(9), sheet(2)], null);
+      render(<SheetPreview />);
+      act(() => print().setSheets([sheet(9), sheet(9), sheet(9)], null));
+      expect(thumbs()).toHaveLength(2);
+      expect(screen.getByText("Sheet 1 of 2")).toBeTruthy();
+      expect(screen.getByText("Preview out of date")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Refresh preview" }).getAttribute("title")).toContain("out of date");
+
+      fireEvent.click(screen.getByRole("button", { name: /Refresh preview/ }));
+      expect(thumbs()).toHaveLength(3);
+      expect(screen.getByText("Sheet 1 of 3")).toBeTruthy();
+      expect(screen.queryByText("Preview out of date")).toBeNull();
+    });
+
+    it("refreshes both the strip and the large sheet", () => {
+      print().setSheets([sheet(2)], null);
+      render(<SheetPreview />);
+      act(() => print().setSheets([sheet(5)], null));
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(2);
+      fireEvent.click(screen.getByRole("button", { name: /Refresh preview/ }));
+      expect(screen.getByTestId("sheet-page").children).toHaveLength(5);
+    });
+
+    it("lets the tip be closed for good, keeping the refresh button", () => {
+      print().setSheets([sheet(2)], null);
+      render(<SheetPreview />);
+      fireEvent.click(screen.getByRole("button", { name: "Dismiss tip" }));
+      expect(screen.queryByTestId("hint-live-preview-manual")).toBeNull();
+      expect(screen.getByRole("button", { name: /Refresh preview/ })).toBeTruthy();
+      expect(usePreferencesStore.getState().prefs.help.dismissedHints).toEqual(["live-preview-manual"]);
+    });
+
+    it("waits for the first plan, then shows it without a click", () => {
+      render(<SheetPreview />);
+      expect(screen.getByText(/Planning the sheets/)).toBeTruthy();
+      expect(screen.getByRole("button", { name: /Refresh preview/ }).hasAttribute("disabled")).toBe(true);
+      act(() => print().setSheets([sheet(2)], null));
+      expect(thumbs()).toHaveLength(1);
+    });
+
+    it("starts again from a fresh plan whenever the stage is entered", () => {
+      print().setSheets([sheet(2)], null);
+      const first = render(<SheetPreview />);
+      expect(thumbs()).toHaveLength(1);
+      first.unmount();
+      act(() => print().beginPlanning());
+      render(<SheetPreview />);
+      expect(thumbs()).toHaveLength(0);
+      expect(screen.getByText(/Planning the sheets/)).toBeTruthy();
+    });
+  });
+});

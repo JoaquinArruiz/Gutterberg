@@ -1,61 +1,45 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
-import type { SheetPlacement } from "../../lib/sheet-api";
-import { useCardImage } from "../../lib/use-card-image";
 import { useDocumentStore } from "../../stores/document-store";
+import { useLayoutStore } from "../../stores/layout-store";
+import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
+import { useUiStore } from "../../stores/ui-store";
+import { RefreshButton } from "../editor/RefreshPreviewButton";
+import { HintToast } from "../ui/HintToast";
+import { PlacedCard } from "./PlacedCard";
+import { SheetStrip } from "./SheetStrip";
 
 const PAD = 24;
 const MAX_ZOOM_PX_PER_PT = 16 * CSS_PX_PER_PT;
+/** Remembered like the inspector's sections: the strip of sheet previews is open unless the user hid it. */
+export const STRIP_SECTION_ID = "print.sheet-strip";
 
 /**
- * One card on the sheet: the crop of its source area, turned and sized as the exporter will place
- * it. The image is only for display; the exported file keeps the original vector content.
+ * The sheets the plan produces: a row of small previews (hideable) and one sheet large. Both follow
+ * the plan live when Live Preview is on; when it is off they show the sheets as of the last refresh.
  */
-function PlacedCard({ p, k }: { p: SheetPlacement; k: number }) {
-  const path = useDocumentStore((s) => s.path);
-  const page = useDocumentStore((s) => s.pages[p.card_id.page_index]);
-  const d = p.destination;
-  // The image is upright and keeps the source's own shape; a quarter turn swaps the box it fills.
-  const quarter = p.turn === 90 || p.turn === 270;
-  const [w, h] = quarter ? [d.height * k, d.width * k] : [d.width * k, d.height * k];
-  const dpr = window.devicePixelRatio || 1;
-  const url = useCardImage(path, p.card_id, p.source, page, w * dpr, "page");
-  return (
-    <div
-      className="absolute overflow-hidden bg-white"
-      style={{ left: d.x * k, top: d.y * k, width: d.width * k, height: d.height * k }}
-    >
-      {url && (
-        <img
-          src={url}
-          alt=""
-          draggable={false}
-          style={{
-            position: "absolute",
-            maxWidth: "none",
-            width: w,
-            height: h,
-            left: (d.width * k - w) / 2,
-            top: (d.height * k - h) / 2,
-            transform: p.turn ? `rotate(${p.turn}deg)` : undefined,
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-/** The sheets the plan produces, one at a time, fitted into the pane. */
 export function SheetPreview() {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const hasDocument = useDocumentStore((s) => s.pages.length > 0);
-  const sheets = usePrintStore((s) => s.sheets);
+  const live = useLayoutStore((s) => s.live);
+  const planned = usePrintStore((s) => s.sheets);
+  const snapshot = usePrintStore((s) => s.sheetsSnapshot);
   const error = usePrintStore((s) => s.sheetsError);
   const current = usePrintStore((s) => s.currentSheet);
   const setCurrent = usePrintStore((s) => s.setCurrentSheet);
+  const refresh = usePrintStore((s) => s.updateSheetsPreview);
+  const stripOpen = usePreferencesStore((s) => s.prefs.inspector.sections[STRIP_SECTION_ID] ?? true);
+  const setSectionOpen = usePreferencesStore((s) => s.setSectionOpen);
+
+  // With Live Preview off the preview is frozen; the first plan after entering the stage is shown at once.
+  const shown = live ? planned : snapshot;
+  const stale = !live && planned !== null && snapshot !== planned;
+  useEffect(() => {
+    if (!live && snapshot === null && planned !== null) refresh();
+  }, [live, snapshot, planned, refresh]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: the pane exists once a document is open
   useEffect(() => {
@@ -66,9 +50,10 @@ export function SheetPreview() {
     return () => ro.disconnect();
   }, [hasDocument]);
 
-  const sheet = sheets?.[current];
-  const total = sheets?.length ?? 0;
-  const cardCount = sheets?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
+  const total = shown?.length ?? 0;
+  const index = Math.min(current, Math.max(0, total - 1));
+  const sheet = shown?.[index];
+  const cardCount = shown?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
 
   let content: React.ReactNode = null;
   if (sheet && box.width > 0) {
@@ -103,21 +88,31 @@ export function SheetPreview() {
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--panel)] px-3">
         <button
           type="button"
+          aria-label={stripOpen ? "Hide sheet previews" : "Show sheet previews"}
+          title={stripOpen ? "Hide sheet previews" : "Show sheet previews"}
+          aria-expanded={stripOpen}
+          onClick={() => setSectionOpen(STRIP_SECTION_ID, !stripOpen)}
+          className="rounded p-1 hover:bg-[var(--hover)]"
+        >
+          {stripOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </button>
+        <button
+          type="button"
           aria-label="Previous sheet"
-          disabled={current <= 0}
-          onClick={() => setCurrent(current - 1)}
+          disabled={index <= 0}
+          onClick={() => setCurrent(index - 1)}
           className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
         >
           <ChevronLeft size={14} />
         </button>
         <span className="tabular-nums" data-testid="sheet-position">
-          {total > 0 ? `Sheet ${current + 1} of ${total}` : "No sheets"}
+          {total > 0 ? `Sheet ${index + 1} of ${total}` : "No sheets"}
         </span>
         <button
           type="button"
           aria-label="Next sheet"
-          disabled={current >= total - 1}
-          onClick={() => setCurrent(current + 1)}
+          disabled={index >= total - 1}
+          onClick={() => setCurrent(index + 1)}
           className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
         >
           <ChevronRight size={14} />
@@ -126,11 +121,14 @@ export function SheetPreview() {
           {total} sheet{total === 1 ? "" : "s"}, {cardCount} card{cardCount === 1 ? "" : "s"}
         </span>
       </div>
+      {stripOpen && shown && total > 0 && <SheetStrip sheets={shown} current={index} onSelect={setCurrent} />}
       <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--canvas)]">
         {!hasDocument ? (
           <Message>Open a PDF to plan the sheets.</Message>
         ) : error ? (
           <Message tone="error">{error}</Message>
+        ) : shown === null ? (
+          <Message>Planning the sheets…</Message>
         ) : total === 0 ? (
           <Message>
             Nothing to print yet. Choose cards in the library and give them copies, or switch the plan back to all
@@ -138,6 +136,29 @@ export function SheetPreview() {
           </Message>
         ) : (
           content
+        )}
+        {!live && hasDocument && (
+          <>
+            <HintToast
+              id="live-preview-manual"
+              className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]"
+              action={{ label: "Open Preferences", onClick: () => useUiStore.getState().setPrefsOpen(true, "Preview") }}
+            >
+              Live preview is off, so the sheets are not redrawn as you change the plan. Press the refresh button
+              (bottom right) to update them. You can change this in Preferences &gt; Preview.
+            </HintToast>
+            {stale && (
+              <span className="pointer-events-none absolute right-2 top-2 z-10 rounded bg-amber-500/20 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+                Preview out of date
+              </span>
+            )}
+            <RefreshButton
+              className="absolute bottom-3 right-3 z-20"
+              stale={stale}
+              disabled={planned === null}
+              onClick={refresh}
+            />
+          </>
         )}
       </div>
     </div>

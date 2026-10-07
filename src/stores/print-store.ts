@@ -35,6 +35,8 @@ type PrintState = PrintPlan & {
   /** The sheets the plan produces (`compute_sheets`); null until computed. */
   sheets: OutputSheet[] | null;
   sheetsError: string | null;
+  /** The sheets as of the last "refresh": what the preview shows while Live Preview is off. */
+  sheetsSnapshot: OutputSheet[] | null;
   currentSheet: number;
 
   setMode: (mode: PlanMode) => void;
@@ -56,6 +58,10 @@ type PrintState = PrintPlan & {
   setCards: (cards: Card[], error: string | null) => void;
   setSheets: (sheets: OutputSheet[] | null, error: string | null) => void;
   setCurrentSheet: (i: number) => void;
+  /** Freeze the current sheets as the preview (the refresh button). */
+  updateSheetsPreview: () => void;
+  /** The Print stage was entered: forget the old sheets so the preview starts from a fresh plan. */
+  beginPlanning: () => void;
   /** A new document: back to the default plan. */
   reset: () => void;
 };
@@ -68,6 +74,7 @@ const initial = {
   cardsError: null,
   sheets: null,
   sheetsError: null,
+  sheetsSnapshot: null,
   currentSheet: 0,
 };
 
@@ -101,6 +108,8 @@ export const usePrintStore = create<PrintState>((set) => ({
       currentSheet: Math.min(s.currentSheet, Math.max(0, (sheets?.length ?? 1) - 1)),
     })),
   setCurrentSheet: (currentSheet) => set({ currentSheet }),
+  updateSheetsPreview: () => set((s) => ({ sheetsSnapshot: s.sheets })),
+  beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
   reset: () => set({ ...initial }),
 }));
 

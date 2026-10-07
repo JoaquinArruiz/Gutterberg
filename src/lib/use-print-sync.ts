@@ -30,6 +30,11 @@ export function usePrintSync() {
   const plan = usePrintStore(useShallow(planOf));
   const cards = usePrintStore((s) => s.cards);
 
+  // Entering the Print stage starts a fresh plan, so the preview never shows sheets from before the edits.
+  useEffect(() => {
+    if (active) usePrintStore.getState().beginPlanning();
+  }, [active]);
+
   // The card library: every card of the groups. Independent of the plan and of output settings.
   useEffect(() => {
     if (!active || pages.length === 0) return;

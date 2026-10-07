@@ -90,3 +90,28 @@ describe("selection and sheets", () => {
     expect(st().sheetsError).toBe("boom");
   });
 });
+
+describe("sheet preview snapshot", () => {
+  const sheet = { page: { width_pt: 1, height_pt: 1 }, placements: [] };
+
+  it("freezes the sheets when asked, and keeps them while the plan changes", () => {
+    st().setSheets([sheet], null);
+    expect(st().sheetsSnapshot).toBeNull();
+    st().updateSheetsPreview();
+    st().setSheets([sheet, sheet], null);
+    expect(st().sheetsSnapshot).toHaveLength(1);
+    st().updateSheetsPreview();
+    expect(st().sheetsSnapshot).toHaveLength(2);
+  });
+
+  it("is cleared with the plan when the stage is entered, or a document opened", () => {
+    st().setSheets([sheet], "err");
+    st().updateSheetsPreview();
+    st().beginPlanning();
+    expect([st().sheets, st().sheetsSnapshot, st().sheetsError]).toEqual([null, null, null]);
+    st().setSheets([sheet], null);
+    st().updateSheetsPreview();
+    st().reset();
+    expect(st().sheetsSnapshot).toBeNull();
+  });
+});

@@ -88,7 +88,7 @@ pnpm tauri dev
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |
 | Pages | `PageUp`/`PageDown` or arrow keys |
-| Cards \| Print | tabs in the toolbar. Print: card library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview, and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
+| Cards \| Print | tabs in the toolbar. Print: card library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview with a hideable strip of sheet thumbnails (follows Live Preview, with a refresh button when it is off), and an inspector with Plan, Sheet and Page sections that fold (and remember it) |
 | Skip a page / include it | checkbox on its thumbnail (skipped pages are left out of the export) |
 | Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
 | Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons; a whole drag is one step |
