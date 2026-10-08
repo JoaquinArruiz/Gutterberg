@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M14, M16, M17, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
+M1–M14, M16 to M21 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
@@ -16,12 +16,9 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (done) | M | M12 |
 | [M17](M17.md) | Detect pieces on a page, locally (done) | L | M11, M18 |
 | [M18](M18.md) | Freeform pieces: per-piece rectangles, rotation, turn, sort, real size (done) | L | M13 |
-| [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
+| [M19](M19.md) | AI Mode (done): AI engine for piece detection, page sorting, own API key | M | M17 |
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
 | [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals (done) | M | M18, M20 |
-
-\* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
-  Don't start it or build anything for it unless asked.
 
 M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M15. The numbers are names, not the order.
 
@@ -61,5 +58,5 @@ Source PDF → Source tab → extract_cards → piece library
 | Sidebar | Split per stage in M13 (output settings move to the Print tab), built from collapsible sections that remember their state |
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
-| AI | Optional AI Mode (M19*): off by default and hidden when off; buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect cards" button, results are always editable proposals. Decision after M18 |
+| AI | Optional AI Mode (M19): off by default and hidden when off (the one Preferences entry is the switch); buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect pieces" button, results are always editable proposals; keys only in the system keychain |
 | License | Undecided; the owner will choose later. No `LICENSE` file until then (all rights reserved) |

@@ -400,7 +400,8 @@
       "Workspace": "Espacio de trabajo",
       "Preview": "Vista previa",
       "Appearance": "Apariencia",
-      "About": "Acerca de"
+      "About": "Acerca de",
+      "AI": "Modo IA"
     },
     "units": {
       "mm": "Milímetros (mm)",
@@ -563,7 +564,18 @@
     "not_a_project": "Este no es un archivo de proyecto válido.",
     "project_too_new": "Este proyecto se creó con una versión más reciente de la aplicación (versión de archivo {{found}}; esta versión lee hasta la {{supported}}). Actualiza la aplicación.",
     "project_invalid": "Este archivo de proyecto está dañado o incompleto.",
-    "bleed_exceeds_source_gap": "El origen tiene {{gap_mm}} mm entre algunas piezas, menos que los {{bleed_mm}} mm de sangrado que se toman de él."
+    "bleed_exceeds_source_gap": "El origen tiene {{gap_mm}} mm entre algunas piezas, menos que los {{bleed_mm}} mm de sangrado que se toman de él.",
+    "ai_disabled": "El Modo IA está desactivado.",
+    "ai_no_key": "No hay una clave de API guardada para este proveedor. Agrégala en Preferencias › Modo IA.",
+    "ai_keychain": "No se pudo usar el llavero del sistema: {{detail}}",
+    "ai_http": "El proveedor respondió {{status}}: {{detail}}",
+    "ai_network": "No se pudo contactar al proveedor: {{detail}}",
+    "ai_timeout": "El proveedor no respondió a tiempo.",
+    "ai_refused": "El modelo no quiso responder: {{detail}}",
+    "ai_invalid_reply": "No se pudo leer la respuesta: {{detail}}. No se cambió nada.",
+    "ai_invalid_proposal": "La propuesta no encaja: {{detail}}. No se cambió nada.",
+    "ai_text_only_needs_objects": "Esta página no tiene objetos que describir. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_config": "{{detail}}"
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",
@@ -635,7 +647,8 @@
       "objects": "de los objetos del PDF",
       "edges": "de los bordes que se repiten",
       "blobs": "de las formas",
-      "other": "de otro motor"
+      "other": "de otro motor",
+      "ai": "de la IA"
     },
     "confidence": {
       "exact": "Exacta",
@@ -658,6 +671,91 @@
       "one_piece": "Solo se encontró una pieza.",
       "merged_pieces": "Algunas formas no eran rectángulos limpios: las piezas que se tocan no se pueden distinguir.",
       "no_regular_pattern": "El arte parece cruzar los bordes de las piezas, así que no se ve un patrón regular."
+    }
+  },
+  "ai": {
+    "usage": "Se usaron {{input}} tokens de entrada y {{output}} de salida.",
+    "providers": {
+      "anthropic": "Anthropic (Claude)",
+      "openai_compatible": "Compatible con OpenAI",
+      "gemini": "Google Gemini",
+      "ollama": "Ollama (en esta computadora)"
+    },
+    "modelHint": {
+      "anthropic": "Un modelo de Claude, p. ej. claude-sonnet-5-5 o claude-haiku-5-5.",
+      "openai_compatible": "Un modelo que lea imágenes, con la dirección de su servidor, p. ej. https://api.openai.com/v1, https://api.x.ai/v1 o http://localhost:1234/v1.",
+      "gemini": "Un modelo de Gemini, p. ej. gemini-2.5-flash.",
+      "ollama": "Un modelo de visión que hayas descargado, p. ej. llava o llama3.2-vision."
+    },
+    "settings": {
+      "title": "Modo IA",
+      "enable": "Usar el Modo IA",
+      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno y confirmes.",
+      "provider": "Proveedor",
+      "model": "Modelo",
+      "baseUrl": "Dirección",
+      "baseUrlNote": "Déjala vacía para usar la dirección del proveedor. Solo se acepta http simple para esta computadora o una red privada.",
+      "key": "Clave de API",
+      "keySaved": "Hay una clave guardada en el llavero del sistema.",
+      "keyMissing": "Aún no hay una clave guardada.",
+      "keyField": "Clave de API",
+      "keyPlaceholder": "Pega tu clave",
+      "keyReplace": "Pega una clave nueva para reemplazarla",
+      "keySave": "Guardar clave",
+      "keyRemove": "Quitar clave",
+      "keyNote": "La clave va directo al llavero del sistema. No se vuelve a mostrar y nunca se guarda en un proyecto ni en estas preferencias.",
+      "privacy": "Privacidad",
+      "sendImages": "Enviar imágenes de las páginas",
+      "sendImagesOn": "Las páginas se envían como imágenes. Antes de cada acción ves qué páginas van a qué servidor.",
+      "sendImagesOff": "Solo texto: nunca se envía una imagen. El modelo recibe tamaños, cantidad de objetos y el comienzo del texto de cada página.",
+      "test": "Conexión",
+      "testButton": "Probar conexión",
+      "testing": "Probando…",
+      "testOk": "Conectado. Se usaron {{input}} tokens de entrada y {{output}} de salida."
+    },
+    "confirm": {
+      "title": "¿Enviar a {{provider}}?",
+      "server": "Servidor",
+      "detectImage": "La página {{page}} se enviará como imagen, de unos {{size}} px en su lado largo.",
+      "detectText": "Solo texto: no se envía ninguna imagen. El modelo recibe el tamaño de la página y los recuadros de sus imágenes y rectángulos.",
+      "sortImages": "{{count}} páginas ({{range}}) se enviarán como imágenes pequeñas, de unos {{size}} px, en {{requests}} solicitudes.",
+      "sortText": "Solo texto: no se envía ninguna imagen. Se describen al modelo {{count}} páginas ({{range}}) (tamaño, cantidad de objetos, comienzo del texto) en {{requests}} solicitudes.",
+      "estimate": "Unos {{input}} tokens de entrada y hasta {{output}} de salida.",
+      "cost": "Unos ${{cost}} a precios de lista (aproximado).",
+      "noCost": "No se conoce el precio de este modelo.",
+      "dontAsk": "No preguntar de nuevo al detectar en una página, hasta que cierre la aplicación",
+      "send": "Enviar",
+      "cancel": "Cancelar"
+    },
+    "detect": {
+      "engine": "Motor",
+      "local": "Local",
+      "ai": "IA",
+      "note": "Pregunta al proveedor de IA dónde están las piezas de esta página. No cambia nada hasta que apliques la propuesta.",
+      "buttonAi": "Detectar con IA en esta página"
+    },
+    "sort": {
+      "title": "Ordenar páginas",
+      "note": "Etiqueta cada página (cartas, dorsos, reglas, portada, otra) para poder omitir las que no tienen piezas. No cambia nada hasta que lo apliques.",
+      "button": "Ordenar páginas con IA",
+      "estimating": "Preparando…",
+      "running": "Ordenando…",
+      "page": "Página {{n}}",
+      "labelFor": "Etiqueta de la página {{n}}",
+      "skipFor": "Omitir la página {{n}}",
+      "skip": "Omitir",
+      "labels": {
+        "cards": "Piezas",
+        "backs": "Dorsos",
+        "rules": "Reglas",
+        "cover": "Portada",
+        "other": "Otra"
+      },
+      "changes_one": "Cambiará {{count}} página.",
+      "changes_other": "Cambiarán {{count}} páginas.",
+      "noChanges": "No cambiaría ninguna página.",
+      "apply": "Aplicar",
+      "cancel": "Cancelar"
     }
   }
 }

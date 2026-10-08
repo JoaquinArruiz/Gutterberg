@@ -400,7 +400,8 @@
       "Workspace": "Workspace",
       "Preview": "Preview",
       "Appearance": "Appearance",
-      "About": "About"
+      "About": "About",
+      "AI": "AI Mode"
     },
     "units": {
       "mm": "Millimeters (mm)",
@@ -563,7 +564,18 @@
     "not_a_project": "This is not a valid project file.",
     "project_too_new": "This project was made with a newer version of the app (file version {{found}}; this version reads up to {{supported}}). Please update.",
     "project_invalid": "This project file is damaged or incomplete.",
-    "bleed_exceeds_source_gap": "The source has {{gap_mm}} mm between some pieces, less than the {{bleed_mm}} mm of bleed taken from it."
+    "bleed_exceeds_source_gap": "The source has {{gap_mm}} mm between some pieces, less than the {{bleed_mm}} mm of bleed taken from it.",
+    "ai_disabled": "AI Mode is off.",
+    "ai_no_key": "No API key is saved for this provider. Add one in Preferences › AI Mode.",
+    "ai_keychain": "The system keychain could not be used: {{detail}}",
+    "ai_http": "The provider answered {{status}}: {{detail}}",
+    "ai_network": "Could not reach the provider: {{detail}}",
+    "ai_timeout": "The provider did not answer in time.",
+    "ai_refused": "The model declined to answer: {{detail}}",
+    "ai_invalid_reply": "The reply could not be read: {{detail}}. Nothing was changed.",
+    "ai_invalid_proposal": "The proposal does not fit: {{detail}}. Nothing was changed.",
+    "ai_text_only_needs_objects": "This page has no objects to describe. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_config": "{{detail}}"
   },
   "numberField": {
     "decrease": "Decrease {{label}}",
@@ -635,7 +647,8 @@
       "objects": "from the PDF's objects",
       "edges": "from repeating edges",
       "blobs": "from shapes",
-      "other": "from another engine"
+      "other": "from another engine",
+      "ai": "from AI"
     },
     "confidence": {
       "exact": "Exact",
@@ -658,6 +671,91 @@
       "one_piece": "Only one piece was found.",
       "merged_pieces": "Some shapes were not clean rectangles: pieces that touch cannot be told apart.",
       "no_regular_pattern": "The art seems to run across the piece borders, so no regular pattern shows."
+    }
+  },
+  "ai": {
+    "usage": "Used {{input}} input and {{output}} output tokens.",
+    "providers": {
+      "anthropic": "Anthropic (Claude)",
+      "openai_compatible": "OpenAI-compatible",
+      "gemini": "Google Gemini",
+      "ollama": "Ollama (on this computer)"
+    },
+    "modelHint": {
+      "anthropic": "A Claude model id, e.g. claude-sonnet-5-5 or claude-haiku-5-5.",
+      "openai_compatible": "A model that reads images, with the address of its server, e.g. https://api.openai.com/v1, https://api.x.ai/v1 or http://localhost:1234/v1.",
+      "gemini": "A Gemini model id, e.g. gemini-2.5-flash.",
+      "ollama": "A vision model you have pulled, e.g. llava or llama3.2-vision."
+    },
+    "settings": {
+      "title": "AI Mode",
+      "enable": "Use AI Mode",
+      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one and confirm.",
+      "provider": "Provider",
+      "model": "Model",
+      "baseUrl": "Address",
+      "baseUrlNote": "Leave empty for the provider's own address. Plain http is only accepted for this computer or a private network.",
+      "key": "API key",
+      "keySaved": "A key is saved in the system keychain.",
+      "keyMissing": "No key saved yet.",
+      "keyField": "API key",
+      "keyPlaceholder": "Paste your key",
+      "keyReplace": "Paste a new key to replace it",
+      "keySave": "Save key",
+      "keyRemove": "Remove key",
+      "keyNote": "The key goes straight to the system keychain. It is never shown again and never saved in a project or in these preferences.",
+      "privacy": "Privacy",
+      "sendImages": "Send page images",
+      "sendImagesOn": "Pages are sent as pictures. Before every action you see which pages go to which server.",
+      "sendImagesOff": "Text only: no picture is ever sent. The model gets sizes, counts of objects and the start of each page's text.",
+      "test": "Connection",
+      "testButton": "Test connection",
+      "testing": "Testing…",
+      "testOk": "Connected. Used {{input}} input and {{output}} output tokens."
+    },
+    "confirm": {
+      "title": "Send to {{provider}}?",
+      "server": "Server",
+      "detectImage": "Page {{page}} will be sent as a picture, about {{size}} px on its long side.",
+      "detectText": "Text only: no picture is sent. The model gets the page size and the boxes of its images and rectangles.",
+      "sortImages": "{{count}} pages ({{range}}) will be sent as small pictures, about {{size}} px, in {{requests}} requests.",
+      "sortText": "Text only: no picture is sent. {{count}} pages ({{range}}) are described to the model (size, counts of objects, start of the text) in {{requests}} requests.",
+      "estimate": "About {{input}} input tokens and up to {{output}} output tokens.",
+      "cost": "About ${{cost}} at list prices (approximate).",
+      "noCost": "No price is known for this model.",
+      "dontAsk": "Don't ask again before detecting on one page, until I close the app",
+      "send": "Send",
+      "cancel": "Cancel"
+    },
+    "detect": {
+      "engine": "Engine",
+      "local": "Local",
+      "ai": "AI",
+      "note": "Asks the AI provider where the pieces are on this page. Nothing changes until you apply the proposal.",
+      "buttonAi": "Detect with AI on this page"
+    },
+    "sort": {
+      "title": "Sort pages",
+      "note": "Labels every page (cards, backs, rules, cover, other) so pages without pieces can be skipped. Nothing changes until you apply it.",
+      "button": "Sort pages with AI",
+      "estimating": "Preparing…",
+      "running": "Sorting…",
+      "page": "Page {{n}}",
+      "labelFor": "Label of page {{n}}",
+      "skipFor": "Skip page {{n}}",
+      "skip": "Skip",
+      "labels": {
+        "cards": "Cards",
+        "backs": "Backs",
+        "rules": "Rules",
+        "cover": "Cover",
+        "other": "Other"
+      },
+      "changes_one": "{{count}} page will change.",
+      "changes_other": "{{count}} pages will change.",
+      "noChanges": "No page would change.",
+      "apply": "Apply",
+      "cancel": "Cancel"
     }
   }
 }

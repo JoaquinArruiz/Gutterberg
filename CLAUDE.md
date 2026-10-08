@@ -8,6 +8,8 @@ original card size and vector content. See `README.md` for features and controls
 
 - `crates/card-core/`: geometry, layout, PDF export (lopdf) and rendering (pdfium-render).
   No Tauri or UI dependency.
+- `crates/card-ai/`: the optional AI Mode (M19): provider adapters, prompts and reply checks. The only
+  crate that talks to the network.
 - `src-tauri/`: Tauri shell; `src/commands/*` are thin IPC wrappers around `card-core`.
 - `src/`: React frontend. Stores in `src/stores/` (Zustand), helpers in `src/lib/`,
   components in `src/components/`.
@@ -71,6 +73,7 @@ and type names) stay as they are.
 | **front / back** | **frente / dorso** | The two sides of a piece, and of a duplex sheet | obverse / reverse, face |
 | **cut marks** | **marcas de corte** | Lines on the sheet that show where to cut | crop marks, trim marks |
 | **bleed** | **sangrado** | Art that extends past a piece's edge | |
+| **AI Mode** | **Modo IA** | The opt-in setting that adds AI buttons, using the user's own key; off and hidden by default | AI assistant, chat |
 | **proposal** | **propuesta** | What Detect pieces offers: shown as a draft on the page, applied only when the user says so | result, guess |
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json` (from M21): add

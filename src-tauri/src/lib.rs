@@ -1,4 +1,5 @@
 mod commands;
+mod keychain;
 mod state;
 
 pub fn run() {
@@ -6,6 +7,14 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
+            commands::ai::ai_delete_key,
+            commands::ai::ai_detect_pieces,
+            commands::ai::ai_estimate,
+            commands::ai::ai_key_status,
+            commands::ai::ai_set_enabled,
+            commands::ai::ai_set_key,
+            commands::ai::ai_sort_pages,
+            commands::ai::ai_test_connection,
             commands::detect::detect_pieces,
             commands::document::open_pdf,
             commands::document::close_pdf,

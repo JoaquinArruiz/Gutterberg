@@ -14,6 +14,7 @@ import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
+import { AiSortSection } from "./AiSortSection";
 import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
@@ -79,6 +80,8 @@ export function PropertiesSidebar() {
       )}
 
       {group?.kind !== "skip" && <DetectSection />}
+
+      <AiSortSection />
 
       {group?.kind === "grid" && grid && spec && (
         <>

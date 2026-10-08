@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { emitHintEvent } from "../lib/hint-events";
 
-export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance" | "About";
+export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance" | "AI" | "About";
 
 /** The two halves of the app: define where the cards are, then choose what to print. */
 export type Stage = "cards" | "print";

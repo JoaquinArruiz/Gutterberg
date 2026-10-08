@@ -1,0 +1,13 @@
+[package]
+name = "card-ai"
+version = "0.1.0"
+edition = "2021"
+description = "Optional AI-assisted detection and page sorting for the PDF card editor: provider adapters, prompts and reply validation (the only crate that talks to the network)"
+
+[dependencies]
+card-core = { path = "../card-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+base64 = "0.22"
+ureq = { version = "3", default-features = false, features = ["rustls"] }

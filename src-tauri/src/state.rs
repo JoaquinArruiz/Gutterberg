@@ -1,3 +1,5 @@
+use crate::keychain::KeyringStore;
+use card_ai::Gate;
 use card_core::card::DocumentId;
 use card_core::render_worker::RenderWorker;
 use card_core::{Error, ErrorInfo, ErrorParam};
@@ -11,6 +13,10 @@ pub struct AppState {
     worker: Mutex<Option<Arc<RenderWorker>>>,
     /// The file each open document was read from, by the id its cards carry.
     paths: Mutex<HashMap<DocumentId, PathBuf>>,
+    /// Whether AI Mode is on; every AI command refuses while it is off.
+    pub ai_gate: Arc<Gate>,
+    /// API keys, in the system keychain.
+    pub ai_keys: Arc<KeyringStore>,
 }
 
 impl AppState {

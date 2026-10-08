@@ -19,6 +19,7 @@ import {
   type GridPatch,
   gridGroupAt,
   groupAt,
+  isSkipped,
   MAX_GAP_MM,
   type PageGroup,
   patchGrid,
@@ -150,6 +151,8 @@ type LayoutState = OutputSettings & {
   applyDetectedPieces: (page: number, cards: OrientedRect[]) => void;
   setGrid: (page: number, patch: GridPatch) => void;
   setSkipped: (page: number, skip: boolean) => void;
+  /** Sets the skip state of several pages at once (page index to skipped): one undo step. */
+  applySkips: (skips: Record<number, boolean>) => void;
   /** Copy the grid and region of `page`'s group onto `pages`. */
   applyGrid: (page: number, pages: number[]) => void;
   setGapX: (mm: number) => void;
@@ -300,6 +303,14 @@ export const useLayoutStore = create<LayoutState>()(
         emitHintEvent("grid-changed");
       },
       setSkipped: (page, skip) => set((s) => ({ groups: setSkipped(s.groups, page, skip) })),
+      applySkips: (skips) =>
+        set((s) => {
+          let groups = s.groups;
+          for (const [page, skip] of Object.entries(skips)) {
+            if (isSkipped(groups, Number(page)) !== skip) groups = setSkipped(groups, Number(page), skip);
+          }
+          return groups === s.groups ? s : { groups };
+        }),
       applyGrid: (page, pages) => set((s) => ({ groups: applyGridTo(s.groups, page, pages) })),
       setGapX: (mm) => set((s) => (s.gapLinked ? { gapXMm: gap(mm), gapYMm: gap(mm) } : { gapXMm: gap(mm) })),
       setGapY: (mm) => set({ gapYMm: gap(mm) }),

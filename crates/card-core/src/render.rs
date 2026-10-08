@@ -146,6 +146,54 @@ pub fn render_page_png_in(doc: &PdfDocument, page_index: usize, width_px: u32) -
     Ok(out)
 }
 
+/// A page as a PNG with the size it came out at.
+#[derive(Debug, Clone)]
+pub struct RenderedPage {
+    pub png: Vec<u8>,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Render a page so its longer side is `long_side_px`, shrinking it until the PNG is at most
+/// `max_bytes` (a provider's limit on one picture).
+pub fn render_page_fit_in(
+    doc: &PdfDocument,
+    page_index: usize,
+    long_side_px: u32,
+    max_bytes: usize,
+) -> Result<RenderedPage> {
+    let page = get_page(doc, page_index)?;
+    let (w, h) = (page.width().value as f64, page.height().value as f64);
+    let mut long = long_side_px.clamp(64, 4096) as f64;
+    for _ in 0..6 {
+        let k = long / w.max(h);
+        let (tw, th) = (
+            (w * k).round().max(1.0) as i32,
+            (h * k).round().max(1.0) as i32,
+        );
+        let cfg = PdfRenderConfig::new().set_target_size(tw, th);
+        let img = page
+            .render_with_config(&cfg)
+            .map_err(pdfium_err)?
+            .as_image()
+            .map_err(pdfium_err)?;
+        let png = encode_png(&img)?;
+        if png.len() <= max_bytes {
+            return Ok(RenderedPage {
+                png,
+                width: img.width(),
+                height: img.height(),
+            });
+        }
+        long *= 0.8;
+    }
+    Err(Error::Pdfium(format!(
+        "page {} is too detailed to send within {} bytes",
+        page_index + 1,
+        max_bytes
+    )))
+}
+
 /// Render only `region` (normalized, top-left origin) of a page as a PNG, at the
 /// scale where the whole page would be `full_width_px` wide. Only the region's
 /// pixels are allocated and encoded, so a high zoom stays fast (used by the

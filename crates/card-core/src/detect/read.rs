@@ -193,9 +193,8 @@ fn grey_render(page: &PdfPage, size: PageSize) -> Result<GreyImage> {
     })
 }
 
-/// The objects and a grey render of page `page_index` of `doc`.
-pub fn read_page_data(doc: &PdfDocument, page_index: usize) -> Result<PageData> {
-    let page = get_page(doc, page_index)?;
+/// The size of a page as displayed and the map from its own space to it.
+fn page_frame(page: &PdfPage) -> Result<(PageSize, DisplayFrame)> {
     let size = PageSize {
         width_pt: page.width().value as f64,
         height_pt: page.height().value as f64,
@@ -220,22 +219,78 @@ pub fn read_page_data(doc: &PdfDocument, page_index: usize) -> Result<PageData> 
         ],
         rotate,
     };
+    Ok((size, frame))
+}
+
+fn page_objects(page: &PdfPage, frame: &DisplayFrame) -> Vec<PageObject> {
     let mut objects = Vec::new();
     let forms = page
         .objects()
         .iter()
         .filter(|o| o.object_type() == PdfPageObjectType::XObjectForm)
         .count();
-    collect(
-        page.objects().iter(),
-        None,
-        &frame,
-        &mut objects,
-        forms == 1,
-    );
+    collect(page.objects().iter(), None, frame, &mut objects, forms == 1);
+    objects
+}
+
+/// The objects and a grey render of page `page_index` of `doc`.
+pub fn read_page_data(doc: &PdfDocument, page_index: usize) -> Result<PageData> {
+    let page = get_page(doc, page_index)?;
+    let (size, frame) = page_frame(&page)?;
     Ok(PageData {
         size,
-        objects,
+        objects: page_objects(&page, &frame),
         grey: Some(grey_render(&page, size)?),
+    })
+}
+
+/// Only the page's size and the boxes of its objects (no render): what a text-only request describes.
+pub fn read_objects(doc: &PdfDocument, page_index: usize) -> Result<(PageSize, Vec<PageObject>)> {
+    let page = get_page(doc, page_index)?;
+    let (size, frame) = page_frame(&page)?;
+    Ok((size, page_objects(&page, &frame)))
+}
+
+/// What a page is, in numbers and words, without showing it.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PageSummary {
+    pub page_index: usize,
+    pub size: PageSize,
+    pub images: usize,
+    pub paths: usize,
+    pub texts: usize,
+    /// The start of the page's own text.
+    pub text: String,
+}
+
+/// Longest text kept in a summary (characters).
+const SUMMARY_TEXT_CHARS: usize = 2000;
+
+pub fn read_summary(doc: &PdfDocument, page_index: usize) -> Result<PageSummary> {
+    let page = get_page(doc, page_index)?;
+    let size = PageSize {
+        width_pt: page.width().value as f64,
+        height_pt: page.height().value as f64,
+    };
+    let (mut images, mut paths, mut texts) = (0, 0, 0);
+    for object in page.objects().iter() {
+        match object.object_type() {
+            PdfPageObjectType::Image => images += 1,
+            PdfPageObjectType::Path => paths += 1,
+            PdfPageObjectType::Text => texts += 1,
+            _ => {}
+        }
+    }
+    let text = page
+        .text()
+        .map(|t| t.all().chars().take(SUMMARY_TEXT_CHARS).collect())
+        .unwrap_or_default();
+    Ok(PageSummary {
+        page_index,
+        size,
+        images,
+        paths,
+        texts,
+        text,
     })
 }

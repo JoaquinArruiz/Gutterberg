@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/card-core", "src-tauri"]
+members = ["crates/card-core", "crates/card-ai", "src-tauri"]
 
 # Dev builds compile dependencies (image/png, flate2, lopdf...) with optimizations;
 # otherwise PNG encoding of previews is ~10x slower under `tauri dev`.

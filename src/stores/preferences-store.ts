@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { applyLocale } from "../i18n";
+import type { AiProvider, AiProviderSettings } from "../lib/ai";
 import { type HintId, hintVersion } from "../lib/hints";
 import { type DecimalPreference, type LanguagePreference, resolveLanguage, resolveSeparator } from "../lib/locale";
 import type { MeasurementUnit } from "../lib/measurement";
@@ -110,6 +111,12 @@ type PreferencesState = {
   /** The file is gone: drop it from the recent list. */
   removeRecentProject: (path: string) => void;
   /** Saves a grid under its name, replacing a preset of the same name. */
+  /** AI Mode on or off. */
+  setAiEnabled: (enabled: boolean) => void;
+  setAiProvider: (provider: AiProvider) => void;
+  setAiSendImages: (on: boolean) => void;
+  /** The model and address typed for one provider. */
+  setAiProviderSettings: (provider: AiProvider, patch: Partial<AiProviderSettings>) => void;
   savePreset: (preset: GridPreset) => void;
   deletePreset: (name: string) => void;
   /** Persist the widths the user dragged in the Print stage. */
@@ -188,6 +195,14 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),
       removeRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: p.files.recent.filter((x) => x !== path) } })),
+      setAiEnabled: (enabled) => edit((p) => ({ ...p, ai: { ...p.ai, enabled } })),
+      setAiProvider: (provider) => edit((p) => ({ ...p, ai: { ...p.ai, provider } })),
+      setAiSendImages: (sendImages) => edit((p) => ({ ...p, ai: { ...p.ai, sendImages } })),
+      setAiProviderSettings: (provider, patch) =>
+        edit((p) => ({
+          ...p,
+          ai: { ...p.ai, providers: { ...p.ai.providers, [provider]: { ...p.ai.providers[provider], ...patch } } },
+        })),
       savePreset: (preset) =>
         edit((p) => {
           const same = (a: GridPreset) => a.name.trim().toLowerCase() === preset.name.trim().toLowerCase();

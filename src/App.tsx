@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AiConfirmDialog } from "./components/ai/AiConfirmDialog";
 import { EditorViewport } from "./components/editor/EditorViewport";
 import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
@@ -140,6 +141,7 @@ export default function App() {
       <StatusBar />
       <FirstPdfTour />
       <PreferencesDialog />
+      <AiConfirmDialog />
     </div>
   );
 }

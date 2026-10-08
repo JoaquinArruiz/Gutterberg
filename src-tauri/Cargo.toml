@@ -15,6 +15,17 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-dialog = "2"
 card-core = { path = "../crates/card-core" }
+card-ai = { path = "../crates/card-ai" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 pdfium-render = "0.9"
+
+# API keys live in the system keychain, written and read only here in Rust.
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", features = ["windows-native"] }
+
+[target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
+keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }

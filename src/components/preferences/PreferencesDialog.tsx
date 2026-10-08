@@ -29,12 +29,13 @@ import {
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { type PrefsSection, useUiStore } from "../../stores/ui-store";
 import { Select } from "../ui/Select";
+import { AiSettings } from "./AiSettings";
 import { LayoutPreview } from "./LayoutPreview";
 
 /** The catalog key of each decimal choice. */
 const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalComma" } as const;
 
-const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "About"];
+const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI", "About"];
 type Section = PrefsSection;
 
 const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
@@ -359,6 +360,8 @@ export function PreferencesDialog() {
               ))}
             </Field>
           )}
+
+          {section === "AI" && <AiSettings />}
 
           {section === "About" && (
             <Field label={t("preferences.about.title")}>

@@ -11,11 +11,13 @@
 //! page or pane), but thumbnails run last so they never delay the interactive kinds.
 
 use crate::card::DocumentId;
-use crate::detect::{default_engines, detect_page, read::read_page_data, Detection};
+use crate::detect::read::{read_objects, read_page_data, read_summary, PageSummary};
+use crate::detect::{default_engines, detect_page, Detection, PageObject};
 use crate::error::{Error, Result};
-use crate::geometry::Rect;
+use crate::geometry::{PageSize, Rect};
 use crate::render::{
-    bind_pdfium, document_info_in, render_page_png_in, render_region_png_in, DocumentInfo,
+    bind_pdfium, document_info_in, render_page_fit_in, render_page_png_in, render_region_png_in,
+    DocumentInfo, RenderedPage,
 };
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 use std::collections::{HashMap, VecDeque};
@@ -57,6 +59,11 @@ enum Work {
     Page(DocumentId, usize, u32, Reply<Vec<u8>>),
     Region(DocumentId, usize, Rect, u32, Reply<Vec<u8>>),
     Detect(DocumentId, usize, Reply<Detection>),
+    /// Objects of one page, for describing it as text.
+    Objects(DocumentId, usize, Reply<(PageSize, Vec<PageObject>)>),
+    Summaries(DocumentId, Vec<usize>, Reply<Vec<PageSummary>>),
+    /// Pages as PNGs with a given long side, each within a byte limit.
+    Fit(DocumentId, Vec<usize>, u32, usize, Reply<Vec<RenderedPage>>),
 }
 
 struct Msg {
@@ -146,6 +153,39 @@ impl RenderWorker {
         })
     }
 
+    /// The size and object boxes of a page (no render). Blocks until done.
+    pub fn page_objects(
+        &self,
+        document_id: DocumentId,
+        page_index: usize,
+    ) -> Result<(PageSize, Vec<PageObject>)> {
+        self.send(RenderKind::Page, |r| {
+            Work::Objects(document_id, page_index, r)
+        })
+    }
+
+    /// A short description (counts and the start of the text) of each of `pages`. Blocks until done.
+    pub fn page_summaries(
+        &self,
+        document_id: DocumentId,
+        pages: Vec<usize>,
+    ) -> Result<Vec<PageSummary>> {
+        self.send(RenderKind::Page, |r| Work::Summaries(document_id, pages, r))
+    }
+
+    /// Each of `pages` as a PNG whose longer side is `long_side_px`, shrunk to fit `max_bytes`.
+    pub fn render_fit(
+        &self,
+        document_id: DocumentId,
+        pages: Vec<usize>,
+        long_side_px: u32,
+        max_bytes: usize,
+    ) -> Result<Vec<RenderedPage>> {
+        self.send(RenderKind::Page, |r| {
+            Work::Fit(document_id, pages, long_side_px, max_bytes, r)
+        })
+    }
+
     /// Blocks until rendered (or superseded).
     pub fn render_region(
         &self,
@@ -220,6 +260,28 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                         .and_then(|d| read_page_data(d, index))
                         .map(|data| detect_page(&data, &default_engines())),
                 );
+            }
+            Work::Objects(id, index, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| read_objects(d, index)),
+                );
+            }
+            Work::Summaries(id, pages, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| pages.iter().map(|&p| read_summary(d, p)).collect()),
+                );
+            }
+            Work::Fit(id, pages, long_side, max_bytes, reply) => {
+                let _ = reply.send(docs.get(&id).ok_or(Error::NoDocument).and_then(|d| {
+                    pages
+                        .iter()
+                        .map(|&p| render_page_fit_in(d, p, long_side, max_bytes))
+                        .collect()
+                }));
             }
             Work::Region(id, index, region, width, reply) => {
                 let _ = reply.send(if stale {

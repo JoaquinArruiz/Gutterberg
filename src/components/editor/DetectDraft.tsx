@@ -165,6 +165,7 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
 }
 
 /** The catalog key of an engine's name; an engine the UI does not know (a later one) reads as "other". */
-export function engineKey(engine: string): "objects" | "edges" | "blobs" | "other" {
+export function engineKey(engine: string): "objects" | "edges" | "blobs" | "ai" | "other" {
+  if (engine === "ai") return "ai";
   return engine === "pdf-objects" ? "objects" : engine === "edges" ? "edges" : engine === "blobs" ? "blobs" : "other";
 }

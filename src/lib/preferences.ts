@@ -7,6 +7,7 @@
 // the defaults, drops invalid values and repairs invariants, so the rest of the
 // app never sees an invalid state.
 
+import { type AiPrefs, DEFAULT_AI, normalizeAi } from "./ai";
 import { MAX_GAP_MM } from "./document-layout";
 import { clampCount } from "./grid";
 import { type HintId, isHintId } from "./hints";
@@ -17,8 +18,9 @@ import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./wor
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
 // inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). v6: adds
 // locale (language and decimal separator, both defaulting to following the system). v7: adds files.recent
-// (recent projects) and presets (named grids). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 7;
+// (recent projects) and presets (named grids). v8: adds ai (AI Mode: off by default; never a key). Older files migrate by
+// taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 8;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -82,6 +84,8 @@ export interface AppPreferences {
   };
   /** Saved grids, in the order they were made. */
   presets: GridPreset[];
+  /** AI Mode (M19). */
+  ai: AiPrefs;
 }
 
 export interface PrintLayoutPrefs {
@@ -107,6 +111,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
   files: { recent: [] },
   presets: [],
+  ai: DEFAULT_AI,
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -245,6 +250,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     },
     files: { recent: normalizeRecent(fl.recent) },
     presets: normalizePresets(r.presets),
+    ai: normalizeAi(r.ai),
   };
 }
 
