@@ -72,6 +72,7 @@ vi.mock("./project-api", () => ({
   fileExists: vi.fn(async (path: string) => fake.pdfs.has(path)),
   pickProjectToOpen: vi.fn(async () => fake.pickedProject.shift() ?? null),
   pickProjectToSave: vi.fn(async () => fake.saveAs.shift() ?? null),
+  notify: vi.fn(async () => {}),
   confirm: vi.fn(async (message: string) => {
     fake.asked.push(message);
     return fake.confirms.shift() ?? false;

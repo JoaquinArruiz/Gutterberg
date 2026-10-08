@@ -2,7 +2,7 @@
 // one) happens in Rust before the data gets here; `parseProject` then validates the rest.
 
 import { invoke } from "@tauri-apps/api/core";
-import { ask, open, save } from "@tauri-apps/plugin-dialog";
+import { ask, open, save, message as showMessage } from "@tauri-apps/plugin-dialog";
 import { ZodError } from "zod";
 import { t } from "../i18n";
 import { appError } from "./errors";
@@ -42,6 +42,11 @@ export async function pickProjectToSave(suggestedName: string): Promise<string |
   const picked = await save({ defaultPath: `${suggestedName}.${PROJECT_EXTENSION}`, filters: filters() });
   if (!picked) return null;
   return picked.toLowerCase().endsWith(`.${PROJECT_EXTENSION}`) ? picked : `${picked}.${PROJECT_EXTENSION}`;
+}
+
+/** A message with an OK button in a native dialog. */
+export async function notify(message: string): Promise<void> {
+  await showMessage(message, { kind: "warning", okLabel: t("common.ok") });
 }
 
 /** A yes/no question in a native dialog. */

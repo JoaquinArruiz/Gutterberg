@@ -11,6 +11,7 @@ const PageSizeSchema = z.object({ width_pt: z.number(), height_pt: z.number() })
 export const DocumentInfoSchema = z.object({
   page_count: z.number().int(),
   pages: z.array(PageSizeSchema),
+  modify_allowed: z.boolean().default(true),
 });
 export type PageSize = z.infer<typeof PageSizeSchema>;
 export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;

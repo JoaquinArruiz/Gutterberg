@@ -27,13 +27,14 @@ import {
   confirm,
   fileExists,
   hashFile,
+  notify,
   pickProjectToOpen,
   pickProjectToSave,
   readProjectFile,
   writeProjectFile,
 } from "./project-api";
 import { currentProjectState, currentSignature } from "./project-state";
-import { closePdf, openPdf, pickPdf, pickPdfs } from "./tauri";
+import { closePdf, type DocumentInfo, openPdf, pickPdf, pickPdfs } from "./tauri";
 import { clearCardImages } from "./use-card-image";
 import { startSession } from "./workspace";
 
@@ -68,6 +69,11 @@ function resetSession() {
   startSession();
 }
 
+/** Tells the user when a PDF's author marked it "no modify". */
+async function warnIfNoModify(path: string, info: DocumentInfo): Promise<void> {
+  if (!info.modify_allowed) await notify(t("project.noModify", { name: fileName(path) }));
+}
+
 /**
  * Opens these PDFs in the render thread in place of the open ones. If one cannot be read, the previous ones
  * are opened again so the project on screen keeps working.
@@ -79,6 +85,7 @@ async function swapDocuments(files: { id: DocumentId; path: string; hash?: strin
     const opened: OpenDocument[] = [];
     for (const f of files) {
       const [info, hash] = await Promise.all([openPdf(f.id, f.path), f.hash ?? hashFile(f.path)]);
+      await warnIfNoModify(f.path, info);
       opened.push({ id: f.id, path: f.path, pages: info.pages, hash });
     }
     return opened;
@@ -172,6 +179,7 @@ export async function addPdfDialog(): Promise<void> {
     for (const path of paths) {
       const id = nextDocumentId(useDocumentStore.getState());
       const [info, hash] = await Promise.all([openPdf(id, path), hashFile(path)]);
+      await warnIfNoModify(path, info);
       useLayoutStore.getState().parkDocument(id, { groups: defaultGroups(info.pages.length), freeform: {} });
       useDocumentStore.getState().addDocument({ id, path, pages: info.pages, hash });
       first ??= id;

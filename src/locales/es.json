@@ -55,6 +55,7 @@
   "common": {
     "page": "Página {{n}}",
     "pages": "Páginas {{first}}–{{last}}",
+    "ok": "Aceptar",
     "cancel": "Cancelar",
     "apply": "Aplicar",
     "close": "Cerrar",
@@ -523,6 +524,7 @@
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
       "ok": "Descartar cambios"
     },
+    "noModify": "El autor marcó “{{name}}” como «no modificar». Se puede abrir, pero el PDF exportado es un archivo nuevo, así que verifica que tengas permiso para reorganizarlo.",
     "relink": {
       "message": "¿Dónde está ahora «{{name}}»? Elige el PDF para seguir abriendo el proyecto.",
       "ok": "Elegir archivo…",

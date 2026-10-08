@@ -11,6 +11,8 @@ pub struct DocumentInfo {
     pub page_count: usize,
     /// Size in points of every page, in order.
     pub pages: Vec<PageSize>,
+    /// False when the PDF's permissions forbid modifying it ("no modify" PDFs).
+    pub modify_allowed: bool,
 }
 
 fn pdfium_err(e: PdfiumError) -> Error {
@@ -69,6 +71,10 @@ pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
     Ok(DocumentInfo {
         page_count: pages.len(),
         pages,
+        modify_allowed: doc
+            .permissions()
+            .can_modify_document_content()
+            .unwrap_or(true),
     })
 }
 

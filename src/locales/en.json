@@ -55,6 +55,7 @@
   "common": {
     "page": "Page {{n}}",
     "pages": "Pages {{first}}–{{last}}",
+    "ok": "OK",
     "cancel": "Cancel",
     "apply": "Apply",
     "close": "Close",
@@ -523,6 +524,7 @@
       "message": "This project has changes that are not saved. Discard them?",
       "ok": "Discard changes"
     },
+    "noModify": "“{{name}}” is marked as “no modify” by its author. Opening it works, but the exported PDF is a new file, so check that you are allowed to rearrange it.",
     "relink": {
       "message": "Where is “{{name}}” now? Choose the PDF to keep opening the project.",
       "ok": "Choose file…",
