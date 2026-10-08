@@ -52,7 +52,7 @@ describe("applyEdits", () => {
   });
 
   it("ignores edits of cards that no longer exist", () => {
-    const edits: CardEdits = { turns: { "g:0:9:9:9": 90 }, scales: {}, order: ["g:0:9:9:9", keys[2]] };
+    const edits: CardEdits = { turns: { "g:0:9:9:9": 90 }, scales: {}, order: ["g:0:9:9:9", keys[2]], backs: {} };
     expect(order(applyEdits(grid, edits))).toEqual([2, 0, 1, 3]);
     expect(hasCardEdits(grid, { ...NO_EDITS, turns: { "g:0:9:9:9": 90 } })).toBe(false);
   });
@@ -168,11 +168,13 @@ describe("deleting a freeform card", () => {
       turns: { "f:0:0:0": 90, "f:0:0:1": 180, "f:0:0:2": 270, "f:1:0:2": 90 },
       scales: { "f:0:0:1": 0.9, "f:0:0:2": 0.8 },
       order: ["f:0:0:2", "f:1:0:2", "f:0:0:1", "f:0:0:0"],
+      backs: {},
     };
     expect(editsAfterDelete(e, 0, 0, 1)).toEqual({
       turns: { "f:0:0:0": 90, "f:0:0:1": 270, "f:1:0:2": 90 },
       scales: { "f:0:0:1": 0.8 },
       order: ["f:0:0:1", "f:1:0:2", "f:0:0:0"],
+      backs: {},
     });
   });
 });

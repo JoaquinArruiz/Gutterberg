@@ -10,7 +10,7 @@ import { usePreferencesStore } from "../stores/preferences-store";
 import { usePrintStore } from "../stores/print-store";
 import { useProjectStore } from "../stores/project-store";
 import type { DocumentId } from "./card";
-import { type CardEdits, NO_EDITS } from "./card-edits";
+import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
 import { defaultGroups } from "./document-layout";
 import { toAppError } from "./errors";
 import { emitHintEvent } from "./hint-events";
@@ -305,8 +305,17 @@ export async function openProjectDialog(path?: string): Promise<void> {
           turns: withoutDocument(edits.turns, d.id),
           scales: withoutDocument(edits.scales, d.id),
           order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
+          backs: backsWithoutDocument(edits.backs, d.id),
         };
-        plan = { ...plan, quantities: withoutDocument(plan.quantities, d.id) };
+        const common = plan.finish.duplex.commonBack;
+        plan = {
+          ...plan,
+          quantities: withoutDocument(plan.quantities, d.id),
+          finish:
+            common !== null && isCardOfDocument(common, d.id)
+              ? { ...plan.finish, duplex: { ...plan.finish.duplex, commonBack: null } }
+              : plan.finish,
+        };
         useProjectStore.getState().addNotice("layoutReset", { name: fileName(opened[i].path) });
       }
       viewed[d.id] = Math.min(d.viewedPage, n - 1);

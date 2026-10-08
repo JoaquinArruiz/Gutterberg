@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OutputSheet } from "../../lib/sheet-api";
 import { PlacedCard } from "./PlacedCard";
+import { SheetOverlay } from "./SheetOverlay";
 
 const THUMB_HEIGHT = 84;
 
@@ -10,11 +11,14 @@ function SheetThumb({
   sheet,
   index,
   active,
+  tagged,
   onSelect,
 }: {
   sheet: OutputSheet;
   index: number;
   active: boolean;
+  /** Say front or back (duplex plans only). */
+  tagged: boolean;
   onSelect: () => void;
 }) {
   const { t } = useTranslation();
@@ -53,8 +57,11 @@ function SheetThumb({
             // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
             <PlacedCard key={i} p={p} k={k} kind="thumbnail" />
           ))}
+        {visible && <SheetOverlay sheet={sheet} k={k} />}
       </div>
-      <span className="text-[11px] text-[var(--muted)]">{index + 1}</span>
+      <span className="text-[11px] text-[var(--muted)]">
+        {tagged ? `${index + 1} · ${t(`sheets.${sheet.side ?? "front"}`)}` : index + 1}
+      </span>
     </button>
   );
 }
@@ -69,14 +76,22 @@ export function SheetStrip({
   current: number;
   onSelect: (i: number) => void;
 }) {
+  const tagged = sheets.some((s) => s.side === "back");
   return (
     <div
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--panel)] px-2 pb-1 pt-1"
       data-testid="sheet-strip"
     >
       {sheets.map((sheet, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: sheets have no id; their position is their identity
-        <SheetThumb key={i} sheet={sheet} index={i} active={i === current} onSelect={() => onSelect(i)} />
+        <SheetThumb
+          // biome-ignore lint/suspicious/noArrayIndexKey: sheets have no id; their position is their identity
+          key={i}
+          sheet={sheet}
+          index={i}
+          active={i === current}
+          tagged={tagged}
+          onSelect={() => onSelect(i)}
+        />
       ))}
     </div>
   );

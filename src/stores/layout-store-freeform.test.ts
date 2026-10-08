@@ -39,6 +39,7 @@ describe("freeform cards", () => {
       turns: { "f:0:1:1": 90, "f:0:1:2": 180 },
       scales: { "f:0:1:2": 0.9 },
       order: ["f:0:1:2", "f:0:1:0", "f:0:1:1"],
+      backs: {},
     });
     store().deleteFreeformCard(1, 1);
     expect(store().freeform[1].map((c) => c.center.x)).toEqual([0.1, 0.3]);
@@ -46,6 +47,7 @@ describe("freeform cards", () => {
       turns: { "f:0:1:1": 180 },
       scales: { "f:0:1:1": 0.9 },
       order: ["f:0:1:1", "f:0:1:0"],
+      backs: {},
     });
     // The last card of a page leaves no empty entry behind.
     store().deleteFreeformCard(1, 0);
@@ -56,7 +58,7 @@ describe("freeform cards", () => {
   it("undoes and redoes drawing and deleting, restoring the card edits with them", () => {
     store().addFreeformCard(0, card(0.2));
     store().addFreeformCard(0, card(0.5));
-    store().setCardEdits({ turns: { "f:0:0:1": 90 }, scales: {}, order: [] });
+    store().setCardEdits({ turns: { "f:0:0:1": 90 }, scales: {}, order: [], backs: {} });
     store().deleteFreeformCard(0, 0);
     expect(store().cardEdits.turns).toEqual({ "f:0:0:0": 90 });
     undo();
@@ -93,9 +95,9 @@ describe("freeform cards", () => {
 
   it("forgets the cards and edits when a new document opens", () => {
     store().addFreeformCard(0, card(0.2));
-    store().setCardEdits({ turns: { "f:0:0:0": 90 }, scales: {}, order: [] });
+    store().setCardEdits({ turns: { "f:0:0:0": 90 }, scales: {}, order: [], backs: {} });
     store().resetDocument(2);
     expect(store().freeform).toEqual({});
-    expect(store().cardEdits).toEqual({ turns: {}, scales: {}, order: [] });
+    expect(store().cardEdits).toEqual({ turns: {}, scales: {}, order: [], backs: {} });
   });
 });

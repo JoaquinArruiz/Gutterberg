@@ -7,6 +7,7 @@
 pub mod card;
 pub mod error;
 pub mod export;
+pub mod finish;
 pub mod geometry;
 pub mod layout;
 pub mod project;

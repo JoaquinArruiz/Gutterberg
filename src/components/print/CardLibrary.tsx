@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { cardIdKey } from "../../lib/card";
-import { moveCards, orientCards, turnCards } from "../../lib/card-edits";
+import { moveCards, orientCards, setBacks, turnCards } from "../../lib/card-edits";
 import { rangeLabel } from "../../lib/document-layout";
 import { useLayoutDocuments } from "../../lib/documents";
 import { formatError } from "../../lib/errors";
@@ -52,8 +52,11 @@ export function CardLibrary() {
       clearSelection: s.clearSelection,
       setQuantity: s.setQuantity,
       adjustQuantity: s.adjustQuantity,
+      pickingBack: s.pickingBack,
+      setPickingBack: s.setPickingBack,
     })),
   );
+  const commonBack = usePrintStore((s) => s.finish.duplex.commonBack);
 
   // The cards as they print: the engine's, with the user's turn, scale and order applied.
   const cards = useLibraryCards();
@@ -63,6 +66,15 @@ export function CardLibrary() {
   const shown = useMemo(() => filterCards(cards, documents, P.filter), [cards, documents, P.filter]);
   const keys = useMemo(() => shown.map((c) => cardIdKey(c.id)), [shown]);
   const selected = useMemo(() => new Set(P.selection.selected), [P.selection.selected]);
+
+  // Choosing a back: the next click on a piece sets it as the back of the selection; Esc cancels.
+  const { pickingBack, setPickingBack } = P;
+  useEffect(() => {
+    if (!pickingBack) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setPickingBack(false);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pickingBack, setPickingBack]);
 
   // The scroll area's size and position drive which rows are mounted.
   const ref = useRef<HTMLDivElement>(null);
@@ -287,6 +299,11 @@ export function CardLibrary() {
           </button>
         </div>
         <p className="text-[var(--muted)]">{allMode ? t("library.modeAll") : t("library.modeCustom")}</p>
+        {pickingBack && (
+          <p className="rounded bg-[var(--accent)]/20 p-1.5" role="status" data-testid="picking-back">
+            {t("library.pickingBack")}
+          </p>
+        )}
       </div>
 
       <div
@@ -315,11 +332,17 @@ export function CardLibrary() {
                       height={height}
                       selected={selected.has(key)}
                       copies={allMode ? null : (P.quantities[key] ?? 0)}
+                      back={edits.backs[key] !== undefined ? "own" : key === commonBack ? "common" : null}
                       dragging={sort.drag?.keys.includes(key)}
                       dropMark={sort.drag?.target?.key === key ? (sort.drag.target.after ? "after" : "before") : null}
                       onPointerDown={(e) => sort.onPointerDown(key, e)}
                       onClick={(e) => {
                         if (sort.wasDrag()) return;
+                        if (pickingBack) {
+                          setEdits(setBacks(edits, P.selection.selected, key));
+                          setPickingBack(false);
+                          return;
+                        }
                         P.clickCard(key, keys, e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "none");
                       }}
                     />

@@ -12,6 +12,7 @@ import { MAX_MARGIN_MM } from "../stores/layout-store";
 import { type DocumentId, OrientedRectSchema } from "./card";
 import { type CardEdits, clampScale } from "./card-edits";
 import { type FreeformCards, type GridGroup, MAX_GAP_MM, type PageGroup, patchGrid } from "./document-layout";
+import { cleanFinish, FinishSchema } from "./finish";
 import { clampQuantity } from "./library";
 import { MAX_SHEET_GRID, type PrintPlan } from "./print-request";
 import { TurnSchema } from "./sheet-api";
@@ -19,7 +20,7 @@ import { TurnSchema } from "./sheet-api";
 /** Value of the `format` key: the file's signature. Kept in step with `card_core::project::FORMAT`. */
 export const PROJECT_FORMAT = "gutterberg-project";
 /** The version this build writes. Older ones are migrated in Rust before they get here. */
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 2;
 export const PROJECT_EXTENSION = "gtr";
 
 const finite = z.number();
@@ -63,6 +64,7 @@ const EditsSchema = z.object({
   turns: z.record(z.string(), TurnSchema),
   scales: z.record(z.string(), finite),
   order: z.array(z.string()),
+  backs: z.record(z.string(), z.string()),
 });
 
 const PlanSchema = z.object({
@@ -74,6 +76,7 @@ const PlanSchema = z.object({
   sheetGrid: z.enum(["same", "auto", "custom"]),
   rows: z.number().int(),
   columns: z.number().int(),
+  finish: FinishSchema,
 });
 
 const ProjectDocumentSchema = z.object({
@@ -211,6 +214,7 @@ function cleanPlan(p: z.infer<typeof PlanSchema>): PrintPlan {
     quantities,
     rows: clampTo(p.rows, 1, MAX_SHEET_GRID),
     columns: clampTo(p.columns, 1, MAX_SHEET_GRID),
+    finish: cleanFinish(p.finish),
   };
 }
 
@@ -221,7 +225,8 @@ function cleanEdits(e: z.infer<typeof EditsSchema>): CardEdits {
   const keep = <T>(rec: Record<string, T>) => Object.fromEntries(Object.entries(rec).filter(([k]) => KEY.test(k)));
   const scales: Record<string, number> = {};
   for (const [k, s] of Object.entries(keep(e.scales))) scales[k] = clampScale(s);
-  return { turns: keep(e.turns), scales, order: e.order.filter((k) => KEY.test(k)) };
+  const backs = Object.fromEntries(Object.entries(e.backs).filter(([k, v]) => KEY.test(k) && KEY.test(v) && k !== v));
+  return { turns: keep(e.turns), scales, order: e.order.filter((k) => KEY.test(k)), backs };
 }
 
 /** Parses the content of a project file. Throws a `ZodError` when it is not a project this build understands. */

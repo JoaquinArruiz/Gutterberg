@@ -2,6 +2,7 @@ use super::export::{same_file, same_file_error};
 use crate::state::{internal, AppState};
 use card_core::card::PageGroup;
 use card_core::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
+use card_core::finish::{finish_sheets, Finishing};
 use card_core::sheet::{
     extract_all_cards, plan_print_in, Card, CardSetting, DocumentSource, OutputSheet,
     PaginateOptions, PrintLayout,
@@ -35,13 +36,12 @@ pub fn compute_sheets(
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
+    finishing: Option<Finishing>,
 ) -> Result<Vec<OutputSheet>, ErrorInfo> {
-    Ok(plan_print_in(
-        &documents,
-        &settings,
-        &layout,
-        &options.unwrap_or_default(),
-    )?)
+    let planned = plan_print_in(&documents, &settings, &layout, &options.unwrap_or_default())?;
+    // Pages the bleed cannot be taken from are reported by `validate_print`; the preview shows
+    // them as a warning on the sheet.
+    Ok(finish_sheets(planned, &documents, &finishing.unwrap_or_default())?.0)
 }
 
 /// The open file behind each document of the request.
@@ -80,6 +80,7 @@ pub async fn validate_print(
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
+    finishing: Option<Finishing>,
 ) -> Result<Vec<PageIssue>, ErrorInfo> {
     let files = files_of(&state, &documents)?;
     tauri::async_runtime::spawn_blocking(move || {
@@ -88,6 +89,7 @@ pub async fn validate_print(
             &settings,
             &layout,
             &options.unwrap_or_default(),
+            &finishing.unwrap_or_default(),
         )
         .map(|(_, issues)| issues)
         .map_err(ErrorInfo::from)
@@ -105,6 +107,7 @@ pub async fn export_print(
     settings: Vec<CardSetting>,
     layout: PrintLayout,
     options: Option<PaginateOptions>,
+    finishing: Option<Finishing>,
     output_path: String,
 ) -> Result<usize, ErrorInfo> {
     let files = files_of(&state, &documents)?;
@@ -118,6 +121,7 @@ pub async fn export_print(
             &settings,
             &layout,
             &options.unwrap_or_default(),
+            &finishing.unwrap_or_default(),
         )?;
         if let Some(first) = issues.into_iter().next() {
             // The first page that cannot be exported: its own code, and which page it was.

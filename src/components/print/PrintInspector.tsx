@@ -10,6 +10,7 @@ import { planOf, usePrintStore } from "../../stores/print-store";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
+import { BleedSection, DuplexSection, MarksSection } from "./FinishSections";
 import { OutputPageFields, OutputSpacingFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
 
@@ -223,6 +224,10 @@ export function PrintInspector() {
           </div>
         )}
       </CollapsibleSection>
+
+      <MarksSection />
+      <BleedSection />
+      <DuplexSection />
 
       <CollapsibleSection id="print.page" title={t("print.sections.page")} defaultOpen={false}>
         <OutputPageFields />

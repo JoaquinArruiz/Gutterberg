@@ -4,6 +4,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 import { CardIdSchema, type DocumentId, OrientedRectSchema } from "./card";
+import { type FinishingPayload, SHEET_WARNINGS } from "./finish";
 import type { GridPayload, PageIssue, PageSize } from "./tauri";
 import { PageIssueSchema } from "./tauri";
 
@@ -31,7 +32,23 @@ export const SheetPlacementSchema = z.object({
 });
 export type SheetPlacement = z.infer<typeof SheetPlacementSchema>;
 
-export const OutputSheetSchema = z.object({ page: PageSizeSchema, placements: z.array(SheetPlacementSchema) });
+export const OutputSheetSchema = z.object({
+  page: PageSizeSchema,
+  placements: z.array(SheetPlacementSchema),
+  /** A sheet is a front unless duplex is on (M16). */
+  side: z.enum(["front", "back"]).optional(),
+  /** Art painted outside each piece; absent or 0 = none. */
+  bleed: z.object({ mm: z.number(), source: z.enum(["mirror", "source"]).optional() }).optional(),
+  /** Cut marks in points: `[x1, y1, x2, y2]` per line. */
+  marks: z
+    .object({
+      width_pt: z.number(),
+      color: z.tuple([z.number(), z.number(), z.number()]),
+      lines: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])),
+    })
+    .nullish(),
+  warnings: z.array(z.enum(SHEET_WARNINGS)).optional(),
+});
 export type OutputSheet = z.infer<typeof OutputSheetSchema>;
 
 /** What the user decided about one card: how many copies, turned how far, at what scale. */
@@ -70,6 +87,7 @@ export type PrintRequest = {
   settings: CardSetting[];
   layout: PrintLayoutPayload;
   options: PaginateOptionsPayload;
+  finishing: FinishingPayload;
 };
 
 /** A document with the page sizes the UI shows: what the preview plans from. */

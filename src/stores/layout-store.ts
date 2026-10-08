@@ -2,7 +2,7 @@ import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { DocumentId, OrientedRect } from "../lib/card";
-import { type CardEdits, editsAfterDelete, isCardOfDocument, NO_EDITS } from "../lib/card-edits";
+import { backsWithoutDocument, type CardEdits, editsAfterDelete, isCardOfDocument, NO_EDITS } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
 import {
   applyGridTo,
@@ -214,6 +214,7 @@ export const useLayoutStore = create<LayoutState>()(
           turns: Object.fromEntries(Object.entries(cardEdits.turns).filter(([k]) => keep(k))),
           scales: Object.fromEntries(Object.entries(cardEdits.scales).filter(([k]) => keep(k))),
           order: cardEdits.order.filter(keep),
+          backs: backsWithoutDocument(cardEdits.backs, id),
         };
         if (next === null || !target) {
           set({ parked: rest, cardEdits: edits });

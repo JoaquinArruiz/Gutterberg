@@ -23,6 +23,7 @@ export function CardThumb({
   copies,
   dropMark,
   dragging,
+  back,
   onClick,
   onPointerDown,
 }: {
@@ -36,6 +37,8 @@ export function CardThumb({
   dropMark?: "before" | "after" | null;
   /** This card is being dragged to a new place. */
   dragging?: boolean;
+  /** `own`: this piece has a back chosen for it. `common`: it is the common back of every piece without one. */
+  back?: "own" | "common" | null;
   onClick: (e: React.MouseEvent) => void;
   onPointerDown?: (e: React.PointerEvent) => void;
 }) {
@@ -99,6 +102,15 @@ export function CardThumb({
           data-testid="scale-badge"
         >
           {Math.round(card.scale * 100)}%
+        </span>
+      )}
+      {back && (
+        <span
+          className="absolute bottom-6 left-1 rounded bg-sky-400 px-1 font-semibold text-black"
+          data-testid="back-badge"
+          title={back === "own" ? t("library.thumb.hasBack") : t("library.thumb.commonBack")}
+        >
+          {back === "own" ? t("library.thumb.backBadge") : t("library.thumb.commonBadge")}
         </span>
       )}
       {dropMark && (

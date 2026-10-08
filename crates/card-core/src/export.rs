@@ -14,13 +14,14 @@
 
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
+use crate::finish::{bleed_regions, finish_sheets, Finishing, SheetMarks};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
     card_transform, plan_print_in, sheet_from_layout, Affine, CardSetting, DocumentSource,
     OutputSheet, PaginateOptions, PrintLayout, SheetPlacement,
 };
-use crate::units::pt_to_mm;
+use crate::units::{mm_to_pt, pt_to_mm};
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashMap};
@@ -453,13 +454,14 @@ pub fn plan_print_file(
     settings: &[CardSetting],
     layout: &PrintLayout,
     options: &PaginateOptions,
+    finishing: &Finishing,
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
     let file = SourceFile {
         document_id: DEFAULT_DOCUMENT_ID,
         path: input,
         groups,
     };
-    plan_print_files(&[file], settings, layout, options)
+    plan_print_files(&[file], settings, layout, options, finishing)
 }
 
 /// One PDF of a project and the page groups that say where its cards are.
@@ -475,6 +477,7 @@ pub fn plan_print_files(
     settings: &[CardSetting],
     layout: &PrintLayout,
     options: &PaginateOptions,
+    finishing: &Finishing,
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
     let docs = files
         .iter()
@@ -513,10 +516,11 @@ pub fn plan_print_files(
     if !issues.is_empty() {
         return Ok((Vec::new(), issues));
     }
-    let sheets = plan_print_in(&sources, settings, layout, options)?;
+    let planned = plan_print_in(&sources, settings, layout, options)?;
+    let (sheets, mut issues) = finish_sheets(planned, &sources, finishing)?;
     let loaded: Vec<(DocumentId, &Document)> =
         files.iter().map(|f| f.document_id).zip(&docs).collect();
-    let issues = validate_sheets_in(&loaded, &sheets);
+    issues.extend(validate_sheets_in(&loaded, &sheets));
     Ok((sheets, issues))
 }
 
@@ -567,6 +571,73 @@ fn placement_ops(name: &str, p: &SheetPlacement, display_box: [f64; 4], out_heig
     format!("q\n{} cm\n{clip}\n/{name} Do\nQ\n", m.map(fmt).join(" "))
 }
 
+/// The operators that paint the bleed around one piece: the page form again, once per region,
+/// reflected over the piece's edge and seen only through the strip outside it.
+fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [f64; 4]) -> String {
+    let m = pdf_matrix(
+        &card_transform(&p.source, p.scale, p.turn, &p.destination),
+        display_box,
+        sheet.page.height_pt,
+    );
+    let (left, top) = (display_box[0], display_box[3]);
+    // Source page coordinates are top-left; the page form's own space is PDF's (y up).
+    let to_pdf = Affine {
+        m11: 1.0,
+        m12: 0.0,
+        m21: 0.0,
+        m22: -1.0,
+        tx: left,
+        ty: top,
+    };
+    let from_pdf = Affine {
+        tx: -left,
+        ty: top,
+        ..to_pdf
+    };
+    let mut ops = String::new();
+    for region in bleed_regions(&p.source, mm_to_pt(sheet.bleed.mm), sheet.bleed.source) {
+        let at = |i: usize| {
+            format!(
+                "{} {}",
+                fmt(left + region.quad[i].x),
+                fmt(top - region.quad[i].y)
+            )
+        };
+        ops.push_str(&format!(
+            "q\n{} cm\n{} m {} l {} l {} l h W n\n",
+            m.map(fmt).join(" "),
+            at(0),
+            at(1),
+            at(2),
+            at(3),
+        ));
+        if region.reflect != Affine::IDENTITY {
+            let r = to_pdf.after(&region.reflect).after(&from_pdf);
+            let operands = [r.m11, r.m21, r.m12, r.m22, r.tx, r.ty];
+            ops.push_str(&format!("{} cm\n", operands.map(fmt).join(" ")));
+        }
+        ops.push_str(&format!("/{name} Do\nQ\n"));
+    }
+    ops
+}
+
+/// The operators that stroke the cut marks of a sheet `out_height` points tall.
+fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
+    let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
+    let mut ops = format!("q\n{r} {g} {b} RG\n{} w\n", fmt(marks.width_pt));
+    for l in &marks.lines {
+        ops.push_str(&format!(
+            "{} {} m {} {} l S\n",
+            fmt(l[0]),
+            fmt(out_height - l[1]),
+            fmt(l[2]),
+            fmt(out_height - l[3]),
+        ));
+    }
+    ops.push_str("Q\n");
+    ops
+}
+
 /// Resource name of the form that stands in for page `page_index` of `document_id`.
 fn form_name(document_id: DocumentId, page_index: usize) -> String {
     format!("S{document_id}_{page_index}")
@@ -605,8 +676,8 @@ fn export_sheets_into(
 
     for sheet in sheets {
         let out = sheet.page;
-        let mut ops = String::new();
         let mut xobjects = Dictionary::new();
+        let mut prepared: Vec<(String, PageFrame)> = Vec::with_capacity(sheet.placements.len());
         for p in &sheet.placements {
             let key = (p.card_id.document_id(), p.card_id.page_index());
             let (form_id, frame) = match forms.get(&key) {
@@ -626,7 +697,21 @@ fn export_sheets_into(
             };
             let name = form_name(key.0, key.1);
             xobjects.set(name.as_bytes().to_vec(), form_id);
-            ops.push_str(&placement_ops(&name, p, frame.display_box(), out.height_pt));
+            prepared.push((name, frame));
+        }
+        // Bleed first, so a neighbour's bleed never paints over a piece; then the pieces; then
+        // the marks.
+        let mut ops = String::new();
+        if sheet.bleed.mm > 0.0 {
+            for (p, (name, frame)) in sheet.placements.iter().zip(&prepared) {
+                ops.push_str(&bleed_ops(name, p, sheet, frame.display_box()));
+            }
+        }
+        for (p, (name, frame)) in sheet.placements.iter().zip(&prepared) {
+            ops.push_str(&placement_ops(name, p, frame.display_box(), out.height_pt));
+        }
+        if let Some(marks) = &sheet.marks {
+            ops.push_str(&marks_ops(marks, out.height_pt));
         }
         let mut cs = Stream::new(Dictionary::new(), ops.into_bytes());
         let _ = cs.compress();

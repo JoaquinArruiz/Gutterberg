@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { cardIdKey } from "../lib/card";
 import { isCardOfDocument, keyAfterDelete, remapRecord } from "../lib/card-edits";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
+import { cleanFinish, type Finish } from "../lib/finish";
 import { emitHintEvent } from "../lib/hint-events";
 import {
   adjustQuantity,
@@ -55,6 +56,13 @@ type PrintState = PrintPlan & {
   setSheetGrid: (mode: SheetGridMode) => void;
   setRows: (n: number) => void;
   setColumns: (n: number) => void;
+  /** Cut marks, bleed and duplex settings; each part is merged in and pulled back into what the engine accepts. */
+  setMarks: (patch: Partial<Finish["marks"]>) => void;
+  setBleed: (patch: Partial<Finish["bleed"]>) => void;
+  setDuplex: (patch: Partial<Finish["duplex"]>) => void;
+  /** The piece picked in the library to choose a back for the selection; null = not choosing. */
+  pickingBack: boolean;
+  setPickingBack: (on: boolean) => void;
   setFilter: (filter: LibraryFilter) => void;
   clickCard: (key: string, visible: string[], modifier: "none" | "toggle" | "range") => void;
   selectAll: (keys: string[]) => void;
@@ -89,6 +97,7 @@ const initial = {
   sheetsSnapshot: null,
   currentSheet: 0,
   exportName: null as string | null,
+  pickingBack: false,
 };
 
 export const usePrintStore = create<PrintState>((set) => ({
@@ -109,6 +118,11 @@ export const usePrintStore = create<PrintState>((set) => ({
   setSheetGrid: (sheetGrid) => set({ sheetGrid }),
   setRows: (n) => set({ rows: grid(n) }),
   setColumns: (n) => set({ columns: grid(n) }),
+  setMarks: (patch) => set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) })),
+  setBleed: (patch) => set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, ...patch } }) })),
+  setDuplex: (patch) =>
+    set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) })),
+  setPickingBack: (pickingBack) => set({ pickingBack }),
   setFilter: (filter) => set({ filter }),
   clickCard: (key, visible, modifier) => set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) })),
   selectAll: (keys) => set({ selection: { selected: keys, anchor: keys[0] ?? null } }),
@@ -131,6 +145,7 @@ export const usePrintStore = create<PrintState>((set) => ({
   setExportName: (exportName) => set({ exportName }),
   forgetDocument: (documentId) =>
     set((s) => ({
+      finish: forgetCommonBack(s.finish, (k) => isCardOfDocument(k, documentId)),
       quantities: Object.fromEntries(Object.entries(s.quantities).filter(([k]) => !isCardOfDocument(k, documentId))),
       selection: {
         selected: s.selection.selected.filter((k) => !isCardOfDocument(k, documentId)),
@@ -147,9 +162,23 @@ onFreeformCardDeleted((documentId, page, index) =>
   usePrintStore.setState((s) => {
     const kept = s.selection.selected.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []);
     const anchor = s.selection.anchor === null ? null : keyAfterDelete(s.selection.anchor, documentId, page, index);
-    return { quantities: remapRecord(s.quantities, documentId, page, index), selection: { selected: kept, anchor } };
+    const common = s.finish.duplex.commonBack;
+    return {
+      quantities: remapRecord(s.quantities, documentId, page, index),
+      selection: { selected: kept, anchor },
+      finish: common === null ? s.finish : withCommonBack(s.finish, keyAfterDelete(common, documentId, page, index)),
+    };
   }),
 );
+
+const withCommonBack = (finish: Finish, commonBack: string | null): Finish => ({
+  ...finish,
+  duplex: { ...finish.duplex, commonBack },
+});
+
+/** The finish without its common back when `gone` says that piece left the project. */
+const forgetCommonBack = (finish: Finish, gone: (key: string) => boolean): Finish =>
+  finish.duplex.commonBack !== null && gone(finish.duplex.commonBack) ? withCommonBack(finish, null) : finish;
 
 /** The plan part of the state, for building a request. */
 export const planOf = (s: PrintState): PrintPlan => ({
@@ -161,4 +190,5 @@ export const planOf = (s: PrintState): PrintPlan => ({
   sheetGrid: s.sheetGrid,
   rows: s.rows,
   columns: s.columns,
+  finish: s.finish,
 });

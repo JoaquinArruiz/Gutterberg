@@ -40,6 +40,10 @@ pub enum Error {
     NoDocument,
     #[error("malformed PDF: {0}")]
     Malformed(String),
+    #[error(
+        "the source has {gap_mm:.1} mm between pieces, less than the {bleed_mm:.1} mm bleed taken from it"
+    )]
+    BleedExceedsSourceGap { gap_mm: f64, bleed_mm: f64 },
     #[error("this is not a valid Gutterberg project file")]
     NotAProject,
     #[error(
@@ -125,6 +129,13 @@ impl From<&Error> for ErrorInfo {
             Error::WorkerStopped => ("worker_stopped", vec![]),
             Error::NoDocument => ("no_document", vec![]),
             Error::Malformed(d) => ("malformed", vec![("detail", text(d))]),
+            Error::BleedExceedsSourceGap { gap_mm, bleed_mm } => (
+                "bleed_exceeds_source_gap",
+                vec![
+                    ("gap_mm", ErrorParam::Number(*gap_mm)),
+                    ("bleed_mm", ErrorParam::Number(*bleed_mm)),
+                ],
+            ),
             Error::NotAProject => ("not_a_project", vec![]),
             Error::ProjectTooNew { found, supported } => (
                 "project_too_new",

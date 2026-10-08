@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 1;
+pub const VERSION: u32 = 2;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -29,10 +29,29 @@ pub const EXTENSION: &str = "gtr";
 pub type Body = Map<String, Value>;
 
 /// Upgrades the object of one version to the next, in place. `MIGRATIONS[i]` takes version
-/// `i + 1` to `i + 2`. Empty while version 1 is the only one.
+/// `i + 1` to `i + 2`.
 pub type Migration = fn(&mut Body);
 
-const MIGRATIONS: &[Migration] = &[];
+const MIGRATIONS: &[Migration] = &[v1_to_v2];
+
+/// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
+/// pieces to the edits. A version 1 project opens with every feature off.
+fn v1_to_v2(body: &mut Body) {
+    if let Some(Value::Object(plan)) = body.get_mut("plan") {
+        plan.entry("finish").or_insert_with(|| {
+            serde_json::json!({
+                "marks": { "style": "off", "widthMm": 0.25, "color": "#000000", "lengthMm": 3, "offsetMm": 1 },
+                "bleed": { "mm": 0, "source": "mirror" },
+                "duplex": { "on": false, "flip": "long", "offsetXMm": 0, "offsetYMm": 0, "commonBack": null },
+            })
+        });
+    }
+    if let Some(Value::Object(edits)) = body.get_mut("edits") {
+        edits
+            .entry("backs")
+            .or_insert_with(|| Value::Object(Body::new()));
+    }
+}
 
 /// A project file is a few hundred kilobytes at most; anything much larger is some other file.
 const MAX_PROJECT_BYTES: u64 = 64 * 1024 * 1024;

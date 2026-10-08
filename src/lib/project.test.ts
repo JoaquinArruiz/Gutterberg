@@ -44,7 +44,12 @@ function state(): ProjectState {
       pageMode: "a4",
       margins: { top: 5, right: 4, bottom: 3, left: 2 },
     },
-    edits: { turns: { "f:0:2:0": 90 }, scales: { "g:3:0:0:0": 0.98 }, order: ["g:3:0:0:0", "f:0:2:0"] },
+    edits: {
+      turns: { "f:0:2:0": 90 },
+      scales: { "g:3:0:0:0": 0.98 },
+      order: ["g:3:0:0:0", "f:0:2:0"],
+      backs: { "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" },
+    },
     plan: {
       ...DEFAULT_PLAN,
       mode: "custom",
@@ -53,6 +58,11 @@ function state(): ProjectState {
       sheetGrid: "custom",
       rows: 2,
       columns: 4,
+      finish: {
+        marks: { style: "ticks", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
+        bleed: { mm: 2, source: "source" },
+        duplex: { on: true, flip: "short", offsetXMm: 0.5, offsetYMm: -0.5, commonBack: "g:3:0:0:0" },
+      },
     },
   };
 }
@@ -89,7 +99,7 @@ describe("the project file", () => {
   it("is refused when it is not shaped like a project", () => {
     const f = file(state());
     expect(() => parseProject({ ...f, format: "other" })).toThrow();
-    expect(() => parseProject({ ...f, version: 2 })).toThrow();
+    expect(() => parseProject({ ...f, version: 1 })).toThrow();
     expect(() => parseProject({ ...f, documents: [] })).toThrow();
     expect(() => parseProject({ ...f, activeDocument: 9 })).toThrow();
     expect(() => parseProject({ ...f, documents: [f.documents[0], f.documents[0]] })).toThrow();
@@ -126,6 +136,55 @@ describe("the project file", () => {
     expect(back.edits.order).toEqual(["g:0:0:0:0"]);
     const group = back.documents[0].groups[0];
     expect(group.kind === "grid" && group.grid.rows).toBe(30);
+  });
+});
+
+describe("cut marks, bleed and duplex in the file", () => {
+  it("are saved under the plan, with the backs of pieces under the edits", () => {
+    const f = file(state());
+    expect(f.version).toBe(2);
+    expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source" });
+    expect(f.plan.finish.duplex.commonBack).toBe("g:3:0:0:0");
+    expect(f.edits.backs).toEqual({ "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" });
+  });
+
+  it("are required: a version 2 file without them is not a project", () => {
+    const f = file(state());
+    delete f.plan.finish;
+    expect(() => parseProject(f)).toThrow();
+    const g = file(state());
+    delete g.edits.backs;
+    expect(() => parseProject(g)).toThrow();
+    const h = file(state());
+    h.plan.finish.marks.style = "dotted";
+    expect(() => parseProject(h)).toThrow();
+  });
+
+  it("are pulled back into range, and backs that are not pieces are dropped", () => {
+    const f = file(state());
+    f.plan.finish.bleed.mm = 80;
+    f.plan.finish.marks.widthMm = 0;
+    f.plan.finish.marks.color = "blue";
+    f.plan.finish.duplex.offsetXMm = -99;
+    f.plan.finish.duplex.commonBack = "junk";
+    f.edits.backs = { "g:0:0:0:0": "g:0:0:0:0", junk: "g:0:0:0:1", "g:0:0:0:2": "junk", "g:0:0:0:3": "g:0:0:0:1" };
+    const back = fromProject(parseProject(f));
+    expect(back.plan.finish.bleed.mm).toBe(5);
+    expect(back.plan.finish.marks.widthMm).toBe(0.05);
+    expect(back.plan.finish.marks.color).toBe("#000000");
+    expect(back.plan.finish.duplex.offsetXMm).toBe(-10);
+    expect(back.plan.finish.duplex.commonBack).toBeNull();
+    expect(back.edits.backs).toEqual({ "g:0:0:0:3": "g:0:0:0:1" });
+  });
+
+  it("change the signature, so saving notices them", () => {
+    const base = projectSignature(state());
+    const bled = state();
+    bled.plan = { ...bled.plan, finish: { ...bled.plan.finish, bleed: { mm: 3, source: "source" } } };
+    expect(projectSignature(bled)).not.toBe(base);
+    const backed = state();
+    backed.edits = { ...backed.edits, backs: {} };
+    expect(projectSignature(backed)).not.toBe(base);
   });
 });
 

@@ -68,6 +68,9 @@ and type names) stay as they are.
 | **sheet** | **hoja** | One page of the output PDF | "output page" in the UI |
 | **source gap / output gap** | **separación de origen / separación de salida** | Space between pieces already in the PDF / wanted in the output | |
 | **help tip** | **consejo** | A hint toast or tour step | |
+| **front / back** | **frente / dorso** | The two sides of a piece, and of a duplex sheet | obverse / reverse, face |
+| **cut marks** | **marcas de corte** | Lines on the sheet that show where to cut | crop marks, trim marks |
+| **bleed** | **sangrado** | Art that extends past a piece's edge | |
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json` (from M21): add
 every new string to both, never hard-code text in components. Spanish is neutral Latin

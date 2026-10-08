@@ -22,6 +22,40 @@ fn a_current_project_opens_as_it_is() {
 }
 
 #[test]
+fn a_version_1_project_gets_the_finishing_defaults_and_nothing_else_changes() {
+    let text = include_str!("data/project_v1_full.gtr");
+    let original: serde_json::Value = serde_json::from_str(text).unwrap();
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["version"], 2);
+    assert_eq!(
+        body["plan"]["finish"],
+        json!({
+            "marks": { "style": "off", "widthMm": 0.25, "color": "#000000", "lengthMm": 3, "offsetMm": 1 },
+            "bleed": { "mm": 0, "source": "mirror" },
+            "duplex": { "on": false, "flip": "long", "offsetXMm": 0, "offsetYMm": 0, "commonBack": null },
+        })
+    );
+    assert_eq!(body["edits"]["backs"], json!({}));
+    // Everything else is as it was.
+    let mut migrated = serde_json::Value::Object(body);
+    migrated.as_object_mut().unwrap().remove("version");
+    migrated["plan"].as_object_mut().unwrap().remove("finish");
+    migrated["edits"].as_object_mut().unwrap().remove("backs");
+    let mut expected = original;
+    expected.as_object_mut().unwrap().remove("version");
+    assert_eq!(migrated, expected);
+}
+
+#[test]
+fn a_version_2_project_keeps_its_finishing() {
+    let text = include_str!("data/project_v2.gtr");
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["plan"]["finish"]["bleed"]["mm"], 2);
+    assert_eq!(body["plan"]["finish"]["duplex"]["on"], true);
+    assert_eq!(body["edits"]["backs"]["g:0:0:1:1"], "g:0:0:2:2");
+}
+
+#[test]
 fn text_that_is_not_a_project_is_refused() {
     for text in [
         "",
@@ -140,7 +174,7 @@ fn the_file_starts_with_the_signature_and_survives_a_round_trip() {
 
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(
-        text.starts_with("{\n  \"format\": \"gutterberg-project\",\n  \"version\": 1,"),
+        text.starts_with("{\n  \"format\": \"gutterberg-project\",\n  \"version\": 2,"),
         "{text}"
     );
 

@@ -228,10 +228,15 @@
       "freeformPosition": "#{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Page {{page}}, {{position}} · {{size}}",
-      "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°"
+      "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°",
+      "hasBack": "This piece has a back",
+      "commonBack": "Common back of the pieces without one",
+      "backBadge": "Back",
+      "commonBadge": "Common back"
     },
     "allOfDocument": "All pieces of {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})"
+    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "pickingBack": "Click the piece to use as the back of the selection. Esc cancels."
   },
   "print": {
     "error": {
@@ -242,7 +247,10 @@
     "sections": {
       "plan": "Plan",
       "sheet": "Sheet",
-      "page": "Page"
+      "page": "Page",
+      "marks": "Cut marks",
+      "bleed": "Bleed",
+      "duplex": "Duplex"
     },
     "plan": {
       "all": "All pieces in order",
@@ -303,7 +311,62 @@
       "scale": "Scale",
       "backToPage": "Back to the size on the page",
       "sameNote": "Setting a width or height keeps the piece's shape. 100% is the size on the page.",
-      "differNote": "These pieces differ in size: set a percentage, or select pieces of one size to give a real size."
+      "differNote": "These pieces differ in size: set a percentage, or select pieces of one size to give a real size.",
+      "back": "Back",
+      "backNone": "none",
+      "backCommon": "common back",
+      "backMixed": "different backs",
+      "pickBack": "Pick back…",
+      "clearBack": "Remove back"
+    },
+    "marks": {
+      "style": "Style",
+      "styles": {
+        "off": "Off",
+        "ticks": "Ticks in the margins",
+        "gaps": "Lines in the gaps"
+      },
+      "width": "Line width",
+      "color": "Colour",
+      "length": "Tick length",
+      "offset": "Distance from the piece",
+      "note": "Marks are printed on the front sheets only. Ticks start past the bleed."
+    },
+    "bleed": {
+      "amount": "Bleed",
+      "source": "Taken from",
+      "sources": {
+        "mirror": "Mirror the edge",
+        "source": "The source gap"
+      },
+      "mirrorNote": "The edge strip of each piece is drawn again, flipped over the edge. It stays vector.",
+      "sourceNote": "Uses what the source PDF has between pieces. Needs at least this much space between them there.",
+      "note": "Pieces keep their size: the bleed is extra art around each one. Leave room for it in the output gap and the margins."
+    },
+    "duplex": {
+      "on": "Print backs (duplex)",
+      "onHint": "A back sheet after every front sheet, mirrored so the backs line up when the paper is turned over.",
+      "flip": "Flip on",
+      "flips": {
+        "long": "Long edge",
+        "short": "Short edge"
+      },
+      "offsetX": "Back offset X",
+      "offsetY": "Back offset Y",
+      "offsetNote": "Moves everything on the back sheets, to correct the printer's drift between sides. Right and down are positive.",
+      "commonBack": "Common back",
+      "none": "None",
+      "useSelected": "Use the selected piece as common back",
+      "remove": "Remove",
+      "backNote": "A piece with no back of its own gets the common back; with neither, its place stays empty on the back sheet."
+    },
+    "warnings": {
+      "marks_off_page": "Some cut marks fall outside the page: leave larger margins.",
+      "gap_too_narrow_for_line": "A gap is too narrow for a line, or there is none: use ticks or widen the output gap.",
+      "bleed_overlaps_neighbour": "The bleeds of neighbouring pieces overlap: make the output gap at least twice the bleed.",
+      "bleed_off_page": "The bleed goes past the edge of the page: leave larger margins.",
+      "back_size_differs": "A back is not the same size as its front, so the cuts will not line up.",
+      "bleed_exceeds_source_gap": "The source has less space between some pieces than the bleed."
     }
   },
   "sheets": {
@@ -322,7 +385,11 @@
     "openPdf": "Open a PDF to plan the sheets.",
     "planning": "Planning the sheets…",
     "nothing": "Nothing to print yet. Choose pieces in the piece library and give them copies, or switch the plan back to all pieces.",
-    "thumb": "Sheet {{n}}"
+    "thumb": "Sheet {{n}}",
+    "front": "front",
+    "back": "back",
+    "positionFront": "Sheet {{current}} of {{total}} · front",
+    "positionBack": "Sheet {{current}} of {{total}} · back"
   },
   "preferences": {
     "title": "Preferences",
@@ -495,7 +562,8 @@
     "no_region": "No piece region is selected.",
     "not_a_project": "This is not a valid project file.",
     "project_too_new": "This project was made with a newer version of the app (file version {{found}}; this version reads up to {{supported}}). Please update.",
-    "project_invalid": "This project file is damaged or incomplete."
+    "project_invalid": "This project file is damaged or incomplete.",
+    "bleed_exceeds_source_gap": "The source has {{gap_mm}} mm between some pieces, less than the {{bleed_mm}} mm of bleed taken from it."
   },
   "numberField": {
     "decrease": "Decrease {{label}}",

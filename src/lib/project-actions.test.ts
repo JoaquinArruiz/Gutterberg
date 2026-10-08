@@ -126,6 +126,7 @@ async function editedProject() {
     turns: { "g:0:0:0:1": 90 },
     scales: { "g:0:0:1:0": 0.97 },
     order: ["g:0:0:1:0", "g:0:0:0:1"],
+    backs: {},
   });
   usePrintStore.getState().setQuantity(["g:0:0:0:0"], 4);
   usePrintStore.getState().setOrder("interleaved");
@@ -358,7 +359,7 @@ describe("a PDF that moved or changed", () => {
     expect(layout().groups).toHaveLength(1);
     expect(layout().groups[0]).toMatchObject({ kind: "grid", pages: { first: 0, last: 4 }, selection: null });
     expect(layout().freeform).toEqual({});
-    expect(layout().cardEdits).toEqual({ turns: {}, scales: {}, order: [] });
+    expect(layout().cardEdits).toEqual({ turns: {}, scales: {}, order: [], backs: {} });
     expect(usePrintStore.getState().quantities).toEqual({});
     // The output settings are not about any one PDF.
     expect(layout().pageMode).toBe("a4");

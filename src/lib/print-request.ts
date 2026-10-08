@@ -6,6 +6,7 @@ import { cardIdKey, type DocumentId } from "./card";
 import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
 import { orientedToPoints } from "./coordinates";
 import type { FreeformCards, PageGroup } from "./document-layout";
+import { DEFAULT_FINISH, type Finish, finishingPayload } from "./finish";
 import type {
   Card,
   CardSetting,
@@ -35,6 +36,8 @@ export type PrintPlan = {
   sheetGrid: SheetGridMode;
   rows: number;
   columns: number;
+  /** Cut marks, bleed and duplex backs (M16). */
+  finish: Finish;
 };
 
 export const DEFAULT_PLAN: PrintPlan = {
@@ -46,6 +49,7 @@ export const DEFAULT_PLAN: PrintPlan = {
   sheetGrid: "same",
   rows: 3,
   columns: 3,
+  finish: DEFAULT_FINISH,
 };
 
 export const MAX_QUANTITY = 99;
@@ -184,6 +188,7 @@ export function buildPrintRequest(
     settings: planSettings(plan, ordered, edited),
     layout,
     options,
+    finishing: finishingPayload(plan.finish, edits.backs, new Set(cards.map((c) => cardIdKey(c.id)))),
   };
 }
 

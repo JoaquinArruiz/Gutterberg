@@ -50,6 +50,7 @@ describe("the IPC contract with the Rust planner: freeform and edited cards", ()
     turns: { "f:0:0:1": 90 },
     scales: { "f:0:0:0": 63 / 64 },
     order: ["f:0:0:1", "f:0:0:0", "g:0:0:0:0", "g:0:0:0:1"],
+    backs: {},
   };
   const settings: OutputSettings = {
     gapXMm: 2,

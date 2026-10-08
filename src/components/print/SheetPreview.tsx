@@ -9,7 +9,9 @@ import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { RefreshButton } from "../editor/RefreshPreviewButton";
 import { HintToast } from "../ui/HintToast";
+import { WarningList } from "./FinishSections";
 import { PlacedCard } from "./PlacedCard";
+import { SheetOverlay } from "./SheetOverlay";
 import { SheetStrip } from "./SheetStrip";
 
 const PAD = 24;
@@ -58,6 +60,7 @@ export function SheetPreview() {
   const total = planned?.length ?? 0;
   const index = Math.min(current, Math.max(0, total - 1));
   const sheet = planned?.[index];
+  const duplex = planned?.some((s) => s.side === "back") ?? false;
   const cardCount = planned?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
 
   let content: React.ReactNode = null;
@@ -84,6 +87,7 @@ export function SheetPreview() {
           // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
           <PlacedCard key={i} p={p} k={k} />
         ))}
+        <SheetOverlay sheet={sheet} k={k} />
       </div>
     );
   }
@@ -112,7 +116,13 @@ export function SheetPreview() {
           <ChevronLeft size={14} />
         </button>
         <span className="whitespace-nowrap tabular-nums" data-testid="sheet-position">
-          {total > 0 ? t("sheets.position", { current: index + 1, total }) : t("sheets.none")}
+          {total > 0
+            ? sheet?.side === "back"
+              ? t("sheets.positionBack", { current: index + 1, total })
+              : duplex
+                ? t("sheets.positionFront", { current: index + 1, total })
+                : t("sheets.position", { current: index + 1, total })
+            : t("sheets.none")}
         </span>
         <button
           type="button"
@@ -140,6 +150,14 @@ export function SheetPreview() {
           </>
         )}
       </div>
+      {sheet?.warnings && sheet.warnings.length > 0 && (
+        <div
+          className="shrink-0 border-b border-[var(--border)] bg-[var(--panel)] px-3 py-1"
+          data-testid="sheet-warnings"
+        >
+          <WarningList codes={sheet.warnings} />
+        </div>
+      )}
       {stripOpen && previews && previews.length > 0 && (
         <SheetStrip sheets={previews} current={index} onSelect={setCurrent} />
       )}

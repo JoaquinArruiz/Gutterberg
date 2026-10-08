@@ -1035,6 +1035,7 @@ fn a_file_export_matches_the_in_memory_one_and_leaves_no_temp_file() {
 #[test]
 fn planning_from_the_file_reports_unreadable_pages_only_when_they_are_used() {
     use card_core::export::plan_print_file;
+    use card_core::finish::Finishing;
     use card_core::sample::set_rotate;
     use card_core::sheet::PrintLayout;
     let dir = std::env::temp_dir().join(format!("card-core-plan-file-{}", std::process::id()));
@@ -1048,11 +1049,13 @@ fn planning_from_the_file_reports_unreadable_pages_only_when_they_are_used() {
     let layout = PrintLayout::SameAsSource;
     let used = [grid_group(0, 0, sample_grid(3.0))];
 
-    let (sheets, issues) = plan_print_file(&good, &used, &[], &layout, &opts).unwrap();
+    let (sheets, issues) =
+        plan_print_file(&good, &used, &[], &layout, &opts, &Finishing::default()).unwrap();
     assert_eq!((sheets.len(), issues.len()), (1, 0));
 
     // The unreadable page is named, and nothing is planned from it.
-    let (sheets, issues) = plan_print_file(&odd, &used, &[], &layout, &opts).unwrap();
+    let (sheets, issues) =
+        plan_print_file(&odd, &used, &[], &layout, &opts, &Finishing::default()).unwrap();
     assert!(sheets.is_empty());
     assert_eq!(issues.iter().map(|i| i.page_index).collect::<Vec<_>>(), [0]);
 
@@ -1061,12 +1064,13 @@ fn planning_from_the_file_reports_unreadable_pages_only_when_they_are_used() {
         pages: PageRange { first: 0, last: 0 },
         kind: PageGroupKind::Skip,
     }];
-    let (sheets, issues) = plan_print_file(&odd, &skipped, &[], &layout, &opts).unwrap();
+    let (sheets, issues) =
+        plan_print_file(&odd, &skipped, &[], &layout, &opts, &Finishing::default()).unwrap();
     assert!(sheets.is_empty() && issues.is_empty());
 
     // A group past the end of the document is an error.
     let beyond = [grid_group(0, 3, sample_grid(3.0))];
-    assert!(plan_print_file(&good, &beyond, &[], &layout, &opts).is_err());
+    assert!(plan_print_file(&good, &beyond, &[], &layout, &opts, &Finishing::default()).is_err());
 }
 
 #[test]
@@ -1111,6 +1115,34 @@ fn the_requests_the_frontend_sends_deserialise_and_plan() {
         d[1].destination.x - d[0].destination.x,
         card_w + mm_to_pt(3.0),
     );
+
+    // The finishing the frontend sent reads back as chosen and finishes the sheets: a back sheet
+    // after the front (the second card's back is the third card, the rest have the common back),
+    // marks and bleed on the front.
+    use card_core::finish::{finish_sheets, BleedSource, Finishing, Flip, MarkStyle, Side};
+    let finishing: Finishing = serde_json::from_value(v["finishing"].clone()).unwrap();
+    let o = &finishing.options;
+    assert_eq!(o.marks.style, MarkStyle::Ticks);
+    assert_eq!(
+        (o.marks.width_mm, o.marks.length_mm, o.marks.offset_mm),
+        (0.5, 4.0, 1.5)
+    );
+    assert_eq!(o.marks.color, "#ff0000");
+    assert_eq!((o.bleed.mm, o.bleed.source), (2.0, BleedSource::Mirror));
+    assert!(o.duplex.on && o.duplex.flip == Flip::Short);
+    assert_eq!((o.duplex.offset_x_mm, o.duplex.offset_y_mm), (0.5, -0.5));
+    assert_eq!(finishing.backs.len(), 1);
+    let documents = [card_core::sheet::DocumentSource {
+        document_id: 0,
+        pages: pages.to_vec(),
+        groups,
+    }];
+    let (done, issues) = finish_sheets(sheets, &documents, &finishing).unwrap();
+    assert!(issues.is_empty());
+    assert_eq!(done.len(), 2);
+    assert_eq!((done[0].side, done[1].side), (Side::Front, Side::Back));
+    assert!(done[0].marks.is_some() && done[0].bleed.mm == 2.0);
+    assert_eq!(done[1].placements.len(), 6);
 }
 
 /// The print stage's own requests: a 3 x 3 source page, per-card settings, an A4 sheet of "as many

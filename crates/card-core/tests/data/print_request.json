@@ -112,5 +112,51 @@
     "order": "interleaved",
     "group_by_size": true,
     "auto_fill": true
+  },
+  "finishing": {
+    "options": {
+      "marks": {
+        "style": "ticks",
+        "width_mm": 0.5,
+        "color": "#ff0000",
+        "length_mm": 4,
+        "offset_mm": 1.5
+      },
+      "bleed": {
+        "mm": 2,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": true,
+        "flip": "short",
+        "offset_x_mm": 0.5,
+        "offset_y_mm": -0.5,
+        "common_back": {
+          "kind": "grid",
+          "document_id": 0,
+          "page_index": 1,
+          "row": 0,
+          "column": 0
+        }
+      }
+    },
+    "backs": [
+      {
+        "card": {
+          "kind": "grid",
+          "document_id": 0,
+          "page_index": 1,
+          "row": 0,
+          "column": 1
+        },
+        "back": {
+          "kind": "grid",
+          "document_id": 0,
+          "page_index": 1,
+          "row": 0,
+          "column": 2
+        }
+      }
+    ]
   }
 }

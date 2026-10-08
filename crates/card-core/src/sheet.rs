@@ -10,6 +10,7 @@
 
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use crate::error::{Error, Result};
+use crate::finish::{SheetBleed, SheetMarks, SheetWarning, Side};
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::{calculate_fitting_layout, source_cards, LayoutResult};
 use crate::units::{mm_to_pt, pt_to_mm};
@@ -303,6 +304,32 @@ pub struct SheetPlacement {
 pub struct OutputSheet {
     pub page: PageSize,
     pub placements: Vec<SheetPlacement>,
+    /// Front or back of a duplex pair (M16); every sheet is a front unless duplex is on.
+    #[serde(default)]
+    pub side: Side,
+    /// Art painted outside each piece, under the pieces. Zero unless the bleed is on.
+    #[serde(default)]
+    pub bleed: SheetBleed,
+    /// Cut marks, drawn over the pieces.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub marks: Option<SheetMarks>,
+    /// Things worth telling the user that do not stop the export.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub warnings: Vec<SheetWarning>,
+}
+
+impl OutputSheet {
+    /// A front sheet with no bleed, marks or warnings.
+    pub fn new(page: PageSize, placements: Vec<SheetPlacement>) -> Self {
+        Self {
+            page,
+            placements,
+            side: Side::Front,
+            bleed: SheetBleed::default(),
+            marks: None,
+            warnings: Vec::new(),
+        }
+    }
 }
 
 /// Most placements one call may produce; keeps a hostile quantity from exhausting memory.
@@ -505,7 +532,7 @@ fn lay_out(
                     }
                 })
                 .collect();
-            OutputSheet { page, placements }
+            OutputSheet::new(page, placements)
         })
         .collect();
     Ok(sheets)
@@ -658,9 +685,9 @@ pub fn sheet_from_layout(
     columns: usize,
     layout: &LayoutResult,
 ) -> OutputSheet {
-    OutputSheet {
-        page: layout.output_page,
-        placements: layout
+    OutputSheet::new(
+        layout.output_page,
+        layout
             .placements
             .iter()
             .map(|p| SheetPlacement {
@@ -676,7 +703,7 @@ pub fn sheet_from_layout(
                 scale: 1.0,
             })
             .collect(),
-    }
+    )
 }
 
 /// One sheet per grid page, as the Cards stage lays it out. Freeform groups have no grid and
@@ -768,6 +795,27 @@ pub struct Affine {
 }
 
 impl Affine {
+    pub const IDENTITY: Affine = Affine {
+        m11: 1.0,
+        m12: 0.0,
+        m21: 0.0,
+        m22: 1.0,
+        tx: 0.0,
+        ty: 0.0,
+    };
+
+    /// The map that applies `first`, then `self`.
+    pub fn after(&self, first: &Affine) -> Affine {
+        Affine {
+            m11: self.m11 * first.m11 + self.m12 * first.m21,
+            m12: self.m11 * first.m12 + self.m12 * first.m22,
+            m21: self.m21 * first.m11 + self.m22 * first.m21,
+            m22: self.m21 * first.m12 + self.m22 * first.m22,
+            tx: self.m11 * first.tx + self.m12 * first.ty + self.tx,
+            ty: self.m21 * first.tx + self.m22 * first.ty + self.ty,
+        }
+    }
+
     pub fn apply(&self, p: Point) -> Point {
         Point {
             x: self.m11 * p.x + self.m12 * p.y + self.tx,

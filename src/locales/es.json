@@ -228,10 +228,15 @@
       "freeformPosition": "#{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Página {{page}}, {{position}} · {{size}}",
-      "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°"
+      "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°",
+      "hasBack": "Esta pieza tiene dorso",
+      "commonBack": "Dorso común de las piezas que no tienen uno",
+      "backBadge": "Dorso",
+      "commonBadge": "Dorso común"
     },
     "allOfDocument": "Todas las piezas de {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})"
+    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela."
   },
   "print": {
     "error": {
@@ -242,7 +247,10 @@
     "sections": {
       "plan": "Plan",
       "sheet": "Hoja",
-      "page": "Página"
+      "page": "Página",
+      "marks": "Marcas de corte",
+      "bleed": "Sangrado",
+      "duplex": "Doble cara"
     },
     "plan": {
       "all": "Todas las piezas en orden",
@@ -303,7 +311,62 @@
       "scale": "Escala",
       "backToPage": "Volver al tamaño de la página",
       "sameNote": "Al fijar un ancho o un alto se mantiene la proporción de la pieza. 100% es el tamaño de la página.",
-      "differNote": "Estas piezas tienen tamaños distintos: fija un porcentaje, o selecciona piezas de un mismo tamaño para darles un tamaño real."
+      "differNote": "Estas piezas tienen tamaños distintos: fija un porcentaje, o selecciona piezas de un mismo tamaño para darles un tamaño real.",
+      "back": "Dorso",
+      "backNone": "ninguno",
+      "backCommon": "dorso común",
+      "backMixed": "dorsos distintos",
+      "pickBack": "Elegir dorso…",
+      "clearBack": "Quitar dorso"
+    },
+    "marks": {
+      "style": "Estilo",
+      "styles": {
+        "off": "Sin marcas",
+        "ticks": "Marcas en los márgenes",
+        "gaps": "Líneas en las separaciones"
+      },
+      "width": "Grosor de la línea",
+      "color": "Color",
+      "length": "Largo de la marca",
+      "offset": "Distancia a la pieza",
+      "note": "Las marcas se imprimen solo en las hojas del frente. Empiezan después del sangrado."
+    },
+    "bleed": {
+      "amount": "Sangrado",
+      "source": "Se toma de",
+      "sources": {
+        "mirror": "Reflejar el borde",
+        "source": "La separación de origen"
+      },
+      "mirrorNote": "La franja del borde de cada pieza se dibuja otra vez, volteada sobre el borde. Sigue siendo vectorial.",
+      "sourceNote": "Usa lo que el PDF de origen tiene entre las piezas. Necesita al menos ese espacio entre ellas allí.",
+      "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes."
+    },
+    "duplex": {
+      "on": "Imprimir dorsos (doble cara)",
+      "onHint": "Una hoja de dorsos después de cada hoja de frentes, en espejo para que los dorsos coincidan al dar vuelta el papel.",
+      "flip": "Voltear por el borde",
+      "flips": {
+        "long": "Largo",
+        "short": "Corto"
+      },
+      "offsetX": "Desfase del dorso en X",
+      "offsetY": "Desfase del dorso en Y",
+      "offsetNote": "Mueve todo lo que hay en las hojas de dorsos, para corregir el desvío de la impresora entre caras. Derecha y abajo son positivos.",
+      "commonBack": "Dorso común",
+      "none": "Ninguno",
+      "useSelected": "Usar la pieza seleccionada como dorso común",
+      "remove": "Quitar",
+      "backNote": "Una pieza sin dorso propio recibe el dorso común; si no hay ninguno, su lugar queda vacío en la hoja de dorsos."
+    },
+    "warnings": {
+      "marks_off_page": "Algunas marcas de corte quedan fuera de la página: deja márgenes más grandes.",
+      "gap_too_narrow_for_line": "Una separación es muy angosta para una línea, o no hay ninguna: usa marcas en los márgenes o aumenta la separación de salida.",
+      "bleed_overlaps_neighbour": "Los sangrados de piezas vecinas se superponen: haz la separación de salida de al menos el doble del sangrado.",
+      "bleed_off_page": "El sangrado pasa del borde de la página: deja márgenes más grandes.",
+      "back_size_differs": "Un dorso no tiene el mismo tamaño que su frente, así que los cortes no coincidirán.",
+      "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado."
     }
   },
   "sheets": {
@@ -322,7 +385,11 @@
     "openPdf": "Abre un PDF para planificar las hojas.",
     "planning": "Planificando las hojas…",
     "nothing": "Aún no hay nada que imprimir. Elige piezas en la biblioteca de piezas y asígnales copias, o vuelve a poner el plan en todas las piezas.",
-    "thumb": "Hoja {{n}}"
+    "thumb": "Hoja {{n}}",
+    "front": "frente",
+    "back": "dorso",
+    "positionFront": "Hoja {{current}} de {{total}} · frente",
+    "positionBack": "Hoja {{current}} de {{total}} · dorso"
   },
   "preferences": {
     "title": "Preferencias",
@@ -495,7 +562,8 @@
     "no_region": "No hay ninguna región de piezas seleccionada.",
     "not_a_project": "Este no es un archivo de proyecto válido.",
     "project_too_new": "Este proyecto se creó con una versión más reciente de la aplicación (versión de archivo {{found}}; esta versión lee hasta la {{supported}}). Actualiza la aplicación.",
-    "project_invalid": "Este archivo de proyecto está dañado o incompleto."
+    "project_invalid": "Este archivo de proyecto está dañado o incompleto.",
+    "bleed_exceeds_source_gap": "El origen tiene {{gap_mm}} mm entre algunas piezas, menos que los {{bleed_mm}} mm de sangrado que se toman de él."
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",

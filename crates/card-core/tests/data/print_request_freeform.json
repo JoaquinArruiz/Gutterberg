@@ -135,5 +135,28 @@
       "scale": 1,
       "turn": 0
     }
-  ]
+  ],
+  "finishing": {
+    "options": {
+      "marks": {
+        "style": "off",
+        "width_mm": 0.25,
+        "color": "#000000",
+        "length_mm": 3,
+        "offset_mm": 1
+      },
+      "bleed": {
+        "mm": 0,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": false,
+        "flip": "long",
+        "offset_x_mm": 0,
+        "offset_y_mm": 0,
+        "common_back": null
+      }
+    },
+    "backs": []
+  }
 }

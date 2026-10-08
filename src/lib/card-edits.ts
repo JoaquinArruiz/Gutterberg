@@ -16,12 +16,14 @@ export type CardEdits = {
   scales: Record<string, number>;
   /** The library order as card keys. Empty = page order. Cards it does not list follow, in page order. */
   order: string[];
+  /** The piece printed on the back of each piece (key to key), for duplex printing. */
+  backs: Record<string, string>;
 };
 
 /** Whether a card key (`cardIdKey`) belongs to the PDF `documentId`. */
 export const isCardOfDocument = (k: string, documentId: number): boolean => k.split(":")[1] === String(documentId);
 
-export const NO_EDITS: CardEdits = { turns: {}, scales: {}, order: [] };
+export const NO_EDITS: CardEdits = { turns: {}, scales: {}, order: [], backs: {} };
 
 /** A card can be printed from a tenth of its size up to five times it. */
 export const MIN_SCALE = 0.1;
@@ -135,6 +137,23 @@ export function formatCardSize(c: Card, unit: MeasurementUnit): string {
   return `${formatValue(ptToMm(width), unit, decimals)} × ${formatValue(ptToMm(height), unit, decimals)} ${unit} (${formatDecimal(c.scale * 100, 1)}%)`;
 }
 
+/** Set the back of each of `keys` to the piece `back`, or clear it with null. */
+export function setBacks(edits: CardEdits, keys: string[], back: string | null): CardEdits {
+  const backs = { ...edits.backs };
+  for (const k of keys) {
+    if (back === null || k === back) delete backs[k];
+    else backs[k] = back;
+  }
+  return { ...edits, backs };
+}
+
+/** `backs` without the pieces of the PDF `documentId`, as a front or as a back. */
+export function backsWithoutDocument(backs: Record<string, string>, documentId: number): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(backs).filter(([k, v]) => !isCardOfDocument(k, documentId) && !isCardOfDocument(v, documentId)),
+  );
+}
+
 const FREEFORM = /^f:(\d+):(\d+):(\d+)$/;
 
 /**
@@ -164,11 +183,27 @@ export function remapRecord<T>(
   return out;
 }
 
+/** `backs` after a freeform piece is deleted: pairs that name it go, later pieces are renumbered. */
+function remapBacks(
+  backs: Record<string, string>,
+  documentId: number,
+  page: number,
+  index: number,
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(backs)) {
+    const [nk, nv] = [keyAfterDelete(k, documentId, page, index), keyAfterDelete(v, documentId, page, index)];
+    if (nk !== null && nv !== null) out[nk] = nv;
+  }
+  return out;
+}
+
 /** The card edits after the freeform card `index` of `page` of document `documentId` is deleted. */
 export function editsAfterDelete(edits: CardEdits, documentId: number, page: number, index: number): CardEdits {
   return {
     turns: remapRecord(edits.turns, documentId, page, index),
     scales: remapRecord(edits.scales, documentId, page, index),
     order: edits.order.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []),
+    backs: remapBacks(edits.backs, documentId, page, index),
   };
 }

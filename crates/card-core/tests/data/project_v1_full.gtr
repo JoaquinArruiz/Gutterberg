@@ -1,0 +1,26 @@
+{
+  "format": "gutterberg-project",
+  "version": 1,
+  "documents": [
+    {
+      "id": 0,
+      "path": "/games/poker.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pageCount": 2,
+      "groups": [],
+      "freeform": {},
+      "viewedPage": 0
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 3, "gapYMm": 3, "gapLinked": true, "pageMode": "a4", "orientation": "portrait",
+    "customWidthMm": 210, "customHeightMm": 297,
+    "margins": { "top": 5, "right": 5, "bottom": 5, "left": 5 }
+  },
+  "edits": { "turns": {}, "scales": {}, "order": [] },
+  "plan": {
+    "mode": "all", "quantities": {}, "autoFill": false, "order": "grouped", "groupBySize": true,
+    "sheetGrid": "auto", "rows": 3, "columns": 3
+  }
+}

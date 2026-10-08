@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixtureText from "../../crates/card-core/tests/data/print_request.json?raw";
 import type { OutputSettings } from "../stores/layout-store";
 import { cardIdKey, freeformCardId, gridCardId } from "./card";
+import { NO_EDITS } from "./card-edits";
 import { defaultGroups, type PageGroup, setSkipped, updateGridGroup } from "./document-layout";
 import {
   buildPrintRequest,
@@ -93,7 +94,12 @@ describe("cards the user turned, resized or reordered", () => {
   const key = (i: number) => cardIdKey(cards[i].id);
 
   it("lists every card in the user's order with its turn and scale, even in 'all cards' mode", () => {
-    const edits = { turns: { [key(0)]: 90 as const }, scales: { [key(2)]: 0.98 }, order: [key(2), key(0), key(1)] };
+    const edits = {
+      turns: { [key(0)]: 90 as const },
+      scales: { [key(2)]: 0.98 },
+      order: [key(2), key(0), key(1)],
+      backs: {},
+    };
     const req = buildPrintRequest(plan(), cards, docs, output, edits);
     expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity, s.turn, s.scale])).toEqual([
       [key(2), 1, 0, 0.98],
@@ -106,7 +112,7 @@ describe("cards the user turned, resized or reordered", () => {
 
   it("keeps the order in custom mode too, with the quantities attached to the right cards", () => {
     const p = plan({ mode: "custom", quantities: { [key(0)]: 2, [key(1)]: 3 } });
-    const edits = { turns: {}, scales: {}, order: [key(1), key(0)] };
+    const edits = { turns: {}, scales: {}, order: [key(1), key(0)], backs: {} };
     const req = buildPrintRequest(p, cards, docs, output, edits);
     expect(req.settings.map((s) => [cardIdKey(s.id), s.quantity])).toEqual([
       [key(1), 3],
@@ -117,14 +123,16 @@ describe("cards the user turned, resized or reordered", () => {
 
   it("changes nothing when no card is edited", () => {
     const plain = buildPrintRequest(plan(), cards, docs, output);
-    expect(buildPrintRequest(plan(), cards, docs, output, { turns: {}, scales: {}, order: [] })).toEqual(plain);
+    expect(buildPrintRequest(plan(), cards, docs, output, { turns: {}, scales: {}, order: [], backs: {} })).toEqual(
+      plain,
+    );
     expect(plain.layout).toEqual({ kind: "same_as_source" });
   });
 
   it("needs the planner for freeform cards, which 'same as source' would drop", () => {
     const withFreeform = [...cards, { ...cards[0], id: freeformCardId(0, 1, 0) }];
-    expect(plannerRequired(cards, { turns: {}, scales: {}, order: [] })).toBe(false);
-    expect(plannerRequired(withFreeform, { turns: {}, scales: {}, order: [] })).toBe(true);
+    expect(plannerRequired(cards, { turns: {}, scales: {}, order: [], backs: {} })).toBe(false);
+    expect(plannerRequired(withFreeform, { turns: {}, scales: {}, order: [], backs: {} })).toBe(true);
     expect(effectiveGrid(plan(), true)).toBe("auto");
   });
 });
@@ -208,6 +216,11 @@ describe("the IPC contract with the Rust planner", () => {
       sheetGrid: "custom",
       rows: 2,
       columns: 3,
+      finish: {
+        marks: { style: "ticks", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 1.5 },
+        bleed: { mm: 2, source: "mirror" },
+        duplex: { on: true, flip: "short", offsetXMm: 0.5, offsetYMm: -0.5, commonBack: cardIdKey(three[0].id) },
+      },
     });
     const settings: OutputSettings = {
       gapXMm: 3,
@@ -219,7 +232,8 @@ describe("the IPC contract with the Rust planner", () => {
       customHeightMm: 297,
       margins: { top: 1, right: 2, bottom: 3, left: 4 },
     };
-    const req = buildPrintRequest(p, three, [{ id: 0, pages: [a4, a4, a4], groups, freeform: {} }], settings);
+    const backs = { ...NO_EDITS, backs: { [cardIdKey(three[1].id)]: cardIdKey(three[2].id) } };
+    const req = buildPrintRequest(p, three, [{ id: 0, pages: [a4, a4, a4], groups, freeform: {} }], settings, backs);
     expect(JSON.parse(JSON.stringify(req))).toEqual(fixture);
   });
 });

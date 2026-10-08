@@ -4,6 +4,7 @@ use card_core::card::{CardId, PageGroup, PageGroupKind, PageRange};
 use card_core::export::{
     export_sheets_files, page_size, plan_print_files, validate_sheets_in, SourceFile,
 };
+use card_core::finish::Finishing;
 use card_core::layout::GridLayout;
 use card_core::sample::{sample_grid, sample_pdf, sample_pdf_pages};
 use card_core::sheet::{
@@ -142,8 +143,14 @@ fn a_mixed_sheet_is_exported_from_both_files() {
         },
     ];
     let layout = PrintLayout::Grid { spec: two_by_two() };
-    let (sheets, issues) =
-        plan_print_files(&files, &[], &layout, &PaginateOptions::default()).unwrap();
+    let (sheets, issues) = plan_print_files(
+        &files,
+        &[],
+        &layout,
+        &PaginateOptions::default(),
+        &Finishing::default(),
+    )
+    .unwrap();
     assert!(issues.is_empty());
     // 9 + 18 cards, four to a sheet.
     assert_eq!(sheets.len(), 7);
@@ -191,6 +198,7 @@ fn issues_name_the_document_that_cannot_be_exported() {
         &[],
         &PrintLayout::SameAsSource,
         &PaginateOptions::default(),
+        &Finishing::default(),
     )
     .unwrap();
     assert!(sheets.is_empty());

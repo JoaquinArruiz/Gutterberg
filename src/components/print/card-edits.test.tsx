@@ -197,7 +197,7 @@ describe("setting a real size", () => {
   it("is undone with Ctrl+Z like every other edit", () => {
     render(<CardLibrary />);
     fireEvent.click(thumbs()[0]);
-    act(() => layout().setCardEdits({ turns: {}, scales: { [key(cards[0])]: 0.5 }, order: [] }));
+    act(() => layout().setCardEdits({ turns: {}, scales: { [key(cards[0])]: 0.5 }, order: [], backs: {} }));
     act(() => undo());
     expect(layout().cardEdits.scales).toEqual({});
   });
@@ -293,7 +293,7 @@ describe("the sheet grid for edited cards", () => {
     const select = () => screen.getByRole("combobox", { name: "Sheet grid" }) as HTMLSelectElement | HTMLElement;
     expect(select()).toBeTruthy();
     expect(screen.queryByText(/no freeform/)).toBeNull();
-    act(() => layout().setCardEdits({ turns: { [key(grid[0])]: 90 }, scales: {}, order: [] }));
+    act(() => layout().setCardEdits({ turns: { [key(grid[0])]: 90 }, scales: {}, order: [], backs: {} }));
     expect(screen.getByText(/no freeform,/)).toBeTruthy();
   });
 });
