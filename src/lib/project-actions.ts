@@ -159,6 +159,38 @@ export async function openPdfDialog(): Promise<void> {
   });
 }
 
+/** Takes the PDF being edited out of the project, after asking. The others, and the output settings, stay. */
+export async function removeActiveDocument(): Promise<void> {
+  const docs = useDocumentStore.getState();
+  const current = docs.documents.find((d) => d.id === docs.activeId);
+  if (!current) return;
+  const last = docs.documents.length === 1;
+  const name = fileName(current.path);
+  const message = t(last ? "project.remove.messageLast" : "project.remove.message", { name });
+  if (!(await confirm(message, t("project.remove.ok")))) return;
+  await run(async () => {
+    await closePdf(current.id);
+    const next = docs.documents.find((d) => d.id !== current.id)?.id ?? null;
+    if (next === null) {
+      const output = outputSettings(useLayoutStore.getState());
+      resetSession();
+      docs.clear();
+      useLayoutStore.getState().loadProject({
+        active: { groups: [], freeform: {} },
+        parked: {},
+        output,
+        edits: NO_EDITS,
+      });
+      return;
+    }
+    useLayoutStore.getState().removeDocument(current.id, next);
+    docs.removeDocument(current.id);
+    usePrintStore.getState().forgetDocument(current.id);
+    useEditorStore.getState().setSelectedCard(null);
+    useEditorStore.getState().reset();
+  });
+}
+
 /** Switch the Source tab to another PDF of the project. */
 export function activateDocument(id: DocumentId): void {
   const docs = useDocumentStore.getState();

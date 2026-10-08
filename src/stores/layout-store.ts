@@ -2,7 +2,7 @@ import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { DocumentId, OrientedRect } from "../lib/card";
-import { type CardEdits, editsAfterDelete, NO_EDITS } from "../lib/card-edits";
+import { type CardEdits, editsAfterDelete, isCardOfDocument, NO_EDITS } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
 import {
   applyGridTo,
@@ -125,6 +125,8 @@ type LayoutState = OutputSettings & {
   }) => void;
   /** Adds the layout of a PDF that was just added to the project; it stays parked until it is edited. */
   parkDocument: (id: DocumentId, layout: DocLayout) => void;
+  /** Drops the PDF `id` from the project; `next` (parked) is taken up in its place when `id` was the one being edited. */
+  removeDocument: (id: DocumentId, next: DocumentId | null) => void;
   /** Edit the PDF `to` instead of `from`: `from`'s layout is parked and `to`'s is taken up. No history. */
   switchDocument: (from: DocumentId, to: DocumentId) => void;
   setSelection: (page: number, r: NormalizedRect | null) => void;
@@ -203,6 +205,24 @@ export const useLayoutStore = create<LayoutState>()(
         useLayoutStore.temporal.getState().clear();
       },
       parkDocument: (id, layout) => set((s) => ({ parked: { ...s.parked, [id]: layout } })),
+      removeDocument: (id, next) => {
+        const { parked, cardEdits } = get();
+        const { [id]: _gone, ...rest } = parked;
+        const target = next === null ? undefined : rest[next];
+        const keep = (k: string) => !isCardOfDocument(k, id);
+        const edits: CardEdits = {
+          turns: Object.fromEntries(Object.entries(cardEdits.turns).filter(([k]) => keep(k))),
+          scales: Object.fromEntries(Object.entries(cardEdits.scales).filter(([k]) => keep(k))),
+          order: cardEdits.order.filter(keep),
+        };
+        if (next === null || !target) {
+          set({ parked: rest, cardEdits: edits });
+        } else {
+          const { [next]: _taken, ...others } = rest;
+          set({ parked: others, groups: target.groups, freeform: target.freeform, cardEdits: edits });
+        }
+        useLayoutStore.temporal.getState().clear();
+      },
       switchDocument: (from, to) => {
         if (from === to) return;
         const { parked, groups, freeform } = get();

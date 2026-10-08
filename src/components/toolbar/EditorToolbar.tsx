@@ -34,6 +34,7 @@ import { planOf, usePrintStore } from "../../stores/print-store";
 import { useProjectStore } from "../../stores/project-store";
 import { type Stage, useUiStore } from "../../stores/ui-store";
 import { PanelsMenu } from "../workspace/PanelsMenu";
+import { DocumentName } from "./DocumentName";
 import { FileMenu } from "./FileMenu";
 
 const TOOLS = [
@@ -133,7 +134,7 @@ export function EditorToolbar() {
       setIssues([{ documentId: useDocumentStore.getState().activeId, page: null, error: toAppError(e) }]);
       return;
     }
-    const out = await pickExportPath(source, "print");
+    const out = await pickExportPath(source, "print", print.exportName);
     if (!out) return;
     const n = await exportPrint(req, out);
     setStatus({ ok: true, text: () => translate("toolbar.exportedSheets", { count: n, path: out }) });
@@ -243,7 +244,9 @@ export function EditorToolbar() {
           )}
         </>
       )}
-      <div className="flex-1" />
+      <div className="flex min-w-0 flex-1 items-center justify-center px-2">
+        <DocumentName />
+      </div>
       {status && (
         <span
           title={status.text()}

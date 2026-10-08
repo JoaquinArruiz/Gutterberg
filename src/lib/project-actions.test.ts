@@ -15,6 +15,7 @@ import {
   newProject,
   openPdfDialog,
   openProjectDialog,
+  removeActiveDocument,
   saveProject,
   saveProjectAs,
 } from "./project-actions";
@@ -437,6 +438,30 @@ describe("several PDFs in one project", () => {
     expect(docs().activeId).toBe(1);
     expect(Object.keys(layout().parked)).toEqual(["0"]);
     expect(usePrintStore.getState().quantities).toEqual({ [cardKey(1, 0, 0, 0)]: 2, [cardKey(0, 0, 0, 0)]: 2 });
+  });
+
+  it("removes the PDF being edited after asking, with its copies, and edits the other", async () => {
+    await twoPdfs();
+    usePrintStore.getState().setQuantity([cardKey(1, 0, 0, 0), cardKey(0, 0, 0, 0)], 2);
+    fake.confirms.length = 0;
+    await removeActiveDocument();
+    expect(docs().documents.map((d) => d.id)).toEqual([0, 1]);
+    fake.confirms.push(true);
+    await removeActiveDocument();
+    expect(docs().documents.map((d) => d.id)).toEqual([0]);
+    expect(docs().activeId).toBe(0);
+    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().parked).toEqual({});
+    expect(usePrintStore.getState().quantities).toEqual({ [cardKey(0, 0, 0, 0)]: 2 });
+  });
+
+  it("removing the last PDF leaves an empty project", async () => {
+    fake.pickedPdf.push("/games/a.pdf");
+    await openPdfDialog();
+    fake.confirms.push(true);
+    await removeActiveDocument();
+    expect(docs().documents).toEqual([]);
+    expect(layout().groups).toEqual([]);
   });
 
   it("adding a PDF to nothing is the same as opening one", async () => {

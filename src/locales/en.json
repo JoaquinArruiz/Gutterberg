@@ -6,6 +6,11 @@
   },
   "toolbar": {
     "openPdf": "Open PDF",
+    "docName": {
+      "remove": "Remove this PDF from the project",
+      "rename": "Rename the exported PDF",
+      "label": "Name of the exported PDF"
+    },
     "stageTabs": "Stage",
     "stages": {
       "source": "Source",
@@ -50,6 +55,7 @@
     "pdfFilter": "PDF",
     "suffixSpaced": "spaced",
     "suffixPrint": "print",
+    "newPdfName": "New-PDF",
     "fallbackName": "pieces"
   },
   "common": {
@@ -525,6 +531,11 @@
       "ok": "Discard changes"
     },
     "noModify": "“{{name}}” is marked as “no modify” by its author. Opening it works, but the exported PDF is a new file, so check that you are allowed to rearrange it.",
+    "remove": {
+      "message": "Remove “{{name}}” from the project? Its pieces leave the piece library and the sheets. The file on disk is not touched.",
+      "messageLast": "This is the only PDF of the project. Remove “{{name}}”? The project will be left empty. The file on disk is not touched.",
+      "ok": "Remove"
+    },
     "relink": {
       "message": "Where is “{{name}}” now? Choose the PDF to keep opening the project.",
       "ok": "Choose file…",

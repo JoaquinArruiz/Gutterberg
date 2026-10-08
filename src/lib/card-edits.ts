@@ -18,6 +18,9 @@ export type CardEdits = {
   order: string[];
 };
 
+/** Whether a card key (`cardIdKey`) belongs to the PDF `documentId`. */
+export const isCardOfDocument = (k: string, documentId: number): boolean => k.split(":")[1] === String(documentId);
+
 export const NO_EDITS: CardEdits = { turns: {}, scales: {}, order: [] };
 
 /** A card can be printed from a tenth of its size up to five times it. */

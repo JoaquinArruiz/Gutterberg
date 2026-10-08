@@ -6,6 +6,11 @@
   },
   "toolbar": {
     "openPdf": "Abrir PDF",
+    "docName": {
+      "remove": "Quitar este PDF del proyecto",
+      "rename": "Cambiar el nombre del PDF exportado",
+      "label": "Nombre del PDF exportado"
+    },
     "stageTabs": "Pestañas",
     "stages": {
       "source": "Origen",
@@ -50,6 +55,7 @@
     "pdfFilter": "PDF",
     "suffixSpaced": "espaciado",
     "suffixPrint": "impresion",
+    "newPdfName": "Nuevo-PDF",
     "fallbackName": "piezas"
   },
   "common": {
@@ -525,6 +531,11 @@
       "ok": "Descartar cambios"
     },
     "noModify": "El autor marcó “{{name}}” como «no modificar». Se puede abrir, pero el PDF exportado es un archivo nuevo, así que verifica que tengas permiso para reorganizarlo.",
+    "remove": {
+      "message": "¿Quitar «{{name}}» del proyecto? Sus piezas salen de la biblioteca de piezas y de las hojas. El archivo en el disco no se toca.",
+      "messageLast": "Este es el único PDF del proyecto. ¿Quitar «{{name}}»? El proyecto quedará vacío. El archivo en el disco no se toca.",
+      "ok": "Quitar"
+    },
     "relink": {
       "message": "¿Dónde está ahora «{{name}}»? Elige el PDF para seguir abriendo el proyecto.",
       "ok": "Elegir archivo…",

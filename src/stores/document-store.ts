@@ -32,6 +32,8 @@ type DocumentState = {
   addDocument: (document: OpenDocument) => void;
   /** Edit another PDF; remembers the page left behind and returns to the one last viewed there. */
   setActive: (id: DocumentId) => void;
+  /** Drops a PDF from the project. If it was being edited, the first remaining one takes its place. */
+  removeDocument: (id: DocumentId) => void;
   clear: () => void;
   setCurrentPage: (i: number) => void;
 };
@@ -72,6 +74,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (id === s.activeId || !s.documents.some((d) => d.id === id)) return;
     const viewed = { ...s.viewed, [s.activeId]: s.currentPage };
     set({ ...mirror(s.documents, id, viewed[id] ?? 0), viewed });
+  },
+
+  removeDocument: (id) => {
+    const s = get();
+    const documents = s.documents.filter((d) => d.id !== id);
+    const { [id]: _gone, ...viewed } = s.viewed;
+    if (documents.length === 0) return set({ ...NONE, viewed: {} });
+    const activeId = id === s.activeId ? documents[0].id : s.activeId;
+    set({ ...mirror(documents, activeId, activeId === s.activeId ? s.currentPage : (viewed[activeId] ?? 0)), viewed });
   },
 
   clear: () => set({ ...NONE, viewed: {} }),

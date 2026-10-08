@@ -36,14 +36,20 @@ export async function pickPdfs(): Promise<string[]> {
   return Array.isArray(picked) ? picked : typeof picked === "string" ? [picked] : [];
 }
 
-export async function pickExportPath(inputPath: string, kind: "spaced" | "print" = "spaced"): Promise<string | null> {
+export async function pickExportPath(
+  inputPath: string,
+  kind: "spaced" | "print" = "spaced",
+  chosenName?: string | null,
+): Promise<string | null> {
+  const filters = [{ name: t("files.pdfFilter"), extensions: ["pdf"] }];
+  if (chosenName) return save({ defaultPath: `${chosenName}.pdf`, filters });
   const name =
     inputPath
       .split(/[\\/]/)
       .pop()
       ?.replace(/\.(pdf|gtr)$/i, "") ?? t("files.fallbackName");
   const suffix = kind === "print" ? t("files.suffixPrint") : t("files.suffixSpaced");
-  return save({ defaultPath: `${name}-${suffix}.pdf`, filters: [{ name: t("files.pdfFilter"), extensions: ["pdf"] }] });
+  return save({ defaultPath: `${name}-${suffix}.pdf`, filters });
 }
 
 /** Mirrors card_core::layout::GridLayout. */

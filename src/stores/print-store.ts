@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { cardIdKey } from "../lib/card";
-import { keyAfterDelete, remapRecord } from "../lib/card-edits";
+import { isCardOfDocument, keyAfterDelete, remapRecord } from "../lib/card-edits";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { emitHintEvent } from "../lib/hint-events";
 import {
@@ -67,6 +67,11 @@ type PrintState = PrintPlan & {
   updateSheetsPreview: () => void;
   /** The Print stage was entered: forget the old sheets so the preview starts from a fresh plan. */
   beginPlanning: () => void;
+  /** The name for the exported PDF (without ".pdf"); null = the default. */
+  exportName: string | null;
+  setExportName: (name: string | null) => void;
+  /** A PDF left the project: its copies and selection go too. */
+  forgetDocument: (documentId: number) => void;
   /** A new document: back to the default plan. */
   reset: () => void;
   /** Opens a saved plan (a project was opened). */
@@ -83,6 +88,7 @@ const initial = {
   sheetsError: null,
   sheetsSnapshot: null,
   currentSheet: 0,
+  exportName: null as string | null,
 };
 
 export const usePrintStore = create<PrintState>((set) => ({
@@ -122,6 +128,16 @@ export const usePrintStore = create<PrintState>((set) => ({
   setCurrentSheet: (currentSheet) => set({ currentSheet }),
   updateSheetsPreview: () => set((s) => ({ sheetsSnapshot: s.sheets })),
   beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
+  setExportName: (exportName) => set({ exportName }),
+  forgetDocument: (documentId) =>
+    set((s) => ({
+      quantities: Object.fromEntries(Object.entries(s.quantities).filter(([k]) => !isCardOfDocument(k, documentId))),
+      selection: {
+        selected: s.selection.selected.filter((k) => !isCardOfDocument(k, documentId)),
+        anchor:
+          s.selection.anchor !== null && isCardOfDocument(s.selection.anchor, documentId) ? null : s.selection.anchor,
+      },
+    })),
   reset: () => set({ ...initial }),
   loadPlan: (plan) => set({ ...initial, ...plan }),
 }));
