@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { pageBadge } from "../../lib/document-layout";
-import { activateDocument, addPdfDialog } from "../../lib/project-actions";
+import { activateDocument, addPdfDialog, removeActiveDocument } from "../../lib/project-actions";
 import { usePageImage } from "../../lib/use-page-image";
 import type { PanelOrientation } from "../../lib/workspace-layout";
 import { fileName, useDocumentStore } from "../../stores/document-store";
@@ -106,6 +106,15 @@ function DocumentSwitcher() {
         className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
       >
         {t("pages.addPdf")}
+      </button>
+      <button
+        type="button"
+        onClick={() => void removeActiveDocument()}
+        disabled={loading}
+        title={t("toolbar.docName.remove")}
+        className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
+      >
+        {t("pages.removePdf")}
       </button>
     </div>
   );

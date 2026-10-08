@@ -178,6 +178,7 @@
       "pieces_other": "{{count}} piezas"
     },
     "document": "PDF en edición",
+    "removePdf": "Quitar PDF",
     "addPdf": "Agregar PDF…",
     "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas."
   },

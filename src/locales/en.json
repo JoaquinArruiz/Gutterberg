@@ -178,6 +178,7 @@
       "pieces_other": "{{count}} pieces"
     },
     "document": "PDF being edited",
+    "removePdf": "Remove PDF",
     "addPdf": "Add PDF…",
     "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library."
   },
