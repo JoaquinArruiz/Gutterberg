@@ -11,6 +11,7 @@
 //! page or pane), but thumbnails run last so they never delay the interactive kinds.
 
 use crate::card::DocumentId;
+use crate::detect::{default_engines, detect_page, read::read_page_data, Detection};
 use crate::error::{Error, Result};
 use crate::geometry::Rect;
 use crate::render::{
@@ -55,6 +56,7 @@ enum Work {
     Close(Option<DocumentId>, Reply<()>),
     Page(DocumentId, usize, u32, Reply<Vec<u8>>),
     Region(DocumentId, usize, Rect, u32, Reply<Vec<u8>>),
+    Detect(DocumentId, usize, Reply<Detection>),
 }
 
 struct Msg {
@@ -137,6 +139,13 @@ impl RenderWorker {
         self.send(kind, |r| Work::Page(document_id, page_index, width_px, r))
     }
 
+    /// Where the pieces seem to be on a page, found locally (see [`crate::detect`]). Blocks until done.
+    pub fn detect(&self, document_id: DocumentId, page_index: usize) -> Result<Detection> {
+        self.send(RenderKind::Page, |r| {
+            Work::Detect(document_id, page_index, r)
+        })
+    }
+
     /// Blocks until rendered (or superseded).
     pub fn render_region(
         &self,
@@ -203,6 +212,14 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                         .ok_or(Error::NoDocument)
                         .and_then(|d| render_page_png_in(d, index, width))
                 });
+            }
+            Work::Detect(id, index, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| read_page_data(d, index))
+                        .map(|data| detect_page(&data, &default_engines())),
+                );
             }
             Work::Region(id, index, region, width, reply) => {
                 let _ = reply.send(if stale {

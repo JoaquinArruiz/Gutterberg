@@ -198,6 +198,14 @@ function remapBacks(
   return out;
 }
 
+/** The card edits once every freeform piece of `page` of document `documentId` is gone (`count` of them). */
+export function editsWithoutFreeform(edits: CardEdits, documentId: number, page: number, count: number): CardEdits {
+  let next = edits;
+  // Deleting piece 0 renumbers the rest, so deleting `count` times from the front removes them all.
+  for (let i = 0; i < count; i++) next = editsAfterDelete(next, documentId, page, 0);
+  return next;
+}
+
 /** The card edits after the freeform card `index` of `page` of document `documentId` is deleted. */
 export function editsAfterDelete(edits: CardEdits, documentId: number, page: number, index: number): CardEdits {
   return {

@@ -105,7 +105,7 @@ fn log_timing(what: &str, draw: std::time::Duration, encode: std::time::Duration
     }
 }
 
-fn get_page<'a>(doc: &PdfDocument<'a>, page_index: usize) -> Result<PdfPage<'a>> {
+pub(crate) fn get_page<'a>(doc: &PdfDocument<'a>, page_index: usize) -> Result<PdfPage<'a>> {
     let count = doc.pages().len() as usize;
     doc.pages()
         .get(i32::try_from(page_index).map_err(|_| Error::PageOutOfRange(page_index, count))?)

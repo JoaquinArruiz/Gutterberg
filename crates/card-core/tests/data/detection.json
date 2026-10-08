@@ -1,0 +1,26 @@
+{
+  "proposals": [
+    {
+      "kind": "grid",
+      "bounds": { "x": 27.6, "y": 46.8, "width": 540.0, "height": 748.2 },
+      "rows": 3,
+      "columns": 3,
+      "source_gap_x_mm": 0.0,
+      "source_gap_y_mm": 1.5,
+      "confidence": 0.95,
+      "engine": "pdf-objects",
+      "notes": ["crop_marks"]
+    },
+    {
+      "kind": "rects",
+      "rects": [
+        { "center": { "x": 150.0, "y": 200.0 }, "width": 127.6, "height": 178.6, "angle_deg": -10.5 },
+        { "center": { "x": 400.0, "y": 210.0 }, "width": 127.6, "height": 178.6, "angle_deg": 4.0 }
+      ],
+      "confidence": 0.62,
+      "engine": "blobs",
+      "notes": ["uneven_sizes", "touches_edge"]
+    }
+  ],
+  "reasons": []
+}

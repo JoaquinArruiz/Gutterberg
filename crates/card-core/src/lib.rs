@@ -5,6 +5,7 @@
 //! truth for geometry.
 
 pub mod card;
+pub mod detect;
 pub mod error;
 pub mod export;
 pub mod finish;

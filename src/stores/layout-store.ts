@@ -2,8 +2,16 @@ import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import type { DocumentId, OrientedRect } from "../lib/card";
-import { backsWithoutDocument, type CardEdits, editsAfterDelete, isCardOfDocument, NO_EDITS } from "../lib/card-edits";
+import {
+  backsWithoutDocument,
+  type CardEdits,
+  editsAfterDelete,
+  editsWithoutFreeform,
+  isCardOfDocument,
+  NO_EDITS,
+} from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
+import type { DetectedGrid } from "../lib/detect";
 import {
   applyGridTo,
   defaultGroups,
@@ -136,6 +144,10 @@ type LayoutState = OutputSettings & {
   /** Removes a freeform card; later cards move up, and their turn, scale and place in the order with them. */
   deleteFreeformCard: (page: number, index: number) => void;
   setCardEdits: (edits: CardEdits) => void;
+  /** Sets the region and grid of `page`'s group from a detected grid: one undo step. */
+  applyDetectedGrid: (page: number, grid: DetectedGrid) => void;
+  /** Replaces the freeform pieces of `page` with detected ones: one undo step. */
+  applyDetectedPieces: (page: number, cards: OrientedRect[]) => void;
   setGrid: (page: number, patch: GridPatch) => void;
   setSkipped: (page: number, skip: boolean) => void;
   /** Copy the grid and region of `page`'s group onto `pages`. */
@@ -263,6 +275,26 @@ export const useLayoutStore = create<LayoutState>()(
         for (const fn of deletedListeners) fn(documentId, page, index);
       },
       setCardEdits: (cardEdits) => set({ cardEdits }),
+      applyDetectedGrid: (page, grid) => {
+        const created = (gridGroupAt(get().groups, page)?.selection ?? null) === null;
+        const { selection, ...fields } = grid;
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection, grid: patchGrid(g.grid, fields) })),
+        }));
+        if (created) emitHintEvent("selection-created");
+      },
+      applyDetectedPieces: (page, cards) => {
+        const old = get().freeform[page]?.length ?? 0;
+        const documentId = useDocumentStore.getState().activeId;
+        set((s) => {
+          const freeform = { ...s.freeform };
+          if (cards.length > 0) freeform[page] = cards;
+          else delete freeform[page];
+          return { freeform, cardEdits: editsWithoutFreeform(s.cardEdits, documentId, page, old) };
+        });
+        // The Print stage keys copies and the selection by piece number: the old pieces are gone.
+        for (let i = 0; i < old; i++) for (const fn of deletedListeners) fn(documentId, page, 0);
+      },
       setGrid: (page, patch) => {
         set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) }));
         emitHintEvent("grid-changed");

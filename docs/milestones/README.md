@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M14, M16, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
+M1–M14, M16, M17, M18, M20 and M21 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
@@ -14,7 +14,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M14](M14.md) | Project files, several PDFs and presets (done) | M | M13 |
 | [M15](M15.md) | Rename to Gutterberg, then distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (done) | M | M12 |
-| [M17](M17.md) | Auto-detect card grids and card outlines, locally (outline) | L | M11, M18 |
+| [M17](M17.md) | Detect pieces on a page, locally (done) | L | M11, M18 |
 | [M18](M18.md) | Freeform pieces: per-piece rectangles, rotation, turn, sort, real size (done) | L | M13 |
 | [M19*](M19.md) | AI Mode (optional): AI engine for card detection, page sorting, own API key | M | M17 |
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
@@ -23,8 +23,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 \* Maybe: optional and not scheduled. The owner decides after M18 whether to build it.
   Don't start it or build anything for it unless asked.
 
-M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M17,
-M15. The numbers are names, not the order.
+M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M15. The numbers are names, not the order.
 
 ## Direction: Source → Print
 

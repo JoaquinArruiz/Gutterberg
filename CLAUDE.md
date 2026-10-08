@@ -71,6 +71,7 @@ and type names) stay as they are.
 | **front / back** | **frente / dorso** | The two sides of a piece, and of a duplex sheet | obverse / reverse, face |
 | **cut marks** | **marcas de corte** | Lines on the sheet that show where to cut | crop marks, trim marks |
 | **bleed** | **sangrado** | Art that extends past a piece's edge | |
+| **proposal** | **propuesta** | What Detect pieces offers: shown as a draft on the page, applied only when the user says so | result, guess |
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json` (from M21): add
 every new string to both, never hard-code text in components. Spanish is neutral Latin

@@ -6,6 +6,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
+            commands::detect::detect_pieces,
             commands::document::open_pdf,
             commands::document::close_pdf,
             commands::project::open_project,

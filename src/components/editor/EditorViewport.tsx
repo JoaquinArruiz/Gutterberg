@@ -25,6 +25,7 @@ import {
   useLayoutStore,
 } from "../../stores/layout-store";
 import { HintToast } from "../ui/HintToast";
+import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
 import { MAG, Magnifier } from "./Magnifier";
@@ -390,6 +391,7 @@ export function EditorViewport() {
                   interactive={cardTool}
                 />
               )}
+              {!output && <DetectOverlay viewport={viewport} page={page} />}
             </svg>
             {!output && loupe && !cardTool && selection && gridSpec && (
               <Magnifier
@@ -411,6 +413,9 @@ export function EditorViewport() {
                 pageRect={pageRect}
                 box={box}
               />
+            )}
+            {!output && (
+              <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
             )}
             {cardTool && (
               <HintToast

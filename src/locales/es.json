@@ -617,5 +617,47 @@
       "pdfChanged": "«{{name}}» cambió desde que se guardó el proyecto. Comprueba que las piezas sigan donde las marcaste.",
       "layoutReset": "«{{name}}» tiene un número de páginas distinto al de cuando se guardó el proyecto, así que se restablecieron sus grupos de páginas y sus piezas."
     }
+  },
+  "detect": {
+    "title": "Detectar piezas",
+    "note": "Propone dónde están las piezas de esta página, calculado en tu computadora. No cambia nada hasta que lo apliques.",
+    "button": "Detectar en esta página",
+    "running": "Detectando…",
+    "skipped": "Esta página está omitida.",
+    "none": "No se encontraron piezas en esta página. Dibuja la región a mano.",
+    "onThePage": "La propuesta está sobre la página: revisa los contornos y luego aplícala.",
+    "draft": "Propuesta",
+    "gridSize_one": "{{rows}} × {{columns}} = {{count}} pieza",
+    "gridSize_other": "{{rows}} × {{columns}} = {{count}} piezas",
+    "pieceCount_one": "{{count}} pieza",
+    "pieceCount_other": "{{count}} piezas",
+    "engines": {
+      "objects": "de los objetos del PDF",
+      "edges": "de los bordes que se repiten",
+      "blobs": "de las formas",
+      "other": "de otro motor"
+    },
+    "confidence": {
+      "exact": "Exacta",
+      "good": "Buena",
+      "low": "Confianza baja"
+    },
+    "lowWarning": "Confianza baja: revisa los contornos antes de aplicar.",
+    "which": "{{n}} de {{total}}",
+    "apply": "Aplicar",
+    "replace_one": "Reemplazar {{count}} pieza",
+    "replace_other": "Reemplazar {{count}} piezas",
+    "next": "Siguiente propuesta",
+    "discard": "Descartar",
+    "notes": {
+      "missing_cells": "Algunos lugares de la cuadrícula no tienen objeto: puede que la última fila no esté completa.",
+      "crop_marks": "Las marcas de corte de los márgenes coinciden con la cuadrícula.",
+      "few_objects": "Solo unos pocos objetos lo respaldan, así que revísalo.",
+      "uneven_sizes": "Las piezas tienen tamaños distintos.",
+      "touches_edge": "Una pieza toca el borde de la página.",
+      "one_piece": "Solo se encontró una pieza.",
+      "merged_pieces": "Algunas formas no eran rectángulos limpios: las piezas que se tocan no se pueden distinguir.",
+      "no_regular_pattern": "El arte parece cruzar los bordes de las piezas, así que no se ve un patrón regular."
+    }
   }
 }
