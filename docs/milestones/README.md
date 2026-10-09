@@ -19,8 +19,9 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M19](M19.md) | AI Mode (done): AI engine for piece detection, page sorting, own API key | M | M17 |
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
 | [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals (done) | M | M18, M20 |
+| [M22](M22.md) | UI consistency and polish: shared controls, AI buttons, info tips, movable Print panels, panel-height fix, Preferences icons and About | M | M19 |
 
-M18, M20 and M21 were added after the rest were numbered. Suggested order from here: M15. The numbers are names, not the order.
+M18, M20, M21 and M22 were added after the rest were numbered. Suggested order from here: M22, then M15. The numbers are names, not the order.
 
 ## Direction: Source → Print
 
