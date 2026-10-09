@@ -1,5 +1,6 @@
 import { Info } from "lucide-react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 
 const WIDTH = 240;
@@ -79,22 +80,26 @@ export function InfoTip({ text, className = "" }: { text: React.ReactNode; class
       <span id={id} className="sr-only">
         {text}
       </span>
-      {open && pos && (
-        <span
-          aria-hidden="true"
-          data-testid="info-tip-bubble"
-          style={{
-            position: "fixed",
-            left: pos.left,
-            top: pos.top,
-            width: Math.min(WIDTH, window.innerWidth - 16),
-            transform: above ? "translateY(-100%)" : undefined,
-          }}
-          className="pointer-events-none z-[70] whitespace-normal rounded border border-[var(--border)] bg-[var(--panel)] px-2 py-1.5 text-left text-[11px] font-normal normal-case leading-snug tracking-normal text-[var(--fg)] shadow-xl shadow-black/40"
-        >
-          {text}
-        </span>
-      )}
+      {open &&
+        pos &&
+        createPortal(
+          <span
+            aria-hidden="true"
+            data-testid="info-tip-bubble"
+            style={{
+              position: "fixed",
+              left: pos.left,
+              top: pos.top,
+              width: Math.min(WIDTH, window.innerWidth - 16),
+              transform: above ? "translateY(-100%)" : undefined,
+            }}
+            className="pointer-events-none z-[70] whitespace-normal rounded border border-[var(--border)] bg-[var(--panel)] px-2 py-1.5 text-left text-[11px] font-normal normal-case leading-snug tracking-normal text-[var(--fg)] shadow-xl shadow-black/40"
+          >
+            {text}
+          </span>,
+          // Inside the dialog when there is one (a modal dialog is above everything else), else the page.
+          btn.current?.closest("dialog") ?? document.body,
+        )}
     </span>
   );
 }

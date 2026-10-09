@@ -194,4 +194,31 @@ describe("InfoTip", () => {
     window.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
   });
+
+  it("does not inherit the dimming of a disabled control beside it", () => {
+    render(
+      <Switch checked={false} onChange={() => {}} label="Group pieces by size" info="Own sheets per size." disabled />,
+    );
+    fireEvent.pointerEnter(trigger());
+    const bubble = screen.getByTestId("info-tip-bubble");
+    // The bubble is outside the control's row, and no ancestor of it or of the "i" is dimmed.
+    expect(screen.getByRole("switch").parentElement?.contains(bubble)).toBe(false);
+    for (const node of [bubble, trigger()]) {
+      for (let el: HTMLElement | null = node; el; el = el.parentElement)
+        expect(el.className, el.tagName).not.toMatch(/\bopacity-/);
+    }
+    // The switch and its label are what is dimmed.
+    expect(screen.getByRole("switch").className).toContain("opacity-50");
+    expect(screen.getByText("Group pieces by size").parentElement?.className).toContain("opacity-50");
+  });
+
+  it("is drawn in the dialog it is in, so a modal dialog does not cover it", () => {
+    render(
+      <dialog open>
+        <InfoTip text="Tip" />
+      </dialog>,
+    );
+    fireEvent.pointerEnter(trigger());
+    expect(screen.getByTestId("info-tip-bubble").parentElement?.tagName).toBe("DIALOG");
+  });
 });

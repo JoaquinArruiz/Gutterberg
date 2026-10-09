@@ -37,16 +37,16 @@ export function Checkbox({
       disabled={disabled}
       onClick={() => onChange(!checked)}
       {...aria}
-      className={`mt-px flex size-3.5 shrink-0 items-center justify-center rounded-[3px] border outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--panel)] ${checked ? "border-[var(--accent)] bg-[var(--accent)] text-black" : "border-[var(--muted)] bg-transparent"} ${label === undefined ? className : ""}`}
+      className={`mt-px flex size-3.5 shrink-0 ${disabled ? "opacity-50" : ""} items-center justify-center rounded-[3px] border outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--panel)] ${checked ? "border-[var(--accent)] bg-[var(--accent)] text-black" : "border-[var(--muted)] bg-transparent"} ${label === undefined ? className : ""}`}
     >
       {checked && <Check size={11} strokeWidth={3} aria-hidden="true" />}
     </button>
   );
   if (label === undefined) return box;
   return (
-    <div className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""} ${className}`}>
+    <div className={`flex items-start gap-2 ${className}`}>
       {box}
-      <div className="min-w-0 flex-1">
+      <div className={`min-w-0 flex-1 ${disabled ? "opacity-50" : ""}`}>
         <label htmlFor={id}>{label}</label>
         {hint && <div className="text-[var(--muted)]">{hint}</div>}
       </div>

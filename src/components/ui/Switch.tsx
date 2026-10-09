@@ -27,7 +27,7 @@ export function Switch({
 }) {
   const id = useId();
   return (
-    <div className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""} ${className}`}>
+    <div className={`flex items-start gap-2 ${className}`}>
       <button
         type="button"
         role="switch"
@@ -36,7 +36,7 @@ export function Switch({
         disabled={disabled}
         onClick={() => onChange(!checked)}
         {...aria}
-        className={`relative mt-px h-4 w-7 shrink-0 rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--panel)] ${checked ? "border-[var(--accent)] bg-[var(--accent)]" : "border-[var(--muted)] bg-transparent"}`}
+        className={`relative mt-px h-4 w-7 shrink-0 ${disabled ? "opacity-50" : ""} rounded-full border outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--panel)] ${checked ? "border-[var(--accent)] bg-[var(--accent)]" : "border-[var(--muted)] bg-transparent"}`}
       >
         <span
           aria-hidden="true"
@@ -44,7 +44,7 @@ export function Switch({
         />
       </button>
       {label !== undefined && (
-        <div className="min-w-0 flex-1">
+        <div className={`min-w-0 flex-1 ${disabled ? "opacity-50" : ""}`}>
           <label htmlFor={id}>{label}</label>
           {hint && <div className="text-[var(--muted)]">{hint}</div>}
         </div>
