@@ -401,7 +401,7 @@
       "Preview": "Vista previa",
       "Appearance": "Apariencia",
       "About": "Acerca de",
-      "AI": "Modo IA"
+      "AI": "Modo IA (experimental)"
     },
     "units": {
       "mm": "Milímetros (mm)",
@@ -688,8 +688,8 @@
       "ollama": "Un modelo de visión que hayas descargado, p. ej. llava o llama3.2-vision."
     },
     "settings": {
-      "title": "Modo IA",
-      "enable": "Usar el Modo IA",
+      "title": "Modo IA (experimental)",
+      "enable": "Usar el Modo IA (experimental)",
       "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno y confirmes.",
       "provider": "Proveedor",
       "model": "Modelo",
@@ -757,6 +757,12 @@
       "changes_other": "Cambiarán {{count}} páginas.",
       "noChanges": "No cambiaría ninguna página.",
       "apply": "Aplicar",
+      "cancel": "Cancelar"
+    },
+    "experimental": {
+      "title": "El Modo IA es experimental",
+      "text": "El Modo IA todavía necesita más pruebas y puede no funcionar como se espera. Puede consumir muchos tokens: cada acción envía páginas a tu proveedor, y los tokens tienen un costo. Úsalo bajo tu propia responsabilidad.",
+      "ok": "Aceptar",
       "cancel": "Cancelar"
     }
   }

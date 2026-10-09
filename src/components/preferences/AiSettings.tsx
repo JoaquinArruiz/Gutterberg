@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AI_PROVIDERS, type AiProvider, DEFAULT_BASE_URL, DEFAULT_MODEL, needsKey } from "../../lib/ai";
 import { aiDeleteKey, aiKeyStatus, aiSetKey, aiTestConnection } from "../../lib/ai-api";
@@ -58,6 +58,15 @@ export function AiSettings() {
   const [saved, setSaved] = useState<boolean | null>(null);
   const [key, setKey] = useState("");
   const [busy, setBusy] = useState<"save" | "test" | null>(null);
+  // Turning AI Mode on asks first; nothing changes until the user says Okay.
+  const [asking, setAsking] = useState(false);
+  const warning = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const d = warning.current;
+    if (!d) return;
+    if (asking && !d.open) d.showModal();
+    if (!asking && d.open) d.close();
+  }, [asking]);
   const [notice, setNotice] = useState<{ ok: boolean; text: string } | null>(null);
   const provider = ai.provider;
   const settings = ai.providers[provider];
@@ -120,13 +129,40 @@ export function AiSettings() {
 
   return (
     <>
+      <dialog
+        ref={warning}
+        data-testid="ai-experimental"
+        aria-label={t("ai.experimental.title")}
+        onClose={() => setAsking(false)}
+        className="m-auto w-[440px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"
+      >
+        <div className="flex flex-col gap-3 p-4">
+          <h2 className="text-sm font-semibold">{t("ai.experimental.title")}</h2>
+          <p>{t("ai.experimental.text")}</p>
+          <div className="flex justify-end gap-2">
+            <button type="button" className={btn} onClick={() => setAsking(false)}>
+              {t("ai.experimental.cancel")}
+            </button>
+            <button
+              type="button"
+              className={`${btn} border-[var(--accent)]`}
+              onClick={() => {
+                setAsking(false);
+                set.setAiEnabled(true);
+              }}
+            >
+              {t("ai.experimental.ok")}
+            </button>
+          </div>
+        </div>
+      </dialog>
       <Field label={t("ai.settings.title")}>
         <label className="flex items-start gap-2">
           <input
             type="checkbox"
             className="mt-0.5"
             checked={ai.enabled}
-            onChange={(e) => set.setAiEnabled(e.target.checked)}
+            onChange={(e) => (e.target.checked ? setAsking(true) : set.setAiEnabled(false))}
           />
           <span>
             {t("ai.settings.enable")}

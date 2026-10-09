@@ -401,7 +401,7 @@
       "Preview": "Preview",
       "Appearance": "Appearance",
       "About": "About",
-      "AI": "AI Mode"
+      "AI": "AI Mode (experimental)"
     },
     "units": {
       "mm": "Millimeters (mm)",
@@ -688,8 +688,8 @@
       "ollama": "A vision model you have pulled, e.g. llava or llama3.2-vision."
     },
     "settings": {
-      "title": "AI Mode",
-      "enable": "Use AI Mode",
+      "title": "AI Mode (experimental)",
+      "enable": "Use AI Mode (experimental)",
       "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one and confirm.",
       "provider": "Provider",
       "model": "Model",
@@ -757,6 +757,12 @@
       "changes_other": "{{count}} pages will change.",
       "noChanges": "No page would change.",
       "apply": "Apply",
+      "cancel": "Cancel"
+    },
+    "experimental": {
+      "title": "AI Mode is experimental",
+      "text": "AI Mode still needs further testing and may not work as expected. It can be token hungry: every action sends pages to your provider, and the tokens cost money. Use it at your own responsibility.",
+      "ok": "Okay",
       "cancel": "Cancel"
     }
   }

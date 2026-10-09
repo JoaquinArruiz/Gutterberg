@@ -76,6 +76,59 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
+describe("turning AI Mode on", () => {
+  const warningDialog = () => document.querySelector("dialog[data-testid=ai-experimental]") as HTMLDialogElement;
+
+  it("is called experimental in its section and its switch", () => {
+    render(<AiSettings />);
+    expect(screen.getByRole("checkbox", { name: /Use AI Mode \(experimental\)/ })).toBeTruthy();
+    expect(screen.getByText("AI Mode (experimental)")).toBeTruthy();
+  });
+
+  it("warns first, and nothing is turned on until the user says Okay", () => {
+    render(<AiSettings />);
+    expect(warningDialog().open).toBe(false);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    expect(warningDialog().open).toBe(true);
+    const text = within(warningDialog()).getByText(/needs further testing/).textContent ?? "";
+    expect(text).toMatch(/token hungry/);
+    expect(text).toMatch(/at your own responsibility/);
+    // Still off while the question is open.
+    expect(prefs().prefs.ai.enabled).toBe(false);
+    expect((screen.getByRole("checkbox", { name: /Use AI Mode/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.queryByText("Provider")).toBeNull();
+
+    fireEvent.click(within(warningDialog()).getByRole("button", { name: "Okay" }));
+    expect(warningDialog().open).toBe(false);
+    expect(prefs().prefs.ai.enabled).toBe(true);
+    expect(screen.getByText("Provider")).toBeTruthy();
+  });
+
+  it("stays off on Cancel and when the dialog is closed with Esc", () => {
+    render(<AiSettings />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(within(warningDialog()).getByRole("button", { name: "Cancel" }));
+    expect(warningDialog().open).toBe(false);
+    expect(prefs().prefs.ai.enabled).toBe(false);
+
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    expect(warningDialog().open).toBe(true);
+    fireEvent(warningDialog(), new Event("close"));
+    expect(prefs().prefs.ai.enabled).toBe(false);
+    // And it asks again the next time.
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    expect(warningDialog().open).toBe(true);
+  });
+
+  it("turns off without asking", () => {
+    prefs().setAiEnabled(true);
+    render(<AiSettings />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    expect(prefs().prefs.ai.enabled).toBe(false);
+    expect(warningDialog().open).toBe(false);
+  });
+});
+
 describe("with AI Mode off", () => {
   it("leaves no trace of it in the page editor's sidebar or anywhere it could pop up", () => {
     const { container } = render(
