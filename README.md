@@ -98,7 +98,7 @@ app is the same one you can build from this repository.
 
 ## Why
 
-> **TODO (owner): write this section.** Why Gutterberg exists, in your own words.
+> Most print-and-play PDFs pack their cards edge to edge to save paper. That makes them hard to cut: every cut is shared by two cards, a millimetre off spoils both, and there’s nowhere for bleed or cut marks. Gutterberg takes that PDF and gives every piece its own space, at its exact size, with the original artwork untouched. I made it after any print-shops in my area would take my boardgame's card for printing, and I’m sharing it for anyone who’s had the same fight with a craft knife.
 
 ### Why not just use…
 
