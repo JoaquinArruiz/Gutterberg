@@ -85,8 +85,44 @@ export interface AppPreferences {
   };
   /** Saved grids, in the order they were made. */
   presets: GridPreset[];
+  /** Images as pieces (M24). */
+  images: { size: ImageSizePrefs };
   /** AI Mode (M19). */
   ai: AiPrefs;
+}
+
+/** The size the last import used, offered again by the next one (M24). */
+export type ImageSizePrefs = {
+  preset: "standard" | "small" | "tarot" | "image" | "custom";
+  widthMm: number;
+  heightMm: number;
+  /** The images include bleed, and how much. */
+  bleed: boolean;
+  bleedMm: number;
+};
+
+export const DEFAULT_IMAGE_SIZE: ImageSizePrefs = {
+  preset: "standard",
+  widthMm: 63,
+  heightMm: 88,
+  bleed: false,
+  bleedMm: 3,
+};
+
+const IMAGE_SIZE_PRESETS = ["standard", "small", "tarot", "image", "custom"] as const;
+
+function normalizeImageSize(raw: unknown): ImageSizePrefs {
+  const r = isObj(raw) ? raw : {};
+  const d = DEFAULT_IMAGE_SIZE;
+  const mm = (v: unknown, fallback: number, lo: number, hi: number) =>
+    typeof v === "number" && Number.isFinite(v) ? Math.min(Math.max(v, lo), hi) : fallback;
+  return {
+    preset: oneOf(r.preset, IMAGE_SIZE_PRESETS, d.preset),
+    widthMm: mm(r.widthMm, d.widthMm, 5, 1000),
+    heightMm: mm(r.heightMm, d.heightMm, 5, 1000),
+    bleed: typeof r.bleed === "boolean" ? r.bleed : d.bleed,
+    bleedMm: mm(r.bleedMm, d.bleedMm, 0, 20),
+  };
 }
 
 /** Most open/closed states remembered; section ids are short fixed names, so this is generous. */
@@ -104,6 +140,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   print: { layout: defaultLayout("print") },
   files: { recent: [] },
   presets: [],
+  images: { size: DEFAULT_IMAGE_SIZE },
   ai: DEFAULT_AI,
 };
 
@@ -240,6 +277,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     },
     files: { recent: normalizeRecent(fl.recent) },
     presets: normalizePresets(r.presets),
+    images: { size: normalizeImageSize(isObj(r.images) ? r.images.size : undefined) },
     ai: normalizeAi(r.ai),
   };
 }

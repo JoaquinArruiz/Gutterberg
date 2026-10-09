@@ -9,6 +9,7 @@ import {
   DEFAULT_PREFERENCES,
   type DefaultWorkspace,
   type GridPreset,
+  type ImageSizePrefs,
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
@@ -113,6 +114,8 @@ type PreferencesState = {
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
   removeRecentProject: (path: string) => void;
+  /** The size an import used, remembered for the next one. */
+  setImageSize: (size: ImageSizePrefs) => void;
   /** Saves a grid under its name, replacing a preset of the same name. */
   /** AI Mode on or off. */
   setAiEnabled: (enabled: boolean) => void;
@@ -187,8 +190,13 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setLivePreview: (livePreview) => edit((p) => ({ ...p, preview: { livePreview } })),
       setTheme: (theme) => edit((p) => ({ ...p, appearance: { theme } })),
       resetToDefaults: () => {
-        // Recent projects and saved grids are the user's own data, not settings: they stay.
-        commit({ ...DEFAULT_PREFERENCES, files: get().prefs.files, presets: get().prefs.presets });
+        // Recent projects, saved grids and the last image size are the user's own data, not settings: they stay.
+        commit({
+          ...DEFAULT_PREFERENCES,
+          files: get().prefs.files,
+          presets: get().prefs.presets,
+          images: get().prefs.images,
+        });
         bumpEpoch();
       },
       dismissHint: (id) => {
@@ -204,6 +212,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),
       removeRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: p.files.recent.filter((x) => x !== path) } })),
+      setImageSize: (size) => edit((p) => ({ ...p, images: { size } })),
       setAiEnabled: (enabled) => edit((p) => ({ ...p, ai: { ...p.ai, enabled } })),
       setAiProvider: (provider) => edit((p) => ({ ...p, ai: { ...p.ai, provider } })),
       setAiSendImages: (sendImages) => edit((p) => ({ ...p, ai: { ...p.ai, sendImages } })),

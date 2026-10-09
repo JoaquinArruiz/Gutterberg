@@ -45,6 +45,7 @@ export function CardThumb({
   const { t } = useTranslation();
   const path = useDocumentStore((s) => documentById(s, card.id.document_id)?.path ?? null);
   const page = useDocumentStore((s) => documentById(s, card.id.document_id)?.pages[card.id.page_index]);
+  const image = useDocumentStore((s) => documentById(s, card.id.document_id)?.images?.pages[card.id.page_index]);
   const unit = useUnit();
   const dpr = window.devicePixelRatio || 1;
   // The picture's box has the card's final shape, as large as the cell allows.
@@ -102,6 +103,27 @@ export function CardThumb({
           data-testid="scale-badge"
         >
           {Math.round(card.scale * 100)}%
+        </span>
+      )}
+      {image?.missing && (
+        <span
+          className="absolute right-1 top-6 rounded bg-red-400 px-1 font-semibold text-black"
+          data-testid="image-missing-badge"
+          title={t("images.badge.missingTitle")}
+        >
+          {t("images.badge.missing")}
+        </span>
+      )}
+      {image?.plan && image.plan.quality !== "good" && (
+        <span
+          className={`absolute right-1 top-6 rounded px-1 font-semibold text-black ${image.plan.quality === "blurry" ? "bg-red-400" : "bg-amber-400"}`}
+          data-testid="image-quality-badge"
+          data-quality={image.plan.quality}
+          title={t(image.plan.quality === "blurry" ? "images.badge.blurryTitle" : "images.badge.softTitle", {
+            dpi: Math.round(image.plan.dpi),
+          })}
+        >
+          {t("images.badge.dpi", { dpi: Math.round(image.plan.dpi) })}
         </span>
       )}
       {back && (

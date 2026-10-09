@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_OUTPUT } from "../stores/layout-store";
 import { NO_EDITS } from "./card-edits";
 import { applyGridTo, defaultGroups, setSkipped, updateGridGroup } from "./document-layout";
+import { imageGroups } from "./images";
 import { DEFAULT_PLAN } from "./print-request";
 import {
   fromProject,
@@ -25,8 +26,18 @@ function state(): ProjectState {
   groups = setSkipped(groups, 3, true);
   return {
     documents: [
-      { id: 0, path: "/games/a.pdf", hash: hash(1), pageCount: 4, groups, freeform: { 2: [tilted] }, viewedPage: 2 },
       {
+        kind: "pdf",
+        id: 0,
+        path: "/games/a.pdf",
+        hash: hash(1),
+        pageCount: 4,
+        groups,
+        freeform: { 2: [tilted] },
+        viewedPage: 2,
+      },
+      {
+        kind: "pdf",
         id: 3,
         path: "/games/b.pdf",
         hash: hash(2),
@@ -139,16 +150,92 @@ describe("the project file", () => {
   });
 });
 
+describe("images documents in the file", () => {
+  const placement = { widthMm: 63, heightMm: 88, bleedMm: 3, fit: "fill" as const, reduceLarge: true };
+  const piece = { x: 0.05, y: 0.04, width: 0.9, height: 0.92 };
+  const withImages = (): ProjectState => {
+    const base = state();
+    base.documents.push({
+      kind: "images",
+      id: 4,
+      name: "dragon.png + 1 more",
+      images: [
+        { path: "/art/dragon.png", hash: hash(7), placement },
+        { path: "/art/knight.jpg", hash: hash(8), placement: { ...placement, fit: "fit", reduceLarge: false } },
+      ],
+      pageCount: 2,
+      groups: imageGroups(2, piece),
+      freeform: {},
+      viewedPage: 1,
+    });
+    return base;
+  };
+
+  it("keep the images and how each is placed, not the PDF built from them", () => {
+    const before = withImages();
+    const f = file(before);
+    const doc = f.documents[2];
+    expect(doc.kind).toBe("images");
+    expect(doc.images.map((i: { path: string }) => i.path)).toEqual(["/art/dragon.png", "/art/knight.jpg"]);
+    expect(doc.images[0].placement).toEqual(placement);
+    expect(doc.path).toBeUndefined();
+    expect(fromProject(parseProject(f))).toEqual(before);
+  });
+
+  it("start as a 1 × 1 grid over the piece, on every page", () => {
+    const [group] = imageGroups(3, piece);
+    expect(group).toMatchObject({ kind: "grid", pages: { first: 0, last: 2 }, selection: piece });
+    expect(group.kind === "grid" && [group.grid.rows, group.grid.columns]).toEqual([1, 1]);
+    expect(imageGroups(0, piece)).toEqual([]);
+  });
+
+  it("need an image for each page, and a hash that is a hash", () => {
+    const f = file(withImages());
+    const short = structuredClone(f);
+    short.documents[2].images.pop();
+    expect(() => parseProject(short)).toThrow();
+    const badHash = structuredClone(f);
+    badHash.documents[2].images[0].hash = "xyz";
+    expect(() => parseProject(badHash)).toThrow();
+    const noKind = structuredClone(f);
+    delete noKind.documents[2].kind;
+    expect(() => parseProject(noKind)).toThrow();
+  });
+
+  it("have their sizes pulled back to what the dialog allows", () => {
+    const f = file(withImages());
+    f.documents[2].images[0].placement = { ...placement, widthMm: 99999, heightMm: 0.5, bleedMm: 400 };
+    const back = fromProject(parseProject(f)).documents[2];
+    expect(back.kind === "images" && back.images[0].placement).toMatchObject({
+      widthMm: 1000,
+      heightMm: 5,
+      bleedMm: 20,
+    });
+  });
+
+  it("change the signature when an image is placed differently or renamed", () => {
+    const base = projectSignature(withImages());
+    const refit = withImages();
+    const doc = refit.documents[2];
+    if (doc.kind === "images") doc.images[1] = { ...doc.images[1], placement: { ...placement, fit: "fill" } };
+    expect(projectSignature(refit)).not.toBe(base);
+    const renamed = withImages();
+    const named = renamed.documents[2];
+    if (named.kind === "images") named.name = "other";
+    expect(projectSignature(renamed)).not.toBe(base);
+  });
+});
+
 describe("cut marks, bleed and duplex in the file", () => {
   it("are saved under the plan, with the backs of pieces under the edits", () => {
     const f = file(state());
-    expect(f.version).toBe(2);
+    expect(f.version).toBe(3);
     expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source" });
     expect(f.plan.finish.duplex.commonBack).toBe("g:3:0:0:0");
     expect(f.edits.backs).toEqual({ "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" });
   });
 
-  it("are required: a version 2 file without them is not a project", () => {
+  it("are required: a file without them is not a project", () => {
     const f = file(state());
     delete f.plan.finish;
     expect(() => parseProject(f)).toThrow();
@@ -196,7 +283,8 @@ describe("the signature", () => {
     edited.plan = { ...edited.plan, quantities: { ...edited.plan.quantities, "g:0:0:0:2": 1 } };
     expect(projectSignature(edited)).not.toBe(base);
     const moved = state();
-    moved.documents[0] = { ...moved.documents[0], path: "/elsewhere/a.pdf" };
+    const movedPdf = moved.documents[0];
+    if (movedPdf.kind === "pdf") moved.documents[0] = { ...movedPdf, path: "/elsewhere/a.pdf" };
     expect(projectSignature(moved)).not.toBe(base);
     const edits = state();
     edits.edits = NO_EDITS;

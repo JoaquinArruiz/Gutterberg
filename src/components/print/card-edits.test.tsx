@@ -297,3 +297,61 @@ describe("the sheet grid for edited cards", () => {
     expect(screen.getByText(/no freeform,/)).toBeTruthy();
   });
 });
+
+describe("images in the library", () => {
+  const placement = { widthMm: 63, heightMm: 88, bleedMm: 0, fit: "fit" as const, reduceLarge: false };
+  const plan = (dpi: number, quality: "good" | "soft" | "blurry") => ({
+    pageWidthMm: 63,
+    pageHeightMm: 88,
+    piece: { x: 0, y: 0, width: 1, height: 1 },
+    proportionsDiffer: false,
+    dpi,
+    quality,
+    veryLarge: false,
+    reducedToDpi: null,
+    storedBytes: 1,
+  });
+  const page = (i: number, over: { plan: ReturnType<typeof plan> | null; missing?: boolean }) => ({
+    path: `/art/${i}.png`,
+    hash: "0".repeat(64),
+    placement,
+    missing: false,
+    ...over,
+  });
+  const onImages = (pages: ReturnType<typeof page>[]) =>
+    useDocumentStore
+      .getState()
+      .setDocuments([{ id: 0, path: "/cache/x.pdf", pages: [A4, A4], hash: "", images: { name: "art", pages } }], 0);
+  const own = (n: number): Card => ({ ...scan(n), id: gridCardId(0, n, 0, 0) });
+
+  it("marks a piece from an image that prints soft or blurry, with its resolution", () => {
+    onImages([page(0, { plan: plan(120, "blurry") }), page(1, { plan: plan(250, "soft") })]);
+    print().setCards([own(0), own(1)], null);
+    render(<CardLibrary />);
+    const badges = screen.getAllByTestId("image-quality-badge");
+    expect(badges.map((b) => [b.dataset.quality, b.textContent])).toEqual([
+      ["blurry", "120 dpi"],
+      ["soft", "250 dpi"],
+    ]);
+    expect(badges[0].getAttribute("title")).toContain("blurry");
+    expect(badges[1].getAttribute("title")).toContain("a little soft");
+  });
+
+  it("has no mark for an image that prints well, nor for a PDF", () => {
+    onImages([page(0, { plan: plan(400, "good") }), page(1, { plan: plan(600, "good") })]);
+    print().setCards([own(0), own(1)], null);
+    render(<CardLibrary />);
+    expect(screen.queryByTestId("image-quality-badge")).toBeNull();
+    cleanup();
+    useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4], hash: "" }], 0);
+    render(<CardLibrary />);
+    expect(screen.queryByTestId("image-quality-badge")).toBeNull();
+  });
+
+  it("marks the piece of an image that is missing", () => {
+    onImages([page(0, { plan: null, missing: true }), page(1, { plan: plan(400, "good") })]);
+    print().setCards([own(0), own(1)], null);
+    render(<CardLibrary />);
+    expect(screen.getAllByTestId("image-missing-badge")).toHaveLength(1);
+  });
+});

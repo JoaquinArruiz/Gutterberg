@@ -12,7 +12,9 @@
     "docName": {
       "remove": "Quitar este PDF del proyecto",
       "rename": "Cambiar el nombre del PDF exportado",
-      "label": "Nombre del PDF exportado"
+      "label": "Nombre del PDF exportado",
+      "renameImages": "Cambiar el nombre de este grupo de imágenes",
+      "labelImages": "Nombre de este grupo de imágenes"
     },
     "stageTabs": "Pestañas",
     "stages": {
@@ -52,6 +54,15 @@
       "fixPrint": "Corrígelos y vuelve a exportar. Las piezas nunca se escalan para que quepan.",
       "fixSource": "Corrige estas páginas u omítelas, y vuelve a exportar.",
       "pageIn": "Página {{n}} de {{name}}:"
+    },
+    "warnings": {
+      "label": "Avisos de calidad de impresión",
+      "title_one": "{{count}} imagen podría no imprimirse nítida",
+      "title_other": "{{count}} imágenes podrían no imprimirse nítidas",
+      "blurry": "{{name}} se verá borrosa con este tamaño ({{dpi}} ppp).",
+      "soft": "{{name}} podría imprimirse un poco suave ({{dpi}} ppp).",
+      "missing": "No se encontró {{name}}: esta página se imprime en blanco.",
+      "note": "Esto no impide la exportación."
     }
   },
   "files": {
@@ -59,7 +70,8 @@
     "suffixSpaced": "espaciado",
     "suffixPrint": "impresion",
     "newPdfName": "Nuevo-PDF",
-    "fallbackName": "piezas"
+    "fallbackName": "piezas",
+    "imageFilter": "Imágenes"
   },
   "common": {
     "page": "Página {{n}}",
@@ -192,7 +204,9 @@
     "document": "PDF en edición",
     "removePdf": "Quitar PDF",
     "addPdf": "Agregar PDF…",
-    "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas."
+    "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas.",
+    "addImages": "Agregar imágenes…",
+    "addImagesTitle": "Agrega imágenes PNG, JPEG o WebP como piezas, una por página."
   },
   "applyGrid": {
     "dialog": "Aplicar esta cuadrícula a",
@@ -598,7 +612,10 @@
     "ai_invalid_reply": "No se pudo leer la respuesta: {{detail}}. No se cambió nada.",
     "ai_invalid_proposal": "La propuesta no encaja: {{detail}}. No se cambió nada.",
     "ai_text_only_needs_objects": "Esta página no tiene objetos que describir. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
-    "ai_config": "{{detail}}"
+    "ai_config": "{{detail}}",
+    "image_unsupported": "«{{name}}» no se puede usar. Las imágenes pueden ser PNG, JPEG o WebP.",
+    "image_too_large": "«{{name}}» es demasiado grande ({{megapixels}} megapíxeles, {{mb}} MB). Los límites son 100 megapíxeles y 200 MB.",
+    "image_unreadable": "No se puede leer «{{name}}»: {{detail}}"
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",
@@ -629,7 +646,8 @@
       "saveAs": "Guardar como…",
       "recent": "Proyectos recientes",
       "noRecent": "No hay proyectos recientes",
-      "shortcuts": "Atajos de teclado…"
+      "shortcuts": "Atajos de teclado…",
+      "addImages": "Agregar imágenes…"
     },
     "discard": {
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
@@ -651,7 +669,9 @@
       "label": "Mensajes del proyecto",
       "close": "Cerrar",
       "pdfChanged": "«{{name}}» cambió desde que se guardó el proyecto. Comprueba que las piezas sigan donde las marcaste.",
-      "layoutReset": "«{{name}}» tiene un número de páginas distinto al de cuando se guardó el proyecto, así que se restablecieron sus grupos de páginas y sus piezas."
+      "layoutReset": "«{{name}}» tiene un número de páginas distinto al de cuando se guardó el proyecto, así que se restablecieron sus grupos de páginas y sus piezas.",
+      "imageChanged": "«{{name}}» cambió desde que se guardó el proyecto. Su página ahora muestra la imagen nueva.",
+      "imagesMissing": "No se encontraron algunas imágenes de «{{name}}». Sus páginas quedan en blanco hasta que vuelvas a agregarlas."
     }
   },
   "detect": {
@@ -846,10 +866,61 @@
   "start": {
     "title": "Para empezar",
     "lead": "Abre un PDF de Print-and-Play para separar sus piezas, o retoma un proyecto.",
-    "shortcuts": "Pulsa ? para ver los atajos de teclado."
+    "shortcuts": "Pulsa ? para ver los atajos de teclado.",
+    "fromImages": "Empezar con imágenes"
   },
   "brand": {
     "logoAlt": "Logo de {{name}}",
     "logoAltPlain": "Logo"
+  },
+  "images": {
+    "documentName_one": "{{first}} + {{count}} más",
+    "documentName_other": "{{first}} + {{count}} más",
+    "changed": "«{{name}}» no es la misma imagen con la que se guardó el proyecto. ¿Quieres usarla en su lugar?",
+    "useChanged": "Usar este archivo",
+    "badge": {
+      "missing": "Falta",
+      "missingTitle": "No se encontró esta imagen, así que esta pieza está en blanco.",
+      "dpi": "{{dpi}} ppp",
+      "softTitle": "Unos {{dpi}} ppp con este tamaño: podría imprimirse un poco suave.",
+      "blurryTitle": "Unos {{dpi}} ppp con este tamaño: se verá borrosa."
+    },
+    "dialog": {
+      "label": "Agregar imágenes",
+      "title_one": "Agregar {{count}} imagen",
+      "title_other": "Agregar {{count}} imágenes",
+      "lead": "Cada imagen se convierte en una pieza. Elige el tamaño con el que se imprime; las imágenes nunca se deforman ni se remuestrean.",
+      "sizeTitle": "Tamaño de la pieza",
+      "presets": {
+        "standard": "Carta estándar (póker, casi todos los TCG): {{width}} × {{height}} mm",
+        "small": "Carta pequeña (tamaño japonés): {{width}} × {{height}} mm",
+        "tarot": "Tarot: {{width}} × {{height}} mm"
+      },
+      "fromImage": "Según la imagen (píxeles ÷ resolución)",
+      "fromImageOff": "Según la imagen (no todos los archivos tienen resolución)",
+      "custom": "Personalizado",
+      "lock": "Mantener las proporciones de la imagen",
+      "pieceSize": "Las piezas se imprimen de {{width}} × {{height}} mm.",
+      "bleed": "Las imágenes incluyen sangrado",
+      "bleedInfo": "La página es el tamaño de la pieza más el sangrado por cada lado, así que el «sangrado desde el origen» de la pestaña Imprimir usa el sangrado de la propia imagen.",
+      "bleedAmount": "Sangrado",
+      "differTitle": "Proporciones distintas",
+      "differLead_one": "Esta imagen no tiene la forma de la pieza. Nunca se deforma.",
+      "differLead_other": "Estas imágenes no tienen la forma de la pieza. Nunca se deforman.",
+      "fit": "Ajustar",
+      "fill": "Rellenar",
+      "fitFor": "Qué hacer con {{name}}",
+      "fitHint": "Ajustar muestra la imagen completa con márgenes en blanco; Rellenar cubre la pieza y corta lo que no cabe.",
+      "resolutionTitle": "Resolución",
+      "soft": "{{dpi}} ppp con este tamaño: podría imprimirse un poco suave.",
+      "blurry": "{{dpi}} ppp con este tamaño: se verá borrosa.",
+      "exportTitle": "Tamaño en la exportación",
+      "exportSize": "Suma unos {{size}} al PDF exportado.",
+      "veryLarge": "{{dpi}} ppp: mucho más nítida de lo que necesita cualquier impresora. Suma unos {{size}}; el PDF exportado será grande.",
+      "reduce": "Reducir las imágenes muy grandes a 600 ppp",
+      "reduceHint": "Las imágenes PNG y WebP de más de 600 ppp se reducen a 600 ppp (siguen sin pérdida). Las JPEG nunca se reducen: habría que volver a comprimirlas y perderían calidad. Tus archivos no se tocan.",
+      "add_one": "Agregar imagen",
+      "add_other": "Agregar imágenes"
+    }
   }
 }

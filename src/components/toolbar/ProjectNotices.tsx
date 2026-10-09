@@ -25,7 +25,11 @@ export function ProjectNotices() {
               ? formatError(n.error)
               : n.key === "pdfChanged"
                 ? t("project.notices.pdfChanged", n.values)
-                : t("project.notices.layoutReset", n.values)}
+                : n.key === "imageChanged"
+                  ? t("project.notices.imageChanged", n.values)
+                  : n.key === "imagesMissing"
+                    ? t("project.notices.imagesMissing", n.values)
+                    : t("project.notices.layoutReset", n.values)}
           </span>
           <button
             type="button"

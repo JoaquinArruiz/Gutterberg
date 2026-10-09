@@ -17,6 +17,28 @@ const withWorkspace = (w: Partial<AppPreferences["workspace"]>): AppPreferences 
   workspace: { ...DEFAULT_PREFERENCES.workspace, ...w },
 });
 
+describe("the image size preference", () => {
+  it("starts at the standard card, without bleed", () => {
+    expect(DEFAULT_PREFERENCES.images.size).toMatchObject({
+      preset: "standard",
+      widthMm: 63,
+      heightMm: 88,
+      bleed: false,
+    });
+  });
+
+  it("keeps a valid size and pulls a damaged one back", () => {
+    const kept = normalizePreferences({
+      images: { size: { preset: "tarot", widthMm: 70, heightMm: 120, bleed: true, bleedMm: 2 } },
+    });
+    expect(kept.images.size).toEqual({ preset: "tarot", widthMm: 70, heightMm: 120, bleed: true, bleedMm: 2 });
+    const bad = normalizePreferences({
+      images: { size: { preset: "huge", widthMm: "x", heightMm: 99999, bleed: "yes", bleedMm: -4 } },
+    });
+    expect(bad.images.size).toEqual({ preset: "standard", widthMm: 63, heightMm: 1000, bleed: false, bleedMm: 0 });
+  });
+});
+
 describe("normalizePreferences", () => {
   it("returns the defaults for missing or garbage input", () => {
     for (const raw of [undefined, null, 5, "x", [], {}]) expect(normalizePreferences(raw)).toEqual(DEFAULT_PREFERENCES);

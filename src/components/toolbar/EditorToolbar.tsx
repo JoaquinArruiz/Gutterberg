@@ -19,13 +19,14 @@ import { getLayoutDocuments, useLayoutDocuments } from "../../lib/documents";
 import { type AppError, formatError, toAppError } from "../../lib/errors";
 import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
 import { emitHintEvent } from "../../lib/hint-events";
+import { type ImageWarning, imageWarnings } from "../../lib/image-warnings";
 import { buildPrintRequest } from "../../lib/print-request";
 import { activateDocument } from "../../lib/project-actions";
 import { exportPrint, validatePrint } from "../../lib/sheet-api";
 import { exportDocument, pickExportPath, validateExport } from "../../lib/tauri";
 import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
-import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
+import { documentById, documentName, useDocumentStore } from "../../stores/document-store";
 import { type Tool, useEditorStore } from "../../stores/editor-store";
 import { redo, undo, useHistory } from "../../stores/history";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -59,7 +60,10 @@ type ExportIssue = { documentId: number; page: number | null; error: AppError };
 type Status = { ok: boolean; text: () => string };
 
 /** The file a PDF of the project was opened from (for naming the PDF a problem is in). */
-const documentPath = (id: number) => documentById(useDocumentStore.getState(), id)?.path ?? "";
+const documentLabel = (id: number) => {
+  const doc = documentById(useDocumentStore.getState(), id);
+  return doc ? documentName(doc) : "";
+};
 
 const base =
   "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded py-1 hover:bg-[var(--hover)] disabled:opacity-40";
@@ -85,6 +89,8 @@ export function EditorToolbar() {
   const [status, setStatus] = useState<Status | null>(null);
   // Pages that would make the export fail, found before the save dialog opens.
   const [issues, setIssues] = useState<ExportIssue[]>([]);
+  // Images that will print soft or blurry: listed, but they do not stop the export.
+  const [warnings, setWarnings] = useState<ImageWarning[]>([]);
   const stage = useUiStore((s) => s.stage);
   const setStage = useUiStore((s) => s.setStage);
 
@@ -103,6 +109,12 @@ export function EditorToolbar() {
       setIssues(found.map((i) => ({ documentId, page: i.page_index, error: toAppError(i) })));
       return;
     }
+    setWarnings(
+      imageWarnings(
+        useDocumentStore.getState().documents,
+        includedPages(state.groups).map((page) => ({ documentId, page })),
+      ),
+    );
     const out = await pickExportPath(source);
     if (!out) return;
     const n = await exportDocument(documentId, plan.jobs, out);
@@ -135,6 +147,12 @@ export function EditorToolbar() {
       setIssues([{ documentId: useDocumentStore.getState().activeId, page: null, error: toAppError(e) }]);
       return;
     }
+    setWarnings(
+      imageWarnings(
+        useDocumentStore.getState().documents,
+        print.cards.map((c) => ({ documentId: c.id.document_id, page: c.id.page_index })),
+      ),
+    );
     const out = await pickExportPath(source, "print", print.exportName);
     if (!out) return;
     const n = await exportPrint(req, out);
@@ -147,8 +165,13 @@ export function EditorToolbar() {
       setExporting(true);
       setStatus(null);
       setIssues([]);
+      setWarnings([]);
       emitHintEvent("export-started");
-      await (stage === "print" ? exportSheets(useProjectStore.getState().path ?? path) : exportCards(path));
+      // The name the save dialog offers: for images, their group's name (the cached PDF's own name is a hash).
+      const docs = useDocumentStore.getState();
+      const active = docs.documents.find((d) => d.id === docs.activeId);
+      const named = active?.images ? active.images.name : path;
+      await (stage === "print" ? exportSheets(useProjectStore.getState().path ?? named) : exportCards(named));
     } catch (e) {
       const error = toAppError(e);
       setStatus({ ok: false, text: () => formatError(error) });
@@ -276,6 +299,55 @@ export function EditorToolbar() {
       >
         <Download size={14} /> {exporting ? t("toolbar.exporting") : t("toolbar.exportPdf")}
       </Button>
+      {issues.length === 0 && warnings.length > 0 && (
+        <section
+          aria-label={t("toolbar.warnings.label")}
+          className="absolute right-2 top-10 z-50 w-96 max-w-[90vw] rounded border border-amber-400/50 bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
+        >
+          <div className="mb-1 flex items-center justify-between font-medium text-amber-300">
+            <span>{t("toolbar.warnings.title", { count: warnings.length })}</span>
+            <button
+              type="button"
+              aria-label={t("toolbar.issues.close")}
+              onClick={() => setWarnings([])}
+              className="rounded p-0.5 hover:bg-[var(--hover)]"
+            >
+              <X size={12} />
+            </button>
+          </div>
+          <ul className="max-h-72 overflow-y-auto">
+            {warnings.map((w) => (
+              <li key={`${w.documentId}:${w.page}`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    activateDocument(w.documentId);
+                    setCurrentPage(w.page);
+                  }}
+                  className="w-full rounded px-1.5 py-1 text-left hover:bg-[var(--hover)]"
+                >
+                  <span className="font-medium">
+                    {documents.length > 1
+                      ? t("toolbar.issues.pageIn", { n: w.page + 1, name: documentLabel(w.documentId) })
+                      : t("toolbar.issues.page", { n: w.page + 1 })}{" "}
+                  </span>
+                  <span className="text-[var(--muted)]">
+                    {t(
+                      w.quality === "missing"
+                        ? "toolbar.warnings.missing"
+                        : w.quality === "blurry"
+                          ? "toolbar.warnings.blurry"
+                          : "toolbar.warnings.soft",
+                      { name: w.name, dpi: Math.round(w.dpi) },
+                    )}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[var(--muted)]">{t("toolbar.warnings.note")}</p>
+        </section>
+      )}
       {issues.length > 0 && (
         <section
           aria-label={t("toolbar.issues.label")}
@@ -312,7 +384,7 @@ export function EditorToolbar() {
                   {i.page !== null && (
                     <span className="font-medium">
                       {documents.length > 1
-                        ? t("toolbar.issues.pageIn", { n: i.page + 1, name: fileName(documentPath(i.documentId)) })
+                        ? t("toolbar.issues.pageIn", { n: i.page + 1, name: documentLabel(i.documentId) })
                         : t("toolbar.issues.page", { n: i.page + 1 })}{" "}
                     </span>
                   )}

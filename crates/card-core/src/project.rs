@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 2;
+pub const VERSION: u32 = 3;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -32,7 +32,7 @@ pub type Body = Map<String, Value>;
 /// `i + 1` to `i + 2`.
 pub type Migration = fn(&mut Body);
 
-const MIGRATIONS: &[Migration] = &[v1_to_v2];
+const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3];
 
 /// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
 /// pieces to the edits. A version 1 project opens with every feature off.
@@ -50,6 +50,20 @@ fn v1_to_v2(body: &mut Body) {
         edits
             .entry("backs")
             .or_insert_with(|| Value::Object(Body::new()));
+    }
+}
+
+/// Version 3 lets a document be made of images: every document gets a `kind`, and every document
+/// of an older project is a PDF.
+fn v2_to_v3(body: &mut Body) {
+    if let Some(Value::Array(documents)) = body.get_mut("documents") {
+        for document in documents {
+            if let Value::Object(document) = document {
+                document
+                    .entry("kind")
+                    .or_insert_with(|| Value::String("pdf".into()));
+            }
+        }
     }
 }
 

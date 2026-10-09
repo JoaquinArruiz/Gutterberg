@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { AppError } from "../lib/errors";
 
 /** The warnings worded from the catalog, under `project.notices`. */
-export type NoticeKey = "pdfChanged" | "layoutReset";
+export type NoticeKey = "pdfChanged" | "layoutReset" | "imageChanged" | "imagesMissing";
 
 /**
  * A message about opening or saving a project, shown under the toolbar until it is closed. Either a

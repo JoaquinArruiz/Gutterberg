@@ -13,6 +13,7 @@ import { type DocumentId, OrientedRectSchema } from "./card";
 import { type CardEdits, clampScale } from "./card-edits";
 import { type FreeformCards, type GridGroup, MAX_GAP_MM, type PageGroup, patchGrid } from "./document-layout";
 import { cleanFinish, FinishSchema } from "./finish";
+import { ImagePlacementSchema } from "./images";
 import { clampQuantity } from "./library";
 import { MAX_SHEET_GRID, type PrintPlan } from "./print-request";
 import { TurnSchema } from "./sheet-api";
@@ -20,7 +21,7 @@ import { TurnSchema } from "./sheet-api";
 /** Value of the `format` key: the file's signature. Kept in step with `card_core::project::FORMAT`. */
 export const PROJECT_FORMAT = "gutterberg-project";
 /** The version this build writes. Older ones are migrated in Rust before they get here. */
-export const PROJECT_VERSION = 2;
+export const PROJECT_VERSION = 3;
 export const PROJECT_EXTENSION = "gtr";
 
 const finite = z.number();
@@ -79,19 +80,36 @@ const PlanSchema = z.object({
   finish: FinishSchema,
 });
 
-const ProjectDocumentSchema = z.object({
+const DocumentBaseSchema = z.object({
   /** The id its pieces carry; stays the same for as long as the project exists. */
   id: z.number().int().min(0),
-  /** Where the PDF was when the project was saved. */
-  path: z.string().min(1),
-  /** SHA-256 of the PDF (hex) when it was added: tells whether it is still the same file. */
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
   pageCount: z.number().int().min(1),
   groups: z.array(PageGroupSchema),
   freeform: FreeformSchema,
   /** The page that was being viewed. */
   viewedPage: index,
 });
+
+const HashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+
+/** An image of an images document: where it was, which file it was, and how it was placed. */
+const ProjectImageSchema = z.object({ path: z.string().min(1), hash: HashSchema, placement: ImagePlacementSchema });
+
+const ProjectDocumentSchema = z.discriminatedUnion("kind", [
+  DocumentBaseSchema.extend({
+    kind: z.literal("pdf"),
+    /** Where the PDF was when the project was saved. */
+    path: z.string().min(1),
+    /** SHA-256 of the PDF (hex) when it was added: tells whether it is still the same file. */
+    hash: HashSchema,
+  }),
+  // The project keeps the images, one per page; the PDF made of them is rebuilt from them (M24).
+  DocumentBaseSchema.extend({
+    kind: z.literal("images"),
+    name: z.string().min(1),
+    images: z.array(ProjectImageSchema).min(1),
+  }).refine((d) => d.images.length === d.pageCount, { message: "an image for each page", path: ["images"] }),
+]);
 
 export const ProjectSchema = z
   .object({
@@ -114,16 +132,26 @@ export const ProjectSchema = z
 export type Project = z.infer<typeof ProjectSchema>;
 export type ProjectDocument = Project["documents"][number];
 
-/** One PDF of the project as the app holds it. */
-export type ProjectDocumentState = {
+type DocumentStateBase = {
   id: DocumentId;
-  path: string;
-  hash: string;
   pageCount: number;
   groups: PageGroup[];
   freeform: FreeformCards;
   viewedPage: number;
 };
+
+/** One PDF of the project as the app holds it. */
+export type PdfDocumentState = DocumentStateBase & { kind: "pdf"; path: string; hash: string };
+
+/** One images document: what the project keeps of it (the cached PDF is not part of it). */
+export type ImagesDocumentState = DocumentStateBase & {
+  kind: "images";
+  name: string;
+  images: ProjectImage[];
+};
+
+export type ProjectImage = z.infer<typeof ProjectImageSchema>;
+export type ProjectDocumentState = PdfDocumentState | ImagesDocumentState;
 
 /** Everything a project file holds, in the app's own types. */
 export type ProjectState = {
@@ -137,15 +165,12 @@ export type ProjectState = {
 /** The state as a project file's content (without the envelope keys, which Rust writes first). */
 export function toProject(state: ProjectState): Omit<Project, "format" | "version"> {
   return {
-    documents: state.documents.map((d) => ({
-      id: d.id,
-      path: d.path,
-      hash: d.hash,
-      pageCount: d.pageCount,
-      groups: d.groups,
-      freeform: d.freeform,
-      viewedPage: d.viewedPage,
-    })),
+    documents: state.documents.map((d) => {
+      const { kind, id, pageCount, groups, freeform, viewedPage } = d;
+      return kind === "pdf"
+        ? { kind, id, path: d.path, hash: d.hash, pageCount, groups, freeform, viewedPage }
+        : { kind, id, name: d.name, images: d.images, pageCount, groups, freeform, viewedPage };
+    }),
     activeDocument: state.activeId,
     output: state.output,
     edits: state.edits,
@@ -182,6 +207,21 @@ function cleanGroup(g: z.infer<typeof PageGroupSchema>): PageGroup {
     sourceGapLinked: g.grid.sourceGapLinked,
   });
   return { ...g, grid };
+}
+
+/** An image's placement pulled back to sizes the dialog allows. */
+function cleanImage(i: ProjectImage): ProjectImage {
+  const mm = (v: number, lo: number, hi: number) => clampTo(v, lo, hi);
+  const p = i.placement;
+  return {
+    ...i,
+    placement: {
+      ...p,
+      widthMm: mm(p.widthMm, 5, 1000),
+      heightMm: mm(p.heightMm, 5, 1000),
+      bleedMm: mm(p.bleedMm, 0, 20),
+    },
+  };
 }
 
 /** Values a hand-edited file could push out of range, pulled back to what the UI allows. */
@@ -237,15 +277,18 @@ export function parseProject(raw: unknown): Project {
 /** A parsed project in the app's own types, with every value inside what the UI allows. */
 export function fromProject(p: Project): ProjectState {
   return {
-    documents: p.documents.map((d) => ({
-      id: d.id,
-      path: d.path,
-      hash: d.hash,
-      pageCount: d.pageCount,
-      groups: d.groups.map(cleanGroup),
-      freeform: Object.fromEntries(Object.entries(d.freeform).map(([page, cards]) => [Number(page), cards])),
-      viewedPage: d.viewedPage,
-    })),
+    documents: p.documents.map((d): ProjectDocumentState => {
+      const common = {
+        id: d.id,
+        pageCount: d.pageCount,
+        groups: d.groups.map(cleanGroup),
+        freeform: Object.fromEntries(Object.entries(d.freeform).map(([page, cards]) => [Number(page), cards])),
+        viewedPage: d.viewedPage,
+      };
+      return d.kind === "pdf"
+        ? { kind: "pdf", path: d.path, hash: d.hash, ...common }
+        : { kind: "images", name: d.name, images: d.images.map(cleanImage), ...common };
+    }),
     activeId: p.activeDocument,
     output: cleanOutput(p.output),
     edits: cleanEdits(p.edits),

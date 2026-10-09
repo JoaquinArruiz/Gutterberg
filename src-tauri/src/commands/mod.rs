@@ -2,6 +2,7 @@ pub mod ai;
 pub mod detect;
 pub mod document;
 pub mod export;
+pub mod images;
 pub mod layout;
 pub mod project;
 pub mod render;

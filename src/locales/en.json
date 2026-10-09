@@ -12,7 +12,9 @@
     "docName": {
       "remove": "Remove this PDF from the project",
       "rename": "Rename the exported PDF",
-      "label": "Name of the exported PDF"
+      "label": "Name of the exported PDF",
+      "renameImages": "Rename this group of images",
+      "labelImages": "Name of this group of images"
     },
     "stageTabs": "Stage",
     "stages": {
@@ -52,6 +54,15 @@
       "fixPrint": "Fix these, then export again. Pieces are never scaled to fit.",
       "fixSource": "Fix these pages, or skip them, then export again.",
       "pageIn": "Page {{n}} of {{name}}:"
+    },
+    "warnings": {
+      "label": "Print quality warnings",
+      "title_one": "{{count}} image may not print sharp",
+      "title_other": "{{count}} images may not print sharp",
+      "blurry": "{{name}} will look blurry at this size ({{dpi}} dpi).",
+      "soft": "{{name}} may print a little soft ({{dpi}} dpi).",
+      "missing": "{{name}} was not found: this page prints blank.",
+      "note": "These do not stop the export."
     }
   },
   "files": {
@@ -59,7 +70,8 @@
     "suffixSpaced": "spaced",
     "suffixPrint": "print",
     "newPdfName": "New-PDF",
-    "fallbackName": "pieces"
+    "fallbackName": "pieces",
+    "imageFilter": "Images"
   },
   "common": {
     "page": "Page {{n}}",
@@ -192,7 +204,9 @@
     "document": "PDF being edited",
     "removePdf": "Remove PDF",
     "addPdf": "Add PDF…",
-    "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library."
+    "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library.",
+    "addImages": "Add images…",
+    "addImagesTitle": "Adds PNG, JPEG or WebP images as pieces, one per page."
   },
   "applyGrid": {
     "dialog": "Apply this grid to",
@@ -598,7 +612,10 @@
     "ai_invalid_reply": "The reply could not be read: {{detail}}. Nothing was changed.",
     "ai_invalid_proposal": "The proposal does not fit: {{detail}}. Nothing was changed.",
     "ai_text_only_needs_objects": "This page has no objects to describe. Turn on “Send page images” in Preferences › AI Mode.",
-    "ai_config": "{{detail}}"
+    "ai_config": "{{detail}}",
+    "image_unsupported": "“{{name}}” can't be used. Images can be PNG, JPEG or WebP.",
+    "image_too_large": "“{{name}}” is too large ({{megapixels}} megapixels, {{mb}} MB). The limits are 100 megapixels and 200 MB.",
+    "image_unreadable": "“{{name}}” can't be read: {{detail}}"
   },
   "numberField": {
     "decrease": "Decrease {{label}}",
@@ -629,7 +646,8 @@
       "saveAs": "Save as…",
       "recent": "Recent projects",
       "noRecent": "No recent projects",
-      "shortcuts": "Keyboard shortcuts…"
+      "shortcuts": "Keyboard shortcuts…",
+      "addImages": "Add images…"
     },
     "discard": {
       "message": "This project has changes that are not saved. Discard them?",
@@ -651,7 +669,9 @@
       "label": "Project messages",
       "close": "Close",
       "pdfChanged": "“{{name}}” has changed since the project was saved. Check that the pieces are still where you marked them.",
-      "layoutReset": "“{{name}}” has a different number of pages than when the project was saved, so its page groups and pieces were reset."
+      "layoutReset": "“{{name}}” has a different number of pages than when the project was saved, so its page groups and pieces were reset.",
+      "imageChanged": "“{{name}}” has changed since the project was saved. Its page now shows the new image.",
+      "imagesMissing": "Some images of “{{name}}” were not found. Their pages stay blank until you add the images again."
     }
   },
   "detect": {
@@ -846,10 +866,61 @@
   "start": {
     "title": "Get started",
     "lead": "Open a Print-and-Play PDF to space its pieces, or pick up a project.",
-    "shortcuts": "Press ? to see the keyboard shortcuts."
+    "shortcuts": "Press ? to see the keyboard shortcuts.",
+    "fromImages": "Start from images"
   },
   "brand": {
     "logoAlt": "{{name}} logo",
     "logoAltPlain": "Logo"
+  },
+  "images": {
+    "documentName_one": "{{first}} + {{count}} more",
+    "documentName_other": "{{first}} + {{count}} more",
+    "changed": "“{{name}}” is not the same image the project was saved with. Use it instead?",
+    "useChanged": "Use this file",
+    "badge": {
+      "missing": "Missing",
+      "missingTitle": "This image was not found, so this piece is blank.",
+      "dpi": "{{dpi}} dpi",
+      "softTitle": "About {{dpi}} dpi at this size: it may print a little soft.",
+      "blurryTitle": "About {{dpi}} dpi at this size: it will look blurry."
+    },
+    "dialog": {
+      "label": "Add images",
+      "title_one": "Add {{count}} image",
+      "title_other": "Add {{count}} images",
+      "lead": "Each image becomes a piece. Choose the size it prints at; images are never stretched or resampled.",
+      "sizeTitle": "Piece size",
+      "presets": {
+        "standard": "Standard card (poker, most TCGs): {{width}} × {{height}} mm",
+        "small": "Small card (Japanese size): {{width}} × {{height}} mm",
+        "tarot": "Tarot: {{width}} × {{height}} mm"
+      },
+      "fromImage": "From the image (pixels ÷ resolution)",
+      "fromImageOff": "From the image (not every file has a resolution)",
+      "custom": "Custom",
+      "lock": "Keep the image's proportions",
+      "pieceSize": "Pieces print at {{width}} × {{height}} mm.",
+      "bleed": "The images include bleed",
+      "bleedInfo": "The page is the piece size plus the bleed on every side, so “bleed from the source” in the Print tab uses the image's own bleed.",
+      "bleedAmount": "Bleed",
+      "differTitle": "Proportions don't match",
+      "differLead_one": "This image is not the shape of the piece. It is never stretched.",
+      "differLead_other": "These images are not the shape of the piece. They are never stretched.",
+      "fit": "Fit",
+      "fill": "Fill",
+      "fitFor": "What to do with {{name}}",
+      "fitHint": "Fit shows the whole image with blank margins; Fill covers the piece and cuts off what does not fit.",
+      "resolutionTitle": "Resolution",
+      "soft": "{{dpi}} dpi at this size: may print a little soft.",
+      "blurry": "{{dpi}} dpi at this size: will look blurry.",
+      "exportTitle": "Size in the export",
+      "exportSize": "Adds about {{size}} to the exported PDF.",
+      "veryLarge": "{{dpi}} dpi: much sharper than any printer needs. Adds about {{size}}; the exported PDF will be large.",
+      "reduce": "Reduce very large images to 600 dpi",
+      "reduceHint": "PNG and WebP images above 600 dpi are shrunk to 600 dpi (still lossless). JPEG images are never reduced: that would mean compressing them again and losing quality. Your files are not touched.",
+      "add_one": "Add image",
+      "add_other": "Add images"
+    }
   }
 }

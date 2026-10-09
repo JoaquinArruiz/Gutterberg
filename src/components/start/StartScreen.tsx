@@ -1,6 +1,6 @@
-import { FileText, FolderOpen } from "lucide-react";
+import { FileText, FolderOpen, Images } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { openPdfDialog, openProjectDialog } from "../../lib/project-actions";
+import { addImagesDialog, openPdfDialog, openProjectDialog } from "../../lib/project-actions";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { BrandLogo } from "../ui/BrandLogo";
@@ -50,6 +50,15 @@ export function StartScreen() {
             <FolderOpen size={14} />
             {t("project.menu.openProject")}
             <span className="text-[var(--muted)]">{`${mod}+Shift+O`}</span>
+          </Button>
+          <Button
+            size="md"
+            className="flex items-center gap-2"
+            disabled={loading}
+            onClick={() => void addImagesDialog()}
+          >
+            <Images size={14} />
+            {t("start.fromImages")}
           </Button>
         </div>
 

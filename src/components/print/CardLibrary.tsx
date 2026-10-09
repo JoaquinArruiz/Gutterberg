@@ -18,7 +18,7 @@ import {
   LIBRARY_THUMB_WIDTH,
   type PanelOrientation,
 } from "../../lib/workspace-layout";
-import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
+import { documentById, documentName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
@@ -115,7 +115,10 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
           : "all";
   // With several PDFs the menu names each one, and its groups say which PDF they belong to.
   const several = documents.length > 1;
-  const nameOf = (id: number) => fileName(documentById(useDocumentStore.getState(), id)?.path ?? "");
+  const nameOf = (id: number) => {
+    const doc = documentById(useDocumentStore.getState(), id);
+    return doc ? documentName(doc) : "";
+  };
   const documentOptions = several
     ? documents.map((d) => ({
         value: `doc:${d.id}` as FilterChoice,

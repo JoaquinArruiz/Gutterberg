@@ -6,12 +6,17 @@ import { useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { StartScreen } from "./StartScreen";
 
-const { openPdfDialog, openProjectDialog } = vi.hoisted(() => ({ openPdfDialog: vi.fn(), openProjectDialog: vi.fn() }));
-vi.mock("../../lib/project-actions", () => ({ openPdfDialog, openProjectDialog }));
+const { openPdfDialog, openProjectDialog, addImagesDialog } = vi.hoisted(() => ({
+  openPdfDialog: vi.fn(),
+  openProjectDialog: vi.fn(),
+  addImagesDialog: vi.fn(),
+}));
+vi.mock("../../lib/project-actions", () => ({ openPdfDialog, openProjectDialog, addImagesDialog }));
 
 beforeEach(() => {
   openPdfDialog.mockReset();
   openProjectDialog.mockReset();
+  addImagesDialog.mockReset();
   usePreferencesStore.getState().resetToDefaults();
   useDocumentStore.setState({ loading: false });
 });
@@ -38,6 +43,12 @@ describe("the start screen", () => {
     expect(container.querySelectorAll("img.logo-for-light").length).toBe(1);
     expect(container.querySelectorAll("img.logo-for-dark").length).toBe(1);
     expect(screen.getAllByRole("img", { hidden: true })[0].getAttribute("alt")).toBe("Logo");
+  });
+
+  it("starts a project from images", () => {
+    render(<StartScreen />);
+    fireEvent.click(screen.getByRole("button", { name: "Start from images" }));
+    expect(addImagesDialog).toHaveBeenCalledTimes(1);
   });
 
   it("says there are no recent projects when there are none", () => {

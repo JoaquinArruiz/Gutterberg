@@ -23,10 +23,12 @@ fn a_current_project_opens_as_it_is() {
 
 #[test]
 fn a_version_1_project_gets_the_finishing_defaults_and_nothing_else_changes() {
+    // (It also gets what version 3 adds: its documents are PDFs.)
     let text = include_str!("data/project_v1_full.gtr");
     let original: serde_json::Value = serde_json::from_str(text).unwrap();
     let body = parse_project(text).unwrap();
-    assert_eq!(body["version"], 2);
+    assert_eq!(body["version"], VERSION);
+    assert_eq!(body["documents"][0]["kind"], "pdf");
     assert_eq!(
         body["plan"]["finish"],
         json!({
@@ -41,6 +43,9 @@ fn a_version_1_project_gets_the_finishing_defaults_and_nothing_else_changes() {
     migrated.as_object_mut().unwrap().remove("version");
     migrated["plan"].as_object_mut().unwrap().remove("finish");
     migrated["edits"].as_object_mut().unwrap().remove("backs");
+    for document in migrated["documents"].as_array_mut().unwrap() {
+        document.as_object_mut().unwrap().remove("kind");
+    }
     let mut expected = original;
     expected.as_object_mut().unwrap().remove("version");
     assert_eq!(migrated, expected);
@@ -53,6 +58,23 @@ fn a_version_2_project_keeps_its_finishing() {
     assert_eq!(body["plan"]["finish"]["bleed"]["mm"], 2);
     assert_eq!(body["plan"]["finish"]["duplex"]["on"], true);
     assert_eq!(body["edits"]["backs"]["g:0:0:1:1"], "g:0:0:2:2");
+}
+
+#[test]
+fn a_version_2_project_documents_become_pdfs_in_version_3() {
+    let text = include_str!("data/project_v2.gtr");
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["version"], 3);
+    assert_eq!(body["documents"][0]["kind"], "pdf");
+    assert_eq!(body["documents"][0]["path"], "/games/poker.pdf");
+    // A document that already says what it is keeps it.
+    let images = parse_project(include_str!("data/project_v3_images.gtr")).unwrap();
+    assert_eq!(images["documents"][0]["kind"], "images");
+    assert_eq!(
+        images["documents"][0]["images"][0]["placement"]["widthMm"],
+        63
+    );
+    assert_eq!(images["documents"][1]["kind"], "pdf");
 }
 
 #[test]
@@ -174,7 +196,7 @@ fn the_file_starts_with_the_signature_and_survives_a_round_trip() {
 
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(
-        text.starts_with("{\n  \"format\": \"gutterberg-project\",\n  \"version\": 2,"),
+        text.starts_with("{\n  \"format\": \"gutterberg-project\",\n  \"version\": 3,"),
         "{text}"
     );
 
@@ -207,10 +229,10 @@ fn reading_a_file_that_is_not_a_project() {
         Err(Error::Io(_))
     ));
     let newer = dir.join("future.gtr");
-    std::fs::write(&newer, r#"{"format":"gutterberg-project","version":3}"#).unwrap();
+    std::fs::write(&newer, r#"{"format":"gutterberg-project","version":4}"#).unwrap();
     assert!(matches!(
         read_project(&newer),
-        Err(Error::ProjectTooNew { found: 3, .. })
+        Err(Error::ProjectTooNew { found: 4, .. })
     ));
 }
 

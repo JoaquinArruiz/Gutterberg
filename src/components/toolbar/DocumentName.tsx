@@ -2,7 +2,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { removeActiveDocument } from "../../lib/project-actions";
-import { fileName, useDocumentStore } from "../../stores/document-store";
+import { documentName, useDocumentStore } from "../../stores/document-store";
 import { usePrintStore } from "../../stores/print-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
@@ -22,18 +22,56 @@ export function DocumentName() {
   const { t } = useTranslation();
   const stage = useUiStore((s) => s.stage);
   const path = useDocumentStore((s) => s.path);
+  const images = useDocumentStore((s) => s.documents.find((d) => d.id === s.activeId)?.images);
+  const activeId = useDocumentStore((s) => s.activeId);
+  const renameImages = useDocumentStore((s) => s.renameImages);
+  const [renaming, setRenaming] = useState<string | null>(null);
   const exportName = usePrintStore((s) => s.exportName);
   const setExportName = usePrintStore((s) => s.setExportName);
   const [draft, setDraft] = useState<string | null>(null);
   if (!path) return null;
 
   if (stage === "cards") {
-    const name = fileName(path);
+    const name = documentName({ path, images });
+    const commitName = () => {
+      if (renaming === null) return;
+      const next = renaming.replace(/[\\/:*?"<>|]/g, "").trim();
+      if (next !== "") renameImages(activeId, next);
+      setRenaming(null);
+    };
     return (
       <div className="flex min-w-0 items-center gap-1">
-        <span title={path} className="min-w-0 truncate">
-          {name}
-        </span>
+        {images && renaming !== null ? (
+          <input
+            // biome-ignore lint/a11y/noAutofocus: the field was just opened by clicking the rename button
+            autoFocus
+            aria-label={t("toolbar.docName.labelImages")}
+            value={renaming}
+            onChange={(e) => setRenaming(e.target.value)}
+            onFocus={(e) => e.currentTarget.select()}
+            onBlur={commitName}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitName();
+              else if (e.key === "Escape") setRenaming(null);
+            }}
+            className="w-48 min-w-0 rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5"
+          />
+        ) : (
+          <span title={images ? name : path} className="min-w-0 truncate">
+            {name}
+          </span>
+        )}
+        {images && renaming === null && (
+          <Button
+            variant="ghost"
+            className="shrink-0"
+            title={t("toolbar.docName.renameImages")}
+            aria-label={t("toolbar.docName.renameImages")}
+            onClick={() => setRenaming(name)}
+          >
+            <Pencil size={13} />
+          </Button>
+        )}
         <Button
           variant="ghost"
           className="shrink-0"

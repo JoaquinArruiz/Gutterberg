@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { AiConfirmDialog } from "./components/ai/AiConfirmDialog";
 import { EditorViewport } from "./components/editor/EditorViewport";
 import { FirstPdfTour } from "./components/editor/FirstPdfTour";
+import { ImageSizeDialog } from "./components/images/ImageSizeDialog";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
 import { PrintStage } from "./components/print/PrintStage";
 import { StartScreen } from "./components/start/StartScreen";
@@ -15,6 +16,7 @@ import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectA
 import { useProjectTracking } from "./lib/project-state";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
+import { useImageDrop } from "./lib/use-image-drop";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { usePrintSync } from "./lib/use-print-sync";
 import { zoomActions } from "./lib/zoom-actions";
@@ -29,6 +31,7 @@ export default function App() {
   useLayoutSync();
   usePrintSync();
   useProjectTracking();
+  useImageDrop();
   const stage = useUiStore((s) => s.stage);
   // With nothing open there is nothing to edit: the start screen takes the place of the editor and its panels.
   const hasDocuments = useDocumentStore((s) => s.documents.length > 0);
@@ -162,6 +165,7 @@ export default function App() {
       <PreferencesDialog />
       <ShortcutsDialog />
       <AiConfirmDialog />
+      <ImageSizeDialog />
     </div>
   );
 }

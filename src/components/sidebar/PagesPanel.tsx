@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { pageBadge } from "../../lib/document-layout";
-import { activateDocument, addPdfDialog, removeActiveDocument } from "../../lib/project-actions";
+import { activateDocument, addImagesDialog, addPdfDialog, removeActiveDocument } from "../../lib/project-actions";
 import { usePageImage } from "../../lib/use-page-image";
 import { PAGE_THUMB_HEIGHT, type PanelOrientation } from "../../lib/workspace-layout";
-import { fileName, useDocumentStore } from "../../stores/document-store";
+import { documentName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { Checkbox } from "../ui/Checkbox";
 import { Select } from "../ui/Select";
@@ -94,7 +94,7 @@ function DocumentSwitcher() {
           label={t("pages.document")}
           value={String(activeId)}
           onChange={(id) => activateDocument(Number(id))}
-          options={documents.map((d) => ({ value: String(d.id), label: fileName(d.path) }))}
+          options={documents.map((d) => ({ value: String(d.id), label: documentName(d) }))}
         />
       )}
       <button
@@ -105,6 +105,15 @@ function DocumentSwitcher() {
         className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
       >
         {t("pages.addPdf")}
+      </button>
+      <button
+        type="button"
+        onClick={() => void addImagesDialog()}
+        disabled={loading}
+        title={t("pages.addImagesTitle")}
+        className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
+      >
+        {t("pages.addImages")}
       </button>
       <button
         type="button"

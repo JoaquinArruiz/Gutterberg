@@ -215,6 +215,7 @@ describe("the File menu", () => {
       "Open PDF…Ctrl+O",
       "Open project…Ctrl+Shift+O",
       "Add PDF…",
+      "Add images…",
       "SaveCtrl+S",
       "Save as…Ctrl+Shift+S",
       "poker night.gtr",

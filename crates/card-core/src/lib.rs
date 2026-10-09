@@ -10,6 +10,7 @@ pub mod error;
 pub mod export;
 pub mod finish;
 pub mod geometry;
+pub mod images;
 pub mod layout;
 pub mod project;
 pub mod render;

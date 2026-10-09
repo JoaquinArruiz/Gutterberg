@@ -1,6 +1,7 @@
 import { FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
+  addImagesDialog,
   addPdfDialog,
   newProject,
   openPdfDialog,
@@ -59,6 +60,7 @@ export function FileMenu() {
           {item(t("project.menu.openPdf"), "Ctrl+O", () => void openPdfDialog(), close)}
           {item(t("project.menu.openProject"), "Ctrl+Shift+O", () => void openProjectDialog(), close)}
           {item(t("project.menu.addPdf"), "", () => void addPdfDialog(), close, !hasDocument)}
+          {item(t("project.menu.addImages"), "", () => void addImagesDialog(), close)}
           <div className="my-1 border-t border-[var(--border)]" />
           {item(t("project.menu.save"), "Ctrl+S", () => void saveProject(), close, !hasDocument)}
           {item(t("project.menu.saveAs"), "Ctrl+Shift+S", () => void saveProjectAs(), close, !hasDocument)}

@@ -51,6 +51,16 @@ pub enum Error {
          version reads up to {supported}); please update"
     )]
     ProjectTooNew { found: u32, supported: u32 },
+    #[error("{name} is not a PNG, JPEG or WebP image")]
+    ImageUnsupported { name: String },
+    #[error("{name} is too large ({megapixels:.0} megapixels, {mb:.0} MB; the limits are 100 megapixels and 200 MB)")]
+    ImageTooLarge {
+        name: String,
+        megapixels: f64,
+        mb: f64,
+    },
+    #[error("{name} cannot be read: {detail}")]
+    ImageUnreadable { name: String, detail: String },
 }
 
 /// A value that goes with an error code (a page number, a size in mm, a detail text).
@@ -143,6 +153,23 @@ impl From<&Error> for ErrorInfo {
                     ("found", ErrorParam::Number(*found as f64)),
                     ("supported", ErrorParam::Number(*supported as f64)),
                 ],
+            ),
+            Error::ImageUnsupported { name } => ("image_unsupported", vec![("name", text(name))]),
+            Error::ImageTooLarge {
+                name,
+                megapixels,
+                mb,
+            } => (
+                "image_too_large",
+                vec![
+                    ("name", text(name)),
+                    ("megapixels", ErrorParam::Number(megapixels.round())),
+                    ("mb", ErrorParam::Number((mb * 10.0).round() / 10.0)),
+                ],
+            ),
+            Error::ImageUnreadable { name, detail } => (
+                "image_unreadable",
+                vec![("name", text(name)), ("detail", text(detail))],
             ),
         };
         Self {

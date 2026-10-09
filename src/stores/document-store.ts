@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import type { DocumentId } from "../lib/card";
+import type { ImagesInfo } from "../lib/images";
 import type { PageSize } from "../lib/tauri";
 
 /** One PDF of the project, opened for rendering. */
@@ -10,6 +11,11 @@ export type OpenDocument = {
   pages: PageSize[];
   /** SHA-256 of the file (hex) when it was added to the project. */
   hash: string;
+  /**
+   * Set when the document is made of images (M24): `path` is then the cached PDF built from them, which can
+   * be built again, and the project keeps the images.
+   */
+  images?: ImagesInfo;
 };
 
 /**
@@ -32,6 +38,8 @@ type DocumentState = {
   addDocument: (document: OpenDocument) => void;
   /** Edit another PDF; remembers the page left behind and returns to the one last viewed there. */
   setActive: (id: DocumentId) => void;
+  /** Gives an images document another name. */
+  renameImages: (id: DocumentId, name: string) => void;
   /** Drops a PDF from the project. If it was being edited, the first remaining one takes its place. */
   removeDocument: (id: DocumentId) => void;
   clear: () => void;
@@ -76,6 +84,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     set({ ...mirror(s.documents, id, viewed[id] ?? 0), viewed });
   },
 
+  renameImages: (id, name) =>
+    set((s) => ({
+      documents: s.documents.map((d) => (d.id === id && d.images ? { ...d, images: { ...d.images, name } } : d)),
+    })),
+
   removeDocument: (id) => {
     const s = get();
     const documents = s.documents.filter((d) => d.id !== id);
@@ -103,3 +116,6 @@ export const nextDocumentId = (s: Pick<DocumentState, "documents">): DocumentId 
 
 /** The last component of a path: the PDF's name as the user knows it. */
 export const fileName = (path: string): string => path.split(/[\\/]/).pop() || path;
+
+/** The name a document goes by: an images document's own name, a PDF's file name. */
+export const documentName = (d: Pick<OpenDocument, "path" | "images">): string => d.images?.name ?? fileName(d.path);

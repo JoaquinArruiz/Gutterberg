@@ -9,7 +9,11 @@ lopdf = "0.45"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 pdfium-render = "0.9"
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25", default-features = false, features = ["png", "webp"] }
 serde_json = "1"
 sha2 = "0.10"
 
+
+[dev-dependencies]
+# The tests make their own tiny images, so they also need the JPEG encoder.
+image = { version = "0.25", default-features = false, features = ["png", "webp", "jpeg"] }

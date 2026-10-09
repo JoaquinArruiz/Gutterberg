@@ -7,7 +7,7 @@ import { outputSettings, useLayoutStore } from "../stores/layout-store";
 import { planOf, usePrintStore } from "../stores/print-store";
 import { useProjectStore } from "../stores/project-store";
 import { getLayoutDocuments } from "./documents";
-import { type ProjectState, projectSignature } from "./project";
+import { type ProjectDocumentState, type ProjectState, projectSignature } from "./project";
 
 /** The project as it is now, or null while no PDF is open. */
 export function currentProjectState(): ProjectState | null {
@@ -20,17 +20,16 @@ export function currentProjectState(): ProjectState | null {
       const own = layouts.find((l) => l.id === d.id);
       if (!own) return [];
       const viewedPage = d.id === docs.activeId ? docs.currentPage : (docs.viewed[d.id] ?? 0);
-      return [
-        {
-          id: d.id,
-          path: d.path,
-          hash: d.hash,
-          pageCount: d.pages.length,
-          groups: own.groups,
-          freeform: own.freeform,
-          viewedPage,
-        },
-      ];
+      const common = { id: d.id, pageCount: d.pages.length, groups: own.groups, freeform: own.freeform, viewedPage };
+      const state: ProjectDocumentState = d.images
+        ? {
+            kind: "images",
+            name: d.images.name,
+            images: d.images.pages.map(({ path, hash, placement }) => ({ path, hash, placement })),
+            ...common,
+          }
+        : { kind: "pdf", path: d.path, hash: d.hash, ...common };
+      return [state];
     }),
     activeId: docs.activeId,
     output: outputSettings(layout),
