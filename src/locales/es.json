@@ -711,7 +711,9 @@
       "test": "Conexión",
       "testButton": "Probar conexión",
       "testing": "Probando…",
-      "testOk": "Conectado. Se usaron {{input}} tokens de entrada y {{output}} de salida."
+      "testOk": "Conectado. Se usaron {{input}} tokens de entrada y {{output}} de salida.",
+      "workspace": "ID del espacio de trabajo (opcional)",
+      "workspaceNote": "Solo para una clave de API que no está limitada a un espacio de trabajo: el ID del espacio que se usará, enviado en el encabezado anthropic-workspace-id. Déjalo vacío en otro caso."
     },
     "confirm": {
       "title": "¿Enviar a {{provider}}?",

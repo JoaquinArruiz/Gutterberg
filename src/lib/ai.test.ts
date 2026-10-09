@@ -28,7 +28,7 @@ describe("AI preferences", () => {
     expect(ai.enabled).toBe(false); // only a real true turns it on
     expect(ai.provider).toBe("anthropic");
     expect(ai.sendImages).toBe(false);
-    expect(ai.providers.gemini).toEqual({ model: "gemini-2.5-flash", baseUrl: "" });
+    expect(ai.providers.gemini).toEqual({ model: "gemini-2.5-flash", baseUrl: "", workspaceId: "" });
     expect(ai.providers.ollama).toEqual(DEFAULT_AI.providers.ollama);
     expect(ai.providers.openai_compatible.model).toHaveLength(200);
     expect(ai.providers.openai_compatible.baseUrl).toBe("http://localhost:1234/v1");
@@ -62,8 +62,18 @@ describe("what a command is given", () => {
       provider: "openai_compatible",
       providers: { openai_compatible: { model: "gpt-x", baseUrl: "https://api.x.ai/v1" } },
     });
-    expect(providerConfig(ai)).toEqual({ kind: "openai_compatible", model: "gpt-x", base_url: "https://api.x.ai/v1" });
-    expect(providerConfig(DEFAULT_AI)).toEqual({ kind: "anthropic", model: "claude-sonnet-5-5", base_url: null });
+    expect(providerConfig(ai)).toEqual({
+      kind: "openai_compatible",
+      model: "gpt-x",
+      base_url: "https://api.x.ai/v1",
+      workspace_id: null,
+    });
+    expect(providerConfig(DEFAULT_AI)).toEqual({
+      kind: "anthropic",
+      model: "claude-sonnet-5-5",
+      base_url: null,
+      workspace_id: null,
+    });
   });
 
   it("names the server the way the notice shows it", () => {
@@ -74,5 +84,20 @@ describe("what a command is given", () => {
       providers: { openai_compatible: { baseUrl: "http://192.168.1.5:1234/v1/" } },
     });
     expect(providerHost(lm)).toBe("192.168.1.5:1234");
+  });
+});
+
+describe("the Anthropic workspace ID", () => {
+  it("is kept per provider, trimmed, and sent only for Anthropic", () => {
+    const ai = normalizeAi({
+      providers: {
+        anthropic: { workspaceId: "  wrkspc_01ABC  " },
+        gemini: { workspaceId: "wrkspc_other" },
+      },
+    });
+    expect(ai.providers.anthropic.workspaceId).toBe("wrkspc_01ABC");
+    expect(providerConfig(ai).workspace_id).toBe("wrkspc_01ABC");
+    expect(providerConfig({ ...ai, provider: "gemini" }).workspace_id).toBeNull();
+    expect(providerConfig(DEFAULT_AI).workspace_id).toBeNull();
   });
 });

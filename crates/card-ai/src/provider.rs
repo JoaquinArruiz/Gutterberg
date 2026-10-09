@@ -52,6 +52,9 @@ pub struct ProviderConfig {
     /// Empty or absent = the provider's own address.
     #[serde(default)]
     pub base_url: Option<String>,
+    /// Anthropic only: the workspace a key that is not scoped to one must name, sent as `anthropic-workspace-id`.
+    #[serde(default)]
+    pub workspace_id: Option<String>,
 }
 
 impl ProviderConfig {
@@ -73,9 +76,32 @@ impl ProviderConfig {
         rest.split('/').next().unwrap_or(rest).to_string()
     }
 
+    /// The workspace ID to send, if one is set (Anthropic only).
+    pub fn workspace(&self) -> Option<&str> {
+        if self.kind != ProviderKind::Anthropic {
+            return None;
+        }
+        self.workspace_id
+            .as_deref()
+            .map(str::trim)
+            .filter(|w| !w.is_empty())
+    }
+
     fn check(&self) -> Result<()> {
         if self.model.trim().is_empty() {
             return Err(AiError::Config("choose a model in Preferences".into()));
+        }
+        // It goes into a header, so it can hold nothing but an ID.
+        if let Some(w) = self.workspace() {
+            if w.len() > 100
+                || !w
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_')
+            {
+                return Err(AiError::Config(
+                    "the workspace ID may only have letters, digits, - and _".into(),
+                ));
+            }
         }
         let base = self.base();
         let secure = base.starts_with("https://");

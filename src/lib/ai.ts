@@ -10,6 +10,8 @@ export type AiProviderSettings = {
   model: string;
   /** Empty = the provider's own address. */
   baseUrl: string;
+  /** Anthropic only: for a key that is not scoped to a workspace. Empty = none. */
+  workspaceId: string;
 };
 
 export type AiPrefs = {
@@ -44,10 +46,10 @@ export const DEFAULT_AI: AiPrefs = {
   provider: "anthropic",
   sendImages: true,
   providers: {
-    anthropic: { model: DEFAULT_MODEL.anthropic, baseUrl: "" },
-    openai_compatible: { model: "", baseUrl: "" },
-    gemini: { model: "", baseUrl: "" },
-    ollama: { model: "", baseUrl: "" },
+    anthropic: { model: DEFAULT_MODEL.anthropic, baseUrl: "", workspaceId: "" },
+    openai_compatible: { model: "", baseUrl: "", workspaceId: "" },
+    gemini: { model: "", baseUrl: "", workspaceId: "" },
+    ollama: { model: "", baseUrl: "", workspaceId: "" },
   },
 };
 
@@ -65,6 +67,7 @@ export function normalizeAi(raw: unknown): AiPrefs {
     providers[p] = {
       model: text(s.model, DEFAULT_AI.providers[p].model),
       baseUrl: text(s.baseUrl, ""),
+      workspaceId: text(s.workspaceId, ""),
     };
   }
   return {
@@ -76,11 +79,22 @@ export function normalizeAi(raw: unknown): AiPrefs {
 }
 
 /** The provider settings a Rust command takes (`card_ai::ProviderConfig`). */
-export type ProviderConfigPayload = { kind: AiProvider; model: string; base_url: string | null };
+export type ProviderConfigPayload = {
+  kind: AiProvider;
+  model: string;
+  base_url: string | null;
+  workspace_id: string | null;
+};
 
 export function providerConfig(ai: AiPrefs): ProviderConfigPayload {
   const s = ai.providers[ai.provider];
-  return { kind: ai.provider, model: s.model.trim(), base_url: s.baseUrl.trim() === "" ? null : s.baseUrl.trim() };
+  const orNull = (v: string) => (v.trim() === "" ? null : v.trim());
+  return {
+    kind: ai.provider,
+    model: s.model.trim(),
+    base_url: orNull(s.baseUrl),
+    workspace_id: ai.provider === "anthropic" ? orNull(s.workspaceId) : null,
+  };
 }
 
 /** The server a request goes to, as the notice names it (`api.anthropic.com`, `localhost:11434`). */

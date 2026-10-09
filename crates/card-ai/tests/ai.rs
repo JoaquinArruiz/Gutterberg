@@ -33,6 +33,7 @@ fn config(kind: ProviderKind) -> ProviderConfig {
             _ => "some-model".into(),
         },
         base_url: None,
+        workspace_id: None,
     }
 }
 
@@ -1006,4 +1007,51 @@ fn while_ai_mode_is_off_nothing_is_sent_and_no_connection_is_made() {
         guarded_send(&gate, &cfg, None, &request(), &UreqTransport).unwrap_err(),
         AiError::Disabled
     );
+}
+
+#[test]
+fn a_workspace_id_is_sent_to_anthropic_only_and_only_when_it_is_set() {
+    let reply = json!({ "content": [{ "type": "tool_use", "name": "report", "input": { "ok": true } }], "stop_reason": "tool_use" });
+    let header_of = |cfg: &ProviderConfig| {
+        let mock = Mock::new(200, reply.clone());
+        send(cfg, Some("k-123456"), &request(), &mock).unwrap();
+        let (r, _) = sent(&mock);
+        header(&r, "anthropic-workspace-id").map(str::to_string)
+    };
+    let mut cfg = config(ProviderKind::Anthropic);
+    assert_eq!(header_of(&cfg), None);
+    cfg.workspace_id = Some("   ".into());
+    assert_eq!(header_of(&cfg), None);
+    cfg.workspace_id = Some("  wrkspc_01AbC-9  ".into());
+    assert_eq!(header_of(&cfg).as_deref(), Some("wrkspc_01AbC-9"));
+
+    // Another provider ignores it.
+    let other = json!({ "choices": [{ "message": { "content": "{}" } }] });
+    let mut openai = config(ProviderKind::OpenaiCompatible);
+    openai.workspace_id = Some("wrkspc_01".into());
+    let mock = Mock::new(200, other);
+    send(&openai, Some("k-123456"), &request(), &mock).unwrap();
+    assert!(header(&sent(&mock).0, "anthropic-workspace-id").is_none());
+}
+
+#[test]
+fn a_workspace_id_that_is_more_than_an_id_is_refused_before_anything_is_sent() {
+    let mock = Mock::new(200, json!({}));
+    for bad in [
+        "wrkspc\r\nx-evil: 1",
+        "has space",
+        "semi;colon",
+        &"a".repeat(101),
+    ] {
+        let mut cfg = config(ProviderKind::Anthropic);
+        cfg.workspace_id = Some(bad.to_string());
+        assert!(
+            matches!(
+                send(&cfg, Some("k-123456"), &request(), &mock),
+                Err(AiError::Config(_))
+            ),
+            "{bad:?}"
+        );
+    }
+    assert!(mock.seen.borrow().is_empty());
 }

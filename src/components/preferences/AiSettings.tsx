@@ -156,6 +156,18 @@ export function AiSettings() {
             <p className="text-[var(--muted)]">{t(`ai.modelHint.${provider}`)}</p>
           </Field>
 
+          {provider === "anthropic" && (
+            <Field label={t("ai.settings.workspace")}>
+              <TextSetting
+                label={t("ai.settings.workspace")}
+                value={settings.workspaceId}
+                placeholder="wrkspc_…"
+                onCommit={(workspaceId) => set.setAiProviderSettings(provider, { workspaceId })}
+              />
+              <p className="text-[var(--muted)]">{t("ai.settings.workspaceNote")}</p>
+            </Field>
+          )}
+
           {(provider === "openai_compatible" || provider === "ollama") && (
             <Field label={t("ai.settings.baseUrl")}>
               <TextSetting

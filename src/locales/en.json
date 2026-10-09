@@ -711,7 +711,9 @@
       "test": "Connection",
       "testButton": "Test connection",
       "testing": "Testing…",
-      "testOk": "Connected. Used {{input}} input and {{output}} output tokens."
+      "testOk": "Connected. Used {{input}} input and {{output}} output tokens.",
+      "workspace": "Workspace ID (optional)",
+      "workspaceNote": "Only for an API key that is not scoped to a workspace: the ID of the workspace to use, sent as the anthropic-workspace-id header. Leave empty otherwise."
     },
     "confirm": {
       "title": "Send to {{provider}}?",

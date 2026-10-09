@@ -201,6 +201,19 @@ describe("Preferences › AI Mode", () => {
     expect(screen.queryByTestId("ai-key-saved")).toBeNull();
   });
 
+  it("takes an optional workspace ID for Anthropic keys that are not scoped to one", () => {
+    render(<AiSettings />);
+    const field = screen.getByLabelText("Workspace ID (optional)");
+    expect(screen.getByText(/anthropic-workspace-id header/)).toBeTruthy();
+    fireEvent.change(field, { target: { value: " wrkspc_01ABC " } });
+    fireEvent.blur(field);
+    expect(prefs().prefs.ai.providers.anthropic.workspaceId).toBe("wrkspc_01ABC");
+    // Other providers have no such field.
+    choose("Provider", "Google Gemini");
+    expect(screen.queryByLabelText("Workspace ID (optional)")).toBeNull();
+    expect(prefs().prefs.ai.providers.gemini.workspaceId).toBe("");
+  });
+
   it("needs no key for Ollama, and shows an address field for it", async () => {
     render(<AiSettings />);
     choose("Provider", "Ollama (on this computer)");

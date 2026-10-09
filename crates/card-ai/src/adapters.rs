@@ -96,12 +96,17 @@ fn anthropic_request(
         })
         .collect();
     content.push(json!({ "type": "text", "text": request.instruction }));
+    let mut headers = json_headers(&[
+        ("x-api-key", key.unwrap_or("")),
+        ("anthropic-version", "2023-06-01"),
+    ]);
+    // A key that is not scoped to a workspace must say which one to use.
+    if let Some(workspace) = config.workspace() {
+        headers.push(("anthropic-workspace-id".to_string(), workspace.to_string()));
+    }
     HttpRequest {
         url: format!("{}/v1/messages", config.base()),
-        headers: json_headers(&[
-            ("x-api-key", key.unwrap_or("")),
-            ("anthropic-version", "2023-06-01"),
-        ]),
+        headers,
         body: body(json!({
             "model": config.model,
             "max_tokens": request.max_output_tokens,

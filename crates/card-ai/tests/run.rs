@@ -21,6 +21,7 @@ fn config() -> ProviderConfig {
         kind: ProviderKind::Anthropic,
         model: "claude-sonnet-5-5".into(),
         base_url: None,
+        workspace_id: None,
     }
 }
 
@@ -204,6 +205,7 @@ fn a_missing_key_stops_before_anything_is_sent() {
         kind: ProviderKind::Ollama,
         model: "llava".into(),
         base_url: None,
+        workspace_id: None,
     };
     let transport = Script::new(vec![(
         200,
