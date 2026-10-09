@@ -10,6 +10,12 @@ Desktop tool (Tauri + Rust + React/TS) that takes a Print-and-Play PDF whose pie
 between them, keeping the original piece size and the original vector content. The app
 speaks English and Spanish (Preferences › General › Language).
 
+![The Source tab in Split view: the PDF page with its pieces marked on the left, the re-spaced result on the right](assets/screenshots/split-view.png)
+
+| Print tab | Detect pieces | Several pages |
+| --- | --- | --- |
+| ![The Print tab: the piece library with copies per piece and the sheet it makes](assets/screenshots/print-tab.png) | ![Detect pieces proposing a 2 × 2 grid found from the PDF's own objects](assets/screenshots/detect-pieces.png) | ![A multi-page PDF in the Source tab, with a grid shared by several pages](assets/screenshots/source-tab.png) |
+
 ## Status
 
 - [x] **Milestone 1 – PDF spike** (`crates/card-core`)
