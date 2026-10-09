@@ -1,7 +1,16 @@
 import { create } from "zustand";
 import { emitHintEvent } from "../lib/hint-events";
 
-export type PrefsSection = "General" | "Workspace" | "Preview" | "Appearance" | "AI" | "Help" | "About";
+export type PrefsSection =
+  | "General"
+  | "Workspace"
+  | "Preview"
+  | "Appearance"
+  | "AI"
+  | "Help"
+  | "Updates"
+  | "Experimental"
+  | "About";
 
 /** How long help tips keep waiting after the welcome tour closes, so the first one does not fire at once. */
 export const WELCOME_HINT_DELAY_MS = 2500;
@@ -31,6 +40,9 @@ export const useUiStore = create<{
   deferWelcome: (deferred?: boolean) => void;
   /** Help tips wait while the welcome is open and for a moment after it closes. */
   hintsHeld: boolean;
+  /** An export is running: the automatic update check waits for it to finish. */
+  exporting: boolean;
+  setExporting: (exporting: boolean) => void;
   /** Always starts in the Cards stage; switching never changes a document. */
   stage: Stage;
   setStage: (stage: Stage) => void;
@@ -49,6 +61,8 @@ export const useUiStore = create<{
   welcomeDeferred: false,
   deferWelcome: (welcomeDeferred = true) => set({ welcomeDeferred }),
   hintsHeld: false,
+  exporting: false,
+  setExporting: (exporting) => set({ exporting }),
   stage: "cards",
   setStage: (stage) => {
     set({ stage });

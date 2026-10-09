@@ -428,7 +428,9 @@
       "Appearance": "Apariencia",
       "About": "Acerca de",
       "AI": "Modo IA (experimental)",
-      "Help": "Ayuda"
+      "Help": "Ayuda",
+      "Updates": "Actualizaciones",
+      "Experimental": "Experimental"
     },
     "units": {
       "mm": "Milímetros (mm)",
@@ -532,6 +534,39 @@
       "report": "Reportar en GitHub",
       "discord": "Discord",
       "discordSoon": "Próximamente"
+    },
+    "updates": {
+      "current": "Versión",
+      "youHave": "Tienes la versión {{version}}.",
+      "versionUnknown": "La versión no está disponible aquí.",
+      "checking": "Buscando actualizaciones…",
+      "upToDate": "Estás al día.",
+      "failed": "No se pudo buscar actualizaciones. Revisa tu conexión e inténtalo de nuevo.",
+      "available": "La versión {{version}} está disponible",
+      "whatsNewIn": "Novedades de la versión {{version}}",
+      "downloading": "Descargando la actualización…",
+      "progress": "Descargando la actualización… {{percent}} %",
+      "installed": "La versión {{version}} está instalada. Reinicia Gutterberg para usarla.",
+      "check": "Buscar actualizaciones",
+      "install": "Descargar e instalar",
+      "restartNow": "Reiniciar ahora",
+      "later": "Más tarde",
+      "lastChecked": "Última búsqueda: {{when}}",
+      "never": "nunca",
+      "tellMe": "Avisarme de",
+      "notifyAll": "Todas las actualizaciones",
+      "notifyAllHint": "Cada versión nueva, también las que solo corrigen errores.",
+      "notifyFeatures": "Funciones nuevas",
+      "notifyFeaturesHint": "Una versión con funciones nuevas; las que solo corrigen errores no avisan.",
+      "notifyMajor": "Solo versiones mayores",
+      "notifyMajorHint": "Solo los cambios grandes, como la 2.0.",
+      "notifyNever": "Nunca",
+      "notifyNeverHint": "Las buscaré yo.",
+      "tellMeNote": "Esto solo decide si aparece un aviso. Esta sección siempre muestra una versión más nueva cuando la hay, y al actualizar se instala la más reciente."
+    },
+    "experimental": {
+      "title": "Funciones experimentales",
+      "note": "Pueden cambiar o desaparecer en una versión futura. Están desactivadas hasta que las actives."
     }
   },
   "hintUi": {
@@ -972,6 +1007,22 @@
         "title": "Listo para cortar",
         "text": "Exporta un PDF con marcas de corte, sangrado o doble cara si lo quieres. Tu arte nunca se modifica."
       }
+    }
+  },
+  "toast": {
+    "close": "Cerrar"
+  },
+  "updates": {
+    "unsaved": "Este proyecto tiene cambios sin guardar. ¿Quieres guardarlos antes de que Gutterberg se reinicie?",
+    "saveFirst": "Guardar y continuar",
+    "toast": {
+      "available": "Gutterberg {{version}} está disponible",
+      "whatsNew": "Novedades",
+      "update": "Actualizar",
+      "skip": "Omitir esta versión",
+      "updated": "Actualizado a la {{version}}",
+      "failed": "La actualización a la {{version}} no terminó",
+      "tryAgain": "Reintentar"
     }
   }
 }

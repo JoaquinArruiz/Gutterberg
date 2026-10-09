@@ -60,3 +60,18 @@ export async function loadAppInfo(language: string): Promise<AppInfo> {
   ]);
   return { name, version, os: describeSystem(kind, systemVersion, architecture), language, pdfium: extra.pdfium };
 }
+
+/** The app's version, from its own configuration (null until known, and outside the app window). */
+export function useAppVersion(): string | null {
+  const [version, setVersion] = useState<string | null>(null);
+  useEffect(() => {
+    let live = true;
+    getVersion()
+      .then((v) => live && setVersion(v))
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
+  return version;
+}

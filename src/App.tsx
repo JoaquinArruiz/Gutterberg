@@ -10,6 +10,7 @@ import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
 import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
+import { Toast } from "./components/ui/Toast";
 import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { resolveStartMode } from "./lib/preferences";
@@ -17,8 +18,10 @@ import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectA
 import { useProjectTracking } from "./lib/project-state";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
+import { startUpdateChecks } from "./lib/update-actions";
 import { useImageDrop } from "./lib/use-image-drop";
 import { useLayoutSync } from "./lib/use-layout-sync";
+import { useOpenedFiles } from "./lib/use-opened-files";
 import { usePrintSync } from "./lib/use-print-sync";
 import { zoomActions } from "./lib/zoom-actions";
 import { useDocumentStore } from "./stores/document-store";
@@ -33,7 +36,10 @@ export default function App() {
   usePrintSync();
   useProjectTracking();
   useImageDrop();
+  // Before the welcome tour: a project the app was started with is opened first, and the tour waits for it.
+  useOpenedFiles();
   useWelcomeAutoOpen();
+  useEffect(startUpdateChecks, []);
   const stage = useUiStore((s) => s.stage);
   // With nothing open there is nothing to edit: the start screen takes the place of the editor and its panels.
   const hasDocuments = useDocumentStore((s) => s.documents.length > 0);
@@ -169,6 +175,7 @@ export default function App() {
       <AiConfirmDialog />
       <ImageSizeDialog />
       <WelcomeDialog />
+      <Toast />
     </div>
   );
 }

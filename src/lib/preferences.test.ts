@@ -345,3 +345,31 @@ describe("recent projects and presets", () => {
     expect(p.presets[0].sourceGapYMm).toBe(2);
   });
 });
+
+describe("the updates and experimental preferences", () => {
+  it("start with defaults", () => {
+    expect(DEFAULT_PREFERENCES.updates).toEqual({
+      notify: "all",
+      lastCheck: 0,
+      skippedVersion: "",
+      pending: null,
+      lastRunVersion: "",
+    });
+    expect(DEFAULT_PREFERENCES.experimental).toEqual({ flags: {} });
+  });
+
+  it("are added to a version 10 file without losing what it has", () => {
+    const v10 = { version: 10, measurement: { unit: "in" }, help: { welcomeSeen: 1 } };
+    const p = migratePreferences(v10);
+    expect(p.version).toBe(PREFERENCES_VERSION);
+    expect(p.updates).toEqual(DEFAULT_PREFERENCES.updates);
+    expect(p.experimental).toEqual({ flags: {} });
+    expect(p.measurement.unit).toBe("in");
+    expect(p.help.welcomeSeen).toBe(1);
+  });
+
+  it("keep what was saved", () => {
+    const saved = { notify: "features", lastCheck: 5, skippedVersion: "1.2.0", pending: null, lastRunVersion: "1.1.0" };
+    expect(migratePreferences({ version: PREFERENCES_VERSION, updates: saved }).updates).toEqual(saved);
+  });
+});

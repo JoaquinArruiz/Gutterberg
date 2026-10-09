@@ -11,7 +11,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { t as translate } from "../../i18n";
 import { includedPages } from "../../lib/document-layout";
@@ -86,6 +86,11 @@ export function EditorToolbar() {
   const canUndo = useHistory((s) => s.canUndo);
   const canRedo = useHistory((s) => s.canRedo);
   const [exporting, setExporting] = useState(false);
+  // The automatic update check waits for the export to finish.
+  useEffect(() => {
+    useUiStore.getState().setExporting(exporting);
+    return () => useUiStore.getState().setExporting(false);
+  }, [exporting]);
   const [status, setStatus] = useState<Status | null>(null);
   // Pages that would make the export fail, found before the save dialog opens.
   const [issues, setIssues] = useState<ExportIssue[]>([]);

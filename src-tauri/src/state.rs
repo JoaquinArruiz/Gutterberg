@@ -17,6 +17,14 @@ pub struct AppState {
     pub ai_gate: Arc<Gate>,
     /// API keys, in the system keychain.
     pub ai_keys: Arc<KeyringStore>,
+    /// The project file the app was started with, and whether the web side has asked for it yet.
+    opened: Mutex<Opened>,
+}
+
+#[derive(Default)]
+struct Opened {
+    asked: bool,
+    waiting: Option<String>,
 }
 
 impl AppState {
@@ -43,6 +51,24 @@ impl AppState {
         let w = Arc::new(RenderWorker::spawn(dirs)?);
         *slot = Some(w.clone());
         Ok(w)
+    }
+
+    /// A project file the system asked the app to open. `Some(path)` when the web side is already
+    /// listening (send it as an event); `None` when it is kept for the web side's first question.
+    pub fn file_opened(&self, path: String) -> Option<String> {
+        let mut opened = self.opened.lock().unwrap_or_else(|e| e.into_inner());
+        if opened.asked {
+            return Some(path);
+        }
+        opened.waiting = Some(path);
+        None
+    }
+
+    /// The file waiting from startup. Asking also means the web side now listens for later ones.
+    pub fn take_opened(&self) -> Result<Option<String>, ErrorInfo> {
+        let mut opened = self.opened.lock().map_err(internal)?;
+        opened.asked = true;
+        Ok(opened.waiting.take())
     }
 
     pub fn set_path(&self, id: DocumentId, p: PathBuf) -> Result<(), ErrorInfo> {

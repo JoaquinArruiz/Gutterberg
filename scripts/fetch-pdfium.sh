@@ -17,7 +17,9 @@ mkdir -p "$dest"
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 curl -fsSL "https://github.com/bblanchon/pdfium-binaries/releases/download/${tag}/pdfium-${target}.tgz" -o "$tmp/p.tgz"
-echo "${sha}  $tmp/p.tgz" | sha256sum -c - >/dev/null || { echo "SHA-256 mismatch for pdfium-${target}.tgz" >&2; exit 1; }
+# macOS has no sha256sum.
+if command -v sha256sum >/dev/null; then check=(sha256sum -c -); else check=(shasum -a 256 -c -); fi
+echo "${sha}  $tmp/p.tgz" | "${check[@]}" >/dev/null || { echo "SHA-256 mismatch for pdfium-${target}.tgz" >&2; exit 1; }
 tar -xzf "$tmp/p.tgz" -C "$tmp"
 case "$target" in
   win-*) cp "$tmp/bin/pdfium.dll" "$dest/" ;;

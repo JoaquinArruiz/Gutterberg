@@ -11,8 +11,10 @@ original card size and vector content. See `README.md` for features and controls
 - `crates/card-core/`: geometry, layout, PDF export (lopdf) and rendering (pdfium-render).
   No Tauri or UI dependency.
 - `crates/card-ai/`: the optional AI Mode (M19): provider adapters, prompts and reply checks. The only
-  crate that talks to the network.
-- `src-tauri/`: Tauri shell; `src/commands/*` are thin IPC wrappers around `card-core`.
+  crate that sends a user's data over the network.
+- `src-tauri/`: Tauri shell; `src/commands/*` are thin IPC wrappers around `card-core`. It also holds the
+  updater plugin, the other thing that uses the network: it sends nothing but the request for
+  `latest.json` and the download of a new version.
 - `src/`: React frontend. Stores in `src/stores/` (Zustand), helpers in `src/lib/`,
   components in `src/components/`.
 - `docs/milestones/`: one brief per upcoming milestone. When asked to "do M<n>", read

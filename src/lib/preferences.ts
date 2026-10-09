@@ -9,10 +9,12 @@
 
 import { type AiPrefs, DEFAULT_AI, normalizeAi } from "./ai";
 import { MAX_GAP_MM } from "./document-layout";
+import { normalizeExperimental } from "./experimental";
 import { clampCount } from "./grid";
 import { type HintId, isHintId } from "./hints";
 import { DECIMAL_PREFERENCES, type DecimalPreference, LANGUAGE_PREFERENCES, type LanguagePreference } from "./locale";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
+import { DEFAULT_UPDATES, normalizeUpdates, type UpdatePrefs } from "./updates";
 import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
@@ -21,8 +23,9 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // (recent projects) and presets (named grids). v8: adds ai (AI Mode: off by default; never a key). v9: the Print tab's
 // layout is a panel layout like the Source tab's (print.layout was { libraryWidth, inspectorWidth }; those widths become
 // the sizes of its left and right regions). v10: adds help.welcomeSeen (the version of the welcome tour the user has
-// seen or skipped). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 10;
+// seen or skipped). v11: adds updates (what to be told about, the last check, the version being installed) and
+// experimental (the switches of unfinished features). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 11;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -92,6 +95,10 @@ export interface AppPreferences {
   images: { size: ImageSizePrefs };
   /** AI Mode (M19). */
   ai: AiPrefs;
+  /** Checking for and installing new versions (M15). */
+  updates: UpdatePrefs;
+  /** Switches of unfinished features, by id; off unless set (M15). */
+  experimental: { flags: Record<string, boolean> };
 }
 
 /** The size the last import used, offered again by the next one (M24). */
@@ -145,6 +152,8 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   presets: [],
   images: { size: DEFAULT_IMAGE_SIZE },
   ai: DEFAULT_AI,
+  updates: DEFAULT_UPDATES,
+  experimental: { flags: {} },
 };
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
@@ -284,6 +293,8 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     presets: normalizePresets(r.presets),
     images: { size: normalizeImageSize(isObj(r.images) ? r.images.size : undefined) },
     ai: normalizeAi(r.ai),
+    updates: normalizeUpdates(r.updates),
+    experimental: { flags: normalizeExperimental(isObj(r.experimental) ? r.experimental.flags : undefined) },
   };
 }
 

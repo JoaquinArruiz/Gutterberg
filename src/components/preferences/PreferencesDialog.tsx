@@ -1,7 +1,20 @@
-import { ArrowDown, ArrowUp, Eye, LayoutPanelLeft, LifeBuoy, Palette, Settings, Sparkles, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  Eye,
+  FlaskConical,
+  LayoutPanelLeft,
+  LifeBuoy,
+  Palette,
+  Settings,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/32x32.png";
+import { EXPERIMENTAL } from "../../lib/experimental";
 import {
   DECIMAL_PREFERENCES,
   type DecimalPreference,
@@ -39,19 +52,31 @@ import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { AboutSection } from "./AboutSection";
 import { AiSettings } from "./AiSettings";
+import { ExperimentalSection } from "./ExperimentalSection";
 import { Field } from "./Field";
 import { HelpSection } from "./HelpSection";
 import { LayoutPreview } from "./LayoutPreview";
+import { UpdatesSection } from "./UpdatesSection";
 
 /** The catalog key of each decimal choice. */
 const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalComma" } as const;
 
 // About is not in this list: it sits alone at the bottom of the navigation.
-const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI", "Help"];
+// Experimental is hidden while no feature is experimental.
+const SECTIONS: PrefsSection[] = [
+  "General",
+  "Workspace",
+  "Preview",
+  "Appearance",
+  "AI",
+  "Help",
+  "Updates",
+  ...(EXPERIMENTAL.length > 0 ? (["Experimental"] as const) : []),
+];
 type Section = PrefsSection;
 
 const ICON_SIZE = 14;
-/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; Help the life buoy; About the app's own icon. */
+/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; Help the life buoy; Updates the download arrow; Experimental the flask; About the app's own icon. */
 const SECTION_ICON: Record<Section, React.ReactNode> = {
   General: <Settings size={ICON_SIZE} />,
   Workspace: <LayoutPanelLeft size={ICON_SIZE} />,
@@ -59,6 +84,8 @@ const SECTION_ICON: Record<Section, React.ReactNode> = {
   Appearance: <Palette size={ICON_SIZE} />,
   AI: <Sparkles size={ICON_SIZE} className="text-[var(--ai)]" />,
   Help: <LifeBuoy size={ICON_SIZE} />,
+  Updates: <Download size={ICON_SIZE} />,
+  Experimental: <FlaskConical size={ICON_SIZE} />,
   About: <img src={appIcon} alt="" width={ICON_SIZE} height={ICON_SIZE} className="rounded-sm" draggable={false} />,
 };
 
@@ -347,6 +374,10 @@ export function PreferencesDialog() {
           {section === "AI" && <AiSettings />}
 
           {section === "Help" && <HelpSection />}
+
+          {section === "Updates" && <UpdatesSection />}
+
+          {section === "Experimental" && <ExperimentalSection />}
 
           {section === "About" && <AboutSection />}
         </div>

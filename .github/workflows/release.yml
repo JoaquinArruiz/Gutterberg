@@ -1,0 +1,88 @@
+name: Release
+
+# Pushing a tag such as v1.1.0 builds the app for every platform and leaves a draft GitHub release with the
+# installers, their updater signatures, latest.json and the notes from CHANGELOG.md. Publishing the draft by hand
+# is what makes installed apps see the update. See docs/releasing.md.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            pdfium: mac-arm64
+            args: --target aarch64-apple-darwin
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            pdfium: mac-x64
+            args: --target x86_64-apple-darwin
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            pdfium: linux-x64
+            args: ''
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            pdfium: win-x64
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check the tag against the versions and the changelog
+        id: notes
+        shell: bash
+        run: |
+          scripts/check-release.sh "$GITHUB_REF_NAME" "$RUNNER_TEMP/notes.md"
+          {
+            echo 'body<<NOTES_EOF'
+            cat "$RUNNER_TEMP/notes.md"
+            echo 'NOTES_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Install Tauri Linux dependencies
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libsoup-3.0-dev \
+            libayatana-appindicator3-dev librsvg2-dev patchelf libdbus-1-dev
+
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fetch pdfium for this platform
+        shell: bash
+        run: scripts/fetch-pdfium.sh ${{ matrix.pdfium }}
+
+      # Step 2 of M15 adds the THIRD_PARTY_LICENSES step here, before the build.
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: v__VERSION__
+          releaseName: Gutterberg v__VERSION__
+          releaseBody: ${{ steps.notes.outputs.body }}
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}

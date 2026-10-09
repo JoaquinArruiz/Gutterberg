@@ -5,6 +5,7 @@ pub mod document;
 pub mod export;
 pub mod images;
 pub mod layout;
+pub mod opened;
 pub mod project;
 pub mod render;
 pub mod sheets;

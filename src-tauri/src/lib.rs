@@ -2,13 +2,26 @@ mod commands;
 mod keychain;
 mod state;
 
+#[cfg(target_os = "macos")]
+use tauri::Emitter;
+use tauri::Manager;
+
+/// The project file among the command-line arguments (Windows and Linux pass the double-clicked file there).
+fn project_arg(args: impl IntoIterator<Item = String>) -> Option<String> {
+    args.into_iter()
+        .skip(1)
+        .find(|a| !a.starts_with('-') && a.to_lowercase().ends_with(".gtr"))
+}
+
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         // The system's name and version, for "Copy app info" in Preferences › Help.
         .plugin(tauri_plugin_os::init())
         // Opens the two About links in the browser; the capability allows exactly those URLs.
         .plugin(tauri_plugin_opener::init())
+        // Restarts the app after an update.
+        .plugin(tauri_plugin_process::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::app_info::app_info,
@@ -31,6 +44,7 @@ pub fn run() {
             commands::images::plan_images,
             commands::images::probe_images,
             commands::layout::compute_layout,
+            commands::opened::take_opened_file,
             commands::sheets::compute_cards,
             commands::sheets::compute_sheets,
             commands::sheets::validate_print,
@@ -40,6 +54,55 @@ pub fn run() {
             commands::render::render_page,
             commands::render::render_region,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running Gutterberg");
+        .setup(|app| {
+            // Checks for a new version and installs it; the web side drives both from Preferences.
+            #[cfg(desktop)]
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
+            if let Some(path) = project_arg(std::env::args()) {
+                app.state::<state::AppState>().file_opened(path);
+            }
+            Ok(())
+        })
+        .build(tauri::generate_context!())
+        .expect("error while building Gutterberg");
+
+    app.run(|handle, event| {
+        // macOS hands a double-clicked file to the running app as an event, not as an argument.
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Opened { urls } = &event {
+            for path in urls.iter().filter_map(|u| u.to_file_path().ok()) {
+                let path = path.to_string_lossy().into_owned();
+                if let Some(path) = handle.state::<state::AppState>().file_opened(path) {
+                    let _ = handle.emit("opened-file", path);
+                }
+            }
+        }
+        #[cfg(not(target_os = "macos"))]
+        let _ = (handle, event);
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::project_arg;
+
+    fn args(list: &[&str]) -> Vec<String> {
+        list.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn finds_the_project_file_after_the_program_name() {
+        assert_eq!(
+            project_arg(args(&["gutterberg", "/tmp/My Cards.GTR"])),
+            Some("/tmp/My Cards.GTR".into())
+        );
+    }
+
+    #[test]
+    fn ignores_flags_other_files_and_the_program_itself() {
+        assert_eq!(project_arg(args(&["/opt/app.gtr"])), None);
+        assert_eq!(project_arg(args(&["gutterberg", "--x.gtr", "a.pdf"])), None);
+        assert_eq!(project_arg(args(&["gutterberg"])), None);
+    }
 }

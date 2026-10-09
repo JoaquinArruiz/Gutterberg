@@ -52,12 +52,13 @@ describe("the Preferences sections", () => {
       "Appearance",
       "AI Mode (experimental)",
       "Help",
+      "Updates",
       "About",
     ]);
     // Every one has its icon: an svg from lucide, or the app's own icon for About.
-    for (const b of buttons.slice(0, 6)) expect(b.querySelector("svg")).toBeTruthy();
-    expect(buttons[6].querySelector("svg")).toBeNull();
-    expect(buttons[6].querySelector("img")).toBeTruthy();
+    for (const b of buttons.slice(0, 7)) expect(b.querySelector("svg")).toBeTruthy();
+    expect(buttons[7].querySelector("svg")).toBeNull();
+    expect(buttons[7].querySelector("img")).toBeTruthy();
     // The AI icon is the spark, in the AI colour.
     expect(buttons[4].querySelector("svg")?.getAttribute("class")).toContain("--ai");
   });
@@ -66,10 +67,10 @@ describe("the Preferences sections", () => {
     render(<PreferencesDialog />);
     await openPreferences();
     const buttons = sectionButtons();
-    const spacer = buttons[6].previousElementSibling;
+    const spacer = buttons[7].previousElementSibling;
     expect(spacer?.tagName).toBe("DIV");
     expect(spacer?.className).toContain("flex-1");
-    expect(buttons[5].nextElementSibling).toBe(spacer);
+    expect(buttons[6].nextElementSibling).toBe(spacer);
   });
 
   it("marks the open section and switches on click", async () => {

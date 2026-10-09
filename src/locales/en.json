@@ -428,7 +428,9 @@
       "Appearance": "Appearance",
       "About": "About",
       "AI": "AI Mode (experimental)",
-      "Help": "Help"
+      "Help": "Help",
+      "Updates": "Updates",
+      "Experimental": "Experimental"
     },
     "units": {
       "mm": "Millimeters (mm)",
@@ -532,6 +534,39 @@
       "report": "Report on GitHub",
       "discord": "Discord",
       "discordSoon": "Coming soon"
+    },
+    "updates": {
+      "current": "Version",
+      "youHave": "You have {{version}}.",
+      "versionUnknown": "The version is not available here.",
+      "checking": "Checking for updates…",
+      "upToDate": "You're up to date.",
+      "failed": "Couldn't check for updates. Check your connection and try again.",
+      "available": "{{version}} is available",
+      "whatsNewIn": "What's new in {{version}}",
+      "downloading": "Downloading the update…",
+      "progress": "Downloading the update… {{percent}}%",
+      "installed": "{{version}} is installed. Restart Gutterberg to use it.",
+      "check": "Check for updates",
+      "install": "Download and install",
+      "restartNow": "Restart now",
+      "later": "Later",
+      "lastChecked": "Last checked: {{when}}",
+      "never": "never",
+      "tellMe": "Tell me about",
+      "notifyAll": "All updates",
+      "notifyAllHint": "Every new version, including fixes.",
+      "notifyFeatures": "New features",
+      "notifyFeaturesHint": "A new version with new features; fixes alone stay quiet.",
+      "notifyMajor": "Major versions only",
+      "notifyMajorHint": "Only big changes, such as 2.0.",
+      "notifyNever": "Never",
+      "notifyNeverHint": "I'll check myself.",
+      "tellMeNote": "This only decides whether a message appears. This section always shows a newer version when there is one, and updating installs the newest."
+    },
+    "experimental": {
+      "title": "Experimental features",
+      "note": "May change or disappear in a later version. Off unless you switch them on."
     }
   },
   "hintUi": {
@@ -972,6 +1007,22 @@
         "title": "Ready to cut",
         "text": "Export a PDF with cut marks, bleed or duplex if you want. Your artwork is never changed."
       }
+    }
+  },
+  "toast": {
+    "close": "Close"
+  },
+  "updates": {
+    "unsaved": "This project has changes that are not saved. Save them before Gutterberg restarts?",
+    "saveFirst": "Save and continue",
+    "toast": {
+      "available": "Gutterberg {{version}} is available",
+      "whatsNew": "What's new",
+      "update": "Update",
+      "skip": "Skip this version",
+      "updated": "Updated to {{version}}",
+      "failed": "The update to {{version}} didn't finish",
+      "tryAgain": "Try again"
     }
   }
 }

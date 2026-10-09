@@ -72,6 +72,18 @@ async function confirmDiscard(): Promise<boolean> {
   return confirm(t("project.discard.message"), t("project.discard.ok"));
 }
 
+/**
+ * Before the app restarts for an update: a project with unsaved changes is saved first (asking where, if it has no
+ * file yet). Resolves to whether it may go on; "no" or a cancelled save keeps the app as it is.
+ */
+export async function saveBeforeRestart(): Promise<boolean> {
+  const { signature } = useProjectStore.getState();
+  const now = currentSignature();
+  if (now === null || now === signature) return true;
+  if (!(await confirm(t("updates.unsaved"), t("updates.saveFirst")))) return false;
+  return saveProject();
+}
+
 /** Session state that belongs to one project: tool, view, plan, preview and cached images start over. */
 function resetSession() {
   useEditorStore.getState().reset();

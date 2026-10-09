@@ -18,6 +18,7 @@ import {
   toggleMode,
   type WorkspaceMode,
 } from "../lib/preferences";
+import type { PendingUpdate, UpdateNotify } from "../lib/updates";
 import {
   applyPreset,
   defaultLayout,
@@ -135,6 +136,15 @@ type PreferencesState = {
   setAiSendImages: (on: boolean) => void;
   /** The model and address typed for one provider. */
   setAiProviderSettings: (provider: AiProvider, patch: Partial<AiProviderSettings>) => void;
+  setUpdateNotify: (notify: UpdateNotify) => void;
+  /** The automatic or manual check just asked for a newer version. */
+  setLastCheck: (at: number) => void;
+  /** "Skip this version": no toast for it, only for a newer one. */
+  skipVersion: (version: string) => void;
+  /** The update being installed (or nothing, once the next start has told the user how it went). */
+  setPendingUpdate: (pending: PendingUpdate | null) => void;
+  setLastRunVersion: (version: string) => void;
+  setExperimental: (id: string, on: boolean) => void;
   savePreset: (preset: GridPreset) => void;
   deletePreset: (name: string) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
@@ -209,6 +219,8 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           presets: get().prefs.presets,
           images: get().prefs.images,
           help: { ...DEFAULT_PREFERENCES.help, welcomeSeen: get().prefs.help.welcomeSeen },
+          // The record of checks and of an update being installed is not a setting; only "Tell me about" starts over.
+          updates: { ...get().prefs.updates, notify: DEFAULT_PREFERENCES.updates.notify },
         });
         bumpEpoch();
       },
@@ -238,6 +250,16 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           ...p,
           ai: { ...p.ai, providers: { ...p.ai.providers, [provider]: { ...p.ai.providers[provider], ...patch } } },
         })),
+      setUpdateNotify: (notify) => edit((p) => ({ ...p, updates: { ...p.updates, notify } })),
+      setLastCheck: (lastCheck) => edit((p) => ({ ...p, updates: { ...p.updates, lastCheck } })),
+      skipVersion: (skippedVersion) => edit((p) => ({ ...p, updates: { ...p.updates, skippedVersion } })),
+      setPendingUpdate: (pending) => edit((p) => ({ ...p, updates: { ...p.updates, pending } })),
+      setLastRunVersion: (lastRunVersion) => {
+        if (get().prefs.updates.lastRunVersion !== lastRunVersion)
+          edit((p) => ({ ...p, updates: { ...p.updates, lastRunVersion } }));
+      },
+      setExperimental: (id, on) =>
+        edit((p) => ({ ...p, experimental: { flags: { ...p.experimental.flags, [id]: on } } })),
       savePreset: (preset) =>
         edit((p) => {
           const same = (a: GridPreset) => a.name.trim().toLowerCase() === preset.name.trim().toLowerCase();
@@ -295,3 +317,7 @@ export const useUnit = () => {
   useDecimalSeparator();
   return usePreferencesStore((s) => s.prefs.measurement.unit);
 };
+
+/** Whether the user switched the experimental feature `id` on (`src/lib/experimental.ts` lists them). */
+export const useExperimental = (id: string): boolean =>
+  usePreferencesStore((s) => s.prefs.experimental.flags[id] === true);
