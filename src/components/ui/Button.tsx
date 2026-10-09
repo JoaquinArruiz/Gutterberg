@@ -39,6 +39,8 @@ export function Button({
   iconOnly?: boolean;
   /** `ai` only: a request is running. */
   busy?: boolean;
+  /** To focus the button from outside (React 19 passes `ref` like any prop). */
+  ref?: React.Ref<HTMLButtonElement>;
 }) {
   const ai = variant === "ai";
   const spark = (

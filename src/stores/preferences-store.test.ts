@@ -203,6 +203,21 @@ describe("help tips", () => {
     expect(st.getState().prefs.help.dismissedHints).toEqual({});
   });
 
+  it("remembers that the welcome tour was closed, across a restart and a reset", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    expect(st.getState().prefs.help.welcomeSeen).toBe(0);
+    st.getState().setWelcomeSeen(1);
+    expect(createPreferencesStore(storage).getState().prefs.help.welcomeSeen).toBe(1);
+    // Bringing the tips back, or resetting everything, does not show the tour again by itself.
+    st.getState().dismissHint("live-preview-output");
+    st.getState().resetHints();
+    expect(st.getState().prefs.help.welcomeSeen).toBe(1);
+    st.getState().resetToDefaults();
+    expect(st.getState().prefs.help.welcomeSeen).toBe(1);
+    expect(st.getState().prefs.help.dismissedHints).toEqual({});
+  });
+
   it("Reset workspace does not touch the tips", () => {
     const st = createPreferencesStore(memory());
     st.getState().dismissHint("live-preview-output");

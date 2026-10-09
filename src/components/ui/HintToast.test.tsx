@@ -103,7 +103,7 @@ describe("HintToast", () => {
   it("shows again when its catalog version is newer than the dismissal", () => {
     act(() =>
       usePreferencesStore.setState((s) => ({
-        prefs: { ...s.prefs, help: { dismissedHints: { "live-preview-output": 0 } } },
+        prefs: { ...s.prefs, help: { ...s.prefs.help, dismissedHints: { "live-preview-output": 0 } } },
       })),
     );
     render(<HintToast hint="live-preview-output" />);

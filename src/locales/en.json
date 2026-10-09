@@ -427,7 +427,8 @@
       "Preview": "Preview",
       "Appearance": "Appearance",
       "About": "About",
-      "AI": "AI Mode (experimental)"
+      "AI": "AI Mode (experimental)",
+      "Help": "Help"
     },
     "units": {
       "mm": "Millimeters (mm)",
@@ -444,12 +445,7 @@
       "decimalAuto": "Automatic (from the language)",
       "decimalDot": "Dot (63.5)",
       "decimalComma": "Comma (63,5)",
-      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to.",
-      "helpTips": "Help tips",
-      "enableTips": "Enable all help tips",
-      "allTipsOn": "All help tips are enabled.",
-      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Enable it to see it again.",
-      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Enable them to see them again."
+      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to."
     },
     "workspace": {
       "visibleViews": "Visible views",
@@ -511,6 +507,31 @@
       "label": "Layout preview",
       "editor": "Editor",
       "sheets": "Sheets"
+    },
+    "help": {
+      "welcome": "Welcome tour",
+      "welcomeNote": "A short tour of the app, in four clips.",
+      "replayWelcome": "Replay welcome tour",
+      "tips": "Help tips",
+      "enableTips": "Enable all help tips",
+      "allTipsOn": "All help tips are enabled.",
+      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Enable it to see it again.",
+      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Enable them to see them again.",
+      "shortcuts": "Keyboard shortcuts",
+      "bug": "Found a bug?",
+      "bugIntro": "If something doesn't work, open an issue on GitHub (you need a free GitHub account) and tell us:",
+      "bugVersion": "which version you use and on which system (the button below copies it)",
+      "bugSteps": "what you did, step by step, so someone else can make it happen again",
+      "bugExpected": "what you expected, and what happened instead",
+      "bugWorkaround": "whether you found a way around it",
+      "bugFiles": "the PDF or project, if you can share it (only files you're allowed to share), or a screenshot",
+      "infoUnavailable": "The app info is only available in the app window.",
+      "copyInfo": "Copy app info",
+      "copied": "Copied",
+      "copyFailed": "Couldn't copy. Select the text above and copy it yourself.",
+      "report": "Report on GitHub",
+      "discord": "Discord",
+      "discordSoon": "Coming soon"
     }
   },
   "hintUi": {
@@ -867,7 +888,8 @@
     "title": "Get started",
     "lead": "Open a Print-and-Play PDF to space its pieces, or pick up a project.",
     "shortcuts": "Press ? to see the keyboard shortcuts.",
-    "fromImages": "Start from images"
+    "fromImages": "Start from images",
+    "replayWelcome": "Replay welcome tour"
   },
   "brand": {
     "logoAlt": "{{name}} logo",
@@ -921,6 +943,35 @@
       "reduceHint": "PNG and WebP images above 600 dpi are shrunk to 600 dpi (still lossless). JPEG images are never reduced: that would mean compressing them again and losing quality. Your files are not touched.",
       "add_one": "Add image",
       "add_other": "Add images"
+    }
+  },
+  "welcome": {
+    "label": "Welcome tour",
+    "next": "Next",
+    "back": "Back",
+    "getStarted": "Get started",
+    "skip": "Skip",
+    "play": "Play",
+    "playAgain": "Play again",
+    "steps": {
+      "label": "Steps",
+      "goTo": "Step {{n}} of {{total}}: {{title}}",
+      "cut": {
+        "title": "Your PDF, cut into pieces",
+        "text": "Mark where the pieces are on a page: a grid, Detect pieces, or one by one with the piece tool."
+      },
+      "place": {
+        "title": "On the sheet you print",
+        "text": "Pick a sheet size such as A4 or Letter. Your pieces keep their exact size."
+      },
+      "arrange": {
+        "title": "Arrange them your way",
+        "text": "Put the pieces in the order you want, set the gap between them, and choose which ones to print and how many copies."
+      },
+      "done": {
+        "title": "Ready to cut",
+        "text": "Export a PDF with cut marks, bleed or duplex if you want. Your artwork is never changed."
+      }
     }
   }
 }

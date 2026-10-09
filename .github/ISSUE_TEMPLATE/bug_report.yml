@@ -1,0 +1,71 @@
+name: Bug report
+description: Something does not work as it should.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time. English is preferred, but you are welcome to write in Spanish too (español también vale).
+        In the app, **Preferences › Help › Copy app info** gives you the version and system to paste below.
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The version of the app, e.g. 1.0.0 (Preferences › About).
+      placeholder: "1.0.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      description: Which system you use.
+      placeholder: "Windows 11, macOS 15, Ubuntu 24.04"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: What you did, step by step, so someone else can make it happen again.
+      placeholder: |
+        1. Open a PDF…
+        2. …
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What you thought would happen instead.
+    validations:
+      required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Did you find a way around it?
+    validations:
+      required: false
+  - type: textarea
+    id: files
+    attributes:
+      label: Files
+      description: Attach the PDF or project if you are allowed to share it, or a screenshot. Only share files you have the right to share.
+    validations:
+      required: false
+  - type: checkboxes
+    id: searched
+    attributes:
+      label: Before you send it
+      options:
+        - label: I searched the open issues and this is not one of them
+          required: true

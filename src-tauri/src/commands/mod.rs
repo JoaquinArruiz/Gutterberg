@@ -1,4 +1,5 @@
 pub mod ai;
+pub mod app_info;
 pub mod detect;
 pub mod document;
 pub mod export;

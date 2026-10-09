@@ -17,6 +17,32 @@ const withWorkspace = (w: Partial<AppPreferences["workspace"]>): AppPreferences 
   workspace: { ...DEFAULT_PREFERENCES.workspace, ...w },
 });
 
+describe("the welcome tour preference", () => {
+  it("starts as never shown", () => {
+    expect(DEFAULT_PREFERENCES.help.welcomeSeen).toBe(0);
+  });
+
+  it("is added to a version 9 file without losing what it has", () => {
+    const v9 = {
+      version: 9,
+      measurement: { unit: "in" },
+      help: { dismissedHints: { "live-preview-output": 1 } },
+    };
+    const p = migratePreferences(v9);
+    expect(p.version).toBe(PREFERENCES_VERSION);
+    expect(p.help.welcomeSeen).toBe(0);
+    expect(p.help.dismissedHints).toEqual({ "live-preview-output": 1 });
+    expect(p.measurement.unit).toBe("in");
+  });
+
+  it("keeps the version of the tour that was seen, and ignores anything that is not one", () => {
+    expect(migratePreferences({ version: PREFERENCES_VERSION, help: { welcomeSeen: 1 } }).help.welcomeSeen).toBe(1);
+    for (const bad of [-1, 0.5, "1", null, Number.NaN, true]) {
+      expect(normalizePreferences({ help: { welcomeSeen: bad } }).help.welcomeSeen).toBe(0);
+    }
+  });
+});
+
 describe("the image size preference", () => {
   it("starts at the standard card, without bleed", () => {
     expect(DEFAULT_PREFERENCES.images.size).toMatchObject({

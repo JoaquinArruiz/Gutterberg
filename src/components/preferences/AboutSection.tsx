@@ -3,14 +3,14 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/128x128.png";
 import { useAppName } from "../../lib/app-info";
-import { ABOUT_LINKS, openExternalLink } from "../../lib/external-links";
+import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
 import { GitHubIcon, LinkedInIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
 import { Field } from "./Field";
 
 const LINKS = [
-  { id: "linkedin", url: ABOUT_LINKS.linkedin, Icon: LinkedInIcon },
-  { id: "github", url: ABOUT_LINKS.github, Icon: GitHubIcon },
+  { id: "linkedin", url: EXTERNAL_LINKS.linkedin, Icon: LinkedInIcon },
+  { id: "github", url: EXTERNAL_LINKS.github, Icon: GitHubIcon },
 ] as const;
 
 /** The app's name and version, who made it, and two links: each asks before it opens the web browser. */

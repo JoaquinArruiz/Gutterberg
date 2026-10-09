@@ -11,7 +11,7 @@
   },
   "app": {
     "windows": [{ "title": "PDF Card Editor", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 560 }],
-    "security": { "csp": "default-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'" }
+    "security": { "csp": "default-src 'self'; media-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'" }
   },
   "bundle": {
     "active": true,

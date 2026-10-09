@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Eye, LayoutPanelLeft, Palette, Settings, Sparkles, X } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, LayoutPanelLeft, LifeBuoy, Palette, Settings, Sparkles, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/32x32.png";
@@ -40,23 +40,25 @@ import { Switch } from "../ui/Switch";
 import { AboutSection } from "./AboutSection";
 import { AiSettings } from "./AiSettings";
 import { Field } from "./Field";
+import { HelpSection } from "./HelpSection";
 import { LayoutPreview } from "./LayoutPreview";
 
 /** The catalog key of each decimal choice. */
 const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalComma" } as const;
 
 // About is not in this list: it sits alone at the bottom of the navigation.
-const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI"];
+const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI", "Help"];
 type Section = PrefsSection;
 
 const ICON_SIZE = 14;
-/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; About the app's own icon. */
+/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; Help the life buoy; About the app's own icon. */
 const SECTION_ICON: Record<Section, React.ReactNode> = {
   General: <Settings size={ICON_SIZE} />,
   Workspace: <LayoutPanelLeft size={ICON_SIZE} />,
   Preview: <Eye size={ICON_SIZE} />,
   Appearance: <Palette size={ICON_SIZE} />,
   AI: <Sparkles size={ICON_SIZE} className="text-[var(--ai)]" />,
+  Help: <LifeBuoy size={ICON_SIZE} />,
   About: <img src={appIcon} alt="" width={ICON_SIZE} height={ICON_SIZE} className="rounded-sm" draggable={false} />,
 };
 
@@ -125,7 +127,6 @@ export function PreferencesDialog() {
 
   const store = usePreferencesStore();
   const { prefs } = store;
-  const hiddenTips = Object.keys(prefs.help.dismissedHints).length;
   const { visibleModes } = prefs.workspace;
   const layout = prefs.workspace.layout;
 
@@ -226,21 +227,6 @@ export function PreferencesDialog() {
                 }))}
               />
               <p className="text-[var(--muted)]">{t("preferences.general.decimalNote")}</p>
-            </Field>
-          )}
-
-          {section === "General" && (
-            <Field label={t("preferences.general.helpTips")}>
-              <div>
-                <Button size="md" disabled={hiddenTips === 0} onClick={store.resetHints}>
-                  {t("preferences.general.enableTips")}
-                </Button>
-              </div>
-              <p className="text-[var(--muted)]">
-                {hiddenTips === 0
-                  ? t("preferences.general.allTipsOn")
-                  : t("preferences.general.tipsHidden", { count: hiddenTips })}
-              </p>
             </Field>
           )}
 
@@ -359,6 +345,8 @@ export function PreferencesDialog() {
           )}
 
           {section === "AI" && <AiSettings />}
+
+          {section === "Help" && <HelpSection />}
 
           {section === "About" && <AboutSection />}
         </div>

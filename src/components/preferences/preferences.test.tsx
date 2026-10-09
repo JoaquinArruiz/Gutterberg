@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ABOUT_LINKS } from "../../lib/external-links";
+import { EXTERNAL_LINKS } from "../../lib/external-links";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { PreferencesDialog } from "./PreferencesDialog";
@@ -51,12 +51,13 @@ describe("the Preferences sections", () => {
       "Preview",
       "Appearance",
       "AI Mode (experimental)",
+      "Help",
       "About",
     ]);
     // Every one has its icon: an svg from lucide, or the app's own icon for About.
-    for (const b of buttons.slice(0, 5)) expect(b.querySelector("svg")).toBeTruthy();
-    expect(buttons[5].querySelector("svg")).toBeNull();
-    expect(buttons[5].querySelector("img")).toBeTruthy();
+    for (const b of buttons.slice(0, 6)) expect(b.querySelector("svg")).toBeTruthy();
+    expect(buttons[6].querySelector("svg")).toBeNull();
+    expect(buttons[6].querySelector("img")).toBeTruthy();
     // The AI icon is the spark, in the AI colour.
     expect(buttons[4].querySelector("svg")?.getAttribute("class")).toContain("--ai");
   });
@@ -65,10 +66,10 @@ describe("the Preferences sections", () => {
     render(<PreferencesDialog />);
     await openPreferences();
     const buttons = sectionButtons();
-    const spacer = buttons[5].previousElementSibling;
+    const spacer = buttons[6].previousElementSibling;
     expect(spacer?.tagName).toBe("DIV");
     expect(spacer?.className).toContain("flex-1");
-    expect(buttons[4].nextElementSibling).toBe(spacer);
+    expect(buttons[5].nextElementSibling).toBe(spacer);
   });
 
   it("marks the open section and switches on click", async () => {
@@ -113,9 +114,9 @@ describe("About", () => {
     await openPreferences("About");
     expect(openExternalLink).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "LinkedIn" }));
-    expect(openExternalLink).toHaveBeenLastCalledWith(ABOUT_LINKS.linkedin);
+    expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.linkedin);
     fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
-    expect(openExternalLink).toHaveBeenLastCalledWith(ABOUT_LINKS.github);
+    expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.github);
     expect(openExternalLink).toHaveBeenCalledTimes(2);
   });
 

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { HINT_IDS, type HintId, hintVersion } from "../lib/hints";
 import { usePreferencesStore } from "./preferences-store";
+import { useUiStore } from "./ui-store";
 
 /**
  * Which hints are currently rendered by some component. Only the first of them (in catalog
@@ -30,12 +31,14 @@ export function useHint(id: HintId) {
   const mounted = useMountedHints((s) => s.mounted);
   const dismissed = usePreferencesStore((s) => s.prefs.help.dismissedHints);
   const dismissHint = usePreferencesStore((s) => s.dismissHint);
+  // No tip shows while the welcome tour is open, nor in the moment after it closes.
+  const held = useUiStore((s) => s.hintsHeld);
   return {
     register: () => {
       add(id);
       return () => remove(id);
     },
-    visible: HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
+    visible: !held && HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
     dismiss: () => dismissHint(id),
   };
 }

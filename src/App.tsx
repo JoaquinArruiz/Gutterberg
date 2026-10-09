@@ -10,6 +10,7 @@ import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
 import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
+import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { resolveStartMode } from "./lib/preferences";
 import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
@@ -32,6 +33,7 @@ export default function App() {
   usePrintSync();
   useProjectTracking();
   useImageDrop();
+  useWelcomeAutoOpen();
   const stage = useUiStore((s) => s.stage);
   // With nothing open there is nothing to edit: the start screen takes the place of the editor and its panels.
   const hasDocuments = useDocumentStore((s) => s.documents.length > 0);
@@ -166,6 +168,7 @@ export default function App() {
       <ShortcutsDialog />
       <AiConfirmDialog />
       <ImageSizeDialog />
+      <WelcomeDialog />
     </div>
   );
 }

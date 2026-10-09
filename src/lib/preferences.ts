@@ -20,8 +20,9 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // locale (language and decimal separator, both defaulting to following the system). v7: adds files.recent
 // (recent projects) and presets (named grids). v8: adds ai (AI Mode: off by default; never a key). v9: the Print tab's
 // layout is a panel layout like the Source tab's (print.layout was { libraryWidth, inspectorWidth }; those widths become
-// the sizes of its left and right regions). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 9;
+// the sizes of its left and right regions). v10: adds help.welcomeSeen (the version of the welcome tour the user has
+// seen or skipped). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 10;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -70,6 +71,8 @@ export interface AppPreferences {
   help: {
     /** Tips the user has closed, with the hint version they closed; hidden until "Reset help tips". */
     dismissedHints: Partial<Record<HintId, number>>;
+    /** The welcome tour's version that was closed (seen, skipped or finished); 0 = never shown (M25). */
+    welcomeSeen: number;
   };
   inspector: {
     /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
@@ -135,7 +138,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
-  help: { dismissedHints: {} },
+  help: { dismissedHints: {}, welcomeSeen: 0 },
   inspector: { sections: {} },
   print: { layout: defaultLayout("print") },
   files: { recent: [] },
@@ -265,6 +268,8 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },
     help: {
       dismissedHints: normalizeDismissed(h.dismissedHints),
+      welcomeSeen:
+        typeof h.welcomeSeen === "number" && Number.isInteger(h.welcomeSeen) && h.welcomeSeen > 0 ? h.welcomeSeen : 0,
     },
     inspector: { sections: normalizeSections(ins.sections) },
     // The two "remember" switches are one setting for both tabs: the Source tab's copy is the one the user sets.

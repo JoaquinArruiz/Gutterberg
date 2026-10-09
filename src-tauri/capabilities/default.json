@@ -9,9 +9,16 @@
     "dialog:allow-save",
     "dialog:allow-ask",
     "dialog:allow-message",
+    "os:allow-arch",
+    "os:allow-os-type",
+    "os:allow-version",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://www.linkedin.com/in/joaquinarruiz" }, { "url": "https://github.com/JoaquinArruiz" }]
+      "allow": [
+        { "url": "https://www.linkedin.com/in/joaquinarruiz" },
+        { "url": "https://github.com/JoaquinArruiz" },
+        { "url": "https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=bug_report.yml&*" }
+      ]
     }
   ]
 }

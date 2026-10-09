@@ -5,10 +5,13 @@ mod state;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // The system's name and version, for "Copy app info" in Preferences › Help.
+        .plugin(tauri_plugin_os::init())
         // Opens the two About links in the browser; the capability allows exactly those URLs.
         .plugin(tauri_plugin_opener::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
+            commands::app_info::app_info,
             commands::ai::ai_delete_key,
             commands::ai::ai_detect_pieces,
             commands::ai::ai_estimate,

@@ -108,6 +108,8 @@ type PreferencesState = {
   dismissHint: (id: HintId) => void;
   /** Show every help tip again. */
   resetHints: () => void;
+  /** The welcome tour of this version was closed: it does not open by itself again. */
+  setWelcomeSeen: (version: number) => void;
   /** Remember that inspector section `id` was opened or closed. */
   setSectionOpen: (id: string, open: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
@@ -196,14 +198,19 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           files: get().prefs.files,
           presets: get().prefs.presets,
           images: get().prefs.images,
+          help: { ...DEFAULT_PREFERENCES.help, welcomeSeen: get().prefs.help.welcomeSeen },
         });
         bumpEpoch();
       },
       dismissHint: (id) => {
         if ((get().prefs.help.dismissedHints[id] ?? 0) < hintVersion(id))
-          edit((p) => ({ ...p, help: { dismissedHints: { ...p.help.dismissedHints, [id]: hintVersion(id) } } }));
+          edit((p) => ({
+            ...p,
+            help: { ...p.help, dismissedHints: { ...p.help.dismissedHints, [id]: hintVersion(id) } },
+          }));
       },
-      resetHints: () => edit((p) => ({ ...p, help: { dismissedHints: {} } })),
+      resetHints: () => edit((p) => ({ ...p, help: { ...p.help, dismissedHints: {} } })),
+      setWelcomeSeen: (version) => edit((p) => ({ ...p, help: { ...p.help, welcomeSeen: version } })),
       setSectionOpen: (id, open) => {
         if (get().prefs.inspector.sections[id] !== open)
           edit((p) => ({ ...p, inspector: { sections: { ...p.inspector.sections, [id]: open } } }));

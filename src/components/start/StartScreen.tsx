@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { addImagesDialog, openPdfDialog, openProjectDialog } from "../../lib/project-actions";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
 import { BrandLogo } from "../ui/BrandLogo";
 import { Button } from "../ui/Button";
 
@@ -18,6 +19,7 @@ export function StartScreen() {
   const { t } = useTranslation();
   const loading = useDocumentStore((s) => s.loading);
   const recent = usePreferencesStore((s) => s.prefs.files.recent);
+  const setWelcomeOpen = useUiStore((s) => s.setWelcomeOpen);
   const mac = typeof navigator !== "undefined" && /Mac/.test(navigator.platform);
   const mod = mac ? "⌘" : "Ctrl";
   return (
@@ -88,7 +90,17 @@ export function StartScreen() {
           )}
         </section>
 
-        <p className="text-center text-[var(--muted)]">{t("start.shortcuts")}</p>
+        <p className="flex flex-wrap items-center justify-center gap-x-3 text-center text-[var(--muted)]">
+          <span>{t("start.shortcuts")}</span>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => setWelcomeOpen(true)}
+            className="text-[var(--accent)] hover:underline disabled:opacity-40"
+          >
+            {t("start.replayWelcome")}
+          </button>
+        </p>
       </div>
     </div>
   );

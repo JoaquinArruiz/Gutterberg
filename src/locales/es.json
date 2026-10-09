@@ -427,7 +427,8 @@
       "Preview": "Vista previa",
       "Appearance": "Apariencia",
       "About": "Acerca de",
-      "AI": "Modo IA (experimental)"
+      "AI": "Modo IA (experimental)",
+      "Help": "Ayuda"
     },
     "units": {
       "mm": "Milímetros (mm)",
@@ -444,12 +445,7 @@
       "decimalAuto": "Automático (según el idioma)",
       "decimalDot": "Punto (63.5)",
       "decimalComma": "Coma (63,5)",
-      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción.",
-      "helpTips": "Consejos",
-      "enableTips": "Activar todos los consejos",
-      "allTipsOn": "Todos los consejos están activados.",
-      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Actívalo para volver a verlo.",
-      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Actívalos para volver a verlos."
+      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción."
     },
     "workspace": {
       "visibleViews": "Vistas visibles",
@@ -511,6 +507,31 @@
       "label": "Vista previa de la disposición",
       "editor": "Editor",
       "sheets": "Hojas"
+    },
+    "help": {
+      "welcome": "Recorrido de bienvenida",
+      "welcomeNote": "Un recorrido corto por la aplicación, en cuatro clips.",
+      "replayWelcome": "Ver de nuevo el recorrido de bienvenida",
+      "tips": "Consejos",
+      "enableTips": "Activar todos los consejos",
+      "allTipsOn": "Todos los consejos están activados.",
+      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Actívalo para volver a verlo.",
+      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Actívalos para volver a verlos.",
+      "shortcuts": "Atajos de teclado",
+      "bug": "¿Encontraste un error?",
+      "bugIntro": "Si algo no funciona, abre un «issue» en GitHub (necesitas una cuenta gratuita de GitHub) e indica:",
+      "bugVersion": "qué versión usas y en qué sistema (el botón de abajo lo copia)",
+      "bugSteps": "qué hiciste, paso a paso, para que otra persona pueda repetirlo",
+      "bugExpected": "qué esperabas y qué pasó en cambio",
+      "bugWorkaround": "si encontraste una forma de evitarlo",
+      "bugFiles": "el PDF o el proyecto, si puedes compartirlo (solo archivos que tengas permiso de compartir), o una captura de pantalla",
+      "infoUnavailable": "Los datos de la aplicación solo están disponibles en la ventana de la aplicación.",
+      "copyInfo": "Copiar datos de la aplicación",
+      "copied": "Copiado",
+      "copyFailed": "No se pudo copiar. Selecciona el texto de arriba y cópialo tú.",
+      "report": "Reportar en GitHub",
+      "discord": "Discord",
+      "discordSoon": "Próximamente"
     }
   },
   "hintUi": {
@@ -867,7 +888,8 @@
     "title": "Para empezar",
     "lead": "Abre un PDF de Print-and-Play para separar sus piezas, o retoma un proyecto.",
     "shortcuts": "Pulsa ? para ver los atajos de teclado.",
-    "fromImages": "Empezar con imágenes"
+    "fromImages": "Empezar con imágenes",
+    "replayWelcome": "Ver de nuevo el recorrido de bienvenida"
   },
   "brand": {
     "logoAlt": "Logo de {{name}}",
@@ -921,6 +943,35 @@
       "reduceHint": "Las imágenes PNG y WebP de más de 600 ppp se reducen a 600 ppp (siguen sin pérdida). Las JPEG nunca se reducen: habría que volver a comprimirlas y perderían calidad. Tus archivos no se tocan.",
       "add_one": "Agregar imagen",
       "add_other": "Agregar imágenes"
+    }
+  },
+  "welcome": {
+    "label": "Recorrido de bienvenida",
+    "next": "Siguiente",
+    "back": "Atrás",
+    "getStarted": "Empezar",
+    "skip": "Omitir",
+    "play": "Reproducir",
+    "playAgain": "Reproducir de nuevo",
+    "steps": {
+      "label": "Pasos",
+      "goTo": "Paso {{n}} de {{total}}: {{title}}",
+      "cut": {
+        "title": "Tu PDF, cortado en piezas",
+        "text": "Marca dónde están las piezas en una página: una cuadrícula, Detectar piezas o una por una con la Herramienta Pieza."
+      },
+      "place": {
+        "title": "En la hoja que imprimes",
+        "text": "Elige un tamaño de hoja como A4 o Carta. Tus piezas conservan su tamaño exacto."
+      },
+      "arrange": {
+        "title": "Ordénalas a tu manera",
+        "text": "Pon las piezas en el orden que quieras, define la separación entre ellas y elige cuáles imprimir y cuántas copias."
+      },
+      "done": {
+        "title": "Listo para cortar",
+        "text": "Exporta un PDF con marcas de corte, sangrado o doble cara si lo quieres. Tu arte nunca se modifica."
+      }
     }
   }
 }
