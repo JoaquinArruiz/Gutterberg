@@ -12,7 +12,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
 | [M13](M13.md) | Print stage UI: Source → Print switch, piece library, quantities, sheet preview | L | M9, M12 |
 | [M14](M14.md) | Project files, several PDFs and presets (done) | M | M13 |
-| [M15](M15.md) | Rename to Gutterberg, then distribution: installers, GitHub Releases, auto-update (outline) | M | M8 |
+| [M15](M15.md) | Rename to Gutterberg, releases and updates (tag → build → release, in-app updates), license, README and examples, then the repo cleanup | L | M23, M24, M25 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (done) | M | M12 |
 | [M17](M17.md) | Detect pieces on a page, locally (done) | L | M11, M18 |
 | [M18](M18.md) | Freeform pieces: per-piece rectangles, rotation, turn, sort, real size (done) | L | M13 |
@@ -20,8 +20,11 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
 | [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals (done) | M | M18, M20 |
 | [M22](M22.md) | UI consistency and polish (done): shared controls, AI buttons, info tips, movable Print panels, panel-height fix, Preferences icons and About | M | M19 |
+| [M23](M23.md) | Logo and app icon: light, dark and on a bone-coloured plate; icons for every platform | S | M22 |
+| [M24](M24.md) | Images as pieces: PNG, JPEG, WebP, with a size dialog, bleed, Fit / Fill and a resolution check | L | M14, M16 |
+| [M25](M25.md) | Welcome tour from video clips, Preferences › Help (tour, tips, shortcuts) and "Found a bug?" with a GitHub issue form | M | M20, M22 |
 
-M18, M20, M21 and M22 were added after the rest were numbered. Suggested order from here: M15. The numbers are names, not the order.
+M18 and M20–M25 were added after the rest were numbered. Order from here: M23, M24, M25, then M15 (last, before the first public release). The numbers are names, not the order.
 
 ## Direction: Source → Print
 
@@ -61,3 +64,10 @@ Source PDF → Source tab → extract_cards → piece library
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
 | AI | Optional AI Mode (M19): off by default and hidden when off (the one Preferences entry is the switch); buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect pieces" button, results are always editable proposals; keys only in the system keychain |
 | License | Undecided; the owner will choose later. No `LICENSE` file until then (all rights reserved) |
+| Before the release | Logo (M23), images as pieces (M24) and the welcome tour (M25) come before M15 |
+| Logo | Three variants: the owner's logo for light backgrounds, a dark variant, and the app icon on a bone-coloured plate (not pure white) (M23) |
+| Images | Each import becomes a one-page-per-image PDF in the cache; pixels never resampled; the user picks the size, never stretched (M24) |
+| Welcome and help | A clip-based welcome tour on first start, replayable from Preferences › Help, which also holds the help tips reset, the shortcuts and "Found a bug?" (GitHub issue form; Discord later) (M25) |
+| Releases | Semantic Versioning, tags `vX.Y.Z`; a tag builds a draft release with tauri-action, the owner publishes it; notes from `CHANGELOG.md` (M15) |
+| Updates | Tauri updater from GitHub Releases; Preferences › Updates shows the installed and available versions; a toast when one is available (filtered by "Tell me about": all / features / major / never) and another after updating; experimental features as switches; a beta channel later (M15) |
+| Repo cleanup | Last step of M15: `docs/architecture.md`, `AGENTS.md` + one-line `CLAUDE.md`, `CONTRIBUTING.md`, a `pre-cleanup` tag, then the briefs are deleted; later features get one brief, deleted when done |

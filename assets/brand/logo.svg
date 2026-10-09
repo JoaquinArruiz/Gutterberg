@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="80.8 97.5 323.5 299.5" width="324" height="300">
+  <title>Gutterberg</title>
+  <defs>
+    <rect id="card" width="172" height="222" rx="18"/>
+    <mask id="gutter" maskUnits="userSpaceOnUse" x="0" y="0" width="512" height="512">
+      <rect width="512" height="512" fill="#fff"/>
+      <use href="#card" transform="translate(290 262) rotate(9) translate(-86 -111)" fill="#000" stroke="#000" stroke-width="18" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <g mask="url(#gutter)">
+    <g transform="translate(200 236) rotate(-12) translate(-86 -111)">
+      <use href="#card" fill="#1E222A"/>
+      <rect x="18.00" y="18.15" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="66.00" y="18.15" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="114.00" y="18.15" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="18.00" y="82.72" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="66.00" y="82.72" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="114.00" y="82.72" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="18.00" y="147.28" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="66.00" y="147.28" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+      <rect x="114.00" y="147.28" width="40" height="56.57" rx="3" fill="#4A8FE7"/>
+    </g>
+  </g>
+  <g transform="translate(290 262) rotate(9) translate(-86 -111)">
+    <use href="#card" fill="#1E222A"/>
+      <rect x="18.00" y="18.15" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="66.00" y="18.15" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="114.00" y="18.15" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="18.00" y="82.72" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="66.00" y="82.72" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="114.00" y="82.72" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="18.00" y="147.28" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="66.00" y="147.28" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+      <rect x="114.00" y="147.28" width="40" height="56.57" rx="3" fill="#3CC47C"/>
+  </g>
+</svg>
