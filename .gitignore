@@ -6,3 +6,8 @@ out/
 src-tauri/resources/pdfium/*
 !src-tauri/resources/pdfium/.gitkeep
 src-tauri/gen/
+
+# AI tool leftovers
+.claude/worktrees/
+.claude/settings.local.json
+CLAUDE.local.md
