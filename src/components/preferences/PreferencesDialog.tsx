@@ -1,6 +1,7 @@
-import { ArrowDown, ArrowUp, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { ArrowDown, ArrowUp, Eye, LayoutPanelLeft, Palette, Settings, Sparkles, X } from "lucide-react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import appIcon from "../../../src-tauri/icons/32x32.png";
 import {
   DECIMAL_PREFERENCES,
   type DecimalPreference,
@@ -20,56 +21,96 @@ import {
 import {
   canPlace,
   detectPreset,
+  LAYOUT_IDS,
+  LAYOUT_PANELS,
   LAYOUT_PRESETS,
+  type LayoutId,
   type LayoutPresetId,
   PANEL_DEFS,
-  PANEL_IDS,
   type PanelPosition,
 } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { type PrefsSection, useUiStore } from "../../stores/ui-store";
+import { Button } from "../ui/Button";
+import { Checkbox } from "../ui/Checkbox";
+import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
+import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
+import { Switch } from "../ui/Switch";
+import { AboutSection } from "./AboutSection";
 import { AiSettings } from "./AiSettings";
+import { Field } from "./Field";
 import { LayoutPreview } from "./LayoutPreview";
 
 /** The catalog key of each decimal choice. */
 const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalComma" } as const;
 
-const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI", "About"];
+// About is not in this list: it sits alone at the bottom of the navigation.
+const SECTIONS: PrefsSection[] = ["General", "Workspace", "Preview", "Appearance", "AI"];
 type Section = PrefsSection;
 
-const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
+const ICON_SIZE = 14;
+/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; About the app's own icon. */
+const SECTION_ICON: Record<Section, React.ReactNode> = {
+  General: <Settings size={ICON_SIZE} />,
+  Workspace: <LayoutPanelLeft size={ICON_SIZE} />,
+  Preview: <Eye size={ICON_SIZE} />,
+  Appearance: <Palette size={ICON_SIZE} />,
+  AI: <Sparkles size={ICON_SIZE} className="text-[var(--ai)]" />,
+  About: <img src={appIcon} alt="" width={ICON_SIZE} height={ICON_SIZE} className="rounded-sm" draggable={false} />,
+};
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-5">
-    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">{label}</div>
-    <div className="flex flex-col gap-1.5">{children}</div>
-  </div>
-);
-
-function Radio<T extends string>({
-  name,
-  value,
-  current,
-  onSelect,
-  label,
-  hint,
-}: {
-  name: string;
-  value: T;
-  current: T;
-  onSelect: (v: T) => void;
-  label: string;
-  hint?: string;
-}) {
+/** The layout of one tab: a preset, where each of its panels sits, and a small picture of it. */
+function LayoutField({ layoutId }: { layoutId: LayoutId }) {
+  const { t } = useTranslation();
+  const layout = usePreferencesStore((s) => (layoutId === "cards" ? s.prefs.workspace.layout : s.prefs.print.layout));
+  const applyPreset = usePreferencesStore((s) => s.applyLayoutPreset);
+  const setPosition = usePreferencesStore((s) => s.setPanelPosition);
+  const preset = detectPreset(layout);
   return (
-    <label className="flex items-start gap-2">
-      <input type="radio" name={name} checked={current === value} onChange={() => onSelect(value)} className="mt-0.5" />
-      <span>
-        {label}
-        {hint && <span className="block text-[var(--muted)]">{hint}</span>}
-      </span>
-    </label>
+    <Field label={t(layoutId === "cards" ? "preferences.workspace.layoutCards" : "preferences.workspace.layoutPrint")}>
+      <div className="flex gap-4">
+        <div className="flex flex-1 flex-col gap-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[var(--muted)]">{t("preferences.workspace.preset")}</span>
+            <Select<LayoutPresetId>
+              label={t("preferences.workspace.presetLabel")}
+              value={preset}
+              onChange={(v) => v !== "custom" && applyPreset(layoutId, v)}
+              options={[
+                ...(preset === "custom"
+                  ? [{ value: "custom" as const, label: t("panels.presets.custom"), disabled: true }]
+                  : []),
+                ...LAYOUT_PRESETS[layoutId].map((id) => ({
+                  value: id as LayoutPresetId,
+                  label: t(`panels.presets.${id}`),
+                })),
+              ]}
+            />
+          </div>
+          {LAYOUT_PANELS[layoutId].map((id) => (
+            <div key={id} className="flex items-center justify-between gap-2">
+              <span className="text-[var(--muted)]">
+                {t("preferences.workspace.panelRow", { panel: t(`panels.titles.${id}`) })}
+              </span>
+              <Select<PanelPosition>
+                label={t("preferences.workspace.panelPosition", { panel: t(`panels.titles.${id}`) })}
+                value={layout.panels.find((p) => p.id === id)?.position ?? "hidden"}
+                onChange={(pos) => setPosition(id, pos)}
+                options={PANEL_DEFS[id].positions
+                  .filter((pos) => canPlace(id, pos))
+                  .map((pos) => ({ value: pos, label: t(`panels.positions.${pos}`) }))}
+              />
+            </div>
+          ))}
+        </div>
+        <LayoutPreview
+          panels={layout.panels}
+          center={t(layoutId === "cards" ? "preferences.layoutPreview.editor" : "preferences.layoutPreview.sheets")}
+        />
+      </div>
+      <p className="text-[var(--muted)]">{t("preferences.workspace.layoutNote")}</p>
+    </Field>
   );
 }
 
@@ -87,7 +128,6 @@ export function PreferencesDialog() {
   const hiddenTips = Object.keys(prefs.help.dismissedHints).length;
   const { visibleModes } = prefs.workspace;
   const layout = prefs.workspace.layout;
-  const preset = detectPreset(layout);
 
   useEffect(() => {
     const d = ref.current;
@@ -126,17 +166,23 @@ export function PreferencesDialog() {
       </div>
 
       <div className="flex h-[480px] max-h-[70vh]">
-        <nav className="w-36 shrink-0 border-r border-[var(--border)] p-2" aria-label={t("preferences.navLabel")}>
-          {SECTIONS.map((s) => (
-            <button
-              type="button"
-              key={s}
-              onClick={() => setSection(s)}
-              aria-current={section === s}
-              className={`block w-full rounded px-2 py-1.5 text-left hover:bg-[var(--hover)] ${section === s ? "bg-[var(--active)]" : ""}`}
-            >
-              {t(`preferences.sections.${s}`)}
-            </button>
+        <nav
+          className="flex w-44 shrink-0 flex-col border-r border-[var(--border)] p-2"
+          aria-label={t("preferences.navLabel")}
+        >
+          {[...SECTIONS, "About" as const].map((s) => (
+            <Fragment key={s}>
+              {s === "About" && <div className="flex-1" />}
+              <button
+                type="button"
+                onClick={() => setSection(s)}
+                aria-current={section === s}
+                className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-[var(--hover)] ${section === s ? "bg-[var(--active)]" : ""}`}
+              >
+                <span className="flex w-4 shrink-0 justify-center">{SECTION_ICON[s]}</span>
+                <span className="min-w-0 flex-1 leading-tight">{t(`preferences.sections.${s}`)}</span>
+              </button>
+            </Fragment>
           ))}
         </nav>
 
@@ -186,9 +232,9 @@ export function PreferencesDialog() {
           {section === "General" && (
             <Field label={t("preferences.general.helpTips")}>
               <div>
-                <button type="button" className={btn} disabled={hiddenTips === 0} onClick={store.resetHints}>
+                <Button size="md" disabled={hiddenTips === 0} onClick={store.resetHints}>
                   {t("preferences.general.enableTips")}
-                </button>
+                </Button>
               </div>
               <p className="text-[var(--muted)]">
                 {hiddenTips === 0
@@ -207,16 +253,14 @@ export function PreferencesDialog() {
                   const i = visibleModes.indexOf(mode);
                   return (
                     <div key={mode} className="flex items-center gap-2">
-                      <label className="flex flex-1 items-center gap-2">
-                        <input
-                          type="checkbox"
-                          aria-label={t("preferences.workspace.showView", { view: t(`views.${mode}`) })}
-                          checked={on}
-                          disabled={on && visibleModes.length === 1}
-                          onChange={(e) => store.setVisibleMode(mode, e.target.checked)}
-                        />
-                        {t(`views.${mode}`)}
-                      </label>
+                      <Checkbox
+                        className="flex-1"
+                        aria-label={t("preferences.workspace.showView", { view: t(`views.${mode}`) })}
+                        label={t(`views.${mode}`)}
+                        checked={on}
+                        disabled={on && visibleModes.length === 1}
+                        onChange={(show) => store.setVisibleMode(mode, show)}
+                      />
                       {on && (
                         <>
                           <button
@@ -256,68 +300,25 @@ export function PreferencesDialog() {
                 <p className="text-[var(--muted)]">{t("preferences.workspace.defaultNote")}</p>
               </Field>
 
-              <Field label={t("preferences.workspace.layout")}>
-                <div className="flex gap-4">
-                  <div className="flex flex-1 flex-col gap-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[var(--muted)]">{t("preferences.workspace.preset")}</span>
-                      <Select<LayoutPresetId>
-                        label={t("preferences.workspace.presetLabel")}
-                        value={preset}
-                        onChange={(v) => v !== "custom" && store.applyLayoutPreset(v)}
-                        options={[
-                          ...(preset === "custom"
-                            ? [{ value: "custom" as const, label: t("panels.presets.custom"), disabled: true }]
-                            : []),
-                          ...LAYOUT_PRESETS.map((id) => ({
-                            value: id as LayoutPresetId,
-                            label: t(`panels.presets.${id}`),
-                          })),
-                        ]}
-                      />
-                    </div>
-                    {PANEL_IDS.map((id) => (
-                      <div key={id} className="flex items-center justify-between gap-2">
-                        <span className="text-[var(--muted)]">
-                          {t("preferences.workspace.panelRow", { panel: t(`panels.titles.${id}`) })}
-                        </span>
-                        <Select<PanelPosition>
-                          label={t("preferences.workspace.panelPosition", { panel: t(`panels.titles.${id}`) })}
-                          value={layout.panels.find((p) => p.id === id)?.position ?? "hidden"}
-                          onChange={(pos) => store.setPanelPosition(id, pos)}
-                          options={PANEL_DEFS[id].positions
-                            .filter((pos) => canPlace(id, pos))
-                            .map((pos) => ({ value: pos, label: t(`panels.positions.${pos}`) }))}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <LayoutPreview panels={layout.panels} />
-                </div>
-                <p className="text-[var(--muted)]">{t("preferences.workspace.layoutNote")}</p>
-              </Field>
+              {LAYOUT_IDS.map((id) => (
+                <LayoutField key={id} layoutId={id} />
+              ))}
 
               <Field label={t("preferences.workspace.behavior")}>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={layout.rememberSizes}
-                    onChange={(e) => store.setRememberSizes(e.target.checked)}
-                  />
-                  {t("preferences.workspace.rememberSizes")}
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={layout.rememberCollapsed}
-                    onChange={(e) => store.setRememberCollapsed(e.target.checked)}
-                  />
-                  {t("preferences.workspace.rememberCollapsed")}
-                </label>
+                <Switch
+                  checked={layout.rememberSizes}
+                  onChange={store.setRememberSizes}
+                  label={t("preferences.workspace.rememberSizes")}
+                />
+                <Switch
+                  checked={layout.rememberCollapsed}
+                  onChange={store.setRememberCollapsed}
+                  label={t("preferences.workspace.rememberCollapsed")}
+                />
                 <div>
-                  <button type="button" className={btn} onClick={store.resetWorkspace}>
+                  <Button size="md" onClick={store.resetWorkspace}>
                     {t("preferences.workspace.resetLayout")}
-                  </button>
+                  </Button>
                 </div>
                 <p className="text-[var(--muted)]">{t("preferences.workspace.resetNote")}</p>
               </Field>
@@ -326,48 +327,40 @@ export function PreferencesDialog() {
 
           {section === "Preview" && (
             <Field label={t("preferences.livePreview.title")}>
-              <Radio<LivePreviewPreference>
-                name="live"
-                value="always"
-                current={prefs.preview.livePreview}
-                onSelect={store.setLivePreview}
-                label={t("preferences.livePreview.always")}
-                hint={t("preferences.livePreview.alwaysHint")}
-              />
-              <Radio<LivePreviewPreference>
-                name="live"
-                value="manual"
-                current={prefs.preview.livePreview}
-                onSelect={store.setLivePreview}
-                label={t("preferences.livePreview.manual")}
-                hint={t("preferences.livePreview.manualHint")}
-              />
+              <RadioCardGroup<LivePreviewPreference>
+                label={t("preferences.livePreview.title")}
+                value={prefs.preview.livePreview}
+                onChange={store.setLivePreview}
+              >
+                <RadioCard
+                  value="always"
+                  title={t("preferences.livePreview.always")}
+                  description={t("preferences.livePreview.alwaysHint")}
+                />
+                <RadioCard
+                  value="manual"
+                  title={t("preferences.livePreview.manual")}
+                  description={t("preferences.livePreview.manualHint")}
+                />
+              </RadioCardGroup>
               <p className="text-[var(--muted)]">{t("preferences.livePreview.note")}</p>
             </Field>
           )}
 
           {section === "Appearance" && (
             <Field label={t("preferences.appearance.theme")}>
-              {THEMES.map((theme) => (
-                <Radio<ThemePreference>
-                  key={theme}
-                  name="theme"
-                  value={theme}
-                  current={prefs.appearance.theme}
-                  onSelect={store.setTheme}
-                  label={t(`preferences.appearance.${theme}`)}
-                />
-              ))}
+              <Segmented<ThemePreference>
+                label={t("preferences.appearance.theme")}
+                value={prefs.appearance.theme}
+                onChange={store.setTheme}
+                options={THEMES.map((theme) => ({ value: theme, label: t(`preferences.appearance.${theme}`) }))}
+              />
             </Field>
           )}
 
           {section === "AI" && <AiSettings />}
 
-          {section === "About" && (
-            <Field label={t("preferences.about.title")}>
-              <p>{t("preferences.about.createdBy")}</p>
-            </Field>
-          )}
+          {section === "About" && <AboutSection />}
         </div>
       </div>
 
@@ -376,29 +369,29 @@ export function PreferencesDialog() {
           <>
             <span>{t("preferences.footer.confirm")}</span>
             <span className="flex gap-2">
-              <button type="button" className={btn} onClick={() => setConfirmReset(false)}>
+              <Button size="md" onClick={() => setConfirmReset(false)}>
                 {t("preferences.footer.cancel")}
-              </button>
-              <button
-                type="button"
-                className={`${btn} border-red-400/60 text-red-300`}
+              </Button>
+              <Button
+                size="md"
+                variant="danger"
                 onClick={() => {
                   store.resetToDefaults();
                   setConfirmReset(false);
                 }}
               >
                 {t("preferences.footer.reset")}
-              </button>
+              </Button>
             </span>
           </>
         ) : (
           <>
-            <button type="button" className={btn} onClick={() => setConfirmReset(true)}>
+            <Button size="md" onClick={() => setConfirmReset(true)}>
               {t("preferences.footer.resetDefaults")}
-            </button>
-            <button type="button" className={btn} onClick={() => setOpen(false)}>
+            </Button>
+            <Button size="md" onClick={() => setOpen(false)}>
               {t("preferences.footer.close")}
-            </button>
+            </Button>
           </>
         )}
       </div>

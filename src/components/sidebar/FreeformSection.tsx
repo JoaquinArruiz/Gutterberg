@@ -7,11 +7,10 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /**
  * The pieces of the viewed page that are drawn one by one: how many there are, and for the picked one
@@ -82,16 +81,14 @@ export function FreeformSection() {
             onChange={(mm) => edit((c) => ({ ...c, height: mmToPt(mm) / page.height_pt }))}
           />
           <div>
-            <button
-              type="button"
-              className={smallBtn}
+            <Button
               onClick={() => {
                 remove(currentPage, index);
                 setSelected(null);
               }}
             >
               {t("freeform.delete")}
-            </button>
+            </Button>
           </div>
         </>
       )}

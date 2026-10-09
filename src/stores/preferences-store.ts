@@ -7,14 +7,12 @@ import type { MeasurementUnit } from "../lib/measurement";
 import {
   type AppPreferences,
   DEFAULT_PREFERENCES,
-  DEFAULT_PRINT_LAYOUT,
   type DefaultWorkspace,
   type GridPreset,
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
   normalizePreferences,
-  type PrintLayoutPrefs,
   type ThemePreference,
   toggleMode,
   type WorkspaceMode,
@@ -22,7 +20,9 @@ import {
 import {
   applyPreset,
   defaultLayout,
+  type LayoutId,
   type LayoutPresetId,
+  layoutOfPanel,
   type PanelId,
   type PanelPosition,
   type RegionPosition,
@@ -56,6 +56,19 @@ export function browserStorage(): KeyValueStorage {
   }
 }
 
+/** What a layout restores when "remember ..." is off: the sizes and the collapsed panels are not brought back. */
+function forgetUnremembered(l: WorkspaceLayoutPrefs): WorkspaceLayoutPrefs {
+  return {
+    ...l,
+    regionSizes: l.rememberSizes ? l.regionSizes : {},
+    panels: l.panels.map(({ stackSize, collapsed, ...p }) => ({
+      ...p,
+      ...(l.rememberSizes && stackSize ? { stackSize } : {}),
+      ...(l.rememberCollapsed && collapsed ? { collapsed } : {}),
+    })),
+  };
+}
+
 /**
  * Load -> validate -> migrate -> merge with defaults. Never throws; corrupt data yields defaults.
  * "Remember ..." switches are honoured here: when off, the saved sizes / collapsed state are not restored.
@@ -65,20 +78,10 @@ export function loadPreferences(storage: KeyValueStorage): AppPreferences {
     const text = storage.getItem(PREFERENCES_KEY);
     if (!text) return DEFAULT_PREFERENCES;
     const prefs = migratePreferences(JSON.parse(text));
-    const l = prefs.workspace.layout;
-    const layout: WorkspaceLayoutPrefs = {
-      ...l,
-      regionSizes: l.rememberSizes ? l.regionSizes : {},
-      panels: l.panels.map(({ stackSize, collapsed, ...p }) => ({
-        ...p,
-        ...(l.rememberSizes && stackSize ? { stackSize } : {}),
-        ...(l.rememberCollapsed && collapsed ? { collapsed } : {}),
-      })),
-    };
     return {
       ...prefs,
-      workspace: { ...prefs.workspace, layout },
-      print: l.rememberSizes ? prefs.print : DEFAULT_PREFERENCES.print,
+      workspace: { ...prefs.workspace, layout: forgetUnremembered(prefs.workspace.layout) },
+      print: { layout: forgetUnremembered(prefs.print.layout) },
     };
   } catch {
     return DEFAULT_PREFERENCES;
@@ -119,13 +122,12 @@ type PreferencesState = {
   setAiProviderSettings: (provider: AiProvider, patch: Partial<AiProviderSettings>) => void;
   savePreset: (preset: GridPreset) => void;
   deletePreset: (name: string) => void;
-  /** Persist the widths the user dragged in the Print stage. */
-  savePrintLayout: (layout: Partial<PrintLayoutPrefs>) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
-  applyLayoutPreset: (preset: Exclude<LayoutPresetId, "custom">) => void;
-  /** Persist sizes the user dragged (ignored when "remember sizes" is off). */
-  saveRegionSize: (position: RegionPosition, px: number) => void;
+  /** The preset applies to one tab's layout. */
+  applyLayoutPreset: (layout: LayoutId, preset: Exclude<LayoutPresetId, "custom">) => void;
+  /** Persist sizes the user dragged in one tab's layout (ignored when "remember sizes" is off). */
+  saveRegionSize: (layout: LayoutId, position: RegionPosition, px: number) => void;
   saveStackSize: (id: PanelId, position: RegionPosition, percent: number) => void;
   setRememberSizes: (on: boolean) => void;
   setRememberCollapsed: (on: boolean) => void;
@@ -148,8 +150,15 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       }
     };
     const edit = (f: (p: AppPreferences) => AppPreferences) => commit(f(get().prefs));
-    const editLayout = (f: (l: WorkspaceLayoutPrefs) => WorkspaceLayoutPrefs) =>
-      edit((p) => ({ ...p, workspace: { ...p.workspace, layout: f(p.workspace.layout) } }));
+    // The Source tab's layout lives in `workspace`, the Print tab's in `print`.
+    const editLayout = (layout: LayoutId, f: (l: WorkspaceLayoutPrefs) => WorkspaceLayoutPrefs) =>
+      edit((p) =>
+        layout === "cards"
+          ? { ...p, workspace: { ...p.workspace, layout: f(p.workspace.layout) } }
+          : { ...p, print: { layout: f(p.print.layout) } },
+      );
+    const layoutOf = (layout: LayoutId) =>
+      layout === "cards" ? get().prefs.workspace.layout : get().prefs.print.layout;
     const bumpEpoch = () => set((s) => ({ layoutEpoch: s.layoutEpoch + 1 }));
 
     const prefs = loadPreferences(storage);
@@ -211,39 +220,34 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           return { ...p, presets };
         }),
       deletePreset: (name) => edit((p) => ({ ...p, presets: p.presets.filter((x) => x.name !== name) })),
-      savePrintLayout: (layout) => {
-        if (!get().prefs.workspace.layout.rememberSizes) return;
-        const cur = get().prefs.print.layout;
-        const next = { ...cur, ...layout };
-        if (next.libraryWidth !== cur.libraryWidth || next.inspectorWidth !== cur.inspectorWidth)
-          edit((p) => ({ ...p, print: { layout: next } }));
-      },
-      setPanelPosition: (id, position) => editLayout((l) => setPanelPosition(l, id, position)),
-      setPanelCollapsed: (id, collapsed) => editLayout((l) => setPanelCollapsed(l, id, collapsed)),
-      applyLayoutPreset: (preset) => {
-        editLayout((l) => applyPreset(l, preset));
+      setPanelPosition: (id, position) => editLayout(layoutOfPanel(id), (l) => setPanelPosition(l, id, position)),
+      setPanelCollapsed: (id, collapsed) => editLayout(layoutOfPanel(id), (l) => setPanelCollapsed(l, id, collapsed)),
+      applyLayoutPreset: (layout, preset) => {
+        editLayout(layout, (l) => applyPreset(l, preset));
         bumpEpoch();
       },
-      saveRegionSize: (position, px) => {
-        const l = get().prefs.workspace.layout;
+      saveRegionSize: (layout, position, px) => {
+        const l = layoutOf(layout);
         if (l.rememberSizes && l.regionSizes[position] !== Math.round(px)) {
-          editLayout((x) => ({ ...x, regionSizes: { ...x.regionSizes, [position]: Math.round(px) } }));
+          editLayout(layout, (x) => ({ ...x, regionSizes: { ...x.regionSizes, [position]: Math.round(px) } }));
         }
       },
       saveStackSize: (id, position, percent) => {
-        if (!get().prefs.workspace.layout.rememberSizes) return;
-        editLayout((l) => ({
+        const layout = layoutOfPanel(id);
+        if (!layoutOf(layout).rememberSizes) return;
+        editLayout(layout, (l) => ({
           ...l,
           panels: l.panels.map((p) => (p.id === id ? { ...p, stackSize: { ...p.stackSize, [position]: percent } } : p)),
         }));
       },
-      setRememberSizes: (rememberSizes) => editLayout((l) => ({ ...l, rememberSizes })),
-      setRememberCollapsed: (rememberCollapsed) => editLayout((l) => ({ ...l, rememberCollapsed })),
+      // The two switches are one setting for both tabs (normalization copies the Source tab's onto the Print tab's).
+      setRememberSizes: (rememberSizes) => editLayout("cards", (l) => ({ ...l, rememberSizes })),
+      setRememberCollapsed: (rememberCollapsed) => editLayout("cards", (l) => ({ ...l, rememberCollapsed })),
       resetWorkspace: () => {
         edit((p) => ({
           ...p,
           workspace: { ...DEFAULT_PREFERENCES.workspace, layout: defaultLayout() },
-          print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
+          print: { layout: defaultLayout("print") },
         }));
         bumpEpoch();
       },

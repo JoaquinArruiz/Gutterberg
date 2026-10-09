@@ -3,11 +3,11 @@ import { useTranslation } from "react-i18next";
 import { clampRange, pagesOfSameSize, rangeLabel, runsOf } from "../../lib/document-layout";
 import { useDocumentStore } from "../../stores/document-store";
 import { useCurrentGridGroup, useLayoutStore } from "../../stores/layout-store";
+import { Button } from "../ui/Button";
 import { NumberField } from "../ui/NumberField";
+import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
 
 type Target = "page" | "range" | "same-size";
-
-const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /**
  * "Apply this grid to…": copies the viewed page's grid and piece region onto this page, a range of
@@ -64,60 +64,42 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
               columns: group.grid.columns,
             })}
           </p>
-          <div className="flex flex-col gap-2">
-            <label className="flex items-center gap-2">
-              <input type="radio" name="target" checked={target === "page"} onChange={() => setTarget("page")} />
-              {t("applyGrid.onlyThisPage")}
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              <input
-                type="radio"
-                name="target"
-                id="apply-range"
-                checked={target === "range"}
-                onChange={() => setTarget("range")}
-              />
-              <label htmlFor="apply-range">{t("applyGrid.pagesRange")}</label>
-              <NumberField
-                hideLabel
-                label={t("applyGrid.fromPage")}
-                value={from}
-                onCommit={setFrom}
-                min={1}
-                max={pages.length}
-              />
-              <span>{t("applyGrid.to")}</span>
-              <NumberField
-                hideLabel
-                label={t("applyGrid.toPage")}
-                value={to}
-                onCommit={setTo}
-                min={1}
-                max={pages.length}
-              />
-            </div>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="target"
-                checked={target === "same-size"}
-                onChange={() => setTarget("same-size")}
-              />
-              {t("applyGrid.sameSize")}
-            </label>
-          </div>
+          <RadioCardGroup<Target> label={t("applyGrid.dialog")} value={target} onChange={setTarget}>
+            <RadioCard value="page" title={t("applyGrid.onlyThisPage")} />
+            <RadioCard value="range" title={t("applyGrid.pagesRange")}>
+              <div className="flex flex-wrap items-center gap-2">
+                <NumberField
+                  hideLabel
+                  label={t("applyGrid.fromPage")}
+                  value={from}
+                  onCommit={setFrom}
+                  min={1}
+                  max={pages.length}
+                />
+                <span>{t("applyGrid.to")}</span>
+                <NumberField
+                  hideLabel
+                  label={t("applyGrid.toPage")}
+                  value={to}
+                  onCommit={setTo}
+                  min={1}
+                  max={pages.length}
+                />
+              </div>
+            </RadioCard>
+            <RadioCard value="same-size" title={t("applyGrid.sameSize")} />
+          </RadioCardGroup>
           <p className="mt-3 text-[var(--muted)]">{summary}</p>
         </>
       ) : (
         <p className="mb-3 text-[var(--muted)]">{t("applyGrid.skippedNoGrid")}</p>
       )}
       <div className="mt-4 flex justify-end gap-2">
-        <button type="button" className={btn} onClick={onClose}>
+        <Button size="md" onClick={onClose}>
           {t("common.cancel")}
-        </button>
-        <button
-          type="button"
-          className={btn}
+        </Button>
+        <Button
+          size="md"
           disabled={!group || targets.length === 0}
           onClick={() => {
             applyGrid(currentPage, targets);
@@ -125,7 +107,7 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
           }}
         >
           {t("common.apply")}
-        </button>
+        </Button>
       </div>
     </dialog>
   );

@@ -4,20 +4,24 @@ import { EditorViewport } from "./components/editor/EditorViewport";
 import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
 import { PrintStage } from "./components/print/PrintStage";
+import { StartScreen } from "./components/start/StartScreen";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
+import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { resolveStartMode } from "./lib/preferences";
 import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
 import { useProjectTracking } from "./lib/project-state";
+import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { usePrintSync } from "./lib/use-print-sync";
 import { zoomActions } from "./lib/zoom-actions";
 import { useDocumentStore } from "./stores/document-store";
 import { useEditorStore } from "./stores/editor-store";
-import { redo, undo, useLayoutStore } from "./stores/layout-store";
+import { redo, undo } from "./stores/history";
+import { useLayoutStore } from "./stores/layout-store";
 import { usePreferencesStore } from "./stores/preferences-store";
 import { useUiStore } from "./stores/ui-store";
 
@@ -26,6 +30,8 @@ export default function App() {
   usePrintSync();
   useProjectTracking();
   const stage = useUiStore((s) => s.stage);
+  // With nothing open there is nothing to edit: the start screen takes the place of the editor and its panels.
+  const hasDocuments = useDocumentStore((s) => s.documents.length > 0);
 
   const theme = usePreferencesStore((s) => s.prefs.appearance.theme);
   useEffect(() => applyTheme(theme), [theme]);
@@ -50,6 +56,13 @@ export default function App() {
       if (mod && e.key === ",") {
         e.preventDefault();
         useUiStore.getState().setPrefsOpen(true);
+        return;
+      }
+      // `?` opens the list of shortcuts (it never types into a field), and again closes it.
+      if (isShortcutsKey(e)) {
+        e.preventDefault();
+        const ui = useUiStore.getState();
+        ui.setShortcutsOpen(!ui.shortcutsOpen);
         return;
       }
       const typing = e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName);
@@ -136,11 +149,18 @@ export default function App() {
       <EditorToolbar />
       <ProjectNotices />
       <div className="min-h-0 flex-1">
-        {stage === "print" ? <PrintStage /> : <WorkspaceLayout editor={<EditorViewport />} />}
+        {!hasDocuments ? (
+          <StartScreen />
+        ) : stage === "print" ? (
+          <PrintStage />
+        ) : (
+          <WorkspaceLayout layoutId="cards" editor={<EditorViewport />} />
+        )}
       </div>
       <StatusBar />
       <FirstPdfTour />
       <PreferencesDialog />
+      <ShortcutsDialog />
       <AiConfirmDialog />
     </div>
   );

@@ -11,21 +11,21 @@ import { commonQuantity, filterCards } from "../../lib/library";
 import { MAX_QUANTITY } from "../../lib/print-request";
 import { useLibraryCards } from "../../lib/use-library-cards";
 import { cellWidth, gridColumns, rowCount, visibleRows } from "../../lib/virtual-grid";
+import {
+  LIBRARY_GRID_GAP as GAP,
+  LIBRARY_THUMB_ASPECT,
+  LIBRARY_THUMB_CAPTION_PX,
+  LIBRARY_THUMB_WIDTH,
+  type PanelOrientation,
+} from "../../lib/workspace-layout";
 import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePrintStore } from "../../stores/print-store";
+import { Button } from "../ui/Button";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
 import { CardThumb } from "./CardThumb";
 import { useCardDrag } from "./use-card-drag";
-
-const GAP = 6;
-const CELL_MIN = 84;
-const LABEL_PX = 6;
-/** Cards are mostly portrait: the thumbnail area is this much taller than wide. */
-const ASPECT = 1.35;
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 type FilterChoice = "all" | "page" | `doc:${number}` | `group:${number}:${number}`;
 
@@ -34,7 +34,7 @@ type FilterChoice = "all" | "page" | `doc:${number}` | `group:${number}:${number
  * mounted). Click selects, Ctrl/Cmd toggles, Shift selects a range; the copies field sets how many
  * of each selected piece to print.
  */
-export function CardLibrary() {
+export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelOrientation }) {
   const { t } = useTranslation();
   const hasDocument = useDocumentStore((s) => s.documents.length > 0);
   const activeId = useDocumentStore((s) => s.activeId);
@@ -95,9 +95,12 @@ export function CardLibrary() {
     setScrollTop(0);
   }, [P.filter]);
 
-  const columns = gridColumns(box.width, CELL_MIN, GAP);
-  const width = cellWidth(box.width, columns, GAP);
-  const height = width * ASPECT + LABEL_PX + 14;
+  // In a strip at the top or bottom the pieces keep one size, so a whole row of them fits the strip's height.
+  const strip = orientation === "horizontal";
+  const columns = gridColumns(box.width, LIBRARY_THUMB_WIDTH, GAP);
+  const width = strip ? LIBRARY_THUMB_WIDTH : cellWidth(box.width, columns, GAP);
+  // Cards are mostly portrait: the picture is this much taller than wide.
+  const height = width * LIBRARY_THUMB_ASPECT + LIBRARY_THUMB_CAPTION_PX;
   const rowHeight = height + GAP;
   const rows = rowCount(shown.length, columns);
   const { first, last } = visibleRows(scrollTop, box.height, rowHeight, rows);
@@ -167,8 +170,15 @@ export function CardLibrary() {
   if (!hasDocument) return <Empty>{t("library.openPdf")}</Empty>;
 
   return (
-    <div className="flex h-full min-h-0 flex-col" data-testid="card-library" data-hint-target="card-library">
-      <div className="flex shrink-0 flex-col gap-1.5 border-b border-[var(--border)] p-2">
+    <div
+      className={`flex h-full min-h-0 ${strip ? "flex-row" : "flex-col"}`}
+      data-testid="card-library"
+      data-orientation={orientation}
+      data-hint-target="card-library"
+    >
+      <div
+        className={`flex shrink-0 flex-col gap-1.5 border-[var(--border)] p-2 ${strip ? "w-72 overflow-y-auto border-r" : "border-b"}`}
+      >
         <div className="flex items-center gap-2">
           <span className="shrink-0 text-[var(--muted)]">{t("library.show")}</span>
           <Select
@@ -208,33 +218,25 @@ export function CardLibrary() {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <button type="button" className={smallBtn} onClick={() => P.selectAll(keys)} disabled={keys.length === 0}>
+          <Button onClick={() => P.selectAll(keys)} disabled={keys.length === 0}>
             {t("library.selectAll")}
-          </button>
-          <button
-            type="button"
-            className={smallBtn}
-            onClick={P.clearSelection}
-            disabled={picked.length === 0}
-            title={t("library.clearTitle")}
-          >
+          </Button>
+          <Button onClick={P.clearSelection} disabled={picked.length === 0} title={t("library.clearTitle")}>
             {t("library.clear")}
-          </button>
+          </Button>
           <span className="text-[var(--muted)]">
             {t("library.selected", { selected: picked.length, total: shown.length })}
           </span>
         </div>
         <div className="flex items-center gap-1.5" data-hint-target="copies">
           <span className="text-[var(--muted)]">{t("library.copies")}</span>
-          <button
-            type="button"
-            className={smallBtn}
+          <Button
             aria-label={t("library.copiesFewer")}
             disabled={picked.length === 0}
             onClick={() => P.adjustQuantity(picked, -1)}
           >
             <Minus size={12} />
-          </button>
+          </Button>
           <NumberField
             hideLabel
             hideSteppers
@@ -245,58 +247,50 @@ export function CardLibrary() {
             disabled={picked.length === 0}
             onCommit={(n) => P.setQuantity(picked, n)}
           />
-          <button
-            type="button"
-            className={smallBtn}
+          <Button
             aria-label={t("library.copiesMore")}
             disabled={picked.length === 0}
             onClick={() => P.adjustQuantity(picked, 1)}
           >
             <Plus size={12} />
-          </button>
+          </Button>
         </div>
         <div className="flex flex-wrap items-center gap-1.5" data-testid="card-turn">
           <span className="text-[var(--muted)]">{t("library.turn")}</span>
-          <button
-            type="button"
-            className={smallBtn}
+          <Button
             aria-label={t("library.turnLeft")}
             title={t("library.turnLeftTitle")}
             disabled={picked.length === 0}
             onClick={() => turn(-90)}
           >
             <RotateCcw size={12} />
-          </button>
-          <button
-            type="button"
-            className={smallBtn}
+          </Button>
+          <Button
             aria-label={t("library.turnRight")}
             title={t("library.turnRightTitle")}
             disabled={picked.length === 0}
             onClick={() => turn(90)}
           >
             <RotateCw size={12} />
-          </button>
+          </Button>
         </div>
         <div className="grid grid-cols-2 gap-1.5">
-          <button
-            type="button"
-            className={`${smallBtn} truncate`}
+          <Button
+            className="truncate"
             title={t("library.makePortraitTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("portrait")}
           >
             {t("library.makePortrait")}
-          </button>
-          <button
-            type="button"
-            className={`${smallBtn} truncate`}
+          </Button>
+          <Button
+            className="truncate"
             title={t("library.makeLandscapeTitle")}
             disabled={picked.length === 0}
             onClick={() => orient("landscape")}
           >
             {t("library.makeLandscape")}
-          </button>
+          </Button>
         </div>
         <p className="text-[var(--muted)]">{allMode ? t("library.modeAll") : t("library.modeCustom")}</p>
         {pickingBack && (
@@ -308,7 +302,7 @@ export function CardLibrary() {
 
       <div
         ref={ref}
-        className="min-h-0 flex-1 overflow-y-auto"
+        className="min-h-0 min-w-0 flex-1 overflow-y-auto"
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
         data-testid="card-library-scroll"
       >

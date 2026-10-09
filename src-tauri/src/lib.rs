@@ -5,6 +5,8 @@ mod state;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // Opens the two About links in the browser; the capability allows exactly those URLs.
+        .plugin(tauri_plugin_opener::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::ai::ai_delete_key,

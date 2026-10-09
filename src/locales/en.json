@@ -1,4 +1,7 @@
 {
+  "ui": {
+    "infoTip": "More information"
+  },
   "views": {
     "source": "Original",
     "output": "Preview",
@@ -96,7 +99,9 @@
     "menu": "Panels",
     "titles": {
       "pages": "Pages",
-      "properties": "Properties"
+      "properties": "Properties",
+      "library": "Piece library",
+      "inspector": "Print settings"
     },
     "titleHidden": "{{title}} (hidden)",
     "expand": "Expand {{title}}",
@@ -120,8 +125,15 @@
       "classic": "Classic",
       "right-sidebar": "Right sidebar",
       "pages-top": "Pages on top",
+      "library-top": "Library on top",
       "focus": "Focus (no panels)",
       "custom": "Custom"
+    },
+    "short": {
+      "pages": "Pages",
+      "properties": "Props",
+      "library": "Library",
+      "inspector": "Print"
     }
   },
   "gapFields": {
@@ -444,7 +456,9 @@
       "rememberSizes": "Remember panel sizes",
       "rememberCollapsed": "Remember collapsed panels",
       "resetLayout": "Reset workspace layout",
-      "resetNote": "Restores panel positions and sizes, the visible views and the default view. Units, language, theme and Live Preview are kept."
+      "resetNote": "Restores panel positions and sizes, the visible views and the default view. Units, language, theme and Live Preview are kept.",
+      "layoutCards": "Layout of the Source tab",
+      "layoutPrint": "Layout of the Print tab"
     },
     "livePreview": {
       "title": "Live preview",
@@ -462,7 +476,15 @@
     },
     "about": {
       "title": "About",
-      "createdBy": "Created by Joaquin Arruiz"
+      "createdBy": "Created by Joaquin Arruiz",
+      "version": "Version {{version}}",
+      "links": "Links",
+      "linkedin": "LinkedIn",
+      "github": "GitHub",
+      "openTitle": "Open link",
+      "openBrowser": "This will open your web browser at:",
+      "open": "Open",
+      "openFailed": "The link could not be opened."
     },
     "footer": {
       "confirm": "Reset all preferences? This restores the default application settings. Your document is not affected.",
@@ -473,7 +495,8 @@
     },
     "layoutPreview": {
       "label": "Layout preview",
-      "editor": "Editor"
+      "editor": "Editor",
+      "sheets": "Sheets"
     }
   },
   "hintUi": {
@@ -524,7 +547,7 @@
     "print-stage-intro": {
       "library": {
         "title": "Choose pieces",
-        "text": "Pick the pieces you want in the piece library on the left."
+        "text": "Pick the pieces you want in the piece library."
       },
       "copies": {
         "title": "Set copies",
@@ -532,7 +555,7 @@
       },
       "sheet": {
         "title": "Sheet and page",
-        "text": "Adjust the sheet layout, spacing and page in the inspector on the right."
+        "text": "Adjust the sheet layout, spacing and page in the print settings."
       },
       "export": {
         "title": "Export",
@@ -605,7 +628,8 @@
       "save": "Save",
       "saveAs": "Save as…",
       "recent": "Recent projects",
-      "noRecent": "No recent projects"
+      "noRecent": "No recent projects",
+      "shortcuts": "Keyboard shortcuts…"
     },
     "discard": {
       "message": "This project has changes that are not saved. Discard them?",
@@ -713,7 +737,8 @@
       "testing": "Testing…",
       "testOk": "Connected. Used {{input}} input and {{output}} output tokens.",
       "workspace": "Workspace ID (optional)",
-      "workspaceNote": "Only for an API key that is not scoped to a workspace: the ID of the workspace to use, sent as the anthropic-workspace-id header. Leave empty otherwise."
+      "workspaceNote": "Only for an API key that is not scoped to a workspace: the ID of the workspace to use, sent as the anthropic-workspace-id header. Leave empty otherwise.",
+      "testSends": "Sends a short test message to {{provider}}"
     },
     "confirm": {
       "title": "Send to {{provider}}?",
@@ -730,11 +755,9 @@
       "cancel": "Cancel"
     },
     "detect": {
-      "engine": "Engine",
-      "local": "Local",
-      "ai": "AI",
       "note": "Asks the AI provider where the pieces are on this page. Nothing changes until you apply the proposal.",
-      "buttonAi": "Detect with AI on this page"
+      "buttonAi": "Detect with AI",
+      "sends": "Sends this page to {{provider}}"
     },
     "sort": {
       "title": "Sort pages",
@@ -757,7 +780,8 @@
       "changes_other": "{{count}} pages will change.",
       "noChanges": "No page would change.",
       "apply": "Apply",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "sends": "Sends the pages of this PDF to {{provider}}"
     },
     "experimental": {
       "title": "AI Mode is experimental",
@@ -765,5 +789,63 @@
       "ok": "Okay",
       "cancel": "Cancel"
     }
+  },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "hint": "Press ? at any time to open this list.",
+    "or": "or",
+    "areas": {
+      "general": "General",
+      "source": "Source tab",
+      "print": "Print tab",
+      "fields": "Number fields"
+    },
+    "keys": {
+      "Space": "Space",
+      "Wheel": "Scroll wheel",
+      "Click": "Click"
+    },
+    "items": {
+      "preferences": "Open Preferences",
+      "newProject": "New project",
+      "openPdf": "Open a PDF",
+      "openProject": "Open a project",
+      "save": "Save",
+      "saveAs": "Save as",
+      "undo": "Undo the last change (in either tab)",
+      "redo": "Redo",
+      "shortcuts": "Show this list",
+      "closeDialog": "Close a dialog, a menu or an info tip",
+      "gridRegionTool": "Grid region tool",
+      "pieceTool": "Piece tool",
+      "panTool": "Pan tool",
+      "panHeld": "Pan while held",
+      "zoomIn": "Zoom in",
+      "zoomOut": "Zoom out",
+      "fitPage": "Fit the page",
+      "zoomCursor": "Zoom at the cursor",
+      "nextPage": "Next page",
+      "previousPage": "Previous page",
+      "deletePiece": "Delete the picked piece (Piece tool)",
+      "putDownPiece": "Put down the picked piece",
+      "snapRotation": "Rotate a piece in 15° steps (hold while turning it)",
+      "applyProposal": "Apply the proposal",
+      "discardProposal": "Discard the proposal",
+      "turnRight": "Turn the selected pieces 90° right",
+      "turnLeft": "Turn the selected pieces 90° left",
+      "selectMore": "Add or remove a piece from the selection",
+      "selectRange": "Select a range of pieces",
+      "cancelBack": "Stop picking a back",
+      "commitNumber": "Accept the number",
+      "revertNumber": "Go back to the previous number",
+      "nudgeNumber": "Raise or lower the number",
+      "nudgeFine": "Raise or lower it in small steps",
+      "nudgeCoarse": "Raise or lower it in big steps"
+    }
+  },
+  "start": {
+    "title": "Get started",
+    "lead": "Open a Print-and-Play PDF to space its pieces, or pick up a project.",
+    "shortcuts": "Press ? to see the keyboard shortcuts."
   }
 }

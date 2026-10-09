@@ -238,11 +238,9 @@ describe("leaving things behind", () => {
   it("turning AI Mode off drops everything of it", async () => {
     estimate.mockResolvedValue(anEstimate);
     await askDetect();
-    ai().setEngine("ai");
     ai().setUsage("detect", usage);
     usePreferencesStore.getState().setAiEnabled(false);
     expect(ai().confirm).toBeNull();
     expect(ai().usage).toBeNull();
-    expect(ai().engine).toBe("local");
   });
 });

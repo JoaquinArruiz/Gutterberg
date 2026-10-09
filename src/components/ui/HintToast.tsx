@@ -6,8 +6,7 @@ import { runHintAction } from "../../lib/hint-actions";
 import { onHintEvent } from "../../lib/hint-events";
 import { HINTS, type HintDef, type HintId, type HintStep, type HintTargetId } from "../../lib/hints";
 import { useHint } from "../../stores/hint-store";
-
-const iconBtn = "shrink-0 rounded p-1 text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)]";
+import { Button } from "./Button";
 
 type CardProps = {
   hint: HintId;
@@ -48,15 +47,15 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
         )}
         {stepped && (
           <div className="mt-2 flex items-center gap-1.5 text-[var(--muted)]">
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              className="shrink-0"
               aria-label={t("hintUi.previous")}
               disabled={index === 0}
               onClick={() => onGo(index - 1)}
-              className={`${iconBtn} disabled:opacity-40`}
             >
               <ChevronLeft size={13} />
-            </button>
+            </Button>
             <span>
               {index + 1} / {total}
             </span>
@@ -79,22 +78,27 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
                 {t("hintUi.done")}
               </button>
             ) : (
-              <button type="button" aria-label={t("hintUi.next")} onClick={() => onGo(index + 1)} className={iconBtn}>
+              <Button
+                variant="ghost"
+                className="shrink-0"
+                aria-label={t("hintUi.next")}
+                onClick={() => onGo(index + 1)}
+              >
                 <ChevronRight size={13} />
-              </button>
+              </Button>
             )}
           </div>
         )}
       </div>
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        className="-mr-1 -mt-0.5 shrink-0"
         aria-label={t("hintUi.dismiss")}
         title={t("hintUi.dismissTitle")}
         onClick={onDismiss}
-        className={`${iconBtn} -mr-1 -mt-0.5`}
       >
         <X size={13} />
-      </button>
+      </Button>
     </div>
   );
 }

@@ -3,5 +3,15 @@
   "identifier": "default",
   "description": "Main window permissions",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:allow-open", "dialog:allow-save", "dialog:allow-ask", "dialog:allow-message"]
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-ask",
+    "dialog:allow-message",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://www.linkedin.com/in/joaquinarruiz" }, { "url": "https://github.com/JoaquinArruiz" }]
+    }
+  ]
 }

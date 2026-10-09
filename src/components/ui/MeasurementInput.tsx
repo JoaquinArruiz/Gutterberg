@@ -15,6 +15,7 @@ export function MeasurementInput({
   max,
   disabled,
   precise,
+  info,
 }: {
   label: string;
   /** Canonical mm, or null for an empty field. */
@@ -25,6 +26,8 @@ export function MeasurementInput({
   disabled?: boolean;
   /** Small default steps (card sizes and positions) instead of the gap-sized ones. */
   precise?: boolean;
+  /** A one-line explanation, behind an InfoTip beside the field. */
+  info?: React.ReactNode;
 }) {
   const unit = useUnit();
   const to = (mm?: number) => (mm === undefined ? undefined : convertFromCanonical(mm, unit));
@@ -41,6 +44,7 @@ export function MeasurementInput({
       min={to(min)}
       max={to(max)}
       disabled={disabled}
+      info={info}
       value={value === null ? null : convertFromCanonical(value, unit)}
       onCommit={(v) => onChange(convertToCanonical(v, unit))}
     />

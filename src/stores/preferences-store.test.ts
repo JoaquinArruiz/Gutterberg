@@ -115,7 +115,7 @@ describe("workspace layout in the store", () => {
   it("persists dragged sizes when 'remember sizes' is on, and ignores them when it is off", () => {
     const storage = memory();
     const st = createPreferencesStore(storage);
-    st.getState().saveRegionSize("left", 333);
+    st.getState().saveRegionSize("cards", "left", 333);
     st.getState().saveStackSize("pages", "left", 40);
     const back = createPreferencesStore(storage).getState().prefs.workspace.layout;
     expect(back.regionSizes.left).toBe(333);
@@ -146,7 +146,7 @@ describe("workspace layout in the store", () => {
 
   it("applying a preset updates positions", () => {
     const st = createPreferencesStore(memory());
-    st.getState().applyLayoutPreset("right-sidebar");
+    st.getState().applyLayoutPreset("cards", "right-sidebar");
     expect(regions(st)).toEqual(["pages:right", "properties:right"]);
   });
 
@@ -157,7 +157,7 @@ describe("workspace layout in the store", () => {
     s.setTheme("dark");
     s.setLivePreview("always");
     s.setPanelPosition("pages", "bottom");
-    s.saveRegionSize("bottom", 200);
+    s.saveRegionSize("cards", "bottom", 200);
     s.setVisibleMode("output", false);
     s.setDefaultMode("split");
     st.getState().resetWorkspace();
@@ -231,25 +231,74 @@ describe("inspector sections", () => {
   });
 });
 
-describe("Print stage layout", () => {
-  it("remembers dragged widths across a restart", () => {
-    const storage = memory();
-    createPreferencesStore(storage).getState().savePrintLayout({ libraryWidth: 410 });
-    const back = createPreferencesStore(storage).getState().prefs.print.layout;
-    expect(back).toEqual({ libraryWidth: 410, inspectorWidth: 300 });
+describe("Print tab layout", () => {
+  const printPanels = (st: ReturnType<typeof createPreferencesStore>) =>
+    st
+      .getState()
+      .prefs.print.layout.panels.map((p) => `${p.id}:${p.position}`)
+      .sort();
+  const sourcePanels = (st: ReturnType<typeof createPreferencesStore>) =>
+    st
+      .getState()
+      .prefs.workspace.layout.panels.map((p) => `${p.id}:${p.position}`)
+      .sort();
+
+  it("starts with the piece library on the left and the settings on the right", () => {
+    expect(printPanels(createPreferencesStore(memory()))).toEqual(["inspector:right", "library:left"]);
   });
 
-  it("ignores widths when 'remember sizes' is off, and Reset workspace restores them", () => {
+  it("moves a panel in one tab without touching the other, and keeps it across a restart", () => {
     const storage = memory();
     const st = createPreferencesStore(storage);
-    st.getState().savePrintLayout({ inspectorWidth: 450 });
+    st.getState().setPanelPosition("library", "bottom");
+    st.getState().setPanelPosition("inspector", "left");
+    expect(printPanels(createPreferencesStore(storage))).toEqual(["inspector:left", "library:bottom"]);
+    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+
+    st.getState().setPanelPosition("pages", "top");
+    expect(printPanels(st)).toEqual(["inspector:left", "library:bottom"]);
+    expect(sourcePanels(st)).toEqual(["pages:top", "properties:right"]);
+  });
+
+  it("keeps the dragged sizes of each tab apart, and ignores them when 'remember sizes' is off", () => {
+    const storage = memory();
+    const st = createPreferencesStore(storage);
+    st.getState().saveRegionSize("print", "left", 410);
+    st.getState().saveRegionSize("cards", "left", 222);
+    const back = createPreferencesStore(storage).getState().prefs;
+    expect(back.print.layout.regionSizes.left).toBe(410);
+    expect(back.workspace.layout.regionSizes.left).toBe(222);
+
     st.getState().setRememberSizes(false);
-    expect(createPreferencesStore(storage).getState().prefs.print.layout.inspectorWidth).toBe(300);
-    st.getState().savePrintLayout({ inspectorWidth: 500 });
-    expect(st.getState().prefs.print.layout.inspectorWidth).toBe(450); // not saved while off
-    st.getState().setRememberSizes(true);
+    expect(st.getState().prefs.print.layout.rememberSizes).toBe(false); // one setting for both tabs
+    expect(createPreferencesStore(storage).getState().prefs.print.layout.regionSizes).toEqual({});
+    st.getState().saveRegionSize("print", "left", 500);
+    expect(st.getState().prefs.print.layout.regionSizes.left).toBe(410); // not saved while off
+  });
+
+  it("applies a preset to one tab only", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().applyLayoutPreset("print", "library-top");
+    expect(printPanels(st)).toEqual(["inspector:right", "library:top"]);
+    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+  });
+
+  it("Reset workspace restores both layouts", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().setPanelPosition("library", "hidden");
+    st.getState().saveRegionSize("print", "right", 450);
+    st.getState().setPanelPosition("pages", "bottom");
     st.getState().resetWorkspace();
-    expect(st.getState().prefs.print.layout).toEqual({ libraryWidth: 320, inspectorWidth: 300 });
+    expect(printPanels(st)).toEqual(["inspector:right", "library:left"]);
+    expect(st.getState().prefs.print.layout.regionSizes).toEqual({});
+    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+  });
+
+  it("moves a panel from the toolbar menu's id alone: the tab is known from the panel", () => {
+    const st = createPreferencesStore(memory());
+    st.getState().setPanelCollapsed("inspector", true);
+    expect(st.getState().prefs.print.layout.panels.find((p) => p.id === "inspector")?.collapsed).toBe(true);
+    expect(st.getState().prefs.workspace.layout.panels.some((p) => p.collapsed)).toBe(false);
   });
 });
 

@@ -2,8 +2,10 @@ import { type ReactNode, useMemo, useRef } from "react";
 import { useWindowSize } from "../../lib/use-window-size";
 import {
   constrainLayout,
+  fitRegionSize,
   HEADER_PX,
   isRegionCollapsed,
+  type LayoutId,
   MIN_EDITOR_H,
   MIN_EDITOR_W,
   type PanelConfig,
@@ -11,11 +13,12 @@ import {
   panelOrientation,
   type RegionPosition,
   regionMinSize,
-  regionSize,
   regionsOf,
   STRIP_PX,
 } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { CardLibrary } from "../print/CardLibrary";
+import { PrintInspector } from "../print/PrintInspector";
 import { PagesPanel } from "../sidebar/PagesPanel";
 import { PropertiesSidebar } from "../sidebar/PropertiesSidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../ui/resizable";
@@ -25,6 +28,8 @@ import { PanelFrame } from "./PanelFrame";
 const PANEL_BODY: Record<PanelId, (p: { orientation: "vertical" | "horizontal" }) => ReactNode> = {
   pages: ({ orientation }) => <PagesPanel orientation={orientation} />,
   properties: () => <PropertiesSidebar />,
+  library: ({ orientation }) => <CardLibrary orientation={orientation} />,
+  inspector: () => <PrintInspector />,
 };
 
 function Region({ position, panels }: { position: RegionPosition; panels: PanelConfig[] }) {
@@ -77,12 +82,14 @@ function Region({ position, panels }: { position: RegionPosition; panels: PanelC
 }
 
 /**
- * The editor plus the regions (left/right/top/bottom) that hold the panels.
- * Panel positions are never hard-coded here: regions are derived from the
- * layout config, so every placement rule lives in lib/workspace-layout.
+ * The editor (in the Print tab, the sheets) plus the regions (left/right/top/bottom) that hold the panels of
+ * `layoutId`'s tab. Panel positions are never hard-coded here: regions are derived from the layout config, so
+ * every placement rule lives in lib/workspace-layout.
  */
-export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
-  const preferred = usePreferencesStore((s) => s.prefs.workspace.layout);
+export function WorkspaceLayout({ layoutId, editor }: { layoutId: LayoutId; editor: ReactNode }) {
+  const preferred = usePreferencesStore((s) =>
+    layoutId === "cards" ? s.prefs.workspace.layout : s.prefs.print.layout,
+  );
   const epoch = usePreferencesStore((s) => s.layoutEpoch);
   const saveRegionSize = usePreferencesStore((s) => s.saveRegionSize);
   const win = useWindowSize();
@@ -100,7 +107,7 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
     if (!user) return;
     for (const pos of positions) {
       const px = sizes.current[pos];
-      if (px !== undefined) saveRegionSize(pos, px);
+      if (px !== undefined) saveRegionSize(layoutId, pos, px);
     }
   };
 
@@ -108,7 +115,7 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
     const panels = regions[pos];
     if (panels.length === 0) return null;
     const collapsed = isRegionCollapsed(panels);
-    const size = collapsed ? STRIP_PX : regionSize(layout, pos, panels);
+    const size = fitRegionSize(layout, pos, win);
     const min = collapsed ? STRIP_PX : regionMinSize(pos, panels);
     return (
       <ResizablePanel
@@ -134,7 +141,7 @@ export function WorkspaceLayout({ editor }: { editor: ReactNode }) {
   const sig =
     (["left", "right", "top", "bottom"] as RegionPosition[])
       .map((pos) => `${pos}:${regions[pos].map((p) => p.id + (p.collapsed ? "c" : "")).join(",")}`)
-      .join("|") + `#${epoch}`;
+      .join("|") + `#${layoutId}#${epoch}`;
 
   const middle =
     left || right ? (

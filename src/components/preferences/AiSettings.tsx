@@ -4,18 +4,13 @@ import { AI_PROVIDERS, type AiProvider, DEFAULT_BASE_URL, DEFAULT_MODEL, needsKe
 import { aiDeleteKey, aiKeyStatus, aiSetKey, aiTestConnection } from "../../lib/ai-api";
 import { formatError, toAppError } from "../../lib/errors";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { Button } from "../ui/Button";
 import { Select } from "../ui/Select";
+import { Switch } from "../ui/Switch";
+import { Field } from "./Field";
 
-const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
 const input =
   "w-full rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 outline-none focus-visible:border-[var(--accent)]";
-
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="mb-5">
-    <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">{label}</div>
-    <div className="flex flex-col gap-1.5">{children}</div>
-  </div>
-);
 
 /** A text field that keeps what is typed until it is left, so the saved value is never trimmed under the cursor. */
 function TextSetting({
@@ -140,35 +135,29 @@ export function AiSettings() {
           <h2 className="text-sm font-semibold">{t("ai.experimental.title")}</h2>
           <p>{t("ai.experimental.text")}</p>
           <div className="flex justify-end gap-2">
-            <button type="button" className={btn} onClick={() => setAsking(false)}>
+            <Button size="md" onClick={() => setAsking(false)}>
               {t("ai.experimental.cancel")}
-            </button>
-            <button
-              type="button"
-              className={`${btn} border-[var(--accent)]`}
+            </Button>
+            <Button
+              size="md"
+              variant="primary"
               onClick={() => {
                 setAsking(false);
                 set.setAiEnabled(true);
               }}
             >
               {t("ai.experimental.ok")}
-            </button>
+            </Button>
           </div>
         </div>
       </dialog>
       <Field label={t("ai.settings.title")}>
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={ai.enabled}
-            onChange={(e) => (e.target.checked ? setAsking(true) : set.setAiEnabled(false))}
-          />
-          <span>
-            {t("ai.settings.enable")}
-            <span className="block text-[var(--muted)]">{t("ai.settings.enableNote")}</span>
-          </span>
-        </label>
+        <Switch
+          checked={ai.enabled}
+          onChange={(on) => (on ? setAsking(true) : set.setAiEnabled(false))}
+          label={t("ai.settings.enable")}
+          hint={t("ai.settings.enableNote")}
+        />
       </Field>
 
       {ai.enabled && (
@@ -234,15 +223,15 @@ export function AiSettings() {
                   placeholder={saved ? t("ai.settings.keyReplace") : t("ai.settings.keyPlaceholder")}
                   onChange={(e) => setKey(e.target.value)}
                 />
-                <button type="button" className={btn} disabled={key.trim() === "" || busy !== null} onClick={saveKey}>
+                <Button size="md" disabled={key.trim() === "" || busy !== null} onClick={saveKey}>
                   {t("ai.settings.keySave")}
-                </button>
+                </Button>
               </div>
               {saved && (
                 <div>
-                  <button type="button" className={btn} onClick={removeKey}>
+                  <Button size="md" onClick={removeKey}>
                     {t("ai.settings.keyRemove")}
-                  </button>
+                  </Button>
                 </div>
               )}
               <p className="text-[var(--muted)]">{t("ai.settings.keyNote")}</p>
@@ -250,27 +239,26 @@ export function AiSettings() {
           )}
 
           <Field label={t("ai.settings.privacy")}>
-            <label className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                className="mt-0.5"
-                checked={ai.sendImages}
-                onChange={(e) => set.setAiSendImages(e.target.checked)}
-              />
-              <span>
-                {t("ai.settings.sendImages")}
-                <span className="block text-[var(--muted)]">
-                  {ai.sendImages ? t("ai.settings.sendImagesOn") : t("ai.settings.sendImagesOff")}
-                </span>
-              </span>
-            </label>
+            <Switch
+              checked={ai.sendImages}
+              onChange={set.setAiSendImages}
+              label={t("ai.settings.sendImages")}
+              hint={ai.sendImages ? t("ai.settings.sendImagesOn") : t("ai.settings.sendImagesOff")}
+            />
           </Field>
 
           <Field label={t("ai.settings.test")}>
             <div>
-              <button type="button" className={btn} disabled={busy !== null} onClick={test}>
+              <Button
+                size="md"
+                variant="ai"
+                busy={busy === "test"}
+                disabled={busy !== null}
+                title={t("ai.settings.testSends", { provider: t(`ai.providers.${ai.provider}`) })}
+                onClick={test}
+              >
                 {busy === "test" ? t("ai.settings.testing") : t("ai.settings.testButton")}
-              </button>
+              </Button>
             </div>
             {notice && (
               <p className={notice.ok ? "text-emerald-400" : "text-red-300"} role={notice.ok ? "status" : "alert"}>

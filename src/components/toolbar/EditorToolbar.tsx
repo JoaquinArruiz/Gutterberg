@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useStore } from "zustand";
 import { t as translate } from "../../i18n";
 import { includedPages } from "../../lib/document-layout";
 import { getLayoutDocuments, useLayoutDocuments } from "../../lib/documents";
@@ -28,11 +27,13 @@ import { switchWorkspace } from "../../lib/workspace";
 import { zoomActions } from "../../lib/zoom-actions";
 import { documentById, fileName, useDocumentStore } from "../../stores/document-store";
 import { type Tool, useEditorStore } from "../../stores/editor-store";
-import { redo, undo, useLayoutStore } from "../../stores/layout-store";
+import { redo, undo, useHistory } from "../../stores/history";
+import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { planOf, usePrintStore } from "../../stores/print-store";
 import { useProjectStore } from "../../stores/project-store";
 import { type Stage, useUiStore } from "../../stores/ui-store";
+import { Button } from "../ui/Button";
 import { PanelsMenu } from "../workspace/PanelsMenu";
 import { DocumentName } from "./DocumentName";
 import { FileMenu } from "./FileMenu";
@@ -78,8 +79,8 @@ export function EditorToolbar() {
     useUiStore((s) => s.stage) === "print"
       ? documents.reduce((n, d) => n + includedPages(d.groups).length, 0)
       : includedPages(activeGroups).length;
-  const canUndo = useStore(useLayoutStore.temporal, (s) => s.pastStates.length > 0);
-  const canRedo = useStore(useLayoutStore.temporal, (s) => s.futureStates.length > 0);
+  const canUndo = useHistory((s) => s.canUndo);
+  const canRedo = useHistory((s) => s.canRedo);
   const [exporting, setExporting] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   // Pages that would make the export fail, found before the save dialog opens.
@@ -265,16 +266,16 @@ export function EditorToolbar() {
       >
         <Settings size={14} />
       </button>
-      <button
-        type="button"
+      <Button
+        variant="primary"
         onClick={doExport}
         data-hint-target="export-button"
         disabled={!path || includedCount === 0 || exporting}
         title={includedCount === 0 ? t("toolbar.everyPageSkipped") : t("toolbar.exportPdf")}
-        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded bg-[var(--accent)] px-2.5 py-1 font-medium text-black disabled:opacity-40"
+        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
       >
         <Download size={14} /> {exporting ? t("toolbar.exporting") : t("toolbar.exportPdf")}
-      </button>
+      </Button>
       {issues.length > 0 && (
         <section
           aria-label={t("toolbar.issues.label")}

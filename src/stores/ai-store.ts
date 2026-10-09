@@ -17,15 +17,11 @@ export type AiRun = {
 /** One page of the proposal Sort pages makes, as the user can still change it. */
 export type SortRow = { page: number; label: PageLabel; confidence: number; skip: boolean };
 
-/** Which engine Detect pieces uses. Session state; Local unless the user picks AI. */
-export type DetectEngine = "local" | "ai";
-
 /**
  * AI Mode's session state: what is waiting for confirmation, what is running, the last result and
  * what it used. Nothing here is saved, and nothing in it is applied to the project.
  */
 type AiState = {
-  engine: DetectEngine;
   /** The user asked not to be asked again before a single-page Detect, until the app is closed. */
   skipDetectConfirm: boolean;
   /** Working out the estimate. */
@@ -38,7 +34,6 @@ type AiState = {
   usage: { task: AiTask; tokens: Usage } | null;
   sort: { documentId: DocumentId; rows: SortRow[] } | null;
 
-  setEngine: (engine: DetectEngine) => void;
   setSkipDetectConfirm: (on: boolean) => void;
   setEstimating: (on: boolean) => void;
   setConfirm: (run: AiRun | null) => void;
@@ -52,7 +47,6 @@ type AiState = {
 };
 
 export const useAiStore = create<AiState>((set) => ({
-  engine: "local",
   skipDetectConfirm: false,
   estimating: false,
   confirm: null,
@@ -60,7 +54,6 @@ export const useAiStore = create<AiState>((set) => ({
   error: null,
   usage: null,
   sort: null,
-  setEngine: (engine) => set({ engine }),
   setSkipDetectConfirm: (skipDetectConfirm) => set({ skipDetectConfirm }),
   setEstimating: (estimating) => set({ estimating }),
   setConfirm: (confirm) => set({ confirm }),
@@ -79,6 +72,5 @@ export const useAiStore = create<AiState>((set) => ({
           }
         : s,
     ),
-  clear: () =>
-    set({ estimating: false, confirm: null, running: false, error: null, usage: null, sort: null, engine: "local" }),
+  clear: () => set({ estimating: false, confirm: null, running: false, error: null, usage: null, sort: null }),
 }));

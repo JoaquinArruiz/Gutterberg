@@ -10,6 +10,7 @@ import {
 } from "../../lib/project-actions";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
 import { menuItem, Popover } from "../workspace/Popover";
 
 const shortcut = "ml-auto pl-4 text-[11px] text-[var(--muted)]";
@@ -20,6 +21,7 @@ export function FileMenu() {
   const loading = useDocumentStore((s) => s.loading);
   const hasDocument = useDocumentStore((s) => s.documents.length > 0);
   const recent = usePreferencesStore((s) => s.prefs.files.recent);
+  const setShortcutsOpen = useUiStore((s) => s.setShortcutsOpen);
 
   const item = (label: string, keys: string, action: () => void, close: () => void, disabled = false) => (
     <button
@@ -84,6 +86,19 @@ export function FileMenu() {
               </button>
             ))
           )}
+          <div className="my-1 border-t border-[var(--border)]" />
+          <button
+            type="button"
+            role="menuitem"
+            className={menuItem}
+            onClick={() => {
+              close();
+              setShortcutsOpen(true);
+            }}
+          >
+            {t("project.menu.shortcuts")}
+            <span className={shortcut}>?</span>
+          </button>
         </>
       )}
     </Popover>

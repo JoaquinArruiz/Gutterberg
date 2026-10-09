@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDecimal, parseDecimal } from "../../lib/measurement";
 import { useDecimalSeparator } from "../../stores/preferences-store";
+import { InfoTip } from "./InfoTip";
 
 /**
  * Numeric input that commits on Enter/blur and reverts on Escape, so typing
@@ -22,6 +23,7 @@ export function NumberField({
   label,
   hideLabel,
   hideSteppers,
+  info,
 }: {
   value: number | null;
   onCommit: (v: number) => void;
@@ -40,6 +42,8 @@ export function NumberField({
   hideLabel?: boolean;
   /** Leave out the built-in -/+ buttons, when the surroundings step the value another way. */
   hideSteppers?: boolean;
+  /** A one-line explanation, behind an InfoTip beside the field. */
+  info?: React.ReactNode;
 }) {
   const { t } = useTranslation();
   const separator = useDecimalSeparator();
@@ -75,8 +79,8 @@ export function NumberField({
     setText(fmt(value));
   };
 
-  return (
-    <label className={`flex items-center gap-2 ${hideLabel ? "" : "justify-between"}`}>
+  const field = (
+    <label className={`flex items-center gap-2 ${hideLabel ? "" : "justify-between"} ${info ? "min-w-0 flex-1" : ""}`}>
       <span className={hideLabel ? "sr-only" : "text-[var(--muted)]"}>{label}</span>
       <span className="flex items-center gap-1">
         {!hideSteppers && (
@@ -133,5 +137,12 @@ export function NumberField({
         {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
       </span>
     </label>
+  );
+  if (!info) return field;
+  return (
+    <div className="flex items-center gap-1">
+      {field}
+      <InfoTip text={info} />
+    </div>
   );
 }

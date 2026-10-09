@@ -10,6 +10,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
@@ -18,8 +19,6 @@ import { AiSortSection } from "./AiSortSection";
 import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /** The Source tab inspector: where the pieces are on the viewed page. What to print is the Print tab's. */
 export function PropertiesSidebar() {
@@ -72,9 +71,7 @@ export function PropertiesSidebar() {
             {t("source.skippedRange", { range: rangeLabel(group.pages), count: pageCount(group.pages) })}
           </p>
           <div>
-            <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, false)}>
-              {t("source.includePage")}
-            </button>
+            <Button onClick={() => L.setSkipped(currentPage, false)}>{t("source.includePage")}</Button>
           </div>
         </CollapsibleSection>
       )}
@@ -123,13 +120,11 @@ export function PropertiesSidebar() {
             />
             {!selection && <p className="text-[var(--muted)]">{t("source.dragRegion")}</p>}
             <div>
-              <button type="button" className={smallBtn} onClick={() => L.setSkipped(currentPage, true)}>
-                {t("source.skipPage")}
-              </button>
+              <Button onClick={() => L.setSkipped(currentPage, true)}>{t("source.skipPage")}</Button>
             </div>
           </CollapsibleSection>
 
-          <CollapsibleSection id="cards.spacing" title={t("source.sections.gap")}>
+          <CollapsibleSection id="cards.spacing" title={t("source.sections.gap")} info={t("source.gapNote")}>
             <GapFields
               linked={grid.sourceGapLinked}
               onLink={(sourceGapLinked) => L.setGrid(currentPage, { sourceGapLinked })}
@@ -138,7 +133,6 @@ export function PropertiesSidebar() {
               onX={(sourceGapXMm) => L.setGrid(currentPage, { sourceGapXMm })}
               onY={(sourceGapYMm) => L.setGrid(currentPage, { sourceGapYMm })}
             />
-            <p className="text-[var(--muted)]">{t("source.gapNote")}</p>
           </CollapsibleSection>
 
           <PresetsSection grid={grid} page={currentPage} />
@@ -147,12 +141,9 @@ export function PropertiesSidebar() {
 
       {group?.kind !== "skip" && <FreeformSection />}
 
-      <CollapsibleSection id="cards.output" title={t("source.sections.output")}>
-        <p className="text-[var(--muted)]">{t("source.outputNote")}</p>
+      <CollapsibleSection id="cards.output" title={t("source.sections.output")} info={t("source.outputNote")}>
         <div>
-          <button type="button" className={smallBtn} onClick={() => setStage("print")}>
-            {t("source.openPrint")}
-          </button>
+          <Button onClick={() => setStage("print")}>{t("source.openPrint")}</Button>
         </div>
         {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
       </CollapsibleSection>

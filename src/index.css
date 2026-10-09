@@ -8,6 +8,8 @@
   --fg: #e4e5e9;
   --muted: #8d9099;
   --accent: #60a5fa;
+  --ai: #a78bfa;
+  --ai-soft: rgb(167 139 250 / 0.16);
   --canvas: #15161a;
   --hover: rgb(255 255 255 / 0.1);
   --active: rgb(255 255 255 / 0.15);
@@ -22,6 +24,8 @@
   --fg: #1f2329;
   --muted: #5f6672;
   --accent: #2563eb;
+  --ai: #7c3aed;
+  --ai-soft: rgb(124 58 237 / 0.1);
   --canvas: #dfe2e8;
   --hover: rgb(0 0 0 / 0.07);
   --active: rgb(0 0 0 / 0.12);
@@ -35,6 +39,8 @@
     --fg: #1f2329;
     --muted: #5f6672;
     --accent: #2563eb;
+    --ai: #7c3aed;
+    --ai-soft: rgb(124 58 237 / 0.1);
     --canvas: #dfe2e8;
     --hover: rgb(0 0 0 / 0.07);
     --active: rgb(0 0 0 / 0.12);

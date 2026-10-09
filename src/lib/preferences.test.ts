@@ -136,9 +136,12 @@ describe("sessionDefaults", () => {
 });
 
 describe("inspector sections and the Print layout", () => {
-  it("defaults to nothing remembered and the standard widths", () => {
+  it("defaults to nothing remembered and the Print panels where they have always been", () => {
     expect(DEFAULT_PREFERENCES.inspector.sections).toEqual({});
-    expect(DEFAULT_PREFERENCES.print.layout).toEqual({ libraryWidth: 320, inspectorWidth: 300 });
+    expect(DEFAULT_PREFERENCES.print.layout.panels.map((p) => `${p.id}:${p.position}`)).toEqual([
+      "library:left",
+      "inspector:right",
+    ]);
   });
 
   it("keeps boolean section states and drops the rest", () => {
@@ -155,11 +158,65 @@ describe("inspector sections and the Print layout", () => {
     expect(Object.keys(normalizePreferences({ inspector: { sections: many } }).inspector.sections)).toHaveLength(64);
   });
 
-  it("clamps Print panel widths and repairs bad ones", () => {
-    const p = normalizePreferences({ print: { layout: { libraryWidth: 50, inspectorWidth: 9999 } } });
-    expect(p.print.layout).toEqual({ libraryWidth: 200, inspectorWidth: 700 });
-    const bad = normalizePreferences({ print: { layout: { libraryWidth: "wide", inspectorWidth: Number.NaN } } });
-    expect(bad.print.layout).toEqual(DEFAULT_PREFERENCES.print.layout);
+  it("repairs a bad Print layout: unknown panels dropped, unsupported positions and sizes replaced", () => {
+    const p = normalizePreferences({
+      print: {
+        layout: {
+          panels: [
+            { id: "library", position: "top", order: 0 },
+            { id: "inspector", position: "bottom", order: 0 }, // the settings cannot go to the bottom
+            { id: "pages", position: "left", order: 0 }, // a Source panel does not belong here
+          ],
+          regionSizes: { left: "wide", top: 300 },
+        },
+      },
+    });
+    expect(p.print.layout.panels.map((x) => `${x.id}:${x.position}`)).toEqual(["library:top", "inspector:right"]);
+    expect(p.print.layout.regionSizes).toEqual({ top: 300 });
+    expect(normalizePreferences({ print: { layout: 5 } }).print.layout).toEqual(DEFAULT_PREFERENCES.print.layout);
+  });
+
+  it("keeps the Source and Print layouts apart, with one pair of 'remember' switches", () => {
+    const p = normalizePreferences({
+      workspace: { layout: { rememberSizes: false, panels: [{ id: "pages", position: "top", order: 0 }] } },
+      print: { layout: { rememberSizes: true, panels: [{ id: "library", position: "right", order: 0 }] } },
+    });
+    expect(p.workspace.layout.panels.find((x) => x.id === "pages")?.position).toBe("top");
+    expect(p.print.layout.panels.find((x) => x.id === "library")?.position).toBe("right");
+    expect(p.print.layout.rememberSizes).toBe(false);
+  });
+
+  it("migrates the stored Print widths (version 8 and older) into the sizes of the left and right regions", () => {
+    const v8 = {
+      version: 8,
+      workspace: { layout: { rememberSizes: true, rememberCollapsed: false } },
+      print: { layout: { libraryWidth: 410, inspectorWidth: 360 } },
+    };
+    const p = migratePreferences(v8);
+    expect(p.version).toBe(PREFERENCES_VERSION);
+    expect(p.print.layout.regionSizes).toEqual({ left: 410, right: 360 });
+    expect(p.print.layout.panels.map((x) => `${x.id}:${x.position}`)).toEqual(["library:left", "inspector:right"]);
+    expect(p.print.layout.rememberCollapsed).toBe(false);
+    // The Source tab's layout is not touched by it.
+    expect(p.workspace.layout.regionSizes).toEqual({});
+  });
+
+  it("migrates a width that was only half there, and widths outside the old limits", () => {
+    expect(
+      migratePreferences({ version: 7, print: { layout: { libraryWidth: 380 } } }).print.layout.regionSizes,
+    ).toEqual({
+      left: 380,
+    });
+    expect(
+      migratePreferences({ print: { layout: { libraryWidth: "wide", inspectorWidth: 99999 } } }).print.layout
+        .regionSizes,
+    ).toEqual({ right: 2000 });
+  });
+
+  it("does not migrate a version 9 file again, and a file with no Print layout gets the default", () => {
+    const v9 = { version: 9, print: { layout: { panels: [{ id: "library", position: "top", order: 0 }] } } };
+    expect(migratePreferences(v9).print.layout.panels.find((x) => x.id === "library")?.position).toBe("top");
+    expect(migratePreferences({ version: 8 }).print.layout).toEqual(DEFAULT_PREFERENCES.print.layout);
   });
 
   it("adds both to a version 3 file without losing what it has", () => {

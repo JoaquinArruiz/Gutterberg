@@ -1,4 +1,7 @@
 {
+  "ui": {
+    "infoTip": "Más información"
+  },
   "views": {
     "source": "Original",
     "output": "Vista previa",
@@ -96,7 +99,9 @@
     "menu": "Paneles",
     "titles": {
       "pages": "Páginas",
-      "properties": "Propiedades"
+      "properties": "Propiedades",
+      "library": "Biblioteca de piezas",
+      "inspector": "Ajustes de impresión"
     },
     "titleHidden": "{{title}} (oculto)",
     "expand": "Expandir {{title}}",
@@ -120,8 +125,15 @@
       "classic": "Clásico",
       "right-sidebar": "Barra lateral derecha",
       "pages-top": "Páginas arriba",
+      "library-top": "Biblioteca arriba",
       "focus": "Enfoque (sin paneles)",
       "custom": "Personalizado"
+    },
+    "short": {
+      "pages": "Págs.",
+      "properties": "Prop.",
+      "library": "Bibl.",
+      "inspector": "Ajustes"
     }
   },
   "gapFields": {
@@ -444,7 +456,9 @@
       "rememberSizes": "Recordar el tamaño de los paneles",
       "rememberCollapsed": "Recordar los paneles contraídos",
       "resetLayout": "Restablecer la disposición del espacio de trabajo",
-      "resetNote": "Restaura la posición y el tamaño de los paneles, las vistas visibles y la vista predeterminada. Se conservan las unidades, el idioma, el tema y la vista previa en vivo."
+      "resetNote": "Restaura la posición y el tamaño de los paneles, las vistas visibles y la vista predeterminada. Se conservan las unidades, el idioma, el tema y la vista previa en vivo.",
+      "layoutCards": "Disposición de la pestaña Origen",
+      "layoutPrint": "Disposición de la pestaña Imprimir"
     },
     "livePreview": {
       "title": "Vista previa en vivo",
@@ -462,7 +476,15 @@
     },
     "about": {
       "title": "Acerca de",
-      "createdBy": "Creado por Joaquin Arruiz"
+      "createdBy": "Creado por Joaquin Arruiz",
+      "version": "Versión {{version}}",
+      "links": "Enlaces",
+      "linkedin": "LinkedIn",
+      "github": "GitHub",
+      "openTitle": "Abrir enlace",
+      "openBrowser": "Esto abrirá tu navegador web en:",
+      "open": "Abrir",
+      "openFailed": "No se pudo abrir el enlace."
     },
     "footer": {
       "confirm": "¿Restablecer todas las preferencias? Se restauran los ajustes predeterminados de la aplicación. Tu documento no se ve afectado.",
@@ -473,7 +495,8 @@
     },
     "layoutPreview": {
       "label": "Vista previa de la disposición",
-      "editor": "Editor"
+      "editor": "Editor",
+      "sheets": "Hojas"
     }
   },
   "hintUi": {
@@ -524,7 +547,7 @@
     "print-stage-intro": {
       "library": {
         "title": "Elige piezas",
-        "text": "Selecciona las piezas que quieras en la biblioteca de piezas de la izquierda."
+        "text": "Selecciona las piezas que quieras en la biblioteca de piezas."
       },
       "copies": {
         "title": "Define las copias",
@@ -532,7 +555,7 @@
       },
       "sheet": {
         "title": "Hoja y página",
-        "text": "Ajusta la disposición de la hoja, la separación y la página en el inspector de la derecha."
+        "text": "Ajusta la disposición de la hoja, la separación y la página en los ajustes de impresión."
       },
       "export": {
         "title": "Exporta",
@@ -605,7 +628,8 @@
       "save": "Guardar",
       "saveAs": "Guardar como…",
       "recent": "Proyectos recientes",
-      "noRecent": "No hay proyectos recientes"
+      "noRecent": "No hay proyectos recientes",
+      "shortcuts": "Atajos de teclado…"
     },
     "discard": {
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
@@ -713,7 +737,8 @@
       "testing": "Probando…",
       "testOk": "Conectado. Se usaron {{input}} tokens de entrada y {{output}} de salida.",
       "workspace": "ID del espacio de trabajo (opcional)",
-      "workspaceNote": "Solo para una clave de API que no está limitada a un espacio de trabajo: el ID del espacio que se usará, enviado en el encabezado anthropic-workspace-id. Déjalo vacío en otro caso."
+      "workspaceNote": "Solo para una clave de API que no está limitada a un espacio de trabajo: el ID del espacio que se usará, enviado en el encabezado anthropic-workspace-id. Déjalo vacío en otro caso.",
+      "testSends": "Envía un mensaje de prueba corto a {{provider}}"
     },
     "confirm": {
       "title": "¿Enviar a {{provider}}?",
@@ -730,11 +755,9 @@
       "cancel": "Cancelar"
     },
     "detect": {
-      "engine": "Motor",
-      "local": "Local",
-      "ai": "IA",
       "note": "Pregunta al proveedor de IA dónde están las piezas de esta página. No cambia nada hasta que apliques la propuesta.",
-      "buttonAi": "Detectar con IA en esta página"
+      "buttonAi": "Detectar con IA",
+      "sends": "Envía esta página a {{provider}}"
     },
     "sort": {
       "title": "Ordenar páginas",
@@ -757,7 +780,8 @@
       "changes_other": "Cambiarán {{count}} páginas.",
       "noChanges": "No cambiaría ninguna página.",
       "apply": "Aplicar",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "sends": "Envía las páginas de este PDF a {{provider}}"
     },
     "experimental": {
       "title": "El Modo IA es experimental",
@@ -765,5 +789,63 @@
       "ok": "Aceptar",
       "cancel": "Cancelar"
     }
+  },
+  "shortcuts": {
+    "title": "Atajos de teclado",
+    "hint": "Pulsa ? en cualquier momento para abrir esta lista.",
+    "or": "o",
+    "areas": {
+      "general": "General",
+      "source": "Pestaña Origen",
+      "print": "Pestaña Imprimir",
+      "fields": "Campos numéricos"
+    },
+    "keys": {
+      "Space": "Espacio",
+      "Wheel": "Rueda del ratón",
+      "Click": "Clic"
+    },
+    "items": {
+      "preferences": "Abrir Preferencias",
+      "newProject": "Proyecto nuevo",
+      "openPdf": "Abrir un PDF",
+      "openProject": "Abrir un proyecto",
+      "save": "Guardar",
+      "saveAs": "Guardar como",
+      "undo": "Deshacer el último cambio (en cualquiera de las pestañas)",
+      "redo": "Rehacer",
+      "shortcuts": "Mostrar esta lista",
+      "closeDialog": "Cerrar un cuadro de diálogo, un menú o un consejo de información",
+      "gridRegionTool": "Herramienta Región de cuadrícula",
+      "pieceTool": "Herramienta Pieza",
+      "panTool": "Herramienta Desplazar",
+      "panHeld": "Desplazar mientras se mantiene pulsada",
+      "zoomIn": "Acercar",
+      "zoomOut": "Alejar",
+      "fitPage": "Ajustar la página",
+      "zoomCursor": "Acercar o alejar en el cursor",
+      "nextPage": "Página siguiente",
+      "previousPage": "Página anterior",
+      "deletePiece": "Eliminar la pieza elegida (Herramienta Pieza)",
+      "putDownPiece": "Soltar la pieza elegida",
+      "snapRotation": "Girar una pieza en pasos de 15° (mantén pulsada la tecla mientras la giras)",
+      "applyProposal": "Aplicar la propuesta",
+      "discardProposal": "Descartar la propuesta",
+      "turnRight": "Girar las piezas seleccionadas 90° a la derecha",
+      "turnLeft": "Girar las piezas seleccionadas 90° a la izquierda",
+      "selectMore": "Agregar o quitar una pieza de la selección",
+      "selectRange": "Seleccionar un rango de piezas",
+      "cancelBack": "Dejar de elegir un dorso",
+      "commitNumber": "Aceptar el número",
+      "revertNumber": "Volver al número anterior",
+      "nudgeNumber": "Subir o bajar el número",
+      "nudgeFine": "Subir o bajar el número en pasos pequeños",
+      "nudgeCoarse": "Subir o bajar el número en pasos grandes"
+    }
+  },
+  "start": {
+    "title": "Para empezar",
+    "lead": "Abre un PDF de Print-and-Play para separar sus piezas, o retoma un proyecto.",
+    "shortcuts": "Pulsa ? para ver los atajos de teclado."
   }
 }

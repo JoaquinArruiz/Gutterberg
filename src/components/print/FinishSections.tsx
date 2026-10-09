@@ -17,12 +17,14 @@ import {
 } from "../../lib/finish";
 import { useLibraryCards } from "../../lib/use-library-cards";
 import { usePrintStore } from "../../stores/print-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { InfoTip } from "../ui/InfoTip";
 import { MeasurementInput } from "../ui/MeasurementInput";
+import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
+import { Switch } from "../ui/Switch";
 import { CardThumb } from "./CardThumb";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /** The warnings of every sheet, once each: what the plan as a whole needs the user to look at. */
 export function useSheetWarnings(): Set<SheetWarning> {
@@ -54,7 +56,12 @@ export function MarksSection() {
   const setMarks = usePrintStore((s) => s.setMarks);
   const on = marks.style !== "off";
   return (
-    <CollapsibleSection id="print.marks" title={t("print.sections.marks")} defaultOpen={false}>
+    <CollapsibleSection
+      id="print.marks"
+      title={t("print.sections.marks")}
+      defaultOpen={false}
+      info={t("print.marks.note")}
+    >
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
         <span className="text-[var(--muted)]">{t("print.marks.style")}</span>
         <Select<MarkStyle>
@@ -104,7 +111,6 @@ export function MarksSection() {
               />
             </>
           )}
-          <p className="text-[var(--muted)]">{t("print.marks.note")}</p>
         </>
       )}
       <WarningList codes={["marks_off_page", "gap_too_narrow_for_line"]} />
@@ -118,7 +124,12 @@ export function BleedSection() {
   const bleed = usePrintStore((s) => s.finish.bleed);
   const setBleed = usePrintStore((s) => s.setBleed);
   return (
-    <CollapsibleSection id="print.bleed" title={t("print.sections.bleed")} defaultOpen={false}>
+    <CollapsibleSection
+      id="print.bleed"
+      title={t("print.sections.bleed")}
+      defaultOpen={false}
+      info={t("print.bleed.note")}
+    >
       <MeasurementInput
         label={t("print.bleed.amount")}
         precise
@@ -128,22 +139,19 @@ export function BleedSection() {
         onChange={(mm) => setBleed({ mm })}
       />
       {bleed.mm > 0 && (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <span className="text-[var(--muted)]">{t("print.bleed.source")}</span>
-            <Select<BleedSource>
-              label={t("print.bleed.source")}
-              value={bleed.source}
-              onChange={(source) => setBleed({ source })}
-              options={BLEED_SOURCES.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
-            />
-          </div>
-          <p className="text-[var(--muted)]">
-            {bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")}
-          </p>
-        </>
+        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+          <span className="flex items-center gap-1 text-[var(--muted)]">
+            {t("print.bleed.source")}
+            <InfoTip text={bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")} />
+          </span>
+          <Segmented<BleedSource>
+            label={t("print.bleed.source")}
+            value={bleed.source}
+            onChange={(source) => setBleed({ source })}
+            options={BLEED_SOURCES.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
+          />
+        </div>
       )}
-      <p className="text-[var(--muted)]">{t("print.bleed.note")}</p>
       <WarningList codes={["bleed_overlaps_neighbour", "bleed_off_page", "bleed_exceeds_source_gap"]} />
     </CollapsibleSection>
   );
@@ -159,23 +167,17 @@ export function DuplexSection() {
   const common = duplex.commonBack ? cards.find((c) => cardIdKey(c.id) === duplex.commonBack) : undefined;
   return (
     <CollapsibleSection id="print.duplex" title={t("print.sections.duplex")} defaultOpen={false}>
-      <label className="flex items-start gap-2">
-        <input
-          type="checkbox"
-          className="mt-0.5"
-          checked={duplex.on}
-          onChange={(e) => setDuplex({ on: e.target.checked })}
-        />
-        <span>
-          {t("print.duplex.on")}
-          <span className="block text-[var(--muted)]">{t("print.duplex.onHint")}</span>
-        </span>
-      </label>
+      <Switch
+        checked={duplex.on}
+        onChange={(on) => setDuplex({ on })}
+        label={t("print.duplex.on")}
+        info={t("print.duplex.onHint")}
+      />
       {duplex.on && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
             <span className="text-[var(--muted)]">{t("print.duplex.flip")}</span>
-            <Select<Flip>
+            <Segmented<Flip>
               label={t("print.duplex.flip")}
               value={duplex.flip}
               onChange={(flip) => setDuplex({ flip })}
@@ -184,6 +186,7 @@ export function DuplexSection() {
           </div>
           <MeasurementInput
             label={t("print.duplex.offsetX")}
+            info={t("print.duplex.offsetNote")}
             precise
             min={-MAX_DUPLEX_OFFSET_MM}
             max={MAX_DUPLEX_OFFSET_MM}
@@ -198,8 +201,10 @@ export function DuplexSection() {
             value={duplex.offsetYMm}
             onChange={(offsetYMm) => setDuplex({ offsetYMm })}
           />
-          <p className="text-[var(--muted)]">{t("print.duplex.offsetNote")}</p>
-          <div className="mt-1 text-[var(--muted)]">{t("print.duplex.commonBack")}</div>
+          <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
+            {t("print.duplex.commonBack")}
+            <InfoTip text={t("print.duplex.backNote")} />
+          </div>
           <div className="flex items-start gap-2">
             {common ? (
               <div className="shrink-0" data-testid="common-back">
@@ -211,25 +216,14 @@ export function DuplexSection() {
               </span>
             )}
             <div className="flex flex-col items-start gap-1">
-              <button
-                type="button"
-                className={smallBtn}
-                disabled={selected.length !== 1}
-                onClick={() => setDuplex({ commonBack: selected[0] ?? null })}
-              >
+              <Button disabled={selected.length !== 1} onClick={() => setDuplex({ commonBack: selected[0] ?? null })}>
                 {t("print.duplex.useSelected")}
-              </button>
-              <button
-                type="button"
-                className={smallBtn}
-                disabled={duplex.commonBack === null}
-                onClick={() => setDuplex({ commonBack: null })}
-              >
+              </Button>
+              <Button disabled={duplex.commonBack === null} onClick={() => setDuplex({ commonBack: null })}>
                 {t("print.duplex.remove")}
-              </button>
+              </Button>
             </div>
           </div>
-          <p className="text-[var(--muted)]">{t("print.duplex.backNote")}</p>
           <WarningList codes={["back_size_differs"]} />
         </>
       )}

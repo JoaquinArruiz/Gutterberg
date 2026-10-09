@@ -9,6 +9,7 @@ import type { PageSize } from "../../lib/tauri";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
+import { Button } from "../ui/Button";
 
 const DRAFT = "#f59e0b";
 
@@ -70,8 +71,6 @@ export function DetectOverlay({ viewport, page }: { viewport: ViewportState; pag
     </g>
   );
 }
-
-const btn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /** True when a key press is meant for a field or a menu, not for the draft. */
 const typingInto = (t: EventTarget | null) =>
@@ -148,17 +147,17 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
         </p>
       ))}
       <div className="flex flex-wrap gap-1.5">
-        <button type="button" className={`${btn} border-[var(--accent)]`} onClick={applyDraft}>
+        <Button size="md" variant="primary" onClick={applyDraft}>
           {replaces ? t("detect.replace", { count: existing }) : t("detect.apply")}
-        </button>
+        </Button>
         {total > 1 && (
-          <button type="button" className={btn} onClick={nextProposal}>
+          <Button size="md" onClick={nextProposal}>
             {t("detect.next")}
-          </button>
+          </Button>
         )}
-        <button type="button" className={btn} onClick={discardDraft}>
+        <Button size="md" onClick={discardDraft}>
           {t("detect.discard")}
-        </button>
+        </Button>
       </div>
     </div>
   );

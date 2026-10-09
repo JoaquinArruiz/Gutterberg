@@ -3,13 +3,13 @@ import { useShallow } from "zustand/react/shallow";
 import { MAX_MARGIN_MM, type PageMode, useLayoutStore } from "../../stores/layout-store";
 import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
+import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 
 const PAGE_MODES: PageMode[] = ["same", "a4", "letter", "legal", "custom", "fit"];
 
 /** The gap between pieces on the sheet. Independent of the gap the PDF already has. */
 export function OutputSpacingFields() {
-  const { t } = useTranslation();
   const L = useLayoutStore(
     useShallow((s) => ({
       gapXMm: s.gapXMm,
@@ -21,17 +21,7 @@ export function OutputSpacingFields() {
     })),
   );
   return (
-    <>
-      <GapFields
-        linked={L.gapLinked}
-        onLink={L.setGapLinked}
-        x={L.gapXMm}
-        y={L.gapYMm}
-        onX={L.setGapX}
-        onY={L.setGapY}
-      />
-      <p className="text-[var(--muted)]">{t("print.sheet.outputGapNote")}</p>
-    </>
+    <GapFields linked={L.gapLinked} onLink={L.setGapLinked} x={L.gapXMm} y={L.gapYMm} onX={L.setGapX} onY={L.setGapY} />
   );
 }
 
@@ -81,7 +71,7 @@ export function OutputPageFields() {
       {L.pageMode !== "same" && L.pageMode !== "fit" && (
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[var(--muted)]">{t("print.page.orientation")}</span>
-          <Select
+          <Segmented
             label={t("print.page.orientation")}
             value={L.orientation}
             onChange={L.setOrientation}

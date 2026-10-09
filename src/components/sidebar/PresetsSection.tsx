@@ -6,10 +6,9 @@ import { formatMeasurement } from "../../lib/measurement";
 import { MAX_PRESET_NAME } from "../../lib/preferences";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore, useUnit } from "../../stores/preferences-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { Select } from "../ui/Select";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 /**
  * Named grids: save the viewed group's rows, columns and source gap under a name ("3×3, 0.0 mm") and
@@ -57,21 +56,17 @@ export function PresetsSection({ grid, page }: { grid: GroupGrid; page: number }
               onChange={setChosen}
               options={presets.map((p) => ({ value: p.name, label: p.name }))}
             />
-            <button
-              type="button"
-              className={smallBtn}
+            <Button
               aria-label={t("presets.delete")}
               title={t("presets.delete")}
               disabled={!current}
               onClick={() => current && deletePreset(current.name)}
             >
               <Trash2 size={12} />
-            </button>
+            </Button>
           </div>
           <div>
-            <button
-              type="button"
-              className={smallBtn}
+            <Button
               disabled={!current}
               title={t("presets.applyTitle")}
               onClick={() => {
@@ -81,7 +76,7 @@ export function PresetsSection({ grid, page }: { grid: GroupGrid; page: number }
               }}
             >
               {t("presets.apply")}
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -96,9 +91,9 @@ export function PresetsSection({ grid, page }: { grid: GroupGrid; page: number }
           onKeyDown={(e) => e.key === "Enter" && save()}
           className="min-w-0 flex-1 rounded border border-[var(--border)] bg-transparent px-1.5 py-0.5"
         />
-        <button type="button" className={smallBtn} onClick={save} title={t("presets.saveTitle")}>
+        <Button onClick={save} title={t("presets.saveTitle")}>
           {t("presets.save")}
-        </button>
+        </Button>
       </div>
     </CollapsibleSection>
   );

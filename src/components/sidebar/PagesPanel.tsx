@@ -3,14 +3,14 @@ import { useTranslation } from "react-i18next";
 import { pageBadge } from "../../lib/document-layout";
 import { activateDocument, addPdfDialog, removeActiveDocument } from "../../lib/project-actions";
 import { usePageImage } from "../../lib/use-page-image";
-import type { PanelOrientation } from "../../lib/workspace-layout";
+import { PAGE_THUMB_HEIGHT, type PanelOrientation } from "../../lib/workspace-layout";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
+import { Checkbox } from "../ui/Checkbox";
 import { Select } from "../ui/Select";
 import { ApplyGridDialog } from "./ApplyGridDialog";
 
 const THUMB_WIDTH = 120; // vertical list: fixed width
-const THUMB_HEIGHT = 84; // horizontal strip: fixed height, width follows the page aspect
 
 function Thumbnail({ index, orientation }: { index: number; orientation: PanelOrientation }) {
   const { t } = useTranslation();
@@ -38,7 +38,7 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
   }, []);
 
   const dpr = window.devicePixelRatio || 1;
-  const widthCss = orientation === "vertical" ? THUMB_WIDTH : (THUMB_HEIGHT * size.width_pt) / size.height_pt;
+  const widthCss = orientation === "vertical" ? THUMB_WIDTH : (PAGE_THUMB_HEIGHT * size.width_pt) / size.height_pt;
   const url = usePageImage(visible ? path : null, index, Math.round(widthCss * dpr), 0, "thumbnail");
 
   return (
@@ -61,17 +61,16 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
         </div>
         <span className="text-[11px] text-[var(--muted)]">{index + 1}</span>
       </button>
-      <label
+      <div
         title={skipped ? t("pages.skippedTitle") : t("pages.includedTitle")}
         className="absolute left-2 top-2 flex items-center rounded bg-black/60 p-0.5"
       >
-        <input
-          type="checkbox"
+        <Checkbox
           aria-label={t("pages.include", { n: index + 1 })}
           checked={!skipped}
-          onChange={(e) => setSkipped(index, !e.target.checked)}
+          onChange={(include) => setSkipped(index, !include)}
         />
-      </label>
+      </div>
       {badge && (
         <span className="pointer-events-none absolute right-2 top-2 rounded bg-black/70 px-1 text-[10px] font-semibold text-white">
           {badge}

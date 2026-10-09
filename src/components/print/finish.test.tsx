@@ -101,7 +101,7 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.queryByText("Taken from")).toBeNull();
     typeNumber(screen.getByRole("textbox", { name: "Bleed" }), "2");
     expect(print().finish.bleed.mm).toBe(2);
-    choose("Taken from", "The source gap");
+    fireEvent.click(screen.getByRole("radio", { name: "The source gap" }));
     expect(print().finish.bleed.source).toBe("source");
     typeNumber(screen.getByRole("textbox", { name: "Bleed" }), "20");
     expect(print().finish.bleed.mm).toBe(5);
@@ -111,9 +111,9 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     render(<PrintInspector />);
     fireEvent.click(screen.getByRole("button", { name: "Duplex" }));
     expect(screen.queryByText("Common back")).toBeNull();
-    fireEvent.click(screen.getByRole("checkbox", { name: /Print backs/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Print backs/ }));
     expect(print().finish.duplex.on).toBe(true);
-    choose("Flip on", "Short edge");
+    fireEvent.click(screen.getByRole("radio", { name: "Short edge" }));
     expect(print().finish.duplex.flip).toBe("short");
     typeNumber(screen.getByRole("textbox", { name: "Back offset X" }), "-1.5");
     typeNumber(screen.getByRole("textbox", { name: "Back offset Y" }), "99");

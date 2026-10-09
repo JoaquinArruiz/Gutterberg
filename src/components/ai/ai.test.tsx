@@ -81,21 +81,21 @@ describe("turning AI Mode on", () => {
 
   it("is called experimental in its section and its switch", () => {
     render(<AiSettings />);
-    expect(screen.getByRole("checkbox", { name: /Use AI Mode \(experimental\)/ })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Use AI Mode \(experimental\)/ })).toBeTruthy();
     expect(screen.getByText("AI Mode (experimental)")).toBeTruthy();
   });
 
   it("warns first, and nothing is turned on until the user says Okay", () => {
     render(<AiSettings />);
     expect(warningDialog().open).toBe(false);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
     expect(warningDialog().open).toBe(true);
     const text = within(warningDialog()).getByText(/needs further testing/).textContent ?? "";
     expect(text).toMatch(/token hungry/);
     expect(text).toMatch(/at your own responsibility/);
     // Still off while the question is open.
     expect(prefs().prefs.ai.enabled).toBe(false);
-    expect((screen.getByRole("checkbox", { name: /Use AI Mode/ }) as HTMLInputElement).checked).toBe(false);
+    expect(screen.getByRole("switch", { name: /Use AI Mode/ }).getAttribute("aria-checked")).toBe("false");
     expect(screen.queryByText("Provider")).toBeNull();
 
     fireEvent.click(within(warningDialog()).getByRole("button", { name: "Okay" }));
@@ -106,24 +106,24 @@ describe("turning AI Mode on", () => {
 
   it("stays off on Cancel and when the dialog is closed with Esc", () => {
     render(<AiSettings />);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
     fireEvent.click(within(warningDialog()).getByRole("button", { name: "Cancel" }));
     expect(warningDialog().open).toBe(false);
     expect(prefs().prefs.ai.enabled).toBe(false);
 
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
     expect(warningDialog().open).toBe(true);
     fireEvent(warningDialog(), new Event("close"));
     expect(prefs().prefs.ai.enabled).toBe(false);
     // And it asks again the next time.
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
     expect(warningDialog().open).toBe(true);
   });
 
   it("turns off without asking", () => {
     prefs().setAiEnabled(true);
     render(<AiSettings />);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
     expect(prefs().prefs.ai.enabled).toBe(false);
     expect(warningDialog().open).toBe(false);
   });
@@ -144,14 +144,14 @@ describe("with AI Mode off", () => {
     expect(text).not.toMatch(/Sort pages/);
     expect(text).not.toMatch(/provider/i);
     expect(container.querySelectorAll("dialog")).toHaveLength(0);
-    // The local detection is there, with no engine to choose.
+    // The local detection is there, with no AI button next to it.
     expect(screen.getByRole("button", { name: "Detect on this page" })).toBeTruthy();
-    expect(screen.queryByRole("radio", { name: "Local" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Detect with AI" })).toBeNull();
   });
 
   it("shows in Preferences only the switch and one sentence", () => {
     render(<AiSettings />);
-    expect(screen.getByRole("checkbox", { name: /Use AI Mode/ })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: /Use AI Mode/ })).toBeTruthy();
     expect(screen.queryByText("Provider")).toBeNull();
     expect(screen.queryByText("API key")).toBeNull();
     expect(document.querySelector("[data-ai]")).toBeNull();
@@ -162,16 +162,26 @@ describe("with AI Mode off", () => {
 describe("with AI Mode on", () => {
   beforeEach(() => prefs().setAiEnabled(true));
 
-  it("adds Sort pages and an engine choice next to Detect pieces, Local first", () => {
+  it("adds Sort pages and a Detect with AI button next to the local one, each with its spark", () => {
     render(<PropertiesSidebar />);
-    expect(screen.getByRole("button", { name: "Sort pages with AI" })).toBeTruthy();
-    expect(
-      screen.getByRole("radio", { name: "Local" }).hasAttribute("checked") ||
-        (screen.getByRole("radio", { name: "Local" }) as HTMLInputElement).checked,
-    ).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "AI" }));
-    expect(ai().engine).toBe("ai");
-    expect(screen.getByRole("button", { name: "Detect with AI on this page" })).toBeTruthy();
+    const local = screen.getByRole("button", { name: "Detect on this page" });
+    const detectAi = screen.getByRole("button", { name: "Detect with AI" });
+    expect(local.querySelector("[data-ai=spark]")).toBeNull();
+    expect(detectAi.firstElementChild?.getAttribute("data-ai")).toBe("spark");
+    expect(detectAi.nextElementSibling).toBeNull();
+    expect(local.parentElement).toBe(detectAi.parentElement);
+    expect(screen.getByRole("button", { name: "Sort pages with AI" }).querySelector("[data-ai=spark]")).toBeTruthy();
+    expect(screen.queryByRole("radio", { name: "Local" })).toBeNull();
+  });
+
+  it("names the provider in the tooltip of every AI button", () => {
+    render(<PropertiesSidebar />);
+    expect(screen.getByRole("button", { name: "Detect with AI" }).getAttribute("title")).toBe(
+      "Sends this page to Anthropic (Claude)",
+    );
+    expect(screen.getByRole("button", { name: "Sort pages with AI" }).getAttribute("title")).toBe(
+      "Sends the pages of this PDF to Anthropic (Claude)",
+    );
   });
 
   it("goes back to nothing when it is switched off again", () => {
@@ -194,7 +204,7 @@ describe("Preferences › AI Mode", () => {
     expect(screen.getByTestId("ai-key-saved").textContent).toContain("saved in the system keychain");
     expect((screen.getByLabelText("Model") as HTMLInputElement).value).toBe("claude-sonnet-5-5");
     expect(screen.queryByLabelText("Address")).toBeNull(); // Anthropic is always at its own address
-    expect((screen.getByRole("checkbox", { name: /Send page images/ }) as HTMLInputElement).checked).toBe(true);
+    expect(screen.getByRole("switch", { name: /Send page images/ }).getAttribute("aria-checked")).toBe("true");
   });
 
   it("keeps a typed model and address, committed when the field is left", () => {
@@ -296,7 +306,7 @@ describe("Preferences › AI Mode", () => {
   it("says what text only means", () => {
     render(<AiSettings />);
     expect(screen.getByText(/Pages are sent as pictures/)).toBeTruthy();
-    fireEvent.click(screen.getByRole("checkbox", { name: /Send page images/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Send page images/ }));
     expect(prefs().prefs.ai.sendImages).toBe(false);
     expect(screen.getByText(/no picture is ever sent/)).toBeTruthy();
   });
@@ -457,7 +467,6 @@ describe("the sort proposal", () => {
 describe("detecting with the AI engine", () => {
   it("gives the usual draft, marked as from AI, with Apply and Discard", async () => {
     prefs().setAiEnabled(true);
-    ai().setEngine("ai");
     vi.mocked(aiEstimate).mockResolvedValue({ ...anEstimate, requests: 1, images: 1 });
     vi.mocked(aiDetectPieces).mockResolvedValue({
       detection: {
@@ -485,7 +494,7 @@ describe("detecting with the AI engine", () => {
         <DetectDraftBar />
       </>,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Detect with AI on this page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Detect with AI" }));
     await act(async () => {});
     fireEvent.click(screen.getByRole("button", { name: "Send" }));
     await act(async () => {});
@@ -498,10 +507,9 @@ describe("detecting with the AI engine", () => {
 
   it("shows the provider's error under the button and leaves the page alone", async () => {
     prefs().setAiEnabled(true);
-    ai().setEngine("ai");
     vi.mocked(aiEstimate).mockRejectedValue({ code: "ai_no_key", message: "no key" });
     render(<PropertiesSidebar />);
-    fireEvent.click(screen.getByRole("button", { name: "Detect with AI on this page" }));
+    fireEvent.click(screen.getByRole("button", { name: "Detect with AI" }));
     await act(async () => {});
     expect(screen.getByRole("alert").textContent).toContain("No API key is saved for this provider");
     expect(useEditorStore.getState().draft).toBeNull();

@@ -42,12 +42,12 @@ describe("AI preferences", () => {
   });
 });
 
-describe("preferences version 8", () => {
+describe("AI Mode in the preferences (added in version 8)", () => {
   it("adds AI Mode, off, to preferences saved by version 7", () => {
-    expect(PREFERENCES_VERSION).toBe(8);
+    expect(PREFERENCES_VERSION).toBeGreaterThanOrEqual(8);
     const v7 = { version: 7, measurement: { unit: "in" }, presets: [], files: { recent: ["/a.gtr"] } };
     const migrated = migratePreferences(v7);
-    expect(migrated.version).toBe(8);
+    expect(migrated.version).toBe(PREFERENCES_VERSION);
     expect(migrated.ai).toEqual(DEFAULT_AI);
     expect(migrated.measurement.unit).toBe("in");
     expect(migrated.files.recent).toEqual(["/a.gtr"]);

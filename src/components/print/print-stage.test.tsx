@@ -141,9 +141,9 @@ describe("Print inspector", () => {
     expect(screen.getByRole("radio", { name: /Interleaved/ }).hasAttribute("disabled")).toBe(false);
     fireEvent.click(screen.getByRole("radio", { name: /Interleaved/ }));
     expect(print().order).toBe("interleaved");
-    fireEvent.click(screen.getByRole("checkbox", { name: /Auto-fill/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Auto-fill/ }));
     expect(print().autoFill).toBe(true);
-    fireEvent.click(screen.getByRole("checkbox", { name: /Group pieces by size/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Group pieces by size/ }));
     expect(print().groupBySize).toBe(false);
   });
 
@@ -396,7 +396,7 @@ describe("Apply this grid to…", () => {
     expect(screen.getByText("From page").className).toContain("sr-only");
     expect(screen.getByText("To page").className).toContain("sr-only");
     expect(from.closest("div")).toBe(to.closest("div"));
-    expect(screen.getByText("Pages", { selector: "label" })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: "Pages" })).toBeTruthy();
   });
 
   it("copies the grid to a range of pages", () => {

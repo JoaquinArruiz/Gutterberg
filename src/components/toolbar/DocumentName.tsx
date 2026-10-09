@@ -5,8 +5,7 @@ import { removeActiveDocument } from "../../lib/project-actions";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { usePrintStore } from "../../stores/print-store";
 import { useUiStore } from "../../stores/ui-store";
-
-const iconBtn = "flex shrink-0 items-center rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40";
+import { Button } from "../ui/Button";
 
 /** What a file name cannot contain, and a trailing ".pdf" the user typed out of habit. */
 const cleanName = (raw: string) =>
@@ -35,15 +34,15 @@ export function DocumentName() {
         <span title={path} className="min-w-0 truncate">
           {name}
         </span>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          className="shrink-0"
           title={t("toolbar.docName.remove")}
           aria-label={t("toolbar.docName.remove")}
           onClick={() => void removeActiveDocument()}
-          className={iconBtn}
         >
           <Trash2 size={13} />
-        </button>
+        </Button>
       </div>
     );
   }

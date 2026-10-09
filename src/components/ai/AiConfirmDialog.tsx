@@ -4,8 +4,8 @@ import { cancelRun, confirmRun } from "../../lib/ai-actions";
 import { formatDecimal } from "../../lib/measurement";
 import { useAiStore } from "../../stores/ai-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
-
-const btn = "rounded border border-[var(--border)] px-3 py-1 hover:bg-[var(--hover)] disabled:opacity-40";
+import { Button } from "../ui/Button";
+import { Checkbox } from "../ui/Checkbox";
 
 /** `[2, 3, 4, 7]` as "3–5, 8" (1-based, as the user counts pages). */
 export function pageRanges(pages: number[]): string {
@@ -88,19 +88,14 @@ export function AiConfirmDialog() {
               ? t("ai.confirm.noCost")
               : t("ai.confirm.cost", { cost: formatDecimal(Math.max(e.cost_usd, 0.01), 2) })}
           </p>
-          {run.task === "detect" && (
-            <label className="flex items-start gap-2">
-              <input type="checkbox" className="mt-0.5" checked={skip} onChange={(ev) => setSkip(ev.target.checked)} />
-              <span>{t("ai.confirm.dontAsk")}</span>
-            </label>
-          )}
+          {run.task === "detect" && <Checkbox checked={skip} onChange={setSkip} label={t("ai.confirm.dontAsk")} />}
           <div className="flex justify-end gap-2">
-            <button type="button" className={btn} onClick={cancelRun}>
+            <Button size="md" onClick={cancelRun}>
               {t("ai.confirm.cancel")}
-            </button>
-            <button type="button" className={`${btn} border-[var(--accent)]`} onClick={() => void confirmRun()}>
+            </Button>
+            <Button size="md" variant="ai" onClick={() => void confirmRun()}>
               {t("ai.confirm.send")}
-            </button>
+            </Button>
           </div>
         </div>
       )}

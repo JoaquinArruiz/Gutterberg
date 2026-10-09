@@ -8,10 +8,10 @@ import { useAiStore } from "../../stores/ai-store";
 import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { Button } from "../ui/Button";
+import { Checkbox } from "../ui/Checkbox";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { Select } from "../ui/Select";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 
 function Thumb({ page }: { page: number }) {
   const path = useDocumentStore((s) => s.path);
@@ -31,6 +31,7 @@ function Thumb({ page }: { page: number }) {
 export function AiSortSection() {
   const { t } = useTranslation();
   const enabled = usePreferencesStore((s) => s.prefs.ai.enabled);
+  const provider = usePreferencesStore((s) => s.prefs.ai.provider);
   const estimating = useAiStore((s) => s.estimating);
   const running = useAiStore((s) => s.running);
   const error = useAiStore((s) => (s.error?.task === "sort" ? s.error.error : null));
@@ -44,13 +45,18 @@ export function AiSortSection() {
   const busy = estimating || running;
   const changing = sort ? sort.rows.filter((r) => isSkipped(groups, r.page) !== r.skip).length : 0;
   return (
-    <CollapsibleSection id="cards.sort" title={t("ai.sort.title")}>
+    <CollapsibleSection id="cards.sort" title={t("ai.sort.title")} info={t("ai.sort.note")}>
       <div data-ai="sort" className="flex flex-col gap-1.5">
-        <p className="text-[var(--muted)]">{t("ai.sort.note")}</p>
         <div>
-          <button type="button" className={smallBtn} disabled={busy} onClick={() => void askSort()}>
+          <Button
+            variant="ai"
+            busy={busy}
+            disabled={busy}
+            title={t("ai.sort.sends", { provider: t(`ai.providers.${provider}`) })}
+            onClick={() => void askSort()}
+          >
             {running ? t("ai.sort.running") : estimating ? t("ai.sort.estimating") : t("ai.sort.button")}
-          </button>
+          </Button>
         </div>
         {error && (
           <p className="text-red-300" role="alert">
@@ -71,15 +77,13 @@ export function AiSortSection() {
                     onChange={(label) => updateRow(r.page, { label })}
                     options={PAGE_LABELS.map((l) => ({ value: l, label: t(`ai.sort.labels.${l}`) }))}
                   />
-                  <label className="flex shrink-0 items-center gap-1">
-                    <input
-                      type="checkbox"
-                      aria-label={t("ai.sort.skipFor", { n: r.page + 1 })}
-                      checked={r.skip}
-                      onChange={(e) => updateRow(r.page, { skip: e.target.checked })}
-                    />
-                    {t("ai.sort.skip")}
-                  </label>
+                  <Checkbox
+                    className="shrink-0"
+                    aria-label={t("ai.sort.skipFor", { n: r.page + 1 })}
+                    label={t("ai.sort.skip")}
+                    checked={r.skip}
+                    onChange={(skip) => updateRow(r.page, { skip })}
+                  />
                 </li>
               ))}
             </ul>
@@ -87,17 +91,10 @@ export function AiSortSection() {
               {changing === 0 ? t("ai.sort.noChanges") : t("ai.sort.changes", { count: changing })}
             </p>
             <div className="flex gap-1.5">
-              <button
-                type="button"
-                className={`${smallBtn} border-[var(--accent)]`}
-                disabled={changing === 0}
-                onClick={applySort}
-              >
+              <Button variant="primary" disabled={changing === 0} onClick={applySort}>
                 {t("ai.sort.apply")}
-              </button>
-              <button type="button" className={smallBtn} onClick={discardSort}>
-                {t("ai.sort.cancel")}
-              </button>
+              </Button>
+              <Button onClick={discardSort}>{t("ai.sort.cancel")}</Button>
             </div>
           </>
         )}

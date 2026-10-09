@@ -218,10 +218,22 @@ describe("the File menu", () => {
       "SaveCtrl+S",
       "Save as…Ctrl+Shift+S",
       "poker night.gtr",
+      "Keyboard shortcuts…?",
     ]);
     expect(screen.getByRole("menuitem", { name: "poker night.gtr" }).getAttribute("title")).toBe(
       "/projects/poker night.gtr",
     );
+  });
+
+  it("opens the keyboard shortcuts sheet, even with nothing open", () => {
+    useDocumentStore.getState().clear();
+    useUiStore.setState({ shortcutsOpen: false });
+    render(<FileMenu />);
+    fireEvent.click(screen.getByRole("button", { name: "File" }));
+    const item = screen.getByRole("menuitem", { name: /Keyboard shortcuts/ });
+    expect(item.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(item);
+    expect(useUiStore.getState().shortcutsOpen).toBe(true);
   });
 
   it("says when there are no recent projects, and disables saving with no PDF open", () => {

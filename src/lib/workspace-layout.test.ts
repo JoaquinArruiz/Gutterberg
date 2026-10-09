@@ -6,12 +6,23 @@ import {
   constrainLayout,
   defaultLayout,
   detectPreset,
+  fitRegionSize,
+  HEADER_PX,
   isRegionCollapsed,
+  LAYOUT_PRESETS,
+  LIBRARY_THUMB_ASPECT,
+  LIBRARY_THUMB_CAPTION_PX,
+  LIBRARY_THUMB_WIDTH,
+  layoutOfPanel,
   MIN_EDITOR_W,
   normalizeLayout,
+  PAGE_THUMB_HEIGHT,
+  PANEL_DEFS,
   panelOrientation,
+  regionMinSize,
   regionSize,
   regionsOf,
+  SCROLLBAR_PX,
   STRIP_PX,
   setPanelCollapsed,
   setPanelPosition,
@@ -93,9 +104,99 @@ describe("sizes", () => {
   it("are kept per position, so Left -> Top -> Left restores the old width", () => {
     let l: WorkspaceLayoutPrefs = { ...defaultLayout(), regionSizes: { left: 260 } };
     l = move(l, "pages", "top");
-    expect(regionSize(l, "top", regionsOf(l.panels).top)).toBe(124); // its own default, not 260
+    expect(regionSize(l, "top", regionsOf(l.panels).top)).toBe(PANEL_DEFS.pages.defaultSize.horizontal); // its own default, not 260
     l = move(l, "pages", "left");
     expect(regionSize(l, "left", regionsOf(l.panels).left)).toBe(260);
+  });
+});
+
+describe("the Print tab's layout", () => {
+  const print = () => defaultLayout("print");
+
+  it("is the piece library on the left and the settings on the right", () => {
+    expect(ids(print(), "left")).toEqual(["library"]);
+    expect(ids(print(), "right")).toEqual(["inspector"]);
+    expect(detectPreset(print())).toBe("classic");
+  });
+
+  it("has its own panels, whatever a stored layout lists", () => {
+    const l = normalizeLayout(
+      {
+        panels: [
+          { id: "pages", position: "top" },
+          { id: "library", position: "bottom" },
+        ],
+      },
+      "print",
+    );
+    expect(l.panels.map((p) => `${p.id}:${p.position}`)).toEqual(["library:bottom", "inspector:right"]);
+    // ... and the Source tab does not take the Print panels.
+    expect(normalizeLayout({ panels: [{ id: "library", position: "top" }] }).panels.map((p) => p.id)).toEqual([
+      "pages",
+      "properties",
+    ]);
+  });
+
+  it("lets the library go anywhere, but the settings (a vertical form) only left, right or hidden", () => {
+    for (const pos of ["left", "right", "top", "bottom", "hidden"] as const)
+      expect(canPlace("library", pos)).toBe(true);
+    expect(canPlace("inspector", "top")).toBe(false);
+    expect(canPlace("inspector", "bottom")).toBe(false);
+    const l = print();
+    expect(setPanelPosition(l, "inspector", "top")).toBe(l);
+    expect(ids(setPanelPosition(l, "library", "bottom"), "bottom")).toEqual(["library"]);
+  });
+
+  it("has presets of its own, and each is recognised again", () => {
+    for (const preset of LAYOUT_PRESETS.print) expect(detectPreset(applyPreset(print(), preset))).toBe(preset);
+    expect(ids(applyPreset(print(), "library-top"), "top")).toEqual(["library"]);
+    expect(ids(applyPreset(print(), "right-sidebar"), "right")).toEqual(["library", "inspector"]);
+    expect(LAYOUT_PRESETS.print).not.toContain("pages-top");
+    expect(LAYOUT_PRESETS.cards).not.toContain("library-top");
+    // Moving one panel off every preset makes it custom.
+    expect(detectPreset(setPanelPosition(print(), "library", "bottom"))).toBe("custom");
+  });
+
+  it("does not let a move in one tab change the other", () => {
+    const source = defaultLayout();
+    const moved = setPanelPosition(print(), "library", "right");
+    expect(ids(moved, "right")).toEqual(["inspector", "library"]);
+    expect(detectPreset(source)).toBe("classic");
+    expect(layoutOfPanel("library")).toBe("print");
+    expect(layoutOfPanel("pages")).toBe("cards");
+  });
+});
+
+describe("the height of a strip at the top or bottom", () => {
+  const strip = (l: WorkspaceLayoutPrefs, pos: "top" | "bottom") => regionSize(l, pos, regionsOf(l.panels)[pos]);
+
+  it("is made from the thumbnails inside it: header, a thumbnail row, the room around it and a scrollbar", () => {
+    const l = move(defaultLayout(), "pages", "top");
+    expect(strip(l, "top")).toBe(HEADER_PX + PAGE_THUMB_HEIGHT + 40 + SCROLLBAR_PX);
+    // Not the 124 px a row of thumbnails used to be cut off by.
+    expect(strip(l, "top")).toBeGreaterThan(160);
+  });
+
+  it("is the same at the bottom, and for the Print tab's library with its taller thumbnails", () => {
+    expect(strip(move(defaultLayout(), "pages", "bottom"), "bottom")).toBe(
+      strip(move(defaultLayout(), "pages", "top"), "top"),
+    );
+    const library = setPanelPosition(defaultLayout("print"), "library", "top");
+    const row = Math.ceil(LIBRARY_THUMB_WIDTH * LIBRARY_THUMB_ASPECT + LIBRARY_THUMB_CAPTION_PX);
+    expect(PANEL_DEFS.library.minSize.horizontal).toBeGreaterThanOrEqual(HEADER_PX + row + SCROLLBAR_PX);
+    expect(strip(library, "top")).toBeGreaterThanOrEqual(PANEL_DEFS.library.minSize.horizontal);
+  });
+
+  it("never goes below what the panel needs, even if a smaller size was remembered", () => {
+    const old = { ...move(defaultLayout(), "pages", "top"), regionSizes: { top: 124 } };
+    expect(strip(old, "top")).toBe(PANEL_DEFS.pages.minSize.horizontal);
+    const bigger = { ...old, regionSizes: { top: 260 } };
+    expect(strip(bigger, "top")).toBe(260);
+  });
+
+  it("is also a minimum when the strip is being dragged, so it cannot be dragged shorter", () => {
+    const l = move(defaultLayout(), "pages", "top");
+    expect(regionMinSize("top", regionsOf(l.panels).top)).toBe(PANEL_DEFS.pages.minSize.horizontal);
   });
 });
 
@@ -108,6 +209,24 @@ describe("small windows", () => {
     expect(regionSize(small, "left", regionsOf(small.panels).left)).toBeGreaterThan(STRIP_PX); // pref size untouched
     expect(pref.panels.some((p) => p.collapsed)).toBe(false);
     expect(constrainLayout(pref, { width: 1600, height: 900 })).toBe(pref); // room again: preferred layout
+  });
+
+  it("keeps the Print panels at the smallest window, squeezing them before collapsing them", () => {
+    // 900 px: the library (320) and the settings (300) would leave the sheets 280 px, but their minimums fit.
+    const pref = defaultLayout("print");
+    expect(constrainLayout(pref, { width: 900, height: 560 })).toBe(pref);
+    const left = fitRegionSize(pref, "left", { width: 900, height: 560 });
+    const right = fitRegionSize(pref, "right", { width: 900, height: 560 });
+    expect(left).toBeGreaterThanOrEqual(PANEL_DEFS.library.minSize.vertical);
+    expect(right).toBeGreaterThanOrEqual(PANEL_DEFS.inspector.minSize.vertical);
+    expect(left + right + MIN_EDITOR_W).toBeLessThanOrEqual(900);
+    // Where they have room they keep the remembered size.
+    expect(fitRegionSize(pref, "left", { width: 1600, height: 900 })).toBe(320);
+  });
+
+  it("collapses the Print panels only when even their minimums leave the sheets too little", () => {
+    const small = constrainLayout(defaultLayout("print"), { width: 600, height: 560 });
+    expect(small.panels.every((p) => p.collapsed)).toBe(true);
   });
 });
 

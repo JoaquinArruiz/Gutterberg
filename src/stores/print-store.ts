@@ -1,4 +1,6 @@
+import { temporal } from "zundo";
 import { create } from "zustand";
+import { shallow } from "zustand/shallow";
 import { cardIdKey } from "../lib/card";
 import { isCardOfDocument, keyAfterDelete, remapRecord } from "../lib/card-edits";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
@@ -23,7 +25,7 @@ import {
   type SheetGridMode,
 } from "../lib/print-request";
 import type { Card, OutputSheet } from "../lib/sheet-api";
-import { onFreeformCardDeleted } from "./layout-store";
+import { HISTORY_LIMIT, onFreeformCardDeleted } from "./layout-store";
 
 const grid = (n: number) => Math.min(Math.max(Math.round(Number.isFinite(n) ? n : 1), 1), MAX_SHEET_GRID);
 
@@ -100,65 +102,90 @@ const initial = {
   pickingBack: false,
 };
 
-export const usePrintStore = create<PrintState>((set) => ({
-  ...initial,
-  setMode: (mode) => set({ mode }),
-  setQuantity: (keys, n) => {
-    set((s) => ({ mode: "custom", quantities: setQuantity(s.quantities, keys, n) }));
-    emitHintEvent("copies-changed");
-  },
-  adjustQuantity: (keys, delta) => {
-    set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) }));
-    emitHintEvent("copies-changed");
-  },
-  startFromAllCards: () => set((s) => ({ mode: "custom", quantities: oneOfEach(s.cards) })),
-  setAutoFill: (autoFill) => set({ autoFill }),
-  setOrder: (order) => set({ order }),
-  setGroupBySize: (groupBySize) => set({ groupBySize }),
-  setSheetGrid: (sheetGrid) => set({ sheetGrid }),
-  setRows: (n) => set({ rows: grid(n) }),
-  setColumns: (n) => set({ columns: grid(n) }),
-  setMarks: (patch) => set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) })),
-  setBleed: (patch) => set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, ...patch } }) })),
-  setDuplex: (patch) =>
-    set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) })),
-  setPickingBack: (pickingBack) => set({ pickingBack }),
-  setFilter: (filter) => set({ filter }),
-  clickCard: (key, visible, modifier) => set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) })),
-  selectAll: (keys) => set({ selection: { selected: keys, anchor: keys[0] ?? null } }),
-  clearSelection: () => set({ selection: EMPTY_SELECTION }),
-  setCards: (cards, error) =>
-    set((s) => ({
-      cards,
-      cardsError: toAppErrorOrNull(error),
-      selection: pruneSelection(s.selection, new Set(cards.map((c) => cardIdKey(c.id)))),
-    })),
-  setSheets: (sheets, error) =>
-    set((s) => ({
-      sheets,
-      sheetsError: toAppErrorOrNull(error),
-      currentSheet: Math.min(s.currentSheet, Math.max(0, (sheets?.length ?? 1) - 1)),
-    })),
-  setCurrentSheet: (currentSheet) => set({ currentSheet }),
-  updateSheetsPreview: () => set((s) => ({ sheetsSnapshot: s.sheets })),
-  beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
-  setExportName: (exportName) => set({ exportName }),
-  forgetDocument: (documentId) =>
-    set((s) => ({
-      finish: forgetCommonBack(s.finish, (k) => isCardOfDocument(k, documentId)),
-      quantities: Object.fromEntries(Object.entries(s.quantities).filter(([k]) => !isCardOfDocument(k, documentId))),
-      selection: {
-        selected: s.selection.selected.filter((k) => !isCardOfDocument(k, documentId)),
-        anchor:
-          s.selection.anchor !== null && isCardOfDocument(s.selection.anchor, documentId) ? null : s.selection.anchor,
+// The plan (copies and plan settings) is undoable, like turns and sizes; the selection, the cards and the sheets
+// are not. `stores/history.ts` joins this timeline with the layout's, so one Ctrl+Z covers both.
+export const usePrintStore = create<PrintState>()(
+  temporal(
+    (set) => ({
+      ...initial,
+      setMode: (mode) => set({ mode }),
+      setQuantity: (keys, n) => {
+        set((s) => ({ mode: "custom", quantities: setQuantity(s.quantities, keys, n) }));
+        emitHintEvent("copies-changed");
       },
-    })),
-  reset: () => set({ ...initial }),
-  loadPlan: (plan) => set({ ...initial, ...plan }),
-}));
+      adjustQuantity: (keys, delta) => {
+        set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) }));
+        emitHintEvent("copies-changed");
+      },
+      startFromAllCards: () => set((s) => ({ mode: "custom", quantities: oneOfEach(s.cards) })),
+      setAutoFill: (autoFill) => set({ autoFill }),
+      setOrder: (order) => set({ order }),
+      setGroupBySize: (groupBySize) => set({ groupBySize }),
+      setSheetGrid: (sheetGrid) => set({ sheetGrid }),
+      setRows: (n) => set({ rows: grid(n) }),
+      setColumns: (n) => set({ columns: grid(n) }),
+      setMarks: (patch) =>
+        set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) })),
+      setBleed: (patch) =>
+        set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, ...patch } }) })),
+      setDuplex: (patch) =>
+        set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) })),
+      setPickingBack: (pickingBack) => set({ pickingBack }),
+      setFilter: (filter) => set({ filter }),
+      clickCard: (key, visible, modifier) =>
+        set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) })),
+      selectAll: (keys) => set({ selection: { selected: keys, anchor: keys[0] ?? null } }),
+      clearSelection: () => set({ selection: EMPTY_SELECTION }),
+      setCards: (cards, error) =>
+        set((s) => ({
+          cards,
+          cardsError: toAppErrorOrNull(error),
+          selection: pruneSelection(s.selection, new Set(cards.map((c) => cardIdKey(c.id)))),
+        })),
+      setSheets: (sheets, error) =>
+        set((s) => ({
+          sheets,
+          sheetsError: toAppErrorOrNull(error),
+          currentSheet: Math.min(s.currentSheet, Math.max(0, (sheets?.length ?? 1) - 1)),
+        })),
+      setCurrentSheet: (currentSheet) => set({ currentSheet }),
+      updateSheetsPreview: () => set((s) => ({ sheetsSnapshot: s.sheets })),
+      beginPlanning: () => set({ sheets: null, sheetsError: null, sheetsSnapshot: null }),
+      setExportName: (exportName) => set({ exportName }),
+      forgetDocument: (documentId) => {
+        set((s) => ({
+          finish: forgetCommonBack(s.finish, (k) => isCardOfDocument(k, documentId)),
+          quantities: Object.fromEntries(
+            Object.entries(s.quantities).filter(([k]) => !isCardOfDocument(k, documentId)),
+          ),
+          selection: {
+            selected: s.selection.selected.filter((k) => !isCardOfDocument(k, documentId)),
+            anchor:
+              s.selection.anchor !== null && isCardOfDocument(s.selection.anchor, documentId)
+                ? null
+                : s.selection.anchor,
+          },
+        }));
+        // Earlier steps name pieces of a PDF that is gone: they cannot be put back.
+        usePrintStore.temporal.getState().clear();
+      },
+      reset: () => {
+        set({ ...initial });
+        usePrintStore.temporal.getState().clear();
+      },
+      loadPlan: (plan) => {
+        set({ ...initial, ...plan });
+        usePrintStore.temporal.getState().clear();
+      },
+    }),
+    { partialize: (s) => planOf(s), equality: shallow, limit: HISTORY_LIMIT },
+  ),
+);
 
 // A freeform card was deleted and the later ones renumbered: their copies and selection move with them.
-onFreeformCardDeleted((documentId, page, index) =>
+// Earlier steps of the plan use the old numbers, so they are dropped (as undo of the deletion itself does not bring
+// the pieces back either).
+onFreeformCardDeleted((documentId, page, index) => {
   usePrintStore.setState((s) => {
     const kept = s.selection.selected.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []);
     const anchor = s.selection.anchor === null ? null : keyAfterDelete(s.selection.anchor, documentId, page, index);
@@ -168,8 +195,9 @@ onFreeformCardDeleted((documentId, page, index) =>
       selection: { selected: kept, anchor },
       finish: common === null ? s.finish : withCommonBack(s.finish, keyAfterDelete(common, documentId, page, index)),
     };
-  }),
-);
+  });
+  usePrintStore.temporal.getState().clear();
+});
 
 const withCommonBack = (finish: Finish, commonBack: string | null): Finish => ({
   ...finish,

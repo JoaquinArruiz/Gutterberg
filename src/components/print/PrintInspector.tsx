@@ -2,54 +2,28 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { formatError } from "../../lib/errors";
 import { formatMeasurement } from "../../lib/measurement";
-import { effectiveGrid, MAX_SHEET_GRID, plannerRequired, type SheetGridMode } from "../../lib/print-request";
+import {
+  type CardOrder,
+  effectiveGrid,
+  MAX_SHEET_GRID,
+  type PlanMode,
+  plannerRequired,
+  type SheetGridMode,
+} from "../../lib/print-request";
 import { ptToMm } from "../../lib/units";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { planOf, usePrintStore } from "../../stores/print-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { InfoTip } from "../ui/InfoTip";
 import { NumberField } from "../ui/NumberField";
+import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
+import { Switch } from "../ui/Switch";
 import { BleedSection, DuplexSection, MarksSection } from "./FinishSections";
 import { OutputPageFields, OutputSpacingFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
-
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
-
-function Radio<T extends string>({
-  name,
-  value,
-  current,
-  onSelect,
-  label,
-  hint,
-  disabled,
-}: {
-  name: string;
-  value: T;
-  current: T;
-  onSelect: (v: T) => void;
-  label: string;
-  hint?: string;
-  disabled?: boolean;
-}) {
-  return (
-    <label className={`flex items-start gap-2 ${disabled ? "opacity-50" : ""}`}>
-      <input
-        type="radio"
-        name={name}
-        className="mt-0.5"
-        checked={current === value}
-        disabled={disabled}
-        onChange={() => onSelect(value)}
-      />
-      <span>
-        {label}
-        {hint && <span className="block text-[var(--muted)]">{hint}</span>}
-      </span>
-    </label>
-  );
-}
 
 /** What to print and how the sheets look. Sections fold, and which are open is remembered. */
 export function PrintInspector() {
@@ -97,17 +71,11 @@ export function PrintInspector() {
           <p>⚠ {formatError(P.sheetsError)}</p>
           <p className="mt-1">{t("print.error.note")}</p>
           <div className="mt-2 flex flex-wrap gap-1.5">
-            <button type="button" className={smallBtn} onClick={() => setPageMode("fit")}>
-              {t("print.error.autoFit")}
-            </button>
+            <Button onClick={() => setPageMode("fit")}>{t("print.error.autoFit")}</Button>
             {pageMode !== "same" && pageMode !== "fit" && (
-              <button
-                type="button"
-                className={smallBtn}
-                onClick={() => setOrientation(orientation === "portrait" ? "landscape" : "portrait")}
-              >
+              <Button onClick={() => setOrientation(orientation === "portrait" ? "landscape" : "portrait")}>
                 {t("print.error.switchOrientation")}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -115,60 +83,66 @@ export function PrintInspector() {
 
       <SelectedCardsSection />
 
-      <CollapsibleSection id="print.plan" title={t("print.sections.plan")}>
-        <Radio
-          name="plan-mode"
-          value="all"
-          current={P.mode}
-          onSelect={P.setMode}
-          label={t("print.plan.all")}
-          hint={t("print.plan.allHint")}
-        />
-        <Radio
-          name="plan-mode"
-          value="custom"
-          current={P.mode}
-          onSelect={P.setMode}
-          label={t("print.plan.custom")}
-          hint={t("print.plan.customHint")}
+      <CollapsibleSection
+        id="print.plan"
+        title={t("print.sections.plan")}
+        info={
+          <>
+            <span className="block">
+              {t("print.plan.all")}: {t("print.plan.allHint")}
+            </span>
+            <span className="block">
+              {t("print.plan.custom")}: {t("print.plan.customHint")}
+            </span>
+          </>
+        }
+      >
+        <Segmented<PlanMode>
+          fill
+          label={t("print.sections.plan")}
+          value={P.mode}
+          onChange={P.setMode}
+          options={[
+            { value: "all", label: t("print.plan.all") },
+            { value: "custom", label: t("print.plan.custom") },
+          ]}
         />
         {P.mode === "custom" && (
           <div>
-            <button type="button" className={smallBtn} onClick={P.startFromAllCards}>
-              {t("print.plan.startFromAll")}
-            </button>
+            <Button onClick={P.startFromAllCards}>{t("print.plan.startFromAll")}</Button>
           </div>
         )}
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={P.autoFill}
-            onChange={(e) => P.setAutoFill(e.target.checked)}
-          />
-          <span>
-            {t("print.plan.autoFill")}
-            <span className="block text-[var(--muted)]">{t("print.plan.autoFillHint")}</span>
-          </span>
-        </label>
-        <div className="mt-1 text-[var(--muted)]">{t("print.plan.order")}</div>
-        <Radio
-          name="plan-order"
-          value="grouped"
-          current={P.order}
-          onSelect={P.setOrder}
-          label={t("print.plan.grouped")}
-          hint={t("print.plan.groupedHint")}
-          disabled={sourceLayout}
+        <Switch
+          checked={P.autoFill}
+          onChange={P.setAutoFill}
+          label={t("print.plan.autoFill")}
+          info={t("print.plan.autoFillHint")}
         />
-        <Radio
-          name="plan-order"
-          value="interleaved"
-          current={P.order}
-          onSelect={P.setOrder}
-          label={t("print.plan.interleaved")}
-          hint={t("print.plan.interleavedHint")}
+        <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
+          {t("print.plan.order")}
+          <InfoTip
+            text={
+              <>
+                <span className="block">
+                  {t("print.plan.grouped")}: {t("print.plan.groupedHint")}
+                </span>
+                <span className="block">
+                  {t("print.plan.interleaved")}: {t("print.plan.interleavedHint")}
+                </span>
+              </>
+            }
+          />
+        </div>
+        <Segmented<CardOrder>
+          fill
+          label={t("print.plan.order")}
+          value={P.order}
+          onChange={P.setOrder}
           disabled={sourceLayout}
+          options={[
+            { value: "grouped", label: t("print.plan.grouped") },
+            { value: "interleaved", label: t("print.plan.interleaved") },
+          ]}
         />
         {sourceLayout && <p className="text-[var(--muted)]">{t("print.plan.orderNote")}</p>}
       </CollapsibleSection>
@@ -200,20 +174,17 @@ export function PrintInspector() {
             <NumberField label={t("common.rows")} value={P.rows} min={1} max={MAX_SHEET_GRID} onCommit={P.setRows} />
           </>
         )}
-        <label className="flex items-start gap-2">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={P.groupBySize}
-            disabled={sourceLayout}
-            onChange={(e) => P.setGroupBySize(e.target.checked)}
-          />
-          <span>
-            {t("print.sheet.groupBySize")}
-            <span className="block text-[var(--muted)]">{t("print.sheet.groupBySizeHint")}</span>
-          </span>
-        </label>
-        <div className="mt-1 text-[var(--muted)]">{t("print.sheet.outputGap")}</div>
+        <Switch
+          checked={P.groupBySize}
+          disabled={sourceLayout}
+          onChange={P.setGroupBySize}
+          label={t("print.sheet.groupBySize")}
+          info={t("print.sheet.groupBySizeHint")}
+        />
+        <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
+          {t("print.sheet.outputGap")}
+          <InfoTip text={t("print.sheet.outputGapNote")} />
+        </div>
         <OutputSpacingFields />
         {first && (
           <div className="flex justify-between">

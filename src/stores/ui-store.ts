@@ -12,6 +12,9 @@ export const useUiStore = create<{
   /** Section to show next time the dialog opens (set by "open preferences" links), then cleared. */
   prefsSection: PrefsSection | null;
   setPrefsOpen: (open: boolean, section?: PrefsSection) => void;
+  /** The keyboard shortcuts sheet (`?`, or File menu). */
+  shortcutsOpen: boolean;
+  setShortcutsOpen: (open: boolean) => void;
   /** Always starts in the Cards stage; switching never changes a document. */
   stage: Stage;
   setStage: (stage: Stage) => void;
@@ -19,6 +22,8 @@ export const useUiStore = create<{
   prefsOpen: false,
   prefsSection: null,
   setPrefsOpen: (prefsOpen, section) => set({ prefsOpen, prefsSection: section ?? null }),
+  shortcutsOpen: false,
+  setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
   stage: "cards",
   setStage: (stage) => {
     set({ stage });

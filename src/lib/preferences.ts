@@ -13,14 +13,15 @@ import { clampCount } from "./grid";
 import { type HintId, isHintId } from "./hints";
 import { DECIMAL_PREFERENCES, type DecimalPreference, LANGUAGE_PREFERENCES, type LanguagePreference } from "./locale";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
-import { defaultLayout, normalizeLayout, type WorkspaceLayoutPrefs } from "./workspace-layout";
+import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
 // v2: adds workspace.layout (panel positions/sizes). v3: adds help.dismissedHints. v4: adds
 // inspector.sections and print.layout. v5: help.dismissedHints is { id: version } (was a list). v6: adds
 // locale (language and decimal separator, both defaulting to following the system). v7: adds files.recent
-// (recent projects) and presets (named grids). v8: adds ai (AI Mode: off by default; never a key). Older files migrate by
-// taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 8;
+// (recent projects) and presets (named grids). v8: adds ai (AI Mode: off by default; never a key). v9: the Print tab's
+// layout is a panel layout like the Source tab's (print.layout was { libraryWidth, inspectorWidth }; those widths become
+// the sizes of its left and right regions). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 9;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -75,8 +76,8 @@ export interface AppPreferences {
     sections: Record<string, boolean>;
   };
   print: {
-    /** The Print stage's own layout: widths in px of the card library and of the inspector. */
-    layout: PrintLayoutPrefs;
+    /** The Print tab's own panel layout (piece library and settings around the sheets), separate from the Source tab's. */
+    layout: WorkspaceLayoutPrefs;
   };
   files: {
     /** Project files opened or saved lately, newest first. */
@@ -87,14 +88,6 @@ export interface AppPreferences {
   /** AI Mode (M19). */
   ai: AiPrefs;
 }
-
-export interface PrintLayoutPrefs {
-  libraryWidth: number;
-  inspectorWidth: number;
-}
-
-export const DEFAULT_PRINT_LAYOUT: PrintLayoutPrefs = { libraryWidth: 320, inspectorWidth: 300 };
-export const PRINT_PANEL_LIMITS = { min: 200, max: 700 };
 
 /** Most open/closed states remembered; section ids are short fixed names, so this is generous. */
 const MAX_SECTIONS = 64;
@@ -108,7 +101,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   appearance: { theme: "system" },
   help: { dismissedHints: {} },
   inspector: { sections: {} },
-  print: { layout: { ...DEFAULT_PRINT_LAYOUT } },
+  print: { layout: defaultLayout("print") },
   files: { recent: [] },
   presets: [],
   ai: DEFAULT_AI,
@@ -191,11 +184,6 @@ function normalizePresets(raw: unknown): GridPreset[] {
   return out;
 }
 
-const width = (v: unknown, fallback: number) =>
-  typeof v === "number" && Number.isFinite(v)
-    ? Math.round(Math.min(Math.max(v, PRINT_PANEL_LIMITS.min), PRINT_PANEL_LIMITS.max))
-    : fallback;
-
 /**
  * Raw (possibly partial, stale, hand-edited or corrupt) data -> valid preferences.
  * Unknown fields are dropped, missing ones take their default, so a newer
@@ -212,7 +200,6 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const h = isObj(r.help) ? r.help : {};
   const ins = isObj(r.inspector) ? r.inspector : {};
   const pr = isObj(r.print) ? r.print : {};
-  const pl = isObj(pr.layout) ? pr.layout : {};
   const fl = isObj(r.files) ? r.files : {};
 
   // Visible modes: valid, de-duplicated, order kept. Never empty.
@@ -227,6 +214,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
       ? (wantedDefault as DefaultWorkspace)
       : fallbackMode(visibleModes);
   const lastMode = isMode(w.lastMode) && visibleModes.includes(w.lastMode) ? w.lastMode : visibleModes[0];
+  const sourceLayout = normalizeLayout(w.layout);
 
   return {
     version: PREFERENCES_VERSION,
@@ -235,17 +223,19 @@ export function normalizePreferences(raw: unknown): AppPreferences {
       language: oneOf(loc.language, LANGUAGE_PREFERENCES, d.locale.language),
       decimal: oneOf(loc.decimal, DECIMAL_PREFERENCES, d.locale.decimal),
     },
-    workspace: { visibleModes, defaultMode, lastMode, layout: normalizeLayout(w.layout) },
+    workspace: { visibleModes, defaultMode, lastMode, layout: sourceLayout },
     preview: { livePreview: oneOf(p.livePreview, ["always", "manual"] as const, d.preview.livePreview) },
     appearance: { theme: oneOf(a.theme, THEMES, d.appearance.theme) },
     help: {
       dismissedHints: normalizeDismissed(h.dismissedHints),
     },
     inspector: { sections: normalizeSections(ins.sections) },
+    // The two "remember" switches are one setting for both tabs: the Source tab's copy is the one the user sets.
     print: {
       layout: {
-        libraryWidth: width(pl.libraryWidth, d.print.layout.libraryWidth),
-        inspectorWidth: width(pl.inspectorWidth, d.print.layout.inspectorWidth),
+        ...normalizeLayout(pr.layout, "print"),
+        rememberSizes: sourceLayout.rememberSizes,
+        rememberCollapsed: sourceLayout.rememberCollapsed,
       },
     },
     files: { recent: normalizeRecent(fl.recent) },
@@ -254,12 +244,25 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   };
 }
 
-/** Upgrade stored data written by an older app version. v1 is current, so this normalizes. */
+/**
+ * Before v9 the Print tab's layout was two widths. They become the sizes of its left (piece library) and right
+ * (settings) regions; the panels start where they always were.
+ */
+function migratePrintLayout(raw: Record<string, unknown>): Record<string, unknown> {
+  const print = isObj(raw.print) ? raw.print : {};
+  const old = isObj(print.layout) ? print.layout : {};
+  if (!("libraryWidth" in old || "inspectorWidth" in old)) return raw;
+  const regionSizes: Partial<Record<RegionPosition, number>> = {};
+  if (typeof old.libraryWidth === "number") regionSizes.left = old.libraryWidth;
+  if (typeof old.inspectorWidth === "number") regionSizes.right = old.inspectorWidth;
+  return { ...raw, print: { ...print, layout: { ...defaultLayout("print"), regionSizes } } };
+}
+
+/** Upgrade stored data written by an older app version, then normalize it (what it lacks takes its default). */
 export function migratePreferences(raw: unknown): AppPreferences {
-  // Older versions need nothing extra: a missing `workspace.layout` (v1) or `help` (v1/v2)
-  // is filled with its default while every other setting is kept.
-  // Future: `if (version < 4) raw = { ...raw, editor: {...} }` before normalizing.
-  return normalizePreferences(raw);
+  // A missing `workspace.layout` (v1) or `help` (v1/v2) is filled with its default while every other setting is kept.
+  const current = isObj(raw) && typeof raw.version === "number" && raw.version >= 9;
+  return normalizePreferences(isObj(raw) && !current ? migratePrintLayout(raw) : raw);
 }
 
 /** Workspace a new editor session opens in. */

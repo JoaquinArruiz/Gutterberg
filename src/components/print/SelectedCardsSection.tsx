@@ -8,11 +8,11 @@ import { useLibraryCards } from "../../lib/use-library-cards";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
+import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 
-const smallBtn = "rounded border border-[var(--border)] px-2 py-0.5 hover:bg-[var(--hover)] disabled:opacity-40";
 /** Cards whose source sizes differ by less than this (points) can be given one real size together. */
 const SAME_SIZE_PT = 0.5;
 
@@ -64,7 +64,11 @@ export function SelectedCardsSection() {
           : t("print.selected.backNone");
 
   return (
-    <CollapsibleSection id="print.cards" title={t("print.selected.title")}>
+    <CollapsibleSection
+      id="print.cards"
+      title={t("print.selected.title")}
+      info={first && sameSource ? t("print.selected.sameNote") : undefined}
+    >
       {!first ? (
         <p className="text-[var(--muted)]">{t("print.selected.empty")}</p>
       ) : (
@@ -112,35 +116,26 @@ export function SelectedCardsSection() {
             onCommit={(pct) => apply(pct / 100)}
           />
           <div>
-            <button
-              type="button"
-              className={smallBtn}
-              disabled={picked.every((c) => c.scale === 1)}
-              onClick={() => apply(1)}
-            >
+            <Button disabled={picked.every((c) => c.scale === 1)} onClick={() => apply(1)}>
               {t("print.selected.backToPage")}
-            </button>
+            </Button>
           </div>
           <div className="flex justify-between gap-2" data-testid="back-summary">
             <span className="text-[var(--muted)]">{t("print.selected.back")}</span>
             <span className="tabular-nums">{backText}</span>
           </div>
           <div className="flex flex-wrap gap-1.5">
-            <button type="button" className={smallBtn} aria-pressed={picking} onClick={() => setPicking(!picking)}>
+            <Button aria-pressed={picking} onClick={() => setPicking(!picking)}>
               {t("print.selected.pickBack")}
-            </button>
-            <button
-              type="button"
-              className={smallBtn}
+            </Button>
+            <Button
               disabled={keys.every((k) => edits.backs[k] === undefined)}
               onClick={() => setEdits(setBacks(edits, keys, null))}
             >
               {t("print.selected.clearBack")}
-            </button>
+            </Button>
           </div>
-          <p className="text-[var(--muted)]">
-            {sameSource ? t("print.selected.sameNote") : t("print.selected.differNote")}
-          </p>
+          {!sameSource && <p className="text-[var(--muted)]">{t("print.selected.differNote")}</p>}
         </>
       )}
     </CollapsibleSection>

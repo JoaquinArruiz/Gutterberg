@@ -7,7 +7,9 @@ import { menuItem } from "./Popover";
 /** Position choices for one panel; only positions that panel supports are listed. */
 export function PanelPositionItems({ id, close }: { id: PanelId; close: () => void }) {
   const { t } = useTranslation();
-  const current = usePreferencesStore((s) => s.prefs.workspace.layout.panels.find((p) => p.id === id)?.position);
+  const current = usePreferencesStore((s) =>
+    [...s.prefs.workspace.layout.panels, ...s.prefs.print.layout.panels].find((p) => p.id === id),
+  )?.position;
   const setPosition = usePreferencesStore((s) => s.setPanelPosition);
   return (
     <>

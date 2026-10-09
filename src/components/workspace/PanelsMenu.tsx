@@ -1,17 +1,21 @@
 import { LayoutPanelLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { PANEL_IDS } from "../../lib/workspace-layout";
+import { LAYOUT_PANELS } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
 import { PanelPositionItems } from "./PanelPositionMenu";
 import { Popover } from "./Popover";
 
 /**
  * Toolbar "Panels" menu: the always-available way to move or bring back any
- * panel, including ones that are currently hidden.
+ * panel of the tab being shown, including ones that are currently hidden.
  */
 export function PanelsMenu() {
   const { t } = useTranslation();
-  const panels = usePreferencesStore((s) => s.prefs.workspace.layout.panels);
+  const stage = useUiStore((s) => s.stage);
+  const panels = usePreferencesStore(
+    (s) => (stage === "cards" ? s.prefs.workspace.layout : s.prefs.print.layout).panels,
+  );
   return (
     <Popover
       label={t("panels.menu")}
@@ -20,7 +24,7 @@ export function PanelsMenu() {
       trigger={<LayoutPanelLeft size={14} />}
     >
       {(close) =>
-        PANEL_IDS.map((id) => (
+        LAYOUT_PANELS[stage].map((id) => (
           <div key={id} className="mb-1 border-b border-[var(--border)] pb-1 last:mb-0 last:border-0 last:pb-0">
             <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
               {panels.find((p) => p.id === id)?.position === "hidden"
