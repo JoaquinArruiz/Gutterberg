@@ -63,7 +63,7 @@ Source PDF → Source tab → extract_cards → piece library
 | Messy scans | Supported: freeform per-card rectangles with rotation, a per-card turn so all cards face the same way, drag-to-sort (M18). Photos taken at an angle (perspective) are out of scope |
 | Card size | Cards keep their size unless the user explicitly sets a real size or percentage. Never scaled automatically to fit |
 | AI | Optional AI Mode (M19): off by default and hidden when off (the one Preferences entry is the switch); buttons with fixed prompts, no chat; AI is a second engine behind the same "Detect pieces" button, results are always editable proposals; keys only in the system keychain |
-| License | Undecided; the owner will choose later. No `LICENSE` file until then (all rights reserved) |
+| License | **PolyForm Noncommercial 1.0.0**, in `LICENSE` (official text, unchanged) with `Required Notice: Copyright Joaquín Arruiz (https://github.com/JoaquinArruiz/Gutterberg)`. Personal and noncommercial use, changes and free forks are allowed; selling it or a fork, or a company using it for work, needs the owner's permission. No warranty, no liability |
 | Before the release | Logo (M23), images as pieces (M24) and the welcome tour (M25) come before M15 |
 | Logo | Three variants: the owner's logo for light backgrounds, a dark variant, and the app icon on a bone-coloured plate (not pure white) (M23) |
 | Images | Each import becomes a one-page-per-image PDF in the cache; pixels never resampled; the user picks the size, never stretched (M24) |

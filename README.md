@@ -134,3 +134,10 @@ pnpm tauri dev
 
 Geometry is stored normalized (0..1 of the page, top-left origin); all conversions live in
 `src/lib/coordinates.ts` and `src/lib/units.ts`. Frontend unit tests: `pnpm test`.
+
+## License
+
+[PolyForm Noncommercial 1.0.0](LICENSE). Free for personal and noncommercial use: you can
+use it, change it and share your changes for free. For any commercial use (selling it or a
+modified version, or using it for work in a company), or if you're not sure whether your use
+counts, contact me: joaquinarruiz@gmail.com. The software comes as is, without warranty.

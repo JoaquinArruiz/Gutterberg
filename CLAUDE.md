@@ -94,4 +94,5 @@ token is marked and printed with its rectangle.
   never put Claude's name in commit messages, branch names, code or docs. No
   `Co-Authored-By` or session-link lines.
 - Do not create branches or pull requests unless asked.
-- Do not add a `LICENSE` file or license headers; the owner will choose the license later.
+- The project is under the PolyForm Noncommercial License 1.0.0 (`LICENSE`). Never change the
+  `LICENSE` file, and add no license headers to source files.
