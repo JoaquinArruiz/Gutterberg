@@ -41,5 +41,5 @@ pub fn run() {
             commands::render::render_region,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running the PDF Card Editor");
+        .expect("error while running Gutterberg");
 }

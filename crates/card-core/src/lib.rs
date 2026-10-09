@@ -1,4 +1,4 @@
-//! Core engine for the PDF card editor.
+//! Core engine for Gutterberg.
 //!
 //! Deliberately independent of Tauri/React: the UI preview and the PDF
 //! exporter both consume [`layout::calculate_layout`], the single source of

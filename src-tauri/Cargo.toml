@@ -1,11 +1,11 @@
 [package]
-name = "pdf-card-editor"
+name = "gutterberg"
 version = "0.1.0"
 edition = "2021"
-description = "Print-and-Play PDF card spacing editor"
+description = "Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact card sizes, clean gutters, and the original artwork untouched."
 
 [lib]
-name = "pdf_card_editor_lib"
+name = "gutterberg_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

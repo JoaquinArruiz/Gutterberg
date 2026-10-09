@@ -68,7 +68,7 @@ describe("language", () => {
 
   it("is remembered with the other preferences", () => {
     prefs().setLanguage("es");
-    expect(JSON.parse(localStorage.getItem("pdf-card-editor:preferences") ?? "{}").locale.language).toBe("es");
+    expect(JSON.parse(localStorage.getItem("gutterberg:preferences") ?? "{}").locale.language).toBe("es");
   });
 });
 

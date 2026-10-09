@@ -39,7 +39,9 @@ export interface KeyValueStorage {
   removeItem(key: string): void;
 }
 
-export const PREFERENCES_KEY = "pdf-card-editor:preferences";
+export const PREFERENCES_KEY = "gutterberg:preferences";
+/** The key used before the app was renamed to Gutterberg; read once, then removed. */
+export const LEGACY_PREFERENCES_KEY = "pdf-card-editor:preferences";
 
 /** The webview's localStorage (persisted in the app's data directory), or an in-memory fallback if blocked. */
 export function browserStorage(): KeyValueStorage {
@@ -76,7 +78,15 @@ function forgetUnremembered(l: WorkspaceLayoutPrefs): WorkspaceLayoutPrefs {
  */
 export function loadPreferences(storage: KeyValueStorage): AppPreferences {
   try {
-    const text = storage.getItem(PREFERENCES_KEY);
+    let text = storage.getItem(PREFERENCES_KEY);
+    if (!text) {
+      const legacy = storage.getItem(LEGACY_PREFERENCES_KEY);
+      if (legacy) {
+        text = legacy;
+        storage.setItem(PREFERENCES_KEY, legacy);
+        storage.removeItem(LEGACY_PREFERENCES_KEY);
+      }
+    }
     if (!text) return DEFAULT_PREFERENCES;
     const prefs = migratePreferences(JSON.parse(text));
     return {

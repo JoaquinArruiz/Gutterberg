@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { sessionDefaults } from "../lib/preferences";
+import { DEFAULT_PREFERENCES, sessionDefaults } from "../lib/preferences";
 import { switchWorkspace } from "../lib/workspace";
 import { useEditorStore } from "./editor-store";
 import {
   createPreferencesStore,
   type KeyValueStorage,
+  LEGACY_PREFERENCES_KEY,
   PREFERENCES_KEY,
   usePreferencesStore,
 } from "./preferences-store";
@@ -25,6 +26,27 @@ describe("first launch", () => {
     expect(fresh.workspace.defaultMode).toBe("source");
     expect(sessionDefaults(fresh).viewMode).toBe("source");
     expect(fresh.workspace.visibleModes).toEqual(["source", "output", "split"]);
+  });
+});
+
+describe("preferences key after the rename to Gutterberg", () => {
+  const saved = JSON.stringify({
+    ...DEFAULT_PREFERENCES,
+    measurement: { ...DEFAULT_PREFERENCES.measurement, unit: "in" },
+  });
+
+  it("reads the old key once when the new one is empty, moves it and deletes the old one", () => {
+    const storage = memory();
+    storage.data.set(LEGACY_PREFERENCES_KEY, saved);
+    expect(createPreferencesStore(storage).getState().prefs.measurement.unit).toBe("in");
+    expect(storage.data.has(LEGACY_PREFERENCES_KEY)).toBe(false);
+    expect(storage.data.get(PREFERENCES_KEY)).toBe(saved);
+  });
+
+  it("prefers the new key when both exist", () => {
+    const storage = memory(JSON.stringify(DEFAULT_PREFERENCES));
+    storage.data.set(LEGACY_PREFERENCES_KEY, saved);
+    expect(createPreferencesStore(storage).getState().prefs.measurement.unit).toBe("mm");
   });
 });
 

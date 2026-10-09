@@ -2,7 +2,7 @@
 name = "card-ai"
 version = "0.1.0"
 edition = "2021"
-description = "Optional AI-assisted detection and page sorting for the PDF card editor: provider adapters, prompts and reply validation (the only crate that talks to the network)"
+description = "Optional AI-assisted detection and page sorting for Gutterberg: provider adapters, prompts and reply validation (the only crate that talks to the network)"
 
 [dependencies]
 card-core = { path = "../card-core" }

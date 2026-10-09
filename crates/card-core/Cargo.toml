@@ -2,7 +2,7 @@
 name = "card-core"
 version = "0.1.0"
 edition = "2021"
-description = "Geometry, layout and PDF export engine for the PDF card editor (no UI/Tauri dependencies)"
+description = "Geometry, layout and PDF export engine for Gutterberg (no UI/Tauri dependencies)"
 
 [dependencies]
 lopdf = "0.45"

@@ -1,4 +1,6 @@
-# PDF Card Editor
+# Gutterberg
+
+Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact card sizes, clean gutters, and the original artwork untouched.
 
 Desktop app (Tauri 2 + Rust + React 19/TypeScript) that takes a Print-and-Play PDF whose
 cards are packed edge to edge and re-exports it with configurable spacing, keeping the
