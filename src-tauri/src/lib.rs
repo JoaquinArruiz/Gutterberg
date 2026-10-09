@@ -44,6 +44,7 @@ pub fn run() {
             commands::images::plan_images,
             commands::images::probe_images,
             commands::layout::compute_layout,
+            commands::licenses::license_texts,
             commands::opened::take_opened_file,
             commands::sheets::compute_cards,
             commands::sheets::compute_sheets,

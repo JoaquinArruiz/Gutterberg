@@ -1,0 +1,27 @@
+# Settings for `cargo about` (scripts/third-party-licenses.mjs): the licenses the Rust crates may be under.
+# A crate under any other license stops the build until the owner has looked at it.
+accepted = [
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "MIT",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Zlib",
+  "Unicode-3.0",
+  "MPL-2.0",
+  "CC0-1.0",
+  "0BSD",
+  "BSL-1.0",
+  # The Mozilla root certificates bundle (webpki-roots), a permissive data license.
+  "CDLA-Permissive-2.0",
+]
+# Every platform an installer is built for, so a license that only one of them needs is found on any machine.
+targets = [
+  "x86_64-unknown-linux-gnu",
+  "x86_64-pc-windows-msvc",
+  "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
+]
+# Gutterberg's own crates (they have `publish = false`) are not third-party code.
+private = { ignore = true }

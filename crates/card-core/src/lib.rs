@@ -4,6 +4,7 @@
 //! exporter both consume [`layout::calculate_layout`], the single source of
 //! truth for geometry.
 
+pub mod access;
 pub mod card;
 pub mod detect;
 pub mod error;

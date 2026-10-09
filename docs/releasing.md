@@ -32,6 +32,10 @@ and `latest.json` (what the app shows under "What's new"). English only.
 2. **The repository must be public**, so apps can download `latest.json` and the installers without a token.
 3. Settings › Actions › General › Workflow permissions: **Read and write**.
 
+4. **CLA Assistant** (for contributors), before accepting outside pull requests: install it on the repository
+   from <https://github.com/cla-assistant/cla-assistant> and point it at the contributor agreement. Only the
+   owner can do this.
+
 Builds are not code-signed (no Apple or Windows certificate). The updater works anyway; it checks its own key.
 
 ## To release
@@ -52,6 +56,18 @@ Builds are not code-signed (no Apple or Windows certificate). The updater works 
 
 To fix the notes after a release, edit `CHANGELOG.md` and re-run the workflow for that tag (it replaces the
 release's files). Editing the text on GitHub alone does **not** change `latest.json`.
+
+## Licenses in every build
+
+The workflow runs `node scripts/third-party-licenses.mjs` before building. It writes
+`src-tauri/resources/THIRD_PARTY_LICENSES` from `cargo about` (the Rust crates, using `about.toml` and
+`about.hbs`), `pnpm licenses` (the web packages) and the licenses `scripts/fetch-pdfium.sh` collects for
+pdfium and the libraries inside it. The file is built into the app (Preferences › About › Third-party
+licenses) and bundled with every installer, next to `LICENSE`, which the Windows installers show. The file
+in the repository is only a placeholder. If a new dependency is under a license that `about.toml` does not
+list, the build fails until the owner has decided about it. To try it on your machine:
+`cargo install cargo-about --locked --features cli`, `scripts/fetch-pdfium.sh`, then
+`node scripts/third-party-licenses.mjs --out /tmp/THIRD_PARTY_LICENSES`.
 
 ## Testing the updater
 

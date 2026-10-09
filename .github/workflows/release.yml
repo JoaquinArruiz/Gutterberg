@@ -72,7 +72,14 @@ jobs:
         shell: bash
         run: scripts/fetch-pdfium.sh ${{ matrix.pdfium }}
 
-      # Step 2 of M15 adds the THIRD_PARTY_LICENSES step here, before the build.
+      # The notices of the Rust crates, the npm packages and pdfium. The file is built into the app (Preferences ›
+      # About shows it) and bundled with every installer, so it has to exist before the build.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about@0.9.2
+      - name: Collect the third-party licenses
+        shell: bash
+        run: node scripts/third-party-licenses.mjs
 
       - uses: tauri-apps/tauri-action@v0
         env:

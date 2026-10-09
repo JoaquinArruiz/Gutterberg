@@ -71,7 +71,12 @@ speaks English and Spanish (Preferences › General › Language).
   a PDF from any list of sheets and several source documents (one form per source page,
   named `/S{document}_{page}`); `export_document` is a thin wrapper that turns each job's
   `calculate_layout` result into a sheet. Rotated pages and CropBox offsets are handled. Export rebuilds the
-  document, so it removes encryption and permissions, outlines and form fields.
+  document, so it drops outlines and form fields. It respects the publisher's permission flags (see `access`).
+- `access` – the permission flags of an encrypted PDF. A PDF locked against printing or modifying is refused
+  (before the save dialog, in the pre-flight list, with a lock badge from the moment it is opened); any other
+  restriction (for example no copying) is kept: the output is encrypted (AES-128, opens without a password)
+  with the same flags, or the most restrictive of them when several PDFs share the sheets. A PDF without
+  restrictions exports as before.
 - `project` – the `.gtr` envelope: `parse_project` checks that a file is a `gutterberg-project` and
   upgrades older versions step by step (`ProjectTooNew` for a newer one, `NotAProject` for anything
   else), `save_project` writes `format` and `version` first through a temporary file, and `file_hash`

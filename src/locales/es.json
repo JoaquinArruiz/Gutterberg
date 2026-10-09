@@ -53,7 +53,9 @@
       "page": "Página {{n}}:",
       "fixPrint": "Corrígelos y vuelve a exportar. Las piezas nunca se escalan para que quepan.",
       "fixSource": "Corrige estas páginas u omítelas, y vuelve a exportar.",
-      "pageIn": "Página {{n}} de {{name}}:"
+      "pageIn": "Página {{n}} de {{name}}:",
+      "lockedTitle": "Este PDF no se puede exportar",
+      "fixLocked": "Quita este PDF del proyecto o pide a su editor una versión sin bloqueo."
     },
     "warnings": {
       "label": "Avisos de calidad de impresión",
@@ -496,7 +498,12 @@
       "openTitle": "Abrir enlace",
       "openBrowser": "Esto abrirá tu navegador web en:",
       "open": "Abrir",
-      "openFailed": "No se pudo abrir el enlace."
+      "openFailed": "No se pudo abrir el enlace.",
+      "license": "Licencia",
+      "licenseNote": "Gratis para uso personal y no comercial. Para cualquier uso comercial, o si no estás seguro de si tu uso cuenta, escribe a joaquinarruiz@gmail.com. El software se ofrece tal cual, sin garantía.",
+      "appLicense": "Licencia de Gutterberg",
+      "thirdParty": "Licencias de terceros",
+      "licenseFailed": "No se pudo cargar el texto de la licencia."
     },
     "footer": {
       "confirm": "¿Restablecer todas las preferencias? Se restauran los ajustes predeterminados de la aplicación. Tu documento no se ve afectado.",
@@ -671,7 +678,8 @@
     "ai_config": "{{detail}}",
     "image_unsupported": "«{{name}}» no se puede usar. Las imágenes pueden ser PNG, JPEG o WebP.",
     "image_too_large": "«{{name}}» es demasiado grande ({{megapixels}} megapíxeles, {{mb}} MB). Los límites son 100 megapíxeles y 200 MB.",
-    "image_unreadable": "No se puede leer «{{name}}»: {{detail}}"
+    "image_unreadable": "No se puede leer «{{name}}»: {{detail}}",
+    "pdf_locked": "El editor de este PDF no permite cambios. Contáctalo para pedir una versión de impresión y juego sin bloqueo."
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",
@@ -709,7 +717,6 @@
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
       "ok": "Descartar cambios"
     },
-    "noModify": "El autor marcó “{{name}}” como «no modificar». Se puede abrir, pero el PDF exportado es un archivo nuevo, así que verifica que tengas permiso para reorganizarlo.",
     "remove": {
       "message": "¿Quitar «{{name}}» del proyecto? Sus piezas salen de la biblioteca de piezas y de las hojas. El archivo en el disco no se toca.",
       "messageLast": "Este es el único PDF del proyecto. ¿Quitar «{{name}}»? El proyecto quedará vacío. El archivo en el disco no se toca.",
@@ -1024,5 +1031,12 @@
       "failed": "La actualización a la {{version}} no terminó",
       "tryAgain": "Reintentar"
     }
+  },
+  "lock": {
+    "locked": "Bloqueado",
+    "restricted": "Con restricciones",
+    "printing": "«{{name}}» no permite imprimir, así que no se puede exportar. Pide a su editor una versión de impresión y juego sin bloqueo.",
+    "modifying": "«{{name}}» no permite cambios, así que no se puede exportar. Pide a su editor una versión de impresión y juego sin bloqueo.",
+    "restrictedNote": "«{{name}}» tiene restricciones de su editor (por ejemplo, copiar). El PDF exportado las conserva."
   }
 }

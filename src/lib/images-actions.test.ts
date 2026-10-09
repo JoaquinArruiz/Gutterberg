@@ -93,7 +93,12 @@ vi.mock("./tauri", async (importOriginal) => ({
   openPdf: vi.fn(async (_id: number, path: string) => {
     const pdf = fake.pdfs.get(path);
     if (!pdf) throw { code: "io", message: "no such file" };
-    return { page_count: pdf.pages, pages: Array.from({ length: pdf.pages }, () => A4), modify_allowed: true };
+    return {
+      page_count: pdf.pages,
+      pages: Array.from({ length: pdf.pages }, () => A4),
+      access: { other_restricted: false },
+      locked: null,
+    };
   }),
 }));
 

@@ -12,6 +12,7 @@
 //!
 //! so text, vector art and embedded images keep their original encoding.
 
+use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::finish::{bleed_regions, finish_sheets, Finishing, SheetMarks};
@@ -306,7 +307,13 @@ fn save_atomically(doc: &mut Document, output: &Path) -> Result<()> {
 /// Export `input` according to `job`, writing `output`.
 pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
     let mut doc = Document::load(input)?;
+    let sources = [(DEFAULT_DOCUMENT_ID, &doc)];
+    access::check_sources(&sources)?;
+    let permissions = access::output_permissions(&sources);
     export_document(&mut doc, job)?;
+    if let Some(p) = permissions {
+        access::apply_permissions(&mut doc, p, DEFAULT_DOCUMENT_ID)?;
+    }
     save_atomically(&mut doc, output)
 }
 
@@ -326,7 +333,14 @@ pub fn export_sheets_files(
         .iter()
         .map(|(id, path)| Ok((*id, Document::load(path)?)))
         .collect::<Result<Vec<_>>>()?;
+    let loaded: Vec<(DocumentId, &Document)> = sources.iter().map(|(id, d)| (*id, d)).collect();
+    access::check_sources(&loaded)?;
+    let permissions = access::output_permissions(&loaded);
+    let base = sources.first().map_or(DEFAULT_DOCUMENT_ID, |(id, _)| *id);
     let mut doc = export_sheets(sources, sheets)?;
+    if let Some(p) = permissions {
+        access::apply_permissions(&mut doc, p, base)?;
+    }
     save_atomically(&mut doc, output)
 }
 
@@ -483,6 +497,9 @@ pub fn plan_print_files(
         .iter()
         .map(|f| Document::load(f.path))
         .collect::<std::result::Result<Vec<_>, _>>()?;
+    let locked: Vec<(DocumentId, &Document)> =
+        files.iter().map(|f| f.document_id).zip(&docs).collect();
+    access::check_sources(&locked)?;
     let mut issues = Vec::new();
     let mut sources = Vec::with_capacity(files.len());
     for (file, doc) in files.iter().zip(&docs) {
@@ -526,7 +543,9 @@ pub fn plan_print_files(
 
 /// [`validate_export`] for the PDF at `input`.
 pub fn validate_export_file(input: &Path, jobs: &[PageJob]) -> Result<Vec<PageIssue>> {
-    Ok(validate_export(&Document::load(input)?, jobs))
+    let doc = Document::load(input)?;
+    access::check_sources(&[(DEFAULT_DOCUMENT_ID, &doc)])?;
+    Ok(validate_export(&doc, jobs))
 }
 
 /// The PDF `cm` matrix that places a card: `card` maps source to sheet in top-left page

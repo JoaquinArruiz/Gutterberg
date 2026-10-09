@@ -53,7 +53,9 @@
       "page": "Page {{n}}:",
       "fixPrint": "Fix these, then export again. Pieces are never scaled to fit.",
       "fixSource": "Fix these pages, or skip them, then export again.",
-      "pageIn": "Page {{n}} of {{name}}:"
+      "pageIn": "Page {{n}} of {{name}}:",
+      "lockedTitle": "This PDF can't be exported",
+      "fixLocked": "Remove this PDF from the project, or ask its publisher for an unlocked version."
     },
     "warnings": {
       "label": "Print quality warnings",
@@ -496,7 +498,12 @@
       "openTitle": "Open link",
       "openBrowser": "This will open your web browser at:",
       "open": "Open",
-      "openFailed": "The link could not be opened."
+      "openFailed": "The link could not be opened.",
+      "license": "License",
+      "licenseNote": "Free for personal and noncommercial use. For any commercial use, or if you're not sure whether your use counts, contact joaquinarruiz@gmail.com. The software comes as is, without warranty.",
+      "appLicense": "Gutterberg license",
+      "thirdParty": "Third-party licenses",
+      "licenseFailed": "The license text could not be loaded."
     },
     "footer": {
       "confirm": "Reset all preferences? This restores the default application settings. Your document is not affected.",
@@ -671,7 +678,8 @@
     "ai_config": "{{detail}}",
     "image_unsupported": "“{{name}}” can't be used. Images can be PNG, JPEG or WebP.",
     "image_too_large": "“{{name}}” is too large ({{megapixels}} megapixels, {{mb}} MB). The limits are 100 megapixels and 200 MB.",
-    "image_unreadable": "“{{name}}” can't be read: {{detail}}"
+    "image_unreadable": "“{{name}}” can't be read: {{detail}}",
+    "pdf_locked": "This PDF's publisher doesn't allow changes. Contact them for an unlocked print-and-play version."
   },
   "numberField": {
     "decrease": "Decrease {{label}}",
@@ -709,7 +717,6 @@
       "message": "This project has changes that are not saved. Discard them?",
       "ok": "Discard changes"
     },
-    "noModify": "“{{name}}” is marked as “no modify” by its author. Opening it works, but the exported PDF is a new file, so check that you are allowed to rearrange it.",
     "remove": {
       "message": "Remove “{{name}}” from the project? Its pieces leave the piece library and the sheets. The file on disk is not touched.",
       "messageLast": "This is the only PDF of the project. Remove “{{name}}”? The project will be left empty. The file on disk is not touched.",
@@ -1024,5 +1031,12 @@
       "failed": "The update to {{version}} didn't finish",
       "tryAgain": "Try again"
     }
+  },
+  "lock": {
+    "locked": "Locked",
+    "restricted": "Restricted",
+    "printing": "“{{name}}” doesn't allow printing, so it can't be exported. Contact its publisher for an unlocked print-and-play version.",
+    "modifying": "“{{name}}” doesn't allow changes, so it can't be exported. Contact its publisher for an unlocked print-and-play version.",
+    "restrictedNote": "“{{name}}” has restrictions from its publisher (for example, copying). The exported PDF keeps them."
   }
 }

@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/128x128.png";
 import { useAppName } from "../../lib/app-info";
 import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
+import { type LicenseTexts, licenseTexts } from "../../lib/licenses";
 import { GitHubIcon, LinkedInIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
 import { Field } from "./Field";
@@ -19,6 +20,10 @@ export function AboutSection() {
   const name = useAppName();
   const [version, setVersion] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // Which license text is open under "License", and the texts once they were asked for.
+  const [shown, setShown] = useState<keyof LicenseTexts | null>(null);
+  const [texts, setTexts] = useState<LicenseTexts | null>(null);
+  const [textsFailed, setTextsFailed] = useState(false);
 
   useEffect(() => {
     let live = true;
@@ -36,6 +41,17 @@ export function AboutSection() {
       await openExternalLink(url);
     } catch {
       setFailed(true);
+    }
+  };
+
+  const showLicense = async (which: keyof LicenseTexts) => {
+    if (shown === which) return setShown(null);
+    setTextsFailed(false);
+    try {
+      setTexts(texts ?? (await licenseTexts()));
+      setShown(which);
+    } catch {
+      setTextsFailed(true);
     }
   };
 
@@ -68,6 +84,31 @@ export function AboutSection() {
           <p className="text-red-300" role="alert">
             ⚠ {t("preferences.about.openFailed")}
           </p>
+        )}
+      </Field>
+      <Field label={t("preferences.about.license")}>
+        <p className="text-[var(--muted)]">{t("preferences.about.licenseNote")}</p>
+        <div className="flex flex-wrap gap-2">
+          {(["app", "third_party"] as const).map((which) => (
+            <Button key={which} size="md" aria-pressed={shown === which} onClick={() => void showLicense(which)}>
+              {t(which === "app" ? "preferences.about.appLicense" : "preferences.about.thirdParty")}
+            </Button>
+          ))}
+        </div>
+        {textsFailed && (
+          <p className="text-red-300" role="alert">
+            ⚠ {t("preferences.about.licenseFailed")}
+          </p>
+        )}
+        {shown && texts && (
+          // A read-only field scrolls, takes focus and lets the text be selected and copied, with no extra code.
+          <textarea
+            readOnly
+            data-testid="license-text"
+            aria-label={t(shown === "app" ? "preferences.about.appLicense" : "preferences.about.thirdParty")}
+            value={texts[shown]}
+            className="h-64 w-full resize-none rounded bg-[var(--bg)] px-2 py-1.5 font-mono text-[11px]"
+          />
         )}
       </Field>
     </>

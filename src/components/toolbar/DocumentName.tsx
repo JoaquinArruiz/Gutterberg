@@ -6,6 +6,7 @@ import { documentName, useDocumentStore } from "../../stores/document-store";
 import { usePrintStore } from "../../stores/print-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
+import { LockBadge } from "./LockBadge";
 
 /** What a file name cannot contain, and a trailing ".pdf" the user typed out of habit. */
 const cleanName = (raw: string) =>
@@ -24,6 +25,7 @@ export function DocumentName() {
   const path = useDocumentStore((s) => s.path);
   const images = useDocumentStore((s) => s.documents.find((d) => d.id === s.activeId)?.images);
   const activeId = useDocumentStore((s) => s.activeId);
+  const documents = useDocumentStore((s) => s.documents);
   const renameImages = useDocumentStore((s) => s.renameImages);
   const [renaming, setRenaming] = useState<string | null>(null);
   const exportName = usePrintStore((s) => s.exportName);
@@ -81,6 +83,7 @@ export function DocumentName() {
         >
           <Trash2 size={13} />
         </Button>
+        <LockBadge documents={documents.filter((d) => d.id === activeId)} />
       </div>
     );
   }
@@ -116,14 +119,17 @@ export function DocumentName() {
   }
 
   return (
-    <button
-      type="button"
-      title={t("toolbar.docName.rename")}
-      onClick={() => setDraft(shown)}
-      className="flex min-w-0 items-center gap-1.5 rounded px-1.5 py-1 hover:bg-[var(--hover)]"
-    >
-      <span className="min-w-0 truncate">{shown}.pdf</span>
-      <Pencil size={12} className="shrink-0 text-[var(--muted)]" />
-    </button>
+    <div className="flex min-w-0 items-center gap-1">
+      <button
+        type="button"
+        title={t("toolbar.docName.rename")}
+        onClick={() => setDraft(shown)}
+        className="flex min-w-0 items-center gap-1.5 rounded px-1.5 py-1 hover:bg-[var(--hover)]"
+      >
+        <span className="min-w-0 truncate">{shown}.pdf</span>
+        <Pencil size={12} className="shrink-0 text-[var(--muted)]" />
+      </button>
+      <LockBadge documents={documents} />
+    </div>
   );
 }

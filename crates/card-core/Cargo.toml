@@ -2,6 +2,7 @@
 name = "card-core"
 version = "0.1.0"
 edition = "2021"
+publish = false
 description = "Geometry, layout and PDF export engine for Gutterberg (no UI/Tauri dependencies)"
 
 [dependencies]

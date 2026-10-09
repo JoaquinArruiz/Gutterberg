@@ -1,0 +1,4 @@
+Third-party licenses
+
+The notices of the open-source software Gutterberg ships with (Tauri, React, lopdf, pdfium and the rest) are
+added to this file when a release is built: see scripts/third-party-licenses.mjs. This is a development build.

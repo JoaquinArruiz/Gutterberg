@@ -61,6 +61,16 @@ pub enum Error {
     },
     #[error("{name} cannot be read: {detail}")]
     ImageUnreadable { name: String, detail: String },
+    #[error(
+        "this PDF's publisher doesn't allow changes ({reason} is locked); contact them for an \
+         unlocked print-and-play version"
+    )]
+    PdfLocked {
+        /// The PDF it is about.
+        document_id: u32,
+        /// `printing`, `modifying`, or `restrictions` (the output could not carry the source's).
+        reason: String,
+    },
 }
 
 /// A value that goes with an error code (a page number, a size in mm, a detail text).
@@ -170,6 +180,16 @@ impl From<&Error> for ErrorInfo {
             Error::ImageUnreadable { name, detail } => (
                 "image_unreadable",
                 vec![("name", text(name)), ("detail", text(detail))],
+            ),
+            Error::PdfLocked {
+                document_id,
+                reason,
+            } => (
+                "pdf_locked",
+                vec![
+                    ("document_id", ErrorParam::Number(*document_id as f64)),
+                    ("reason", text(reason)),
+                ],
             ),
         };
         Self {

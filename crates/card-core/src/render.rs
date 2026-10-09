@@ -1,5 +1,6 @@
 //! Raster previews via pdfium. Used only for the UI; export never touches this.
 
+use crate::access::PdfAccess;
 use crate::error::{Error, Result};
 use crate::geometry::PageSize;
 use pdfium_render::prelude::*;
@@ -11,8 +12,10 @@ pub struct DocumentInfo {
     pub page_count: usize,
     /// Size in points of every page, in order.
     pub pages: Vec<PageSize>,
-    /// False when the PDF's permissions forbid modifying it ("no modify" PDFs).
-    pub modify_allowed: bool,
+    /// What the PDF's publisher allows (see `access`).
+    pub access: PdfAccess,
+    /// Why the export will refuse this PDF (`printing` or `modifying`), if it will.
+    pub locked: Option<String>,
 }
 
 fn pdfium_err(e: PdfiumError) -> Error {
@@ -68,14 +71,32 @@ pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
             height_pt: p.height().value as f64,
         })
         .collect::<Vec<_>>();
+    let access = access_in(doc);
     Ok(DocumentInfo {
         page_count: pages.len(),
         pages,
-        modify_allowed: doc
-            .permissions()
-            .can_modify_document_content()
-            .unwrap_or(true),
+        locked: access.refusal().map(str::to_owned),
+        access,
     })
+}
+
+/// The publisher's permissions as pdfium reads them, for the badge. A flag pdfium cannot tell counts as allowed.
+/// Printing and modifying (what decides a refusal) are the same bits `access::access_of` reads from the file; for
+/// the others pdfium looks at the accessibility copy flag on newer PDFs, so the export is what applies them exactly.
+fn access_in(doc: &PdfDocument) -> PdfAccess {
+    let p = doc.permissions();
+    let yes = |r: std::result::Result<bool, PdfiumError>| r.unwrap_or(true);
+    let high = yes(p.can_print_high_quality());
+    let low = yes(p.can_print_only_low_quality());
+    PdfAccess {
+        print: high || low,
+        modify: yes(p.can_modify_document_content()),
+        other_restricted: !(high
+            && yes(p.can_extract_text_and_graphics())
+            && yes(p.can_assemble_document())
+            && yes(p.can_fill_existing_interactive_form_fields())
+            && yes(p.can_add_or_modify_text_annotations())),
+    }
 }
 
 /// Encode quickly: these PNGs are transient UI previews, so favour speed over size.

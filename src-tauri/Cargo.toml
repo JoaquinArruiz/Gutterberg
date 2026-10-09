@@ -2,6 +2,7 @@
 name = "gutterberg"
 version = "0.9.0"
 edition = "2021"
+publish = false
 description = "Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact card sizes, clean gutters, and the original artwork untouched."
 
 [lib]

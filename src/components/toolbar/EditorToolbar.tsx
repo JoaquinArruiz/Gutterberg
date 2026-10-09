@@ -96,6 +96,8 @@ export function EditorToolbar() {
   const [issues, setIssues] = useState<ExportIssue[]>([]);
   // Images that will print soft or blurry: listed, but they do not stop the export.
   const [warnings, setWarnings] = useState<ImageWarning[]>([]);
+  // Every problem is a PDF its publisher locked (nothing about its pages).
+  const locked = issues.length > 0 && issues.every((i) => i.error.code === "pdf_locked");
   const stage = useUiStore((s) => s.stage);
   const setStage = useUiStore((s) => s.setStage);
 
@@ -149,7 +151,15 @@ export function EditorToolbar() {
       }
     } catch (e) {
       // The plan itself does not work (for example pieces that do not fit the sheet).
-      setIssues([{ documentId: useDocumentStore.getState().activeId, page: null, error: toAppError(e) }]);
+      const error = toAppError(e);
+      const documentId = error.code === "pdf_locked" ? Number(error.values.document_id) : Number.NaN;
+      setIssues([
+        {
+          documentId: Number.isFinite(documentId) ? documentId : useDocumentStore.getState().activeId,
+          page: null,
+          error,
+        },
+      ]);
       return;
     }
     setWarnings(
@@ -179,7 +189,11 @@ export function EditorToolbar() {
       await (stage === "print" ? exportSheets(useProjectStore.getState().path ?? named) : exportCards(named));
     } catch (e) {
       const error = toAppError(e);
-      setStatus({ ok: false, text: () => formatError(error) });
+      if (error.code === "pdf_locked") {
+        // A PDF its publisher locked: listed with the other things that stop the export, not as a failed export.
+        const documentId = Number(error.values.document_id);
+        setIssues([{ documentId: Number.isFinite(documentId) ? documentId : 0, page: null, error }]);
+      } else setStatus({ ok: false, text: () => formatError(error) });
     } finally {
       setExporting(false);
     }
@@ -360,9 +374,11 @@ export function EditorToolbar() {
         >
           <div className="mb-1 flex items-center justify-between font-medium text-red-300">
             <span>
-              {issues.length === 1 && issues[0].page === null
-                ? t("toolbar.issues.planTitle")
-                : t("toolbar.issues.pagesTitle", { count: issues.length })}
+              {locked
+                ? t("toolbar.issues.lockedTitle")
+                : issues.length === 1 && issues[0].page === null
+                  ? t("toolbar.issues.planTitle")
+                  : t("toolbar.issues.pagesTitle", { count: issues.length })}
             </span>
             <button
               type="button"
@@ -386,6 +402,9 @@ export function EditorToolbar() {
                   }}
                   className="w-full rounded px-1.5 py-1 text-left hover:bg-[var(--hover)] disabled:hover:bg-transparent"
                 >
+                  {i.page === null && i.error.code === "pdf_locked" && documents.length > 1 && (
+                    <span className="font-medium">{documentLabel(i.documentId)}: </span>
+                  )}
                   {i.page !== null && (
                     <span className="font-medium">
                       {documents.length > 1
@@ -399,7 +418,11 @@ export function EditorToolbar() {
             ))}
           </ul>
           <p className="mt-1 text-[var(--muted)]">
-            {stage === "print" ? t("toolbar.issues.fixPrint") : t("toolbar.issues.fixSource")}
+            {locked
+              ? t("toolbar.issues.fixLocked")
+              : stage === "print"
+                ? t("toolbar.issues.fixPrint")
+                : t("toolbar.issues.fixSource")}
           </p>
         </section>
       )}

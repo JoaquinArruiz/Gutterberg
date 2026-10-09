@@ -6,11 +6,13 @@ import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { PreferencesDialog } from "./PreferencesDialog";
 
-const { getName, getVersion, openExternalLink } = vi.hoisted(() => ({
+const { getName, getVersion, openExternalLink, licenseTexts } = vi.hoisted(() => ({
   getName: vi.fn(),
   getVersion: vi.fn(),
   openExternalLink: vi.fn(),
+  licenseTexts: vi.fn(),
 }));
+vi.mock("../../lib/licenses", () => ({ licenseTexts }));
 vi.mock("@tauri-apps/api/app", () => ({ getName, getVersion }));
 vi.mock("../../lib/external-links", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/external-links")>()),
@@ -35,6 +37,10 @@ beforeEach(() => {
   getName.mockResolvedValue("Gutterberg");
   getVersion.mockResolvedValue("1.2.3");
   openExternalLink.mockReset();
+  licenseTexts.mockReset().mockResolvedValue({
+    app: "PolyForm Noncommercial License 1.0.0\nRequired Notice: Copyright Joaquín Arruiz",
+    third_party: "Third-party licenses\n\nreact 19: MIT License",
+  });
   usePreferencesStore.getState().resetToDefaults();
   useUiStore.setState({ prefsOpen: false, prefsSection: null });
 });
@@ -119,6 +125,36 @@ describe("About", () => {
     fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
     expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.github);
     expect(openExternalLink).toHaveBeenCalledTimes(2);
+  });
+
+  it("states the terms in a line and shows the license and the third-party notices on request", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences("About");
+    expect(screen.getByText(/Free for personal and noncommercial use/).textContent).toContain(
+      "contact joaquinarruiz@gmail.com",
+    );
+    expect(screen.queryByTestId("license-text")).toBeNull();
+    expect(licenseTexts).not.toHaveBeenCalled();
+
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Gutterberg license" })));
+    expect((screen.getByTestId("license-text") as HTMLTextAreaElement).value).toContain(
+      "PolyForm Noncommercial License 1.0.0",
+    );
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Third-party licenses" })));
+    expect((screen.getByTestId("license-text") as HTMLTextAreaElement).value).toContain("react 19: MIT License");
+    // The same button hides it again, and the texts are only asked for once.
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Third-party licenses" })));
+    expect(screen.queryByTestId("license-text")).toBeNull();
+    expect(licenseTexts).toHaveBeenCalledTimes(1);
+  });
+
+  it("says so when the license text cannot be loaded", async () => {
+    licenseTexts.mockRejectedValue(new Error("no app"));
+    render(<PreferencesDialog />);
+    await openPreferences("About");
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Gutterberg license" })));
+    expect(screen.getByRole("alert").textContent).toContain("The license text could not be loaded.");
+    expect(screen.queryByTestId("license-text")).toBeNull();
   });
 
   it("says so when the browser could not be opened", async () => {

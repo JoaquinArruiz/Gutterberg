@@ -25,7 +25,7 @@ import { currentProjectState, currentSignature } from "./project-state";
 // itself) run in Rust and have their tests there; here the files are plain data.
 const fake = vi.hoisted(() => ({
   /** PDFs on disk: path -> content hash and page count. */
-  pdfs: new Map<string, { hash: string; pages: number }>(),
+  pdfs: new Map<string, { hash: string; pages: number; locked?: "printing" | "modifying"; restricted?: boolean }>(),
   /** Project files on disk, as the app wrote them (without the envelope), or a marker for other files. */
   projects: new Map<string, unknown>(),
   /** What the user will answer next. */
@@ -50,7 +50,12 @@ vi.mock("./tauri", async (importOriginal) => ({
     const pdf = fake.pdfs.get(path);
     if (!pdf) throw { code: "io", message: "no such file" };
     fake.opened.push([id, path]);
-    return { page_count: pdf.pages, pages: Array.from({ length: pdf.pages }, () => A4) };
+    return {
+      page_count: pdf.pages,
+      pages: Array.from({ length: pdf.pages }, () => A4),
+      access: { other_restricted: pdf.restricted ?? false },
+      locked: pdf.locked ?? null,
+    };
   }),
 }));
 
@@ -132,6 +137,30 @@ async function editedProject() {
   usePrintStore.getState().setOrder("interleaved");
   docs().setCurrentPage(1);
 }
+
+describe("a PDF its publisher restricted", () => {
+  it("keeps what the file says about printing, modifying and other restrictions", async () => {
+    fake.pdfs.set("/games/locked.pdf", { hash: hash(7), pages: 1, locked: "printing" });
+    fake.pdfs.set("/games/nocopy.pdf", { hash: hash(8), pages: 1, restricted: true });
+    fake.pickedPdf.push("/games/locked.pdf");
+    await openPdfDialog();
+    fake.pickedPdfs.push(["/games/nocopy.pdf", "/games/a.pdf"]);
+    await addPdfDialog();
+    expect(docs().documents.map((d) => d.access)).toEqual([
+      { locked: "printing", restricted: false },
+      { locked: null, restricted: true },
+      undefined,
+    ]);
+  });
+
+  it("opens it anyway, without a warning dialog: the badge and the export say it", async () => {
+    fake.pdfs.set("/games/locked.pdf", { hash: hash(7), pages: 1, locked: "modifying" });
+    fake.pickedPdf.push("/games/locked.pdf");
+    await openPdfDialog();
+    expect(docs().documents).toHaveLength(1);
+    expect(project().notices).toEqual([]);
+  });
+});
 
 describe("starting a project", () => {
   it("opens a PDF as a project of one document, with nothing to save yet", async () => {

@@ -3,7 +3,14 @@
 // behind: a file is checked, its PDFs are found and read, and only then do the stores change.
 
 import { t } from "../i18n";
-import { documentName, fileName, nextDocumentId, type OpenDocument, useDocumentStore } from "../stores/document-store";
+import {
+  documentName,
+  fileName,
+  nextDocumentId,
+  type OpenDocument,
+  type PdfLock,
+  useDocumentStore,
+} from "../stores/document-store";
 import { useEditorStore } from "../stores/editor-store";
 import { useImageImportStore } from "../stores/image-import-store";
 import { DEFAULT_OUTPUT, type DocLayout, outputSettings, useLayoutStore } from "../stores/layout-store";
@@ -94,9 +101,10 @@ function resetSession() {
   startSession();
 }
 
-/** Tells the user when a PDF's author marked it "no modify". */
-async function warnIfNoModify(path: string, info: DocumentInfo): Promise<void> {
-  if (!info.modify_allowed) await notify(t("project.noModify", { name: fileName(path) }));
+/** The permission flags to keep with an open PDF; nothing for an unrestricted one. */
+function accessOf(info: DocumentInfo): { access?: PdfLock } {
+  const restricted = info.access.other_restricted;
+  return info.locked || restricted ? { access: { locked: info.locked, restricted } } : {};
 }
 
 /**
@@ -112,8 +120,13 @@ async function swapDocuments(
     const opened: OpenDocument[] = [];
     for (const f of files) {
       const [info, hash] = await Promise.all([openPdf(f.id, f.path), f.hash ?? hashFile(f.path)]);
-      if (!f.images) await warnIfNoModify(f.path, info);
-      opened.push({ id: f.id, path: f.path, pages: info.pages, hash, ...(f.images ? { images: f.images } : {}) });
+      opened.push({
+        id: f.id,
+        path: f.path,
+        pages: info.pages,
+        hash,
+        ...(f.images ? { images: f.images } : accessOf(info)),
+      });
     }
     return opened;
   } catch (e) {
@@ -300,9 +313,8 @@ export async function addPdfDialog(): Promise<void> {
     for (const path of paths) {
       const id = nextDocumentId(useDocumentStore.getState());
       const [info, hash] = await Promise.all([openPdf(id, path), hashFile(path)]);
-      await warnIfNoModify(path, info);
       useLayoutStore.getState().parkDocument(id, { groups: defaultGroups(info.pages.length), freeform: {} });
-      useDocumentStore.getState().addDocument({ id, path, pages: info.pages, hash });
+      useDocumentStore.getState().addDocument({ id, path, pages: info.pages, hash, ...accessOf(info) });
       first ??= id;
     }
     if (first !== null) activateDocument(first);

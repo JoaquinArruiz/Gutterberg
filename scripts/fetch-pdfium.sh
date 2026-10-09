@@ -26,4 +26,16 @@ case "$target" in
   mac-*) cp "$tmp/lib/libpdfium.dylib" "$dest/" ;;
   *)     cp "$tmp/lib/libpdfium.so" "$dest/" ;;
 esac
+# The notices pdfium's licenses require: its own and those of the libraries built into it (FreeType, libjpeg-turbo,
+# ...). They sit next to the library, so every installer carries them, and scripts/third-party-licenses.mjs adds
+# them to THIRD_PARTY_LICENSES.
+{
+  echo "pdfium-binaries ${tag} (https://github.com/bblanchon/pdfium-binaries)"
+  echo
+  cat "$tmp/LICENSE"
+  for f in "$tmp"/licenses/*; do
+    printf '\n\n======== pdfium: %s ========\n\n' "$(basename "$f")"
+    cat "$f"
+  done
+} > "$dest/PDFIUM_LICENSES.txt"
 echo "pdfium installed in $dest"

@@ -3,6 +3,14 @@ import type { DocumentId } from "../lib/card";
 import type { ImagesInfo } from "../lib/images";
 import type { PageSize } from "../lib/tauri";
 
+/** A PDF's permission flags as the app shows them (the rules are in `card_core::access`). */
+export type PdfLock = {
+  /** Why the export refuses this PDF, if it does: printing or modifying is locked. */
+  locked: "printing" | "modifying" | null;
+  /** Another action (copying, annotating, ...) is restricted: the export keeps those restrictions. */
+  restricted: boolean;
+};
+
 /** One PDF of the project, opened for rendering. */
 export type OpenDocument = {
   id: DocumentId;
@@ -11,6 +19,8 @@ export type OpenDocument = {
   pages: PageSize[];
   /** SHA-256 of the file (hex) when it was added to the project. */
   hash: string;
+  /** What the PDF's publisher allows. Missing = no restrictions. */
+  access?: PdfLock;
   /**
    * Set when the document is made of images (M24): `path` is then the cached PDF built from them, which can
    * be built again, and the project keeps the images.
