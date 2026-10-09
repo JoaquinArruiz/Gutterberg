@@ -64,3 +64,22 @@ body {
   overflow: hidden;
   user-select: none;
 }
+
+/* The brand logo has a variant per theme; both are in the page and the theme in effect shows one. */
+.logo-for-light {
+  display: none;
+}
+:root[data-theme="light"] .logo-for-light {
+  display: block;
+}
+:root[data-theme="light"] .logo-for-dark {
+  display: none;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .logo-for-light {
+    display: block;
+  }
+  :root:not([data-theme="dark"]) .logo-for-dark {
+    display: none;
+  }
+}

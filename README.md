@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/brand/logo-dark.svg">
+  <img src="assets/brand/logo.svg" alt="Gutterberg" width="160">
+</picture>
+
 # PDF Card Editor
 
 Desktop tool (Tauri + Rust + React/TS) that takes a Print-and-Play PDF whose pieces
@@ -28,6 +33,7 @@ speaks English and Spanish (Preferences › General › Language).
 - [x] **Milestone 20 – Hint system** (catalog of help tips in `src/lib/hints.ts`, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride; first-PDF and Print-stage tours. The single tips for the magnifier, pan/zoom, source vs output gap and page groups are still to add)
 - [x] **Milestone 21 – Terminology and languages** (tabs Source / Print, views Original / Preview / Split, "pieces" throughout; every text in `src/locales/en.json` and `es.json` with i18next, language chosen in Preferences; Rust errors reach the UI as codes; decimal separator preference with dot or comma accepted in every number field)
 - [x] **Milestone 22 – UI consistency and polish** (shared controls in `src/components/ui`: Button, Switch, Checkbox, Segmented, RadioCard and InfoTip, with no native checkboxes or radios left; AI actions are their own buttons with a spark in the AI colour, and Detect pieces has a Detect with AI button next to the local one; explanations sit behind info tips; the Print tab's piece library and settings are movable panels with a layout of their own; panels at the top or bottom show a full row of thumbnails; Preferences has section icons and an About section with the version and two links that ask before they open the browser; also a keyboard shortcuts sheet on `?`, a start screen when nothing is open, and undo for the Print plan)
+- [x] **Milestone 23 – Logo and app icon** (the logo in a light and a dark variant and an app icon on a bone-coloured plate, in `assets/brand/`; icons for every desktop platform made by `scripts/make-icons.sh`, with a simpler 2×2 drawing for the 16 and 32 px sizes; the start screen shows the logo for the app's theme, About, the window and the browser tab use the new icon, and the README switches logo with the reader's theme)
 
 ## Architecture
 

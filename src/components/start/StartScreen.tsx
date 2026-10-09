@@ -1,9 +1,9 @@
 import { FileText, FolderOpen } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import appIcon from "../../../src-tauri/icons/128x128.png";
 import { openPdfDialog, openProjectDialog } from "../../lib/project-actions";
 import { fileName, useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { BrandLogo } from "../ui/BrandLogo";
 import { Button } from "../ui/Button";
 
 /** The folder a file is in, for telling two projects with the same name apart. */
@@ -24,7 +24,7 @@ export function StartScreen() {
     <div className="flex h-full min-h-0 items-center justify-center overflow-y-auto p-6" data-testid="start-screen">
       <div className="flex w-full max-w-md flex-col gap-5">
         <div className="flex flex-col items-center gap-2 text-center">
-          <img src={appIcon} alt="" width={64} height={64} className="size-16 rounded-xl" draggable={false} />
+          <BrandLogo className="h-20 w-auto" />
           <h1 className="text-base font-semibold">{t("start.title")}</h1>
           <p className="text-[var(--muted)]">{loading ? t("viewport.opening") : t("start.lead")}</p>
         </div>

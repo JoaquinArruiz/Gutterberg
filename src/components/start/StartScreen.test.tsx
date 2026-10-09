@@ -33,6 +33,13 @@ describe("the start screen", () => {
     expect(screen.getByRole("button", { name: /Open project…/ }).textContent).toContain("Ctrl+Shift+O");
   });
 
+  it("has the logo for each theme, which the theme in effect shows", () => {
+    const { container } = render(<StartScreen />);
+    expect(container.querySelectorAll("img.logo-for-light").length).toBe(1);
+    expect(container.querySelectorAll("img.logo-for-dark").length).toBe(1);
+    expect(screen.getAllByRole("img", { hidden: true })[0].getAttribute("alt")).toBe("Logo");
+  });
+
   it("says there are no recent projects when there are none", () => {
     render(<StartScreen />);
     expect(screen.getByText("No recent projects")).toBeTruthy();

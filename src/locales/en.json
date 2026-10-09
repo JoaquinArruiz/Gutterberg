@@ -847,5 +847,9 @@
     "title": "Get started",
     "lead": "Open a Print-and-Play PDF to space its pieces, or pick up a project.",
     "shortcuts": "Press ? to see the keyboard shortcuts."
+  },
+  "brand": {
+    "logoAlt": "{{name}} logo",
+    "logoAltPlain": "Logo"
   }
 }

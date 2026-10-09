@@ -1,6 +1,6 @@
 # Milestones
 
-M1–M14, M16 to M22 are done (see the README status list). Each brief below is sized for one session and
+M1–M14, M16 to M23 are done (see the README status list). Each brief below is sized for one session and
 leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 
 | # | Milestone | Size | Depends on |
@@ -20,7 +20,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M20](M20.md) | Hint system: catalog of help tips, `<HintToast hint=… />`, stepped hints, anchored tours with React Joyride | M | M13 |
 | [M21](M21.md) | Terminology and languages: Source / Print, "pieces", English and Spanish, dot or comma decimals (done) | M | M18, M20 |
 | [M22](M22.md) | UI consistency and polish (done): shared controls, AI buttons, info tips, movable Print panels, panel-height fix, Preferences icons and About | M | M19 |
-| [M23](M23.md) | Logo and app icon: light, dark and on a bone-coloured plate; icons for every platform | S | M22 |
+| [M23](M23.md) | Logo and app icon (done): light, dark and on a bone-coloured plate; icons for every platform | S | M22 |
 | [M24](M24.md) | Images as pieces: PNG, JPEG, WebP, with a size dialog, bleed, Fit / Fill and a resolution check | L | M14, M16 |
 | [M25](M25.md) | Welcome tour from video clips, Preferences › Help (tour, tips, shortcuts) and "Found a bug?" with a GitHub issue form | M | M20, M22 |
 

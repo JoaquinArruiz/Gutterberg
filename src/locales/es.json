@@ -847,5 +847,9 @@
     "title": "Para empezar",
     "lead": "Abre un PDF de Print-and-Play para separar sus piezas, o retoma un proyecto.",
     "shortcuts": "Pulsa ? para ver los atajos de teclado."
+  },
+  "brand": {
+    "logoAlt": "Logo de {{name}}",
+    "logoAltPlain": "Logo"
   }
 }
