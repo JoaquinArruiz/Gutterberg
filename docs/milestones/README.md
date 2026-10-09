@@ -12,7 +12,7 @@ leaves the app shippable. Follow `CLAUDE.md` in every milestone.
 | [M12](M12.md) | Sheet engine (Rust only): `extract_cards`, `paginate`, `export_sheets` | M | M11 |
 | [M13](M13.md) | Print stage UI: Source → Print switch, piece library, quantities, sheet preview | L | M9, M12 |
 | [M14](M14.md) | Project files, several PDFs and presets (done) | M | M13 |
-| [M15](M15.md) | Rename to Gutterberg, releases and updates (tag → build → release, in-app updates), license, README and examples, then the repo cleanup (steps 0 to 2 done) | L | M23, M24, M25 |
+| [M15](M15.md) | Rename to Gutterberg, releases and updates (tag → build → release, in-app updates), license, README and examples, then the repo cleanup (steps 0 to 3 done) | L | M23, M24, M25 |
 | [M16](M16.md) | Print features: cut marks, bleed, duplex (done) | M | M12 |
 | [M17](M17.md) | Detect pieces on a page, locally (done) | L | M11, M18 |
 | [M18](M18.md) | Freeform pieces: per-piece rectangles, rotation, turn, sort, real size (done) | L | M13 |

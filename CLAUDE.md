@@ -4,7 +4,7 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 
 Desktop app (Tauri 2 + Rust + React 19/TypeScript) that takes a Print-and-Play PDF whose
 cards are packed edge to edge and re-exports it with configurable spacing, keeping the
-original card size and vector content. See `README.md` for features and controls.
+original card size and vector content. See `README.md` for features and `docs/controls.md` for controls.
 
 ## Layout
 
@@ -56,8 +56,8 @@ report existing issues; don't let them hide new ones.
   `useXStore()` whole.
 - Match the surrounding code's style and comment density. Add tests next to the code they
   cover (`*.test.ts`, `crates/card-core/tests/`).
-- When a milestone is finished, tick it in the README status list and update its brief if
-  the plan changed.
+- When a milestone is finished, add its user-facing changes to `CHANGELOG.md` (Unreleased) and update
+  its brief if the plan changed.
 
 ## Glossary (words the user sees)
 
