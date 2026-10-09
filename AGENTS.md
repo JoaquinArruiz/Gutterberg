@@ -84,7 +84,7 @@ and type names) stay as they are.
 | **AI Mode** | **Modo IA** | The opt-in setting that adds AI buttons, using the user's own key; off and hidden by default | AI assistant, chat |
 | **proposal** | **propuesta** | What Detect pieces offers: shown as a draft on the page, applied only when the user says so | result, guess |
 
-User-facing text lives in `src/locales/en.json` and `src/locales/es.json` (from M21): add
+User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add
 every new string to both, never hard-code text in components. Spanish is neutral Latin
 American Spanish (`tú`, no voseo, no `vosotros`); the owner reviews it.
 
