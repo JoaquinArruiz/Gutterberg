@@ -40,10 +40,10 @@ and pick the file for your system:
 | Windows | `Gutterberg_<version>_x64-setup.exe` (or the `.msi`) |
 | macOS, Apple silicon (M1 and later) | `Gutterberg_<version>_aarch64.dmg` |
 | macOS, Intel | `Gutterberg_<version>_x64.dmg` |
-| Linux | `Gutterberg_<version>_amd64.AppImage` (make it executable, then run it) or the `.deb` |
+| Linux | `Gutterberg_<version>_amd64.AppImage` (make it executable, then run it), the `.deb` or the `.rpm` |
 
 Gutterberg checks for new versions by itself (Preferences › Updates) and installs them when you say so. On Linux
-the update replaces the AppImage; if you installed the `.deb`, update by downloading the new `.deb`.
+the update replaces the AppImage; if you installed the `.deb` or `.rpm`, update by downloading the new one.
 
 ### The first time you open it
 
@@ -53,6 +53,24 @@ app is the same one you can build from this repository.
 - **macOS:** right-click the app and choose **Open**, then confirm; or open **System Settings › Privacy &
   Security** and press **Open Anyway** after the first attempt.
 - **Windows:** when SmartScreen says it protected your PC, press **More info**, then **Run anyway**.
+
+### Linux: the window does not open (Wayland)
+
+On some Linux desktops with Wayland (often with an NVIDIA graphics card) Gutterberg closes straight away, and a
+terminal shows `Gdk-Message: Error 71 (Protocol error) dispatching to Wayland display`. It comes from the system's
+web view (WebKitGTK), not from Gutterberg. Start it with this setting:
+
+```sh
+WEBKIT_DISABLE_DMABUF_RENDERER=1 gutterberg                              # .deb or .rpm
+WEBKIT_DISABLE_DMABUF_RENDERER=1 ./Gutterberg_<version>_amd64.AppImage   # AppImage
+```
+
+To keep it for the menu entry, copy the launcher to your own folder and add the setting to its `Exec` line:
+
+```sh
+cp /usr/share/applications/Gutterberg.desktop ~/.local/share/applications/
+sed -i 's|^Exec=|Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 |' ~/.local/share/applications/Gutterberg.desktop
+```
 
 ## Features
 
