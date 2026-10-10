@@ -229,7 +229,7 @@ describe("images documents in the file", () => {
 describe("cut marks, bleed and duplex in the file", () => {
   it("are saved under the plan, with the backs of pieces under the edits", () => {
     const f = file(state());
-    expect(f.version).toBe(3);
+    expect(f.version).toBe(PROJECT_VERSION);
     expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source" });
     expect(f.plan.finish.duplex.commonBack).toBe("g:3:0:0:0");
     expect(f.edits.backs).toEqual({ "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" });

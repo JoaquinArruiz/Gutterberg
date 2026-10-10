@@ -135,6 +135,14 @@ describe("cards the user turned, resized or reordered", () => {
     expect(plannerRequired(withFreeform, { turns: {}, scales: {}, order: [], backs: {} })).toBe(true);
     expect(effectiveGrid(plan(), true)).toBe("auto");
   });
+
+  it("needs the planner for pieces of images, whose source page is only one piece", () => {
+    const none = { turns: {}, scales: {}, order: [], backs: {} };
+    expect(plannerRequired(cards, none, new Set([7]))).toBe(false);
+    expect(plannerRequired(cards, none, new Set([cards[0].id.document_id]))).toBe(true);
+    const imageDocs = docs.map((d) => ({ ...d, images: true }));
+    expect(buildPrintRequest(plan(), cards, imageDocs, output).layout.kind).toBe("grid");
+  });
 });
 
 describe("the plan", () => {

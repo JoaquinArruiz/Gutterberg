@@ -62,6 +62,8 @@ export type LayoutDocument = {
   pages: PageSize[];
   groups: PageGroup[];
   freeform: FreeformCards;
+  /** Made of images (M24): its pages are the images themselves, so "same as source" makes no sense for it. */
+  images?: boolean;
 };
 
 /**
@@ -103,9 +105,16 @@ export function toRustGroups(
   return out;
 }
 
-/** Whether the plan needs the card planner: freeform cards, or cards turned, resized or reordered. */
-export const plannerRequired = (cards: Card[], edits: CardEdits): boolean =>
-  cards.some((c) => c.id.kind === "freeform") || hasCardEdits(cards, edits);
+/**
+ * Whether the plan needs the card planner: freeform cards, cards turned, resized or reordered, or pieces of an images
+ * document (whose source page is the image itself, so a sheet the size of the source would hold only that piece).
+ */
+export const plannerRequired = (cards: Card[], edits: CardEdits, imageDocuments?: ReadonlySet<DocumentId>): boolean =>
+  cards.some((c) => c.id.kind === "freeform" || imageDocuments?.has(c.id.document_id)) || hasCardEdits(cards, edits);
+
+/** The ids of the documents made of images: their pieces always go through the card planner. */
+export const imageDocumentIds = (documents: Pick<LayoutDocument, "id" | "images">[]): Set<DocumentId> =>
+  new Set(documents.filter((d) => d.images).map((d) => d.id));
 
 /**
  * The sheet grid the plan really uses. "Same as source" is the default plan only (every card
@@ -158,7 +167,7 @@ export function buildPrintRequest(
   // order are applied here.
   const ordered = applyEdits(cards, edits);
   const edited = hasCardEdits(cards, edits);
-  const grid = effectiveGrid(plan, plannerRequired(cards, edits));
+  const grid = effectiveGrid(plan, plannerRequired(cards, edits, imageDocumentIds(documents)));
   const layout: PrintLayoutPayload =
     grid === "same"
       ? { kind: "same_as_source" }

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { formatError } from "../../lib/errors";
@@ -5,12 +6,14 @@ import { formatMeasurement } from "../../lib/measurement";
 import {
   type CardOrder,
   effectiveGrid,
+  imageDocumentIds,
   MAX_SHEET_GRID,
   type PlanMode,
   plannerRequired,
   type SheetGridMode,
 } from "../../lib/print-request";
 import { ptToMm } from "../../lib/units";
+import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { planOf, usePrintStore } from "../../stores/print-store";
@@ -22,7 +25,7 @@ import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { BleedSection, DuplexSection, MarksSection } from "./FinishSections";
-import { OutputPageFields, OutputSpacingFields } from "./OutputFields";
+import { OutputPageFields, OutputSpacingFields, SheetSizeFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
 
 /** What to print and how the sheets look. Sections fold, and which are open is remembered. */
@@ -56,8 +59,14 @@ export function PrintInspector() {
   const unit = useUnit();
   const fmt = (mm: number) => formatMeasurement(mm, unit);
 
-  // Freeform, turned, resized or reordered cards need the card planner, which "same as source" is not.
-  const planner = plannerRequired(rawCards, edits);
+  const documents = useDocumentStore((s) => s.documents);
+  const imageDocs = useMemo(
+    () => imageDocumentIds(documents.map((d) => ({ id: d.id, images: !!d.images }))),
+    [documents],
+  );
+  // Freeform, turned, resized or reordered cards, and pieces of images, need the card planner, which "same as
+  // source" is not.
+  const planner = plannerRequired(rawCards, edits, imageDocs);
   const grid = effectiveGrid(P, planner);
   // "Same as source" is the default plan only: one sheet per source page with its own grid.
   const sameAvailable = P.mode === "all" && !P.autoFill && !planner;
@@ -148,6 +157,7 @@ export function PrintInspector() {
       </CollapsibleSection>
 
       <CollapsibleSection id="print.sheet" title={t("print.sections.sheet")}>
+        <SheetSizeFields />
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[var(--muted)]">{t("print.sheet.grid")}</span>
           <Select<SheetGridMode>

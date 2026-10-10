@@ -21,7 +21,7 @@ import { TurnSchema } from "./sheet-api";
 /** Value of the `format` key: the file's signature. Kept in step with `card_core::project::FORMAT`. */
 export const PROJECT_FORMAT = "gutterberg-project";
 /** The version this build writes. Older ones are migrated in Rust before they get here. */
-export const PROJECT_VERSION = 3;
+export const PROJECT_VERSION = 4;
 export const PROJECT_EXTENSION = "gtr";
 
 const finite = z.number();
@@ -54,7 +54,7 @@ const OutputSchema = z.object({
   gapXMm: finite,
   gapYMm: finite,
   gapLinked: z.boolean(),
-  pageMode: z.enum(["same", "a4", "letter", "legal", "custom", "fit"]),
+  pageMode: z.enum(["same", "a3", "a4", "a5", "letter", "legal", "tabloid", "custom", "fit"]),
   orientation: z.enum(["portrait", "landscape"]),
   customWidthMm: finite,
   customHeightMm: finite,

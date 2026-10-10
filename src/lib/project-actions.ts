@@ -17,6 +17,7 @@ import { DEFAULT_OUTPUT, type DocLayout, outputSettings, useLayoutStore } from "
 import { usePreferencesStore } from "../stores/preferences-store";
 import { usePrintStore } from "../stores/print-store";
 import { useProjectStore } from "../stores/project-store";
+import { useToastStore } from "../stores/toast-store";
 import type { DocumentId } from "./card";
 import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
 import { defaultGroups } from "./document-layout";
@@ -33,6 +34,7 @@ import {
   planImages,
   probeImages,
 } from "./images";
+import { usualPaper } from "./paper";
 import { DEFAULT_PLAN, type PrintPlan } from "./print-request";
 import {
   fromProject,
@@ -250,6 +252,7 @@ export async function addImagesDialog(paths?: string[]): Promise<void> {
         edits: NO_EDITS,
         plan: DEFAULT_PLAN,
       });
+      sheetForImages();
       useProjectStore.getState().setSaved(null, currentSignature());
       return;
     }
@@ -258,6 +261,24 @@ export async function addImagesDialog(paths?: string[]): Promise<void> {
     useLayoutStore.getState().parkDocument(id, { groups, freeform: {} });
     useDocumentStore.getState().addDocument({ id, path: built.path, pages: info.pages, hash, images: built.images });
     activateDocument(id);
+    sheetForImages();
+  });
+}
+
+/**
+ * Images are each the size of one piece, so a sheet "the same as the source" would hold just that piece and, with
+ * the margins and the gap, not even that. When the sheet size is still "same as source", set the paper people
+ * usually print on (A4 or Letter) and say so; any other size the user chose is kept.
+ */
+function sheetForImages(): void {
+  const layout = useLayoutStore.getState();
+  if (layout.pageMode !== "same") return;
+  const paper = usualPaper(typeof navigator === "undefined" ? "" : navigator.language);
+  layout.setPageMode(paper);
+  useToastStore.getState().show({
+    title: t("images.sheetSet.title", { size: t(`print.page.modes.${paper}`) }),
+    text: t("images.sheetSet.text"),
+    autoCloseMs: 10_000,
   });
 }
 

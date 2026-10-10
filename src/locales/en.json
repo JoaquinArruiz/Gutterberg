@@ -315,9 +315,12 @@
       "sizeAria": "Page size",
       "modes": {
         "same": "Same as source",
+        "a3": "A3",
         "a4": "A4",
+        "a5": "A5",
         "letter": "Letter",
         "legal": "Legal",
+        "tabloid": "Tabloid / Ledger",
         "custom": "Custom",
         "fit": "Auto-fit to pieces"
       },
@@ -986,6 +989,10 @@
       "reduceHint": "PNG and WebP images above 600 dpi are shrunk to 600 dpi (still lossless). JPEG images are never reduced: that would mean compressing them again and losing quality. Your files are not touched.",
       "add_one": "Add image",
       "add_other": "Add images"
+    },
+    "sheetSet": {
+      "title": "Sheet set to {{size}} so the pieces fit",
+      "text": "An image is the size of one piece, so a sheet the size of the source would hold only that piece. Change it in Print › Sheet."
     }
   },
   "welcome": {

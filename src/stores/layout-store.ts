@@ -40,14 +40,22 @@ export const MAX_MARGIN_MM = 100;
 const gap = (mm: number) => Math.min(Math.max(mm, 0), MAX_GAP_MM);
 const margin = (mm: number) => Math.min(Math.max(mm, 0), MAX_MARGIN_MM);
 
-export type PageMode = "same" | "a4" | "letter" | "legal" | "custom" | "fit";
+export type PageMode = "same" | "a3" | "a4" | "a5" | "letter" | "legal" | "tabloid" | "custom" | "fit";
 export type Orientation = "portrait" | "landscape";
 
 export const PAGE_PRESETS_MM = {
+  a3: { width: 297, height: 420 },
   a4: { width: 210, height: 297 },
+  a5: { width: 148, height: 210 },
   letter: { width: 215.9, height: 279.4 },
   legal: { width: 215.9, height: 355.6 },
+  /** Tabloid, 11 × 17 in; Ledger is the same sheet in landscape. */
+  tabloid: { width: 279.4, height: 431.8 },
 } as const;
+
+/** The page sizes that are a fixed paper size. */
+export type PresetPageMode = keyof typeof PAGE_PRESETS_MM;
+export const isPresetPage = (m: PageMode): m is PresetPageMode => m in PAGE_PRESETS_MM;
 
 type Margins = { top: number; right: number; bottom: number; left: number };
 
@@ -393,7 +401,7 @@ type GridSettings = Pick<
 /** Output page in points for the explicit modes; null for `same` (and `fit`, which Rust sizes itself). */
 export function outputPage(s: GridSettings) {
   let size: { width: number; height: number } | null = null;
-  if (s.pageMode === "a4" || s.pageMode === "letter" || s.pageMode === "legal") size = PAGE_PRESETS_MM[s.pageMode];
+  if (isPresetPage(s.pageMode)) size = PAGE_PRESETS_MM[s.pageMode];
   else if (s.pageMode === "custom") size = { width: s.customWidthMm, height: s.customHeightMm };
   if (!size) return null;
   const [w, h] = s.orientation === "landscape" ? [size.height, size.width] : [size.width, size.height];

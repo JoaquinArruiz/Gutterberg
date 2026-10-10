@@ -18,7 +18,9 @@ export function layoutDocuments(
 ): LayoutDocument[] {
   return documents.flatMap((d) => {
     const layout = d.id === activeId ? active : parked[d.id];
-    return layout ? [{ id: d.id, pages: d.pages, groups: layout.groups, freeform: layout.freeform }] : [];
+    return layout
+      ? [{ id: d.id, pages: d.pages, groups: layout.groups, freeform: layout.freeform, images: !!d.images }]
+      : [];
   });
 }
 

@@ -5,11 +5,21 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- More sheet sizes: A3, A5 and Tabloid / Ledger, next to A4, Letter, Legal, Same as source, Custom and Auto-fit. The sheet size is now the first setting of Print › Sheet.
+- Before any piece is on it, the Print tab shows a white sheet of the chosen size, with its margins.
+
 ### Changed
 
+- Projects are saved as version 4. Older projects open as before; Gutterberg 0.9.1 and earlier say a version 4 project needs a newer Gutterberg.
 - The source and output gaps are linked and unlinked with a chain icon next to the fields, instead of a switch.
 - The bug report form no longer has a field for attaching files, and Preferences › Help no longer asks for them.
 - Each piece on an exported sheet is drawn through a frame the size of the piece, so PDF viewers draw sheets faster and most no longer flash the whole source page before the pieces appear. The file size stays the same.
+
+### Fixed
+
+- Image pieces fit on the sheet: adding images while the sheet is "Same as source" (the size of one image) sets it to A4, or Letter where that is the usual paper, and says so. Image pieces never use a sheet the size of their source.
 
 ## 0.9.1 (2026-10-10)
 

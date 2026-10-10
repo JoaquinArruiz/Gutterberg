@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 3;
+pub const VERSION: u32 = 4;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -32,7 +32,7 @@ pub type Body = Map<String, Value>;
 /// `i + 1` to `i + 2`.
 pub type Migration = fn(&mut Body);
 
-const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3];
+const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3, v3_to_v4];
 
 /// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
 /// pieces to the edits. A version 1 project opens with every feature off.
@@ -66,6 +66,12 @@ fn v2_to_v3(body: &mut Body) {
         }
     }
 }
+
+/// Version 4 adds sheet sizes (A3, A5, Tabloid) and a piece's separate vertical size (`scalesY` in the edits,
+/// missing = the same as its size). A version 3 project means the same in version 4, so nothing changes; the new
+/// number is what makes an older Gutterberg say "made with a newer version" instead of failing on a value it does
+/// not know.
+fn v3_to_v4(_body: &mut Body) {}
 
 /// A project file is a few hundred kilobytes at most; anything much larger is some other file.
 const MAX_PROJECT_BYTES: u64 = 64 * 1024 * 1024;

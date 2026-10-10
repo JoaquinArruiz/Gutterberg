@@ -6,7 +6,7 @@ import { MeasurementInput } from "../ui/MeasurementInput";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 
-const PAGE_MODES: PageMode[] = ["same", "a4", "letter", "legal", "custom", "fit"];
+const PAGE_MODES: PageMode[] = ["same", "a3", "a4", "a5", "letter", "legal", "tabloid", "custom", "fit"];
 
 /** The gap between pieces on the sheet. Independent of the gap the PDF already has. */
 export function OutputSpacingFields() {
@@ -25,20 +25,16 @@ export function OutputSpacingFields() {
   );
 }
 
-/** Page size, orientation and margins of the output sheet. */
-export function OutputPageFields() {
+/** The sheet's size: a paper size, the source page's, a custom size, or one fitted to the pieces. */
+export function SheetSizeFields() {
   const { t } = useTranslation();
   const L = useLayoutStore(
     useShallow((s) => ({
       pageMode: s.pageMode,
-      orientation: s.orientation,
       customWidthMm: s.customWidthMm,
       customHeightMm: s.customHeightMm,
-      margins: s.margins,
       setPageMode: s.setPageMode,
-      setOrientation: s.setOrientation,
       setCustomSize: s.setCustomSize,
-      setMargin: s.setMargin,
     })),
   );
   return (
@@ -68,6 +64,24 @@ export function OutputPageFields() {
           />
         </>
       )}
+    </>
+  );
+}
+
+/** Orientation and margins of the output sheet (its size is in the Sheet section, `SheetSizeFields`). */
+export function OutputPageFields() {
+  const { t } = useTranslation();
+  const L = useLayoutStore(
+    useShallow((s) => ({
+      pageMode: s.pageMode,
+      orientation: s.orientation,
+      margins: s.margins,
+      setOrientation: s.setOrientation,
+      setMargin: s.setMargin,
+    })),
+  );
+  return (
+    <>
       {L.pageMode !== "same" && L.pageMode !== "fit" && (
         <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
           <span className="text-[var(--muted)]">{t("print.page.orientation")}</span>

@@ -64,7 +64,7 @@ fn a_version_2_project_keeps_its_finishing() {
 fn a_version_2_project_documents_become_pdfs_in_version_3() {
     let text = include_str!("data/project_v2.gtr");
     let body = parse_project(text).unwrap();
-    assert_eq!(body["version"], 3);
+    assert_eq!(body["version"], VERSION);
     assert_eq!(body["documents"][0]["kind"], "pdf");
     assert_eq!(body["documents"][0]["path"], "/games/poker.pdf");
     // A document that already says what it is keeps it.
@@ -75,6 +75,17 @@ fn a_version_2_project_documents_become_pdfs_in_version_3() {
         63
     );
     assert_eq!(images["documents"][1]["kind"], "pdf");
+}
+
+#[test]
+fn a_version_3_project_opens_as_version_4_with_nothing_changed() {
+    let text = include_str!("data/project_v3_images.gtr");
+    let mut before: serde_json::Value = serde_json::from_str(text).unwrap();
+    let after = parse_project(text).unwrap();
+    assert_eq!(after["version"], VERSION);
+    // Everything but the version is as the file had it.
+    before["version"] = VERSION.into();
+    assert_eq!(serde_json::Value::Object(after), before);
 }
 
 #[test]
@@ -196,7 +207,9 @@ fn the_file_starts_with_the_signature_and_survives_a_round_trip() {
 
     let text = std::fs::read_to_string(&path).unwrap();
     assert!(
-        text.starts_with("{\n  \"format\": \"gutterberg-project\",\n  \"version\": 3,"),
+        text.starts_with(&format!(
+            "{{\n  \"format\": \"gutterberg-project\",\n  \"version\": {VERSION},"
+        )),
         "{text}"
     );
 
@@ -229,10 +242,15 @@ fn reading_a_file_that_is_not_a_project() {
         Err(Error::Io(_))
     ));
     let newer = dir.join("future.gtr");
-    std::fs::write(&newer, r#"{"format":"gutterberg-project","version":4}"#).unwrap();
+    let next = VERSION + 1;
+    std::fs::write(
+        &newer,
+        format!(r#"{{"format":"gutterberg-project","version":{next}}}"#),
+    )
+    .unwrap();
     assert!(matches!(
         read_project(&newer),
-        Err(Error::ProjectTooNew { found: 4, .. })
+        Err(Error::ProjectTooNew { found, .. }) if found == next
     ));
 }
 

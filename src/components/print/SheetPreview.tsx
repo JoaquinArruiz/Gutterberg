@@ -1,10 +1,13 @@
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useShallow } from "zustand/react/shallow";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
 import { formatError } from "../../lib/errors";
+import type { PageSize } from "../../lib/tauri";
+import { mmToPt } from "../../lib/units";
 import { useDocumentStore } from "../../stores/document-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import { outputPage, useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { RefreshButton } from "../editor/RefreshPreviewButton";
@@ -30,6 +33,7 @@ export function SheetPreview() {
   const ref = useRef<HTMLDivElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
   const hasDocument = useDocumentStore((s) => s.pages.length > 0);
+  const firstPage = useDocumentStore((s) => s.documents[0]?.pages[0] ?? null);
   const live = useLayoutStore((s) => s.live);
   const planned = usePrintStore((s) => s.sheets);
   const snapshot = usePrintStore((s) => s.sheetsSnapshot);
@@ -63,26 +67,26 @@ export function SheetPreview() {
   const duplex = planned?.some((s) => s.side === "back") ?? false;
   const cardCount = planned?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
 
-  let content: React.ReactNode = null;
-  if (sheet && box.width > 0) {
+  // The scale that fits a sheet of `page` in the pane, and where its top-left corner goes.
+  const placeSheet = (page: PageSize) => {
     const k = Math.min(
       MAX_ZOOM_PX_PER_PT,
-      Math.max(
-        0.01,
-        Math.min((box.width - PAD * 2) / sheet.page.width_pt, (box.height - PAD * 2) / sheet.page.height_pt),
-      ),
+      Math.max(0.01, Math.min((box.width - PAD * 2) / page.width_pt, (box.height - PAD * 2) / page.height_pt)),
     );
+    const style = {
+      left: (box.width - page.width_pt * k) / 2,
+      top: (box.height - page.height_pt * k) / 2,
+      width: page.width_pt * k,
+      height: page.height_pt * k,
+    };
+    return { k, style };
+  };
+
+  let content: React.ReactNode = null;
+  if (sheet && box.width > 0) {
+    const { k, style } = placeSheet(sheet.page);
     content = (
-      <div
-        className="absolute bg-white shadow-lg shadow-black/50"
-        style={{
-          left: (box.width - sheet.page.width_pt * k) / 2,
-          top: (box.height - sheet.page.height_pt * k) / 2,
-          width: sheet.page.width_pt * k,
-          height: sheet.page.height_pt * k,
-        }}
-        data-testid="sheet-page"
-      >
+      <div className="absolute bg-white shadow-lg shadow-black/50" style={style} data-testid="sheet-page">
         {sheet.placements.map((p, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
           <PlacedCard key={i} p={p} k={k} />
@@ -169,7 +173,10 @@ export function SheetPreview() {
         ) : planned === null ? (
           <Message>{t("sheets.planning")}</Message>
         ) : total === 0 ? (
-          <Message>{t("sheets.nothing")}</Message>
+          <>
+            {box.width > 0 && <BlankSheet place={placeSheet} firstPage={firstPage} />}
+            <Message>{t("sheets.nothing")}</Message>
+          </>
         ) : (
           content
         )}
@@ -177,6 +184,47 @@ export function SheetPreview() {
           <HintToast hint="live-preview-sheets" className="absolute bottom-3 left-3 z-30 w-[22rem] max-w-[70%]" />
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * The sheet before anything is on it: white, of the size the plan will use, with its margins as a faint dashed
+ * line. "Same as source" (and Auto-fit, which has no size until there are pieces) shows the first page of the
+ * first document, or A4 when there is none.
+ */
+function BlankSheet({
+  place,
+  firstPage,
+}: {
+  place: (page: PageSize) => { k: number; style: React.CSSProperties };
+  firstPage: PageSize | null;
+}) {
+  const output = useLayoutStore(
+    useShallow((s) => ({
+      pageMode: s.pageMode,
+      orientation: s.orientation,
+      customWidthMm: s.customWidthMm,
+      customHeightMm: s.customHeightMm,
+      gapXMm: s.gapXMm,
+      gapYMm: s.gapYMm,
+      margins: s.margins,
+    })),
+  );
+  const page = outputPage(output) ?? firstPage ?? { width_pt: mmToPt(210), height_pt: mmToPt(297) };
+  const { k, style } = place(page);
+  const m = output.margins;
+  return (
+    <div className="absolute bg-white shadow-lg shadow-black/50" style={style} data-testid="blank-sheet">
+      <div
+        className="absolute border border-dashed border-black/15"
+        style={{
+          left: mmToPt(m.left) * k,
+          top: mmToPt(m.top) * k,
+          right: mmToPt(m.right) * k,
+          bottom: mmToPt(m.bottom) * k,
+        }}
+      />
     </div>
   );
 }

@@ -315,9 +315,12 @@
       "sizeAria": "Tamaño de página",
       "modes": {
         "same": "Igual que el origen",
+        "a3": "A3",
         "a4": "A4",
+        "a5": "A5",
         "letter": "Carta",
         "legal": "Legal",
+        "tabloid": "Tabloide / Ledger",
         "custom": "Personalizado",
         "fit": "Ajustar a las piezas automáticamente"
       },
@@ -986,6 +989,10 @@
       "reduceHint": "Las imágenes PNG y WebP de más de 600 ppp se reducen a 600 ppp (siguen sin pérdida). Las JPEG nunca se reducen: habría que volver a comprimirlas y perderían calidad. Tus archivos no se tocan.",
       "add_one": "Agregar imagen",
       "add_other": "Agregar imágenes"
+    },
+    "sheetSet": {
+      "title": "Hoja fijada en {{size}} para que entren las piezas",
+      "text": "Una imagen tiene el tamaño de una pieza, así que una hoja igual que el origen solo tendría esa pieza. Cámbiala en Imprimir › Hoja."
     }
   },
   "welcome": {

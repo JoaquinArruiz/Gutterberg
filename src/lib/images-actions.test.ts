@@ -4,6 +4,7 @@ import { useImageImportStore } from "../stores/image-import-store";
 import { useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
 import { useProjectStore } from "../stores/project-store";
+import { useToastStore } from "../stores/toast-store";
 import { appError } from "./errors";
 import { imageWarnings } from "./image-warnings";
 import type { ImagePlacement, ImageProbe } from "./images";
@@ -177,6 +178,24 @@ describe("adding images", () => {
     // A new project has nothing to save yet, and is not marked as modified.
     expect(project().dirty).toBe(false);
     expect(currentSignature()).toBe(project().signature);
+  });
+
+  it("sets a paper size when the sheet is still 'same as source', so the pieces fit, and says so", async () => {
+    useLayoutStore.getState().setPageMode("same");
+    vi.stubGlobal("navigator", { ...navigator, language: "es-AR" });
+    await importImages(["/art/dragon.png"], [standard]);
+    expect(useLayoutStore.getState().pageMode).toBe("a4");
+    expect(useToastStore.getState().queue.at(-1)?.title).toBe("Sheet set to A4 so the pieces fit");
+    expect(project().dirty).toBe(false); // still a new project with nothing to save
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps a sheet size the user chose", async () => {
+    useLayoutStore.getState().setPageMode("a3");
+    const before = useToastStore.getState().queue.length;
+    await importImages(["/art/dragon.png"], [standard]);
+    expect(useLayoutStore.getState().pageMode).toBe("a3");
+    expect(useToastStore.getState().queue).toHaveLength(before);
   });
 
   it("puts bleed around the piece: the piece is the middle of the page", async () => {

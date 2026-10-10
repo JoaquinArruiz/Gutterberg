@@ -325,6 +325,7 @@ describe("Sheet preview", () => {
     print().setSheets([], null);
     const r = render(<SheetPreview />);
     expect(screen.getByText(/Nothing to print yet/)).toBeTruthy();
+    expect(screen.getByTestId("blank-sheet")).toBeTruthy();
     r.unmount();
     print().setSheets(null, "pieces do not fit");
     render(<SheetPreview />);
@@ -604,5 +605,27 @@ describe("sheet previews strip", () => {
       expect(thumbs()).toHaveLength(0);
       expect(screen.getByText(/Planning the sheets/)).toBeTruthy();
     });
+  });
+});
+
+describe("the blank sheet", () => {
+  it("has the chosen size and orientation before any piece is on it", () => {
+    print().setSheets([], null);
+    useLayoutStore.getState().setPageMode("a3");
+    useLayoutStore.getState().setOrientation("landscape");
+    render(<SheetPreview />);
+    const blank = screen.getByTestId("blank-sheet");
+    const ratio = Number.parseFloat(blank.style.width) / Number.parseFloat(blank.style.height);
+    expect(ratio).toBeCloseTo(420 / 297, 2);
+  });
+
+  it("is the first page of the source for Same as source", () => {
+    print().setSheets([], null);
+    useLayoutStore.getState().setPageMode("same");
+    render(<SheetPreview />);
+    const blank = screen.getByTestId("blank-sheet");
+    const page = useDocumentStore.getState().documents[0].pages[0];
+    const ratio = Number.parseFloat(blank.style.width) / Number.parseFloat(blank.style.height);
+    expect(ratio).toBeCloseTo(page.width_pt / page.height_pt, 2);
   });
 });

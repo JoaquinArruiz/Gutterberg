@@ -1498,3 +1498,47 @@ fn the_freeform_requests_the_frontend_sends_deserialise_and_plan() {
         }
     }
 }
+
+#[test]
+fn ten_japanese_size_pieces_fit_an_a4_sheet_in_landscape_with_no_margins() {
+    // 59 x 86 mm, the size of Japanese cards (and of their images). Ten different pieces.
+    let pieces: Vec<(Card, usize)> = (0..10).map(|n| (card(n, 59.0, 86.0), 1)).collect();
+    let landscape = PageSize {
+        width_pt: A4.height_pt,
+        height_pt: A4.width_pt,
+    };
+    let tight = SheetSpec {
+        page: SheetPage::Size(landscape),
+        gap_x_mm: 0.5,
+        gap_y_mm: 0.5,
+        ..a4_sheet()
+    };
+    let sheets = paginate(&pieces, &tight, &PaginateOptions::default()).unwrap();
+    assert_eq!(sheets.len(), 1);
+    assert_eq!(sheets[0].placements.len(), 10);
+    // With the usual 10 mm margins and a 3 mm gap, portrait A4 holds 3 x 3: nine, then one more sheet.
+    let usual = SheetSpec {
+        gap_x_mm: 3.0,
+        gap_y_mm: 3.0,
+        margins: Margins {
+            top_mm: 10.0,
+            right_mm: 10.0,
+            bottom_mm: 10.0,
+            left_mm: 10.0,
+        },
+        ..a4_sheet()
+    };
+    let sheets = paginate(&pieces, &usual, &PaginateOptions::default()).unwrap();
+    assert_eq!(
+        sheets
+            .iter()
+            .map(|s| s.placements.len())
+            .collect::<Vec<_>>(),
+        [9, 1]
+    );
+    // Every piece keeps its size.
+    for p in sheets.iter().flat_map(|s| &s.placements) {
+        close(pt_to_mm(p.destination.width), 59.0);
+        close(pt_to_mm(p.destination.height), 86.0);
+    }
+}
