@@ -36,7 +36,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEzMjI5RTM0QTk4RkI3MkYKUldRdnQ0K3BOSjRpb3hwWjRKT1BlNURvMTZJelUrS1kydFN6M1R5UnR3ZHAwRXkvZ0pIc1NaZjEK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDlERjcxRDRFNUY5NzMzMDgKUldRSU01ZGZUaDMzbmJUNi90a0NSbm52U0kwaDI1MmFxem1Hem16WTBCUnNWMEFxb3hUaGt4WGYK",
       "endpoints": ["https://github.com/JoaquinArruiz/Gutterberg/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
