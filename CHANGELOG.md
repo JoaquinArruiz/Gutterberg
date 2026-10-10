@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.9.1 (2026-10-10)
+
 ### Fixed
 
 - A PDF locked with AES-256 encryption (what current tools write) shows its red lock as soon as it opens. The export already refused it.
