@@ -391,6 +391,7 @@ fn duplex(flip: Flip, common_back: Option<CardId>) -> FinishOptions {
 
 fn setting(id: CardId, turn: Turn) -> CardSetting {
     CardSetting {
+        scale_y: None,
         id,
         quantity: 1,
         turn,

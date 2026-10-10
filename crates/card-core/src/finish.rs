@@ -574,6 +574,7 @@ fn back_sheet(
         let turn = back_turn(p.turn, mirror_x);
         let sized = Card {
             scale: p.scale,
+            scale_y: p.scale_y,
             turn,
             ..*back
         };
@@ -601,6 +602,7 @@ fn back_sheet(
             destination: Rect::new(mirrored.x - w / 2.0 + dx, mirrored.y - h / 2.0 + dy, w, h),
             turn,
             scale: p.scale,
+            scale_y: p.scale_y,
         });
     }
     if placements.is_empty() {

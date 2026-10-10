@@ -7,8 +7,8 @@ use card_core::geometry::{PageSize, Point, Rect};
 use card_core::layout::{calculate_layout, GridLayout};
 use card_core::sample::{sample_grid, sample_pdf};
 use card_core::sheet::{
-    card_transform, extract_cards, paginate, plan_sheets, Card, CardSetting, Margins, Order,
-    OutputSheet, PaginateOptions, SheetPage, SheetSpec, Turn,
+    card_transform, card_transform_xy, extract_cards, paginate, plan_sheets, Card, CardSetting,
+    Margins, Order, OutputSheet, PaginateOptions, SheetPage, SheetSpec, Turn,
 };
 use card_core::units::{mm_to_pt, pt_to_mm};
 use card_core::Error;
@@ -776,6 +776,7 @@ fn the_default_plan_prints_every_card_once_in_order() {
         column: 0,
     };
     let settings = [CardSetting {
+        scale_y: None,
         id,
         quantity: 3,
         turn: Turn::R180,
@@ -873,6 +874,7 @@ fn the_page_size_can_follow_the_source_page() {
     // With nothing to print there is no page to size.
     let none: Vec<_> = (0..9)
         .map(|column| CardSetting {
+            scale_y: None,
             id: CardId::Grid {
                 document_id: 0,
                 page_index: 0,
@@ -1164,6 +1166,7 @@ mod print_examples {
     fn settings(copies: &[((usize, usize), usize)]) -> Vec<CardSetting> {
         (0..9)
             .map(|i| CardSetting {
+                scale_y: None,
                 id: id(i / 3, i % 3),
                 quantity: copies
                     .iter()
@@ -1256,6 +1259,7 @@ mod print_examples {
 
 fn setting(id: CardId, quantity: usize, turn: Turn, scale: f64) -> CardSetting {
     CardSetting {
+        scale_y: None,
         id,
         quantity,
         turn,
@@ -1540,5 +1544,60 @@ fn ten_japanese_size_pieces_fit_an_a4_sheet_in_landscape_with_no_margins() {
     for p in sheets.iter().flat_map(|s| &s.placements) {
         close(pt_to_mm(p.destination.width), 59.0);
         close(pt_to_mm(p.destination.height), 86.0);
+    }
+}
+
+#[test]
+fn a_piece_with_its_own_width_and_height_prints_at_that_size() {
+    // 63 x 88 mm made 63 x 90 mm: the width as it is, the height stretched by 90/88.
+    let mut card = card(0, 63.0, 88.0);
+    card.scale_y = Some(90.0 / 88.0);
+    let spec = a4_sheet();
+    let p = paginate(&[(card, 1)], &spec, &PaginateOptions::default()).unwrap()[0].placements[0];
+    close(pt_to_mm(p.destination.width), 63.0);
+    close(pt_to_mm(p.destination.height), 90.0);
+    assert_eq!(p.scales(), (1.0, 90.0 / 88.0));
+    // Turned a quarter, it is 90 wide and 63 tall.
+    card.turn = Turn::R90;
+    let p = paginate(&[(card, 1)], &spec, &PaginateOptions::default()).unwrap()[0].placements[0];
+    close(pt_to_mm(p.destination.width), 90.0);
+    close(pt_to_mm(p.destination.height), 63.0);
+}
+
+#[test]
+fn the_two_factor_transform_puts_a_tilted_stretched_piece_exactly_on_its_box() {
+    let source = OrientedRect {
+        center: Point { x: 200.0, y: 300.0 },
+        width: 80.0,
+        height: 120.0,
+        angle_deg: 7.0,
+    };
+    for turn in [Turn::R0, Turn::R90, Turn::R180, Turn::R270] {
+        let (sx, sy) = (1.1, 0.8);
+        let (w, h) = (80.0 * sx, 120.0 * sy);
+        let (w, h) = if turn.swaps_axes() { (h, w) } else { (w, h) };
+        let dest = Rect::new(50.0, 60.0, w, h);
+        let m = card_transform_xy(&source, (sx, sy), turn, &dest);
+        // Every corner lands on a corner of the upright box.
+        for c in source.corners().map(|k| m.apply(k)) {
+            assert!(
+                [dest.x, dest.x + w].iter().any(|x| (c.x - x).abs() < 1e-6)
+                    && [dest.y, dest.y + h].iter().any(|y| (c.y - y).abs() < 1e-6),
+                "{turn:?}: {c:?} is not a corner of {dest:?}"
+            );
+        }
+        // With equal factors it is the one-factor transform.
+        let one = card_transform(&source, 0.9, turn, &dest);
+        let two = card_transform_xy(&source, (0.9, 0.9), turn, &dest);
+        for (a, b) in [
+            (one.m11, two.m11),
+            (one.m12, two.m12),
+            (one.m21, two.m21),
+            (one.m22, two.m22),
+            (one.tx, two.tx),
+            (one.ty, two.ty),
+        ] {
+            close(a, b);
+        }
     }
 }

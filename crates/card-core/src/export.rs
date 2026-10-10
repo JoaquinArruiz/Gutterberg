@@ -24,7 +24,7 @@ use crate::finish::{bleed_regions, finish_sheets, Finishing, SheetMarks};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
-    card_transform, plan_print_in, sheet_from_layout, Affine, CardSetting, DocumentSource,
+    card_transform_xy, plan_print_in, sheet_from_layout, Affine, CardSetting, DocumentSource,
     OutputSheet, PaginateOptions, PrintLayout, SheetPlacement,
 };
 use crate::units::{mm_to_pt, pt_to_mm};
@@ -628,7 +628,7 @@ fn card_form(
 /// The content-stream operators that paint one card: move, then draw its card form.
 fn placement_ops(card: &str, p: &SheetPlacement, display_box: [f64; 4], out_height: f64) -> String {
     let m = pdf_matrix(
-        &card_transform(&p.source, p.scale, p.turn, &p.destination),
+        &card_transform_xy(&p.source, p.scales(), p.turn, &p.destination),
         display_box,
         out_height,
     );
@@ -677,7 +677,7 @@ pub fn drawn_content(doc: &Document, page_id: ObjectId) -> String {
 /// reflected over the piece's edge and seen only through the strip outside it.
 fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [f64; 4]) -> String {
     let m = pdf_matrix(
-        &card_transform(&p.source, p.scale, p.turn, &p.destination),
+        &card_transform_xy(&p.source, p.scales(), p.turn, &p.destination),
         display_box,
         sheet.page.height_pt,
     );

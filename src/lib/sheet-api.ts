@@ -19,6 +19,8 @@ export const CardSchema = z.object({
   id: CardIdSchema,
   source: OrientedRectSchema,
   scale: z.number(),
+  /** The factor along the card's height when set apart from its width; absent or null = `scale`. */
+  scale_y: z.number().nullish(),
   turn: TurnSchema,
 });
 export type Card = z.infer<typeof CardSchema>;
@@ -29,6 +31,7 @@ export const SheetPlacementSchema = z.object({
   destination: RectSchema,
   turn: TurnSchema,
   scale: z.number(),
+  scale_y: z.number().nullish(),
 });
 export type SheetPlacement = z.infer<typeof SheetPlacementSchema>;
 
@@ -52,7 +55,7 @@ export const OutputSheetSchema = z.object({
 export type OutputSheet = z.infer<typeof OutputSheetSchema>;
 
 /** What the user decided about one card: how many copies, turned how far, at what scale. */
-export type CardSetting = { id: Card["id"]; quantity: number; turn: Turn; scale: number };
+export type CardSetting = { id: Card["id"]; quantity: number; turn: Turn; scale: number; scale_y?: number };
 
 export type SheetPagePayload =
   | { kind: "size"; width_pt: number; height_pt: number }

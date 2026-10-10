@@ -12,8 +12,12 @@ import { ptToMm } from "./units";
 export type CardEdits = {
   /** Output turn per card; a missing entry is 0. */
   turns: Record<string, Turn>;
-  /** Scale per card (1 = the size on the source page); a missing entry is 1. */
+  /** Scale per card (1 = the size on the source page); a missing entry is 1. Along the width only when the card
+   * also has a `scalesY` entry. */
   scales: Record<string, number>;
+  /** The scale along the height of a card whose width and height were set apart (the chain unlinked); a missing
+   * entry, or no map at all, means the same as its scale. */
+  scalesY?: Record<string, number>;
   /** The library order as card keys. Empty = page order. Cards it does not list follow, in page order. */
   order: string[];
   /** The piece printed on the back of each piece (key to key), for duplex printing. */
@@ -39,7 +43,10 @@ export function applyEdits(cards: Card[], edits: CardEdits): Card[] {
     const k = key(c);
     const turn = edits.turns[k] ?? c.turn;
     const scale = edits.scales[k] ?? c.scale;
-    return turn === c.turn && scale === c.scale ? c : { ...c, turn, scale };
+    const scaleY = edits.scalesY?.[k] ?? c.scale_y ?? null;
+    return turn === c.turn && scale === c.scale && scaleY === (c.scale_y ?? null)
+      ? c
+      : { ...c, turn, scale, scale_y: scaleY };
   });
   if (edits.order.length === 0) return merged;
   const rank = new Map(edits.order.map((k, i) => [k, i]));
@@ -52,7 +59,10 @@ export function applyEdits(cards: Card[], edits: CardEdits): Card[] {
 /** Whether any card is turned, scaled or moved from its page position: such plans cannot use "same as source". */
 export function hasCardEdits(cards: Card[], edits: CardEdits): boolean {
   const natural = cards.map(key);
-  if (natural.some((k) => (edits.turns[k] ?? 0) !== 0 || !isOne(edits.scales[k] ?? 1))) return true;
+  if (
+    natural.some((k) => (edits.turns[k] ?? 0) !== 0 || !isOne(edits.scales[k] ?? 1) || edits.scalesY?.[k] !== undefined)
+  )
+    return true;
   return applyEdits(cards, edits).some((c, i) => key(c) !== natural[i]);
 }
 
@@ -72,9 +82,16 @@ export function turnCards(edits: CardEdits, cards: Card[], keys: string[], delta
   return next;
 }
 
+/** A card's scales along its own width and height. */
+export const cardScales = (c: Card): { x: number; y: number } => ({ x: c.scale, y: c.scale_y ?? c.scale });
+
+/** Whether a card's width and height were set apart (its chain is unlinked). */
+export const hasOwnHeight = (c: Card): boolean => c.scale_y != null && Math.abs(c.scale_y - c.scale) > 1e-9;
+
 /** The size a card prints at, in points, after its turn and scale. */
 export const finalSizePt = (c: Card): { width: number; height: number } => {
-  const [w, h] = [c.source.width * c.scale, c.source.height * c.scale];
+  const { x, y } = cardScales(c);
+  const [w, h] = [c.source.width * x, c.source.height * y];
   return c.turn === 90 || c.turn === 270 ? { width: h, height: w } : { width: w, height: h };
 };
 
@@ -93,15 +110,27 @@ export function orientCards(edits: CardEdits, cards: Card[], keys: string[], to:
   return next;
 }
 
-/** Set the scale of each of `keys`; 1 clears it. */
+/** Set the scale of each of `keys`, the same along both sides (the chain linked again); 1 clears it. */
 export function scaleCards(edits: CardEdits, keys: string[], scale: number): CardEdits {
-  const s = clampScale(scale);
+  return scaleCardsXY(edits, keys, scale, scale);
+}
+
+/**
+ * Set the scales of each of `keys` along its width (`x`) and its height (`y`). Equal scales are stored as one; a
+ * scale of 1 on both sides clears the card's entry. Only ever what the user typed: never used to make pieces fit.
+ */
+export function scaleCardsXY(edits: CardEdits, keys: string[], x: number, y: number): CardEdits {
+  const [sx, sy] = [clampScale(x), clampScale(y)];
   const scales = { ...edits.scales };
+  const scalesY = { ...(edits.scalesY ?? {}) };
   for (const k of keys) {
-    if (isOne(s)) delete scales[k];
-    else scales[k] = s;
+    if (isOne(sx) && isOne(sy)) delete scales[k];
+    else scales[k] = sx;
+    if (Math.abs(sx - sy) < 1e-9) delete scalesY[k];
+    else scalesY[k] = sy;
   }
-  return { ...edits, scales };
+  const { scalesY: _old, ...rest } = edits;
+  return Object.keys(scalesY).length > 0 ? { ...rest, scales, scalesY } : { ...rest, scales };
 }
 
 /**
@@ -130,11 +159,17 @@ export function scaleForSize(source: { width: number; height: number }, side: "w
   return clampScale(mm / ptToMm(source[side]));
 }
 
-/** "63.0 × 88.0 mm (98.4%)": a card's size as printed, and the scale behind it. */
+/**
+ * "63.0 × 88.0 mm (98.4%)": a card's size as printed, and the scale behind it; "63.0 × 90.0 mm (100% × 102.3%)"
+ * when its width and height were set apart.
+ */
 export function formatCardSize(c: Card, unit: MeasurementUnit): string {
   const { width, height } = finalSizePt(c);
   const decimals = unit === "mm" ? 1 : 2;
-  return `${formatValue(ptToMm(width), unit, decimals)} × ${formatValue(ptToMm(height), unit, decimals)} ${unit} (${formatDecimal(c.scale * 100, 1)}%)`;
+  const { x, y } = cardScales(c);
+  const pct = (s: number) => `${formatDecimal(s * 100, 1)}%`;
+  const scale = hasOwnHeight(c) ? `${pct(x)} × ${pct(y)}` : pct(x);
+  return `${formatValue(ptToMm(width), unit, decimals)} × ${formatValue(ptToMm(height), unit, decimals)} ${unit} (${scale})`;
 }
 
 /** Set the back of each of `keys` to the piece `back`, or clear it with null. */

@@ -28,7 +28,7 @@ export function PlacedCard({ p, k, kind = "page" }: { p: SheetPlacement; k: numb
       className="absolute overflow-hidden bg-white"
       style={{ left: d.x * k, top: d.y * k, width: d.width * k, height: d.height * k }}
     >
-      {url && <CardImage url={url} source={p.source} turn={p.turn} />}
+      {url && <CardImage url={url} source={p.source} turn={p.turn} aspect={d.width / d.height} />}
     </div>
   );
 }

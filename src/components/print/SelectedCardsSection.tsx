@@ -1,7 +1,15 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { cardIdKey } from "../../lib/card";
-import { formatCardSize, scaleCards, scaleForSize, setBacks } from "../../lib/card-edits";
+import {
+  cardScales,
+  formatCardSize,
+  hasOwnHeight,
+  scaleCards,
+  scaleCardsXY,
+  scaleForSize,
+  setBacks,
+} from "../../lib/card-edits";
 import { formatDecimal } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useLibraryCards } from "../../lib/use-library-cards";
@@ -9,6 +17,7 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
+import { ChainedFields, ChainToggle } from "../ui/ChainToggle";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
@@ -41,6 +50,29 @@ export function SelectedCardsSection() {
         Math.abs(c.source.height - first.source.height) < SAME_SIZE_PT,
     );
   const apply = (s: number) => setEdits(scaleCards(edits, keys, s));
+  // The chain: linked, width and height keep their proportions (one scale); unlinked, each is set on its own.
+  // Unlinked while any selected piece has its own height, or after the user opened the chain for this selection.
+  const keysId = keys.join(",");
+  const [opened, setOpened] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new selection starts from its own state
+  useEffect(() => setOpened(false), [keysId]);
+  const linked = !picked.some(hasOwnHeight) && !opened;
+  const heightScale =
+    first && picked.every((c) => Math.abs(cardScales(c).y - cardScales(first).y) < 1e-6) ? cardScales(first).y : null;
+  // Unlinked: one side changes, each piece keeps its other side.
+  const setSide = (side: "width" | "height", mm: number) => {
+    const s = scaleForSize(first.source, side, mm);
+    let next = edits;
+    for (const c of picked) {
+      const { x, y } = cardScales(c);
+      next = scaleCardsXY(next, [cardIdKey(c.id)], side === "width" ? s : x, side === "height" ? s : y);
+    }
+    setEdits(next);
+  };
+  const setLinked = (on: boolean) => {
+    if (on && scale !== null) apply(scale); // the height follows the width again
+    setOpened(!on);
+  };
   const picking = usePrintStore((s) => s.pickingBack);
   const setPicking = usePrintStore((s) => s.setPickingBack);
   const commonBack = usePrintStore((s) => s.finish.duplex.commonBack);
@@ -87,25 +119,37 @@ export function SelectedCardsSection() {
                   : `${formatDecimal(scale * 100, 1)}%`}
             </span>
           </div>
-          <MeasurementInput
-            label={t("common.width")}
-            precise
-            min={1}
-            disabled={!sameSource}
-            value={sameSource && scale !== null ? ptToMm(first.source.width * scale) : null}
-            onChange={(mm) => apply(scaleForSize(first.source, "width", mm))}
-          />
-          <MeasurementInput
-            label={t("common.height")}
-            precise
-            min={1}
-            disabled={!sameSource}
-            value={sameSource && scale !== null ? ptToMm(first.source.height * scale) : null}
-            onChange={(mm) => apply(scaleForSize(first.source, "height", mm))}
-          />
+          <ChainedFields
+            chain={
+              <ChainToggle
+                linked={linked}
+                onChange={setLinked}
+                label={t("print.selected.link")}
+                linkedHint={t("print.selected.linkedHint")}
+                unlinkedHint={t("print.selected.unlinkedHint")}
+              />
+            }
+          >
+            <MeasurementInput
+              label={t("common.width")}
+              precise
+              min={1}
+              disabled={!sameSource}
+              value={sameSource && scale !== null ? ptToMm(first.source.width * scale) : null}
+              onChange={(mm) => (linked ? apply(scaleForSize(first.source, "width", mm)) : setSide("width", mm))}
+            />
+            <MeasurementInput
+              label={t("common.height")}
+              precise
+              min={1}
+              disabled={!sameSource}
+              value={sameSource && heightScale !== null ? ptToMm(first.source.height * heightScale) : null}
+              onChange={(mm) => (linked ? apply(scaleForSize(first.source, "height", mm)) : setSide("height", mm))}
+            />
+          </ChainedFields>
           <NumberField
             label={t("print.selected.scale")}
-            value={scale === null ? null : scale * 100}
+            value={scale === null || heightScale === null || Math.abs(scale - heightScale) > 1e-6 ? null : scale * 100}
             decimals={1}
             min={10}
             max={500}
@@ -116,7 +160,13 @@ export function SelectedCardsSection() {
             onCommit={(pct) => apply(pct / 100)}
           />
           <div>
-            <Button disabled={picked.every((c) => c.scale === 1)} onClick={() => apply(1)}>
+            <Button
+              disabled={picked.every((c) => c.scale === 1 && !hasOwnHeight(c))}
+              onClick={() => {
+                apply(1);
+                setOpened(false);
+              }}
+            >
               {t("print.selected.backToPage")}
             </Button>
           </div>

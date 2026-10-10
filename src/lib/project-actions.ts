@@ -509,6 +509,7 @@ export async function openProjectDialog(path?: string): Promise<void> {
         edits = {
           turns: withoutDocument(edits.turns, d.id),
           scales: withoutDocument(edits.scales, d.id),
+          ...(edits.scalesY ? { scalesY: withoutDocument(edits.scalesY, d.id) } : {}),
           order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
           backs: backsWithoutDocument(edits.backs, d.id),
         };

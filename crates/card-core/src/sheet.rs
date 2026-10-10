@@ -81,9 +81,14 @@ pub struct Card {
     pub id: CardId,
     /// The area of the source page the card is cut from.
     pub source: OrientedRect,
-    /// Explicit size factor, 1.0 unless the user set a real size or a percentage.
+    /// Explicit size factor, 1.0 unless the user set a real size or a percentage. With
+    /// `scale_y` it is the factor along the card's width only.
     #[serde(default = "one")]
     pub scale: f64,
+    /// The factor along the card's height when the user set the width and height separately;
+    /// `None` = the same as `scale`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale_y: Option<f64>,
     /// Output turn.
     #[serde(default)]
     pub turn: Turn,
@@ -96,17 +101,21 @@ impl Card {
             id,
             source,
             scale: 1.0,
+            scale_y: None,
             turn: Turn::R0,
         }
     }
 
-    /// Size on the sheet (points): the source size times the scale, with width and height
+    /// The factors along the card's own width and height.
+    pub fn scales(&self) -> (f64, f64) {
+        (self.scale, self.scale_y.unwrap_or(self.scale))
+    }
+
+    /// Size on the sheet (points): the source size times the scales, with width and height
     /// swapped for a quarter turn.
     pub fn final_size(&self) -> (f64, f64) {
-        let (w, h) = (
-            self.source.width * self.scale,
-            self.source.height * self.scale,
-        );
+        let (sx, sy) = self.scales();
+        let (w, h) = (self.source.width * sx, self.source.height * sy);
         if self.turn.swaps_axes() {
             (h, w)
         } else {
@@ -126,6 +135,9 @@ pub struct CardSetting {
     pub turn: Turn,
     #[serde(default = "one")]
     pub scale: f64,
+    /// The factor along the card's height when set apart from its width (`None` = `scale`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale_y: Option<f64>,
 }
 
 fn check_range(range: PageRange, total_pages: usize) -> Result<()> {
@@ -298,6 +310,16 @@ pub struct SheetPlacement {
     pub destination: Rect,
     pub turn: Turn,
     pub scale: f64,
+    /// The factor along the card's height when set apart from its width (`None` = `scale`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale_y: Option<f64>,
+}
+
+impl SheetPlacement {
+    /// The factors along the card's own width and height.
+    pub fn scales(&self) -> (f64, f64) {
+        (self.scale, self.scale_y.unwrap_or(self.scale))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -529,6 +551,7 @@ fn lay_out(
                         ),
                         turn: e.card.turn,
                         scale: e.card.scale,
+                        scale_y: e.card.scale_y,
                     }
                 })
                 .collect();
@@ -549,7 +572,8 @@ pub fn paginate(
     let mut entries: Vec<Entry> = Vec::new();
     let mut total: usize = 0;
     for (card, quantity) in cards {
-        if !(card.scale.is_finite() && card.scale > 0.0) {
+        let (sx, sy) = card.scales();
+        if !(sx.is_finite() && sx > 0.0 && sy.is_finite() && sy > 0.0) {
             return Err(Error::InvalidSheet("a card's scale must be above 0".into()));
         }
         let (width, height) = card.final_size();
@@ -639,6 +663,7 @@ pub fn plan_sheets_in(
         if let Some(mut card) = position.get(&s.id).and_then(|&i| extracted[i].take()) {
             card.turn = s.turn;
             card.scale = s.scale;
+            card.scale_y = s.scale_y;
             cards.push((card, s.quantity));
         }
     }
@@ -701,6 +726,7 @@ pub fn sheet_from_layout(
                 destination: p.destination,
                 turn: Turn::R0,
                 scale: 1.0,
+                scale_y: None,
             })
             .collect(),
     )
@@ -828,9 +854,26 @@ impl Affine {
 /// angle, apply the output turn and the scale (all about the card's centre), then move the
 /// centre to the centre of `destination`. Angles are clockwise on screen (y points down).
 pub fn card_transform(source: &OrientedRect, scale: f64, turn: Turn, destination: &Rect) -> Affine {
-    let angle = (turn.degrees() - source.angle_deg).to_radians();
-    let (sin, cos) = angle.sin_cos();
-    let (m11, m12, m21, m22) = (scale * cos, -scale * sin, scale * sin, scale * cos);
+    card_transform_xy(source, (scale, scale), turn, destination)
+}
+
+/// [`card_transform`] with a factor along the card's own width and another along its height:
+/// `R(turn) · S(sx, sy) · R(-source angle)`, so the card is stretched along its own sides before
+/// it is turned. With equal factors it is exactly [`card_transform`].
+pub fn card_transform_xy(
+    source: &OrientedRect,
+    (sx, sy): (f64, f64),
+    turn: Turn,
+    destination: &Rect,
+) -> Affine {
+    let (st, ct) = turn.degrees().to_radians().sin_cos();
+    let (sa, ca) = source.angle_deg.to_radians().sin_cos();
+    let (m11, m12, m21, m22) = (
+        sx * ct * ca + sy * st * sa,
+        sx * ct * sa - sy * st * ca,
+        sx * st * ca - sy * ct * sa,
+        sx * st * sa + sy * ct * ca,
+    );
     let (cx, cy) = (
         destination.x + destination.width / 2.0,
         destination.y + destination.height / 2.0,

@@ -76,6 +76,7 @@ fn the_user_order_can_interleave_documents() {
         column,
     };
     let setting = |id| CardSetting {
+        scale_y: None,
         id,
         quantity: 1,
         turn: Turn::R0,

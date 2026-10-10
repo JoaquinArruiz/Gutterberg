@@ -176,6 +176,57 @@ describe("setting a real size", () => {
     expect(within(thumbs()[0]).queryByTestId("scale-badge")).toBeNull();
   });
 
+  it("sets the width and height apart once the chain is unlinked, and links them again", () => {
+    render(
+      <>
+        <CardLibrary />
+        <PrintInspector />
+      </>,
+    );
+    fireEvent.click(thumbs()[0]); // 63 x 88 mm
+    const chain = within(section()).getByRole("button", { name: "Link width and height" });
+    expect(chain.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(chain);
+    expect(chain.getAttribute("aria-pressed")).toBe("false");
+    typeNumber(within(section()).getByRole("textbox", { name: "Height" }), "90");
+    const k = key(cards[0]);
+    // The width stays 63 mm; only the height changed.
+    expect(layout().cardEdits.scales[k]).toBeCloseTo(1, 6);
+    expect(layout().cardEdits.scalesY?.[k]).toBeCloseTo(90 / 88, 6);
+    expect(screen.getByTestId("card-size-summary").textContent).toContain("63.0 × 90.0 mm (100.0% × 102.3%)");
+    expect(within(thumbs()[0]).getByTestId("scale-badge").textContent).toBe("100% × 102%");
+    // A percentage means nothing for a stretched piece.
+    expect((within(section()).getByRole("textbox", { name: "Scale" }) as HTMLInputElement).value).toBe("");
+    // Linked again: the height follows the width, back to the piece's proportions.
+    fireEvent.click(chain);
+    expect(chain.getAttribute("aria-pressed")).toBe("true");
+    expect(layout().cardEdits.scalesY?.[k]).toBeUndefined();
+    expect(screen.getByTestId("card-size-summary").textContent).toContain("63.0 × 88.0 mm (100.0%)");
+  });
+
+  it("starts unlinked for a piece that already has its own height, and Back to the size on the page links it", () => {
+    useLayoutStore.getState().setCardEdits({
+      turns: {},
+      scales: { [key(cards[0])]: 1 },
+      scalesY: { [key(cards[0])]: 1.1 },
+      order: [],
+      backs: {},
+    });
+    render(
+      <>
+        <CardLibrary />
+        <PrintInspector />
+      </>,
+    );
+    fireEvent.click(thumbs()[0]);
+    const chain = within(section()).getByRole("button", { name: "Link width and height" });
+    expect(chain.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(within(section()).getByRole("button", { name: "Back to the size on the page" }));
+    expect(layout().cardEdits.scales).toEqual({});
+    expect(layout().cardEdits.scalesY).toBeUndefined();
+    expect(chain.getAttribute("aria-pressed")).toBe("true");
+  });
+
   it("gives several cards of one size the same real size, and only a percentage when they differ", () => {
     render(
       <>

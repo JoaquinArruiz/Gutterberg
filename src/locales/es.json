@@ -350,7 +350,10 @@
       "backCommon": "dorso común",
       "backMixed": "dorsos distintos",
       "pickBack": "Elegir dorso…",
-      "clearBack": "Quitar dorso"
+      "clearBack": "Quitar dorso",
+      "link": "Vincular ancho y alto",
+      "linkedHint": "Vinculados: el ancho y el alto mantienen las proporciones de la pieza. Haz clic para fijarlos por separado.",
+      "unlinkedHint": "Sin vincular: el ancho y el alto se fijan por separado, así que la pieza puede estirarse. Haz clic para vincularlos."
     },
     "marks": {
       "style": "Estilo",

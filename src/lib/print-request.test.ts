@@ -169,6 +169,14 @@ describe("the plan", () => {
     expect(requestedCopies(plan(), cards)).toBe(3);
   });
 
+  it("sends a piece's own height to the engine, and nothing extra for pieces without one", () => {
+    const k = cardIdKey(cards[1].id);
+    const edits = { turns: {}, scales: { [k]: 1 }, scalesY: { [k]: 1.1 }, order: [], backs: {} };
+    const req = buildPrintRequest(plan({ mode: "custom", quantities: { [k]: 2 } }), cards, docs, output, edits);
+    expect(req.settings[1]).toMatchObject({ id: cards[1].id, quantity: 2, scale: 1, scale_y: 1.1 });
+    expect("scale_y" in req.settings[0]).toBe(false);
+  });
+
   it("describes the sheet from the output settings", () => {
     const p = plan({ mode: "custom", sheetGrid: "custom", rows: 2, columns: 5, order: "interleaved", autoFill: true });
     const req = buildPrintRequest(p, cards, docs, { ...output, pageMode: "a4", orientation: "landscape" });

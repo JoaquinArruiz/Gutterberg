@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- A chain icon next to a piece's width and height in Print › Selected pieces. Unlinked, the width and height are set separately (for example 63 × 90 mm), and the library, the sheets and the export show the piece at that size.
 - More sheet sizes: A3, A5 and Tabloid / Ledger, next to A4, Letter, Legal, Same as source, Custom and Auto-fit. The sheet size is now the first setting of Print › Sheet.
 - Before any piece is on it, the Print tab shows a white sheet of the chosen size, with its margins.
 

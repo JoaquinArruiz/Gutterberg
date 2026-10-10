@@ -350,7 +350,10 @@
       "backCommon": "common back",
       "backMixed": "different backs",
       "pickBack": "Pick back…",
-      "clearBack": "Remove back"
+      "clearBack": "Remove back",
+      "link": "Link width and height",
+      "linkedHint": "Linked: width and height keep the piece's proportions. Click to set them separately.",
+      "unlinkedHint": "Not linked: width and height are set separately, so the piece can be stretched. Click to link them."
     },
     "marks": {
       "style": "Style",

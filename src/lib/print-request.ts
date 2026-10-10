@@ -137,6 +137,7 @@ export function planSettings(plan: PrintPlan, cards: Card[], edited = false): Ca
     quantity: plan.mode === "all" ? 1 : (plan.quantities[cardIdKey(c.id)] ?? 0),
     turn: c.turn,
     scale: c.scale,
+    ...(c.scale_y != null ? { scale_y: c.scale_y } : {}),
   }));
 }
 

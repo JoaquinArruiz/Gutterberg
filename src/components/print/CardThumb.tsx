@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cardIdKey, cropWidthPx } from "../../lib/card";
-import { finalSizePt, formatCardSize } from "../../lib/card-edits";
+import { finalSizePt, formatCardSize, hasOwnHeight } from "../../lib/card-edits";
 import type { Card } from "../../lib/sheet-api";
 import { useCardImage } from "../../lib/use-card-image";
 import { documentById, useDocumentStore } from "../../stores/document-store";
@@ -68,7 +68,7 @@ export function CardThumb({
   const label = t("library.thumb.label", { page: page1, position });
   const size = formatCardSize(card, unit);
   const printed = copies === null || copies > 0;
-  const scaled = Math.abs(card.scale - 1) > 1e-6;
+  const scaled = Math.abs(card.scale - 1) > 1e-6 || hasOwnHeight(card);
   return (
     <button
       type="button"
@@ -88,7 +88,7 @@ export function CardThumb({
     >
       <span className="flex min-h-0 w-full flex-1 items-center justify-center bg-white/5">
         <span className="relative" style={{ width: boxW, height: boxH }}>
-          {url && <CardImage url={url} source={card.source} turn={card.turn} />}
+          {url && <CardImage url={url} source={card.source} turn={card.turn} aspect={boxW / boxH} />}
         </span>
       </span>
       <span className="w-full truncate text-center text-[var(--muted)]">{label}</span>
@@ -102,7 +102,9 @@ export function CardThumb({
           className="absolute left-1 top-1 rounded bg-amber-400 px-1 font-semibold text-black"
           data-testid="scale-badge"
         >
-          {Math.round(card.scale * 100)}%
+          {hasOwnHeight(card)
+            ? `${Math.round(card.scale * 100)}% × ${Math.round((card.scale_y ?? card.scale) * 100)}%`
+            : `${Math.round(card.scale * 100)}%`}
         </span>
       )}
       {image?.missing && (

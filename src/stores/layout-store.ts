@@ -236,6 +236,9 @@ export const useLayoutStore = create<LayoutState>()(
         const edits: CardEdits = {
           turns: Object.fromEntries(Object.entries(cardEdits.turns).filter(([k]) => keep(k))),
           scales: Object.fromEntries(Object.entries(cardEdits.scales).filter(([k]) => keep(k))),
+          ...(cardEdits.scalesY
+            ? { scalesY: Object.fromEntries(Object.entries(cardEdits.scalesY).filter(([k]) => keep(k))) }
+            : {}),
           order: cardEdits.order.filter(keep),
           backs: backsWithoutDocument(cardEdits.backs, id),
         };

@@ -64,6 +64,7 @@ const OutputSchema = z.object({
 const EditsSchema = z.object({
   turns: z.record(z.string(), TurnSchema),
   scales: z.record(z.string(), finite),
+  scalesY: z.record(z.string(), finite).optional(),
   order: z.array(z.string()),
   backs: z.record(z.string(), z.string()),
 });
@@ -265,8 +266,11 @@ function cleanEdits(e: z.infer<typeof EditsSchema>): CardEdits {
   const keep = <T>(rec: Record<string, T>) => Object.fromEntries(Object.entries(rec).filter(([k]) => KEY.test(k)));
   const scales: Record<string, number> = {};
   for (const [k, s] of Object.entries(keep(e.scales))) scales[k] = clampScale(s);
+  const scalesY: Record<string, number> = {};
+  for (const [k, s] of Object.entries(keep(e.scalesY ?? {}))) scalesY[k] = clampScale(s);
   const backs = Object.fromEntries(Object.entries(e.backs).filter(([k, v]) => KEY.test(k) && KEY.test(v) && k !== v));
-  return { turns: keep(e.turns), scales, order: e.order.filter((k) => KEY.test(k)), backs };
+  const edits: CardEdits = { turns: keep(e.turns), scales, order: e.order.filter((k) => KEY.test(k)), backs };
+  return Object.keys(scalesY).length > 0 ? { ...edits, scalesY } : edits;
 }
 
 /** Parses the content of a project file. Throws a `ZodError` when it is not a project this build understands. */

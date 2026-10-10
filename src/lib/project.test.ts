@@ -127,6 +127,16 @@ describe("the project file", () => {
     expect(() => parseProject(badKey)).toThrow();
   });
 
+  it("keeps a piece's own height (its width and height set apart), and opens older files without one", () => {
+    const s = state();
+    s.edits = { ...s.edits, scales: { "g:3:0:0:0": 1 }, scalesY: { "g:3:0:0:0": 1.1, "not a key": 2 } };
+    const back = fromProject(parseProject(file(s)));
+    expect(back.edits.scalesY).toEqual({ "g:3:0:0:0": 1.1 });
+    const old = file(state());
+    delete (old.edits as { scalesY?: unknown }).scalesY;
+    expect(fromProject(parseProject(old)).edits.scalesY).toBeUndefined();
+  });
+
   it("pulls values a hand edit pushed out of range back to what the UI allows", () => {
     const f = file(state());
     f.output.gapXMm = 9000;
