@@ -7,12 +7,9 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
-- A PDF locked with AES-256 encryption (what current tools write) shows its red lock as soon as it opens. The
-  export already refused it.
-- Pages, thumbnails and pieces show in the installed app (Windows, macOS and Linux) instead of broken
-  images.
-- The welcome tour's clips play in the Linux app, instead of showing a black box. A clip that still cannot play
-  shows its last frame.
+- A PDF locked with AES-256 encryption (what current tools write) shows its red lock as soon as it opens. The export already refused it.
+- Pages, thumbnails and pieces show in the installed app (Windows, macOS and Linux) instead of broken images.
+- The welcome tour's clips play in the Linux app, instead of showing a black box. A clip that still cannot play shows its last frame.
 
 ## 0.9.0 (2026-10-10)
 
@@ -21,13 +18,10 @@ every piece its own space, at its exact size, with the original artwork untouche
 
 ### Added
 
-- Source tab: mark the pieces of a page with a grid or one by one with the Piece tool (move, resize, rotate), in
-  mm, cm or inches; skip pages, give page ranges their own grid and save grids as presets.
-- Detect pieces proposes the grid or the rectangles of a page, from the PDF's own objects, repeating edges or
-  the shapes in a scan; nothing changes until you apply it.
+- Source tab: mark the pieces of a page with a grid or one by one with the Piece tool (move, resize, rotate), in mm, cm or inches; skip pages, give page ranges their own grid and save grids as presets.
+- Detect pieces proposes the grid or the rectangles of a page, from the PDF's own objects, repeating edges or the shapes in a scan; nothing changes until you apply it.
 - Original, Preview and Split views, with the source gap, output gap, margins and page size.
-- Print tab: a piece library from several PDFs, copies per piece, auto-fill, turning, sorting by dragging and an
-  explicit real size or percentage per piece. Pieces never shrink to fit; overflow is reported.
+- Print tab: a piece library from several PDFs, copies per piece, auto-fill, turning, sorting by dragging and an explicit real size or percentage per piece. Pieces never shrink to fit; overflow is reported.
 - Cut marks, bleed, and duplex printing with a common back or a back per piece.
 - PNG, JPEG and WebP images as pieces, never resampled unless you ask, with a warning for soft images.
 - `.gtr` project files that find their PDFs again even if they moved; double-clicking one opens Gutterberg.
