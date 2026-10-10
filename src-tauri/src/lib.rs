@@ -22,6 +22,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         // Restarts the app after an update.
         .plugin(tauri_plugin_process::init())
+        // Disable default browser shortcuts
+        .plugin(tauri_plugin_prevent_default::init())
         .manage(state::AppState::default())
         .invoke_handler(tauri::generate_handler![
             commands::app_info::app_info,
