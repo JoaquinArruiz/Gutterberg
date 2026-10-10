@@ -140,7 +140,7 @@ fn other_restrictions_export_and_the_output_carries_them() {
     assert!(flags.contains(Permissions::ANNOTABLE));
     // The content is intact and readable after the round trip.
     let page = *doc.get_pages().values().next().unwrap();
-    let content = String::from_utf8(doc.get_page_content(page)).unwrap();
+    let content = card_core::export::drawn_content(&doc, page);
     assert_eq!(content.matches("/S0_0 Do").count(), 9);
 }
 

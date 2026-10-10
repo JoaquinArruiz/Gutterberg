@@ -165,7 +165,7 @@ fn a_mixed_sheet_is_exported_from_both_files() {
     let written = Document::load(&out).unwrap();
     assert_eq!(written.get_pages().len(), 7);
     let mixed = *written.get_pages().get(&3).unwrap();
-    let content = String::from_utf8(written.get_page_content(mixed)).unwrap();
+    let content = card_core::export::drawn_content(&written, mixed);
     assert!(content.contains("/S0_0 Do"), "{content}");
     assert!(content.contains("/S7_0 Do"), "{content}");
 }

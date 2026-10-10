@@ -334,7 +334,7 @@ fn bleed_that_meets_a_neighbour_or_the_page_edge_is_a_warning() {
 /// The decompressed content stream of the first page of `doc`.
 fn first_page_content(doc: &lopdf::Document) -> String {
     let id = *doc.get_pages().get(&1).unwrap();
-    String::from_utf8_lossy(&doc.get_page_content(id)).into_owned()
+    card_core::export::drawn_content(doc, id)
 }
 
 #[test]

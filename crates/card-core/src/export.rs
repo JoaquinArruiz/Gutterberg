@@ -1,16 +1,21 @@
 //! Vector-preserving export.
 //!
 //! Each used source page is wrapped (unmodified) as a Form XObject. Every card
-//! is then painted on a new output page as:
+//! is then painted on a new output page through a small form of its own, whose
+//! `/BBox` is the card's area on the page:
 //!
 //! ```text
 //! q  1 0 0 1 dx dy cm                  % pure translation: no scaling, no rasterising
-//!    <card rect in source space> re W n   % clip, *after* cm so it moves too
-//!    /Src Do
+//!    /C12 Do                           % the card's form: BBox = the card rect, and inside it
+//!                                      %   <card rect in source space> re W n   (clip, after cm)
+//!                                      %   /Src Do
 //! Q
 //! ```
 //!
-//! so text, vector art and embedded images keep their original encoding.
+//! so text, vector art and embedded images keep their original encoding. The page is still
+//! stored once; the card form adds a few bytes and is shared by every copy of that card. Its
+//! tight box lets a viewer draw only the card's area instead of the whole page for each card,
+//! which is faster and avoids the whole page flashing up before the clip applies.
 
 use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
@@ -564,30 +569,108 @@ pub fn pdf_matrix(card: &Affine, display_box: [f64; 4], out_height: f64) -> [f64
     ]
 }
 
-/// The content-stream operators that paint one card: move and clip, then draw the page form.
-fn placement_ops(name: &str, p: &SheetPlacement, display_box: [f64; 4], out_height: f64) -> String {
+/// The clip of one card in the page form's own space, and its bounding box there (the card
+/// form's `/BBox`). The clip follows `cm`, so it moves with the card.
+fn card_clip(p: &SheetPlacement, display_box: [f64; 4]) -> (String, [f64; 4]) {
+    let (left, top) = (display_box[0], display_box[3]);
+    match p.source.as_rect() {
+        Some(r) => {
+            let (x0, y0) = (left + r.x, top - (r.y + r.height));
+            (
+                format!(
+                    "{} {} {} {} re W n",
+                    fmt(x0),
+                    fmt(y0),
+                    fmt(r.width),
+                    fmt(r.height)
+                ),
+                [x0, y0, x0 + r.width, y0 + r.height],
+            )
+        }
+        None => {
+            let pts = p.source.corners().map(|c| (left + c.x, top - c.y));
+            let at = |i: usize| format!("{} {}", fmt(pts[i].0), fmt(pts[i].1));
+            let xs = pts.map(|q| q.0);
+            let ys = pts.map(|q| q.1);
+            let lo = |v: [f64; 4]| v.into_iter().fold(f64::INFINITY, f64::min);
+            let hi = |v: [f64; 4]| v.into_iter().fold(f64::NEG_INFINITY, f64::max);
+            (
+                format!("{} m {} l {} l {} l h W n", at(0), at(1), at(2), at(3)),
+                [lo(xs), lo(ys), hi(xs), hi(ys)],
+            )
+        }
+    }
+}
+
+/// The form that draws one card: the page form seen through the card's clip, with a `/BBox` no
+/// larger than the card.
+fn card_form(
+    doc: &mut Document,
+    page_name: &str,
+    page_form: ObjectId,
+    clip: &str,
+    bbox: [f64; 4],
+) -> ObjectId {
+    let dict = dictionary! {
+        "Type" => "XObject",
+        "Subtype" => "Form",
+        "FormType" => 1,
+        "BBox" => bbox.iter().map(|v| Object::Real(*v as f32)).collect::<Vec<_>>(),
+        "Resources" => dictionary! {
+            "XObject" => dictionary! { page_name.as_bytes().to_vec() => page_form },
+        },
+    };
+    let mut stream = Stream::new(dict, format!("{clip}\n/{page_name} Do\n").into_bytes());
+    let _ = stream.compress();
+    doc.add_object(stream)
+}
+
+/// The content-stream operators that paint one card: move, then draw its card form.
+fn placement_ops(card: &str, p: &SheetPlacement, display_box: [f64; 4], out_height: f64) -> String {
     let m = pdf_matrix(
         &card_transform(&p.source, p.scale, p.turn, &p.destination),
         display_box,
         out_height,
     );
-    let (left, top) = (display_box[0], display_box[3]);
-    // The clip follows `cm`, so it is in the source page's own space and moves with the card.
-    let clip = match p.source.as_rect() {
-        Some(r) => format!(
-            "{} {} {} {} re W n",
-            fmt(left + r.x),
-            fmt(top - (r.y + r.height)),
-            fmt(r.width),
-            fmt(r.height),
-        ),
-        None => {
-            let c = p.source.corners();
-            let at = |i: usize| format!("{} {}", fmt(left + c[i].x), fmt(top - c[i].y));
-            format!("{} m {} l {} l {} l h W n", at(0), at(1), at(2), at(3))
-        }
+    format!("q\n{} cm\n/{card} Do\nQ\n", m.map(fmt).join(" "))
+}
+
+/// Resource name of a card form.
+fn card_form_name(id: ObjectId) -> String {
+    format!("C{}", id.0)
+}
+
+/// The content of an exported page with every card form written out in place, as the page draws
+/// it: `q <cm> <clip> /S0_0 Do Q` for each card. For tests and for looking into an exported file.
+pub fn drawn_content(doc: &Document, page_id: ObjectId) -> String {
+    let mut content = String::from_utf8_lossy(&doc.get_page_content(page_id)).into_owned();
+    let Ok(xobjects) = doc
+        .get_dictionary(page_id)
+        .and_then(|p| p.get(b"Resources"))
+        .and_then(|r| r.as_dict())
+        .and_then(|r| r.get(b"XObject"))
+        .and_then(|x| x.as_dict())
+    else {
+        return content;
     };
-    format!("q\n{} cm\n{clip}\n/{name} Do\nQ\n", m.map(fmt).join(" "))
+    for (name, value) in xobjects.iter() {
+        if !name.starts_with(b"C") {
+            continue;
+        }
+        let Some(Object::Stream(form)) = value
+            .as_reference()
+            .ok()
+            .and_then(|id| doc.get_object(id).ok())
+        else {
+            continue;
+        };
+        let body = form
+            .decompressed_content()
+            .unwrap_or_else(|_| form.content.clone());
+        let body = String::from_utf8_lossy(&body).trim_end().to_owned();
+        content = content.replace(&format!("/{} Do", String::from_utf8_lossy(name)), &body);
+    }
+    content
 }
 
 /// The operators that paint the bleed around one piece: the page form again, once per region,
@@ -692,11 +775,14 @@ fn export_sheets_into(
     let mut new_page_ids: Vec<Object> = Vec::new();
     // A source page used on several sheets (or several times on one) is wrapped only once.
     let mut forms: HashMap<(DocumentId, usize), (ObjectId, PageFrame)> = HashMap::new();
+    // A card (the same page and clip) printed several times draws through one card form.
+    let mut card_forms: HashMap<(DocumentId, usize, String), ObjectId> = HashMap::new();
 
     for sheet in sheets {
         let out = sheet.page;
         let mut xobjects = Dictionary::new();
-        let mut prepared: Vec<(String, PageFrame)> = Vec::with_capacity(sheet.placements.len());
+        let mut prepared: Vec<(String, PageFrame, String)> =
+            Vec::with_capacity(sheet.placements.len());
         for p in &sheet.placements {
             let key = (p.card_id.document_id(), p.card_id.page_index());
             let (form_id, frame) = match forms.get(&key) {
@@ -716,18 +802,24 @@ fn export_sheets_into(
             };
             let name = form_name(key.0, key.1);
             xobjects.set(name.as_bytes().to_vec(), form_id);
-            prepared.push((name, frame));
+            let (clip, bbox) = card_clip(p, frame.display_box());
+            let card_id = *card_forms
+                .entry((key.0, key.1, clip.clone()))
+                .or_insert_with(|| card_form(doc, &name, form_id, &clip, bbox));
+            let card = card_form_name(card_id);
+            xobjects.set(card.as_bytes().to_vec(), card_id);
+            prepared.push((name, frame, card));
         }
         // Bleed first, so a neighbour's bleed never paints over a piece; then the pieces; then
         // the marks.
         let mut ops = String::new();
         if sheet.bleed.mm > 0.0 {
-            for (p, (name, frame)) in sheet.placements.iter().zip(&prepared) {
+            for (p, (name, frame, _)) in sheet.placements.iter().zip(&prepared) {
                 ops.push_str(&bleed_ops(name, p, sheet, frame.display_box()));
             }
         }
-        for (p, (name, frame)) in sheet.placements.iter().zip(&prepared) {
-            ops.push_str(&placement_ops(name, p, frame.display_box(), out.height_pt));
+        for (p, (_, frame, card)) in sheet.placements.iter().zip(&prepared) {
+            ops.push_str(&placement_ops(card, p, frame.display_box(), out.height_pt));
         }
         if let Some(marks) = &sheet.marks {
             ops.push_str(&marks_ops(marks, out.height_pt));

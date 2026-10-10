@@ -236,7 +236,7 @@ fn cards_from_two_documents_share_a_sheet() {
     let f0 = xobjects.get(b"S0_0").unwrap().as_reference().unwrap();
     let f1 = xobjects.get(b"S1_0").unwrap().as_reference().unwrap();
     assert_ne!(f0, f1, "each document's page has its own form");
-    let content = String::from_utf8(out.get_page_content(page_id)).unwrap();
+    let content = card_core::export::drawn_content(&out, page_id);
     assert_eq!(content.matches("/S0_0 Do").count(), 2);
     assert_eq!(content.matches("/S1_0 Do").count(), 2);
 
@@ -346,7 +346,7 @@ fn rotated_sources_are_clipped_with_a_rotated_path() {
     let sheets = run(&[(rotated, 1), (upright, 1)]);
     let out = export_sheets(vec![(0, sample_pdf())], &sheets).unwrap();
     let page_id = *out.get_pages().values().next().unwrap();
-    let content = String::from_utf8(out.get_page_content(page_id)).unwrap();
+    let content = card_core::export::drawn_content(&out, page_id);
     assert_eq!(
         content.matches(" h W n").count(),
         1,
@@ -494,7 +494,7 @@ fn export_document_still_builds_the_same_pages_through_export_sheets() {
     let other = export_sheets(vec![(0, sample_pdf())], &sheets).unwrap();
     let content = |d: &Document| {
         let id = *d.get_pages().values().next().unwrap();
-        String::from_utf8(d.get_page_content(id)).unwrap()
+        card_core::export::drawn_content(d, id)
     };
     // Same operators; numbers agree to the 4 decimals that are written.
     assert_eq!(
@@ -896,7 +896,7 @@ fn sample_page() -> PageSize {
 
 fn content_of(doc: &Document) -> String {
     let id = *doc.get_pages().values().next().unwrap();
-    String::from_utf8(doc.get_page_content(id)).unwrap()
+    card_core::export::drawn_content(doc, id)
 }
 
 #[test]

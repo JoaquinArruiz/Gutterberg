@@ -35,7 +35,7 @@ fn export_is_one_page_with_nine_vector_placements() {
     let pages = doc.get_pages();
     assert_eq!(pages.len(), 1);
     let id = *pages.values().next().unwrap();
-    let content = String::from_utf8(doc.get_page_content(id)).unwrap();
+    let content = card_core::export::drawn_content(&doc, id);
     assert_eq!(content.matches("/S0_0 Do").count(), 9);
 
     // Clip rects keep the original card size exactly.
@@ -72,7 +72,7 @@ fn export_is_one_page_with_nine_vector_placements() {
 fn clip_is_applied_after_translation() {
     let doc = export(3.0);
     let id = *doc.get_pages().values().next().unwrap();
-    let content = String::from_utf8(doc.get_page_content(id)).unwrap();
+    let content = card_core::export::drawn_content(&doc, id);
     for block in content.split("q\n").skip(1) {
         let cm = block.find(" cm").expect("cm");
         let clip = block.find(" re W n").expect("clip");
@@ -110,8 +110,7 @@ fn placements_per_page(doc: &Document) -> Vec<usize> {
     doc.get_pages()
         .values()
         .map(|&id| {
-            String::from_utf8(doc.get_page_content(id))
-                .unwrap()
+            card_core::export::drawn_content(doc, id)
                 .matches(" Do\n")
                 .count()
         })
@@ -189,4 +188,109 @@ fn validation_agrees_with_export() {
         pages: bad.to_vec(),
     };
     assert!(export_document(&mut doc, &job).is_err());
+}
+
+/// The forms a page draws directly, by resource name.
+fn page_forms(doc: &Document, page: lopdf::ObjectId) -> Vec<(String, lopdf::ObjectId)> {
+    let resources = doc.get_dictionary(page).unwrap().get(b"Resources").unwrap();
+    let xobj = resources
+        .as_dict()
+        .unwrap()
+        .get(b"XObject")
+        .unwrap()
+        .as_dict()
+        .unwrap();
+    xobj.iter()
+        .map(|(k, v)| {
+            (
+                String::from_utf8_lossy(k).into_owned(),
+                v.as_reference().unwrap(),
+            )
+        })
+        .collect()
+}
+
+#[test]
+fn each_card_draws_through_a_form_no_larger_than_the_card() {
+    let doc = export(3.0);
+    let page = *doc.get_pages().values().next().unwrap();
+    let content = String::from_utf8(doc.get_page_content(page)).unwrap();
+    let cards: Vec<_> = page_forms(&doc, page)
+        .into_iter()
+        .filter(|(n, _)| n.starts_with('C'))
+        .collect();
+    assert_eq!(cards.len(), 9);
+    for (name, id) in cards {
+        assert_eq!(content.matches(&format!("/{name} Do")).count(), 1);
+        let Object::Stream(form) = doc.get_object(id).unwrap() else {
+            panic!("not a stream")
+        };
+        let b: Vec<f64> = form
+            .dict
+            .get(b"BBox")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|v| v.as_float().unwrap() as f64)
+            .collect();
+        assert!((pt_to_mm(b[2] - b[0]) - CARD_MM.0).abs() < 1e-2, "{b:?}");
+        assert!((pt_to_mm(b[3] - b[1]) - CARD_MM.1).abs() < 1e-2, "{b:?}");
+        // Inside: the clip, then the page form, which the card form names in its own resources.
+        let body = String::from_utf8(form.decompressed_content().unwrap()).unwrap();
+        assert!(
+            body.contains(" re W n") && body.ends_with("/S0_0 Do\n"),
+            "{body}"
+        );
+        let inner = form
+            .dict
+            .get(b"Resources")
+            .unwrap()
+            .as_dict()
+            .unwrap()
+            .get(b"XObject")
+            .unwrap()
+            .as_dict()
+            .unwrap();
+        assert!(inner.get(b"S0_0").is_ok());
+    }
+}
+
+#[test]
+fn copies_of_a_card_share_one_card_form_and_the_page_is_stored_once() {
+    use card_core::card::{PageGroup, PageGroupKind, PageRange};
+    use card_core::export::export_sheets;
+    use card_core::sheet::{
+        extract_cards, paginate, Margins, PaginateOptions, SheetPage, SheetSpec,
+    };
+    let doc = sample_pdf();
+    let size = page_size(&doc, 0).unwrap();
+    let groups = [PageGroup {
+        pages: PageRange { first: 0, last: 0 },
+        kind: PageGroupKind::Grid {
+            grid: sample_grid(3.0),
+        },
+    }];
+    let first = extract_cards(0, &[size], &groups).unwrap().remove(0);
+    let spec = SheetSpec {
+        page: SheetPage::Size(size),
+        rows: Some(3),
+        columns: Some(3),
+        gap_x_mm: 3.0,
+        gap_y_mm: 3.0,
+        margins: Margins::default(),
+    };
+    let sheets = paginate(&[(first, 9)], &spec, &PaginateOptions::default()).unwrap();
+    let out = export_sheets(vec![(0, doc)], &sheets).unwrap();
+    let page = *out.get_pages().values().next().unwrap();
+    let forms = page_forms(&out, page);
+    assert_eq!(forms.iter().filter(|(n, _)| n.starts_with('C')).count(), 1);
+    let content = String::from_utf8(out.get_page_content(page)).unwrap();
+    assert_eq!(content.matches(" Do\n").count(), 9);
+    let page_forms_in_file = out
+        .objects
+        .values()
+        .filter(|o| matches!(o, Object::Stream(s) if s.dict.get(b"Subtype").and_then(|v| v.as_name()).ok() == Some(b"Form") && s.dict.get(b"Resources").and_then(|r| r.as_dict()).map(|r| r.get(b"Font").is_ok()).unwrap_or(false)))
+        .count();
+    assert_eq!(page_forms_in_file, 1, "the source page is stored once");
 }
