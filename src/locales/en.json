@@ -533,7 +533,6 @@
       "bugSteps": "what you did, step by step, so someone else can make it happen again",
       "bugExpected": "what you expected, and what happened instead",
       "bugWorkaround": "whether you found a way around it",
-      "bugFiles": "the PDF or project, if you can share it (only files you're allowed to share), or a screenshot",
       "infoUnavailable": "The app info is only available in the app window.",
       "copyInfo": "Copy app info",
       "copied": "Copied",

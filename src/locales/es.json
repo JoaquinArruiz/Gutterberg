@@ -533,7 +533,6 @@
       "bugSteps": "qué hiciste, paso a paso, para que otra persona pueda repetirlo",
       "bugExpected": "qué esperabas y qué pasó en cambio",
       "bugWorkaround": "si encontraste una forma de evitarlo",
-      "bugFiles": "el PDF o el proyecto, si puedes compartirlo (solo archivos que tengas permiso de compartir), o una captura de pantalla",
       "infoUnavailable": "Los datos de la aplicación solo están disponibles en la ventana de la aplicación.",
       "copyInfo": "Copiar datos de la aplicación",
       "copied": "Copiado",

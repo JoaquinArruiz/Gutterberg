@@ -111,9 +111,10 @@ describe("Preferences › Help", () => {
       "step by step",
       "what you expected",
       "a way around it",
-      "only files you're allowed to share",
     ])
       expect(text).toContain(part);
+    // The issue form has no field for attachments, so the app does not ask for files either.
+    expect(text).not.toContain("screenshot");
   });
 
   it("copies the app info, and says so", async () => {

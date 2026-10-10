@@ -55,13 +55,6 @@ body:
       description: Did you find a way around it?
     validations:
       required: false
-  - type: textarea
-    id: files
-    attributes:
-      label: Files
-      description: Attach the PDF or project if you are allowed to share it, or a screenshot. Only share files you have the right to share.
-    validations:
-      required: false
   - type: checkboxes
     id: searched
     attributes:

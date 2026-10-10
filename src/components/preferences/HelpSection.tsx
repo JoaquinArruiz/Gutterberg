@@ -106,7 +106,6 @@ export function HelpSection() {
           <li>{t("preferences.help.bugSteps")}</li>
           <li>{t("preferences.help.bugExpected")}</li>
           <li>{t("preferences.help.bugWorkaround")}</li>
-          <li>{t("preferences.help.bugFiles")}</li>
         </ul>
         <p
           className="mt-1 select-text break-words rounded bg-[var(--bg)] px-2 py-1.5 font-mono text-[11px]"
