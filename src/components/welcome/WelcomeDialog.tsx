@@ -1,7 +1,7 @@
 import { ChevronLeft, ChevronRight, Play, RotateCcw } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { clipUrl, prefersReducedMotion, WELCOME_STEPS, WELCOME_VERSION } from "../../lib/welcome";
+import { clipFormat, clipUrl, loadClip, prefersReducedMotion, WELCOME_STEPS, WELCOME_VERSION } from "../../lib/welcome";
 import { useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -30,7 +30,7 @@ export function useWelcomeAutoOpen() {
  * The welcome tour: a short clip, a title and a line or two for each step, Back and Next, a dot for each step and
  * Skip. A clip plays once when its step opens and stops on its last frame; Play again replays it. With reduced
  * motion the poster stays and a Play button starts it. Closing in any way (Skip, Esc, Get started) marks the tour
- * as seen.
+ * as seen. Clips play from memory (`loadClip`); one that cannot play at all shows its poster instead of a black box.
  */
 export function WelcomeDialog() {
   const { t } = useTranslation();
@@ -43,8 +43,12 @@ export function WelcomeDialog() {
   const [index, setIndex] = useState(0);
   const [reduced, setReduced] = useState(false);
   const [played, setPlayed] = useState(false);
+  // The loaded clip, with the clip it belongs to, so a step never shows the previous step's file.
+  const [loadedClip, setLoadedClip] = useState<{ clip: string; url: string } | null>(null);
+  const [failed, setFailed] = useState(false);
   const step = WELCOME_STEPS[index];
   const last = index === WELCOME_STEPS.length - 1;
+  const src = loadedClip?.clip === step.clip ? loadedClip.url : null;
 
   useEffect(() => {
     const d = ref.current;
@@ -58,18 +62,32 @@ export function WelcomeDialog() {
     if (!open && d.open) d.close();
   }, [open]);
 
-  // A new step starts from its first frame; its clip plays by itself unless the user wants less motion.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: a new step is what restarts the clip
+  // A new step loads its clip into memory, in the format this webview plays. If loading fails, the file's own
+  // address is the fallback; if that cannot play either, the poster stays (`failed`).
   useEffect(() => {
+    if (!open) return;
+    let live = true;
+    setFailed(false);
     setPlayed(false);
+    setReduced(prefersReducedMotion());
+    const ext = clipFormat((type) => document.createElement("video").canPlayType(type));
+    const clip = step.clip;
+    loadClip(clip, ext).then(
+      (url) => live && setLoadedClip({ clip, url }),
+      () => live && setLoadedClip({ clip, url: clipUrl(clip, ext) }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [step.clip, open]);
+
+  // Once the clip is there it plays from its first frame, by itself, unless the user wants less motion.
+  useEffect(() => {
     const v = video.current;
-    if (!open || !v) return;
-    const calm = prefersReducedMotion();
-    setReduced(calm);
-    if (calm) return;
+    if (!open || !src || !v || prefersReducedMotion()) return;
     v.currentTime = 0;
     void v.play?.()?.catch(() => {}); // a webview that blocks autoplay leaves the poster, with Play again
-  }, [index, open]);
+  }, [src, open]);
 
   const finish = () => {
     setSeen(WELCOME_VERSION);
@@ -98,30 +116,41 @@ export function WelcomeDialog() {
     >
       <div className="flex flex-col" data-testid="welcome" data-step={step.id}>
         <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-black">
-          {/* Keyed by the step, so each clip starts fresh. Both formats: the first one the webview can play wins. */}
-          <video
-            key={step.clip}
-            ref={video}
-            muted
-            playsInline
-            preload="auto"
-            poster={clipUrl(step.clip, "png")}
-            aria-hidden
-            data-testid="welcome-clip"
-            className="size-full object-contain"
-            onPlay={() => setPlayed(true)}
-          >
-            <source src={clipUrl(step.clip, "webm")} type="video/webm" />
-            <source src={clipUrl(step.clip, "mp4")} type="video/mp4" />
-          </video>
-          <Button
-            variant="ghost"
-            className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/55 text-white hover:bg-black/75 hover:text-white"
-            onClick={play}
-          >
-            {reduced && !played ? <Play size={12} /> : <RotateCcw size={12} />}
-            {reduced && !played ? t("welcome.play") : t("welcome.playAgain")}
-          </Button>
+          {failed ? (
+            // The webview could not play the clip: its last frame tells the step without moving.
+            <img
+              src={clipUrl(step.clip, "png")}
+              alt=""
+              data-testid="welcome-poster"
+              className="size-full object-contain"
+            />
+          ) : (
+            // Keyed by the step, so each clip starts fresh.
+            <video
+              key={step.clip}
+              ref={video}
+              src={src ?? undefined}
+              muted
+              playsInline
+              preload="auto"
+              poster={clipUrl(step.clip, "png")}
+              aria-hidden
+              data-testid="welcome-clip"
+              className="size-full object-contain"
+              onPlay={() => setPlayed(true)}
+              onError={() => setFailed(true)}
+            />
+          )}
+          {!failed && (
+            <Button
+              variant="ghost"
+              className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/55 text-white hover:bg-black/75 hover:text-white"
+              onClick={play}
+            >
+              {reduced && !played ? <Play size={12} /> : <RotateCcw size={12} />}
+              {reduced && !played ? t("welcome.play") : t("welcome.playAgain")}
+            </Button>
+          )}
         </div>
 
         <div className="flex flex-col gap-1 px-4 pt-3" aria-live="polite">

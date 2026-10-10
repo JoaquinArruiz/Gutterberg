@@ -5,6 +5,11 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Fixed
+
+- The welcome tour's clips play in the Linux app, instead of showing a black box. A clip that still cannot play
+  shows its last frame.
+
 ## 0.9.0 (2026-10-10)
 
 The first public release. Gutterberg takes a print-and-play PDF whose pieces are packed edge to edge and gives

@@ -39,3 +39,37 @@ export const prefersReducedMotion = (): boolean =>
   typeof window !== "undefined" && typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
+
+/**
+ * Which of a clip's two files this webview should play: the VP9 .webm when it says it can, the H.264 .mp4 otherwise.
+ * `canPlayType` is the video element's own (an empty string means no).
+ */
+export const clipFormat = (canPlayType: (type: string) => string): "webm" | "mp4" =>
+  canPlayType('video/webm; codecs="vp9"') ? "webm" : "mp4";
+
+const loaded = new Map<string, Promise<string>>();
+
+/**
+ * Loads a clip into memory and gives a `blob:` URL to play it from. On Linux the webview's media player (GStreamer)
+ * cannot seek in a file served through the app's own `tauri://` address, so it cannot play the clip from there
+ * (the WebM demuxer needs to seek); a blob is a whole file in memory, which it can. Each clip is loaded once and
+ * kept for the life of the app (four small files). A failed load is not kept, so the next try fetches again.
+ */
+export function loadClip(clip: string, ext: "webm" | "mp4", fetchFile: typeof fetch = fetch): Promise<string> {
+  const key = `${clip}.${ext}`;
+  let url = loaded.get(key);
+  if (!url) {
+    url = fetchFile(clipUrl(clip, ext))
+      .then((r) => {
+        if (!r.ok) throw new Error(`${key}: ${r.status}`);
+        return r.blob();
+      })
+      .then((b) => URL.createObjectURL(b));
+    url.catch(() => loaded.delete(key));
+    loaded.set(key, url);
+  }
+  return url;
+}
+
+/** Forgets the loaded clips (for tests). */
+export const forgetLoadedClips = () => loaded.clear();

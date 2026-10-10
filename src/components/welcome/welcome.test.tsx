@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyLocale } from "../../i18n";
 import { DEFAULT_PREFERENCES } from "../../lib/preferences";
-import { WELCOME_STEPS, WELCOME_VERSION } from "../../lib/welcome";
+import { forgetLoadedClips, WELCOME_STEPS, WELCOME_VERSION } from "../../lib/welcome";
 import { useDocumentStore } from "../../stores/document-store";
 import { useHint } from "../../stores/hint-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -14,6 +14,15 @@ import { useWelcomeAutoOpen, WelcomeDialog } from "./WelcomeDialog";
 const A4 = { width_pt: 595.2756, height_pt: 841.8898 };
 const play = vi.fn(() => Promise.resolve());
 let reducedMotion = false;
+/** The clip files the pretend app serves: a URL that is not here is a failed load. */
+let served: Set<string>;
+// A string body: jsdom's Blob is not one that Node's Response can read.
+const fetchClip = vi.fn(async (url: string) =>
+  served.has(url) ? new Response(url) : new Response(null, { status: 404 }),
+);
+let blobs = 0;
+/** Lets the clip loads (promises) finish. */
+const loads = () => act(async () => {});
 
 function Host() {
   useWelcomeAutoOpen();
@@ -29,7 +38,13 @@ const next = () => screen.getByRole("button", { name: /^(Next|Get started)/ });
 beforeEach(() => {
   vi.useFakeTimers();
   play.mockClear();
+  fetchClip.mockClear();
   reducedMotion = false;
+  served = new Set(WELCOME_STEPS.flatMap((s) => [`/welcome/${s.clip}.webm`, `/welcome/${s.clip}.mp4`]));
+  blobs = 0;
+  forgetLoadedClips();
+  vi.stubGlobal("fetch", fetchClip);
+  URL.createObjectURL = () => `blob:clip-${++blobs}`;
   HTMLDialogElement.prototype.showModal = function showModal() {
     this.open = true;
   };
@@ -130,19 +145,53 @@ describe("the steps", () => {
     expect(document.activeElement).toBe(next());
   });
 
-  it("show the clip in both formats, with its last frame as the poster", () => {
+  it("show the clip from memory, with its last frame as the poster", async () => {
     render(<Host />);
     const video = screen.getByTestId("welcome-clip") as HTMLVideoElement;
     expect(video.getAttribute("poster")).toBe("/welcome/01-cut.png");
     expect(video.muted).toBe(true);
     expect(video.hasAttribute("loop")).toBe(false);
-    const sources = [...video.querySelectorAll("source")].map((s) => [s.getAttribute("src"), s.getAttribute("type")]);
-    expect(sources).toEqual([
-      ["/welcome/01-cut.webm", "video/webm"],
-      ["/welcome/01-cut.mp4", "video/mp4"],
-    ]);
+    expect(video.hasAttribute("src")).toBe(false); // nothing until the clip is loaded
+    await loads();
+    // jsdom's video says it cannot play VP9, so the .mp4 is the one loaded.
+    expect(fetchClip).toHaveBeenCalledWith("/welcome/01-cut.mp4");
+    expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("blob:clip-1");
     fireEvent.click(next());
     expect(screen.getByTestId("welcome-clip").getAttribute("poster")).toBe("/welcome/02-place.png");
+    expect(screen.getByTestId("welcome-clip").hasAttribute("src")).toBe(false); // never the previous step's clip
+    await loads();
+    expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("blob:clip-2");
+  });
+
+  it("load each clip once, so going back is instant", async () => {
+    render(<Host />);
+    await loads();
+    fireEvent.click(next());
+    await loads();
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    await loads();
+    expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("blob:clip-1");
+    expect(fetchClip).toHaveBeenCalledTimes(2);
+  });
+
+  it("fall back to the file's own address when a clip cannot be loaded", async () => {
+    served.delete("/welcome/01-cut.mp4");
+    render(<Host />);
+    await loads();
+    expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("/welcome/01-cut.mp4");
+  });
+
+  it("show the poster, not a black box, when the webview cannot play a clip", async () => {
+    render(<Host />);
+    await loads();
+    fireEvent.error(screen.getByTestId("welcome-clip"));
+    expect(screen.queryByTestId("welcome-clip")).toBeNull();
+    expect(screen.getByTestId("welcome-poster").getAttribute("src")).toBe("/welcome/01-cut.png");
+    expect(screen.queryByRole("button", { name: "Play again" })).toBeNull();
+    // The next step tries its own clip again.
+    fireEvent.click(next());
+    await loads();
+    expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("blob:clip-2");
   });
 
   it("is in Spanish when the language is", () => {
@@ -156,10 +205,12 @@ describe("the steps", () => {
 });
 
 describe("the clips", () => {
-  it("play once when their step opens, and again on request", () => {
+  it("play once when their step opens, and again on request", async () => {
     render(<Host />);
+    await loads();
     expect(play).toHaveBeenCalledTimes(1);
     fireEvent.click(next());
+    await loads();
     expect(play).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: "Play again" }));
     expect(play).toHaveBeenCalledTimes(3);
@@ -173,14 +224,16 @@ describe("the clips", () => {
     expect(step()).toBe("cut");
   });
 
-  it("wait for a Play button with reduced motion, showing the poster", () => {
+  it("wait for a Play button with reduced motion, showing the poster", async () => {
     reducedMotion = true;
     render(<Host />);
+    await loads();
     expect(play).not.toHaveBeenCalled();
     expect(screen.getByTestId("welcome-clip").getAttribute("poster")).toBe("/welcome/01-cut.png");
     fireEvent.click(screen.getByRole("button", { name: "Play" }));
     expect(play).toHaveBeenCalledTimes(1);
     fireEvent.click(next());
+    await loads();
     expect(play).toHaveBeenCalledTimes(1); // the next step waits for its own Play too
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
   });

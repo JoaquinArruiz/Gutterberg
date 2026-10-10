@@ -12,7 +12,7 @@
   "app": {
     "windows": [{ "title": "Gutterberg", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 560 }],
     "security": {
-      "csp": "default-src 'self'; media-src 'self'; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'"
+      "csp": "default-src 'self'; media-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'"
     }
   },
   "bundle": {
@@ -23,6 +23,11 @@
     "license": "PolyForm-Noncommercial-1.0.0",
     "licenseFile": "../LICENSE",
     "createUpdaterArtifacts": true,
+    "linux": {
+      "deb": { "depends": ["gstreamer1.0-plugins-good"] },
+      "rpm": { "depends": ["gstreamer1-plugins-good"] },
+      "appimage": { "bundleMediaFramework": true }
+    },
     "fileAssociations": [
       {
         "ext": ["gtr"],
