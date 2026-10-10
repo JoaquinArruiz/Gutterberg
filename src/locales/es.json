@@ -151,7 +151,9 @@
     }
   },
   "gapFields": {
-    "link": "Vincular horizontal / vertical",
+    "link": "Vincular horizontal y vertical",
+    "linked": "Vinculadas: las dos separaciones cambian juntas. Haz clic para fijarlas por separado.",
+    "unlinked": "Sin vincular: la horizontal y la vertical se fijan por separado. Haz clic para vincularlas.",
     "gap": "Separación",
     "horizontal": "Horizontal",
     "vertical": "Vertical"

@@ -151,7 +151,9 @@
     }
   },
   "gapFields": {
-    "link": "Link horizontal / vertical",
+    "link": "Link horizontal and vertical",
+    "linked": "Linked: both gaps change together. Click to set them separately.",
+    "unlinked": "Not linked: horizontal and vertical are set separately. Click to link them.",
     "gap": "Gap",
     "horizontal": "Horizontal",
     "vertical": "Vertical"

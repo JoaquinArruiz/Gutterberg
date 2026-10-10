@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { MAX_GAP_MM } from "../../stores/layout-store";
+import { ChainedFields, ChainToggle } from "./ChainToggle";
 import { MeasurementInput } from "./MeasurementInput";
-import { Switch } from "./Switch";
 
-/** A horizontal gap, with a link switch that makes the vertical gap follow it. */
+/** A horizontal gap, with a chain icon that makes the vertical gap follow it. */
 export function GapFields({
   linked,
   onLink,
@@ -22,8 +22,17 @@ export function GapFields({
   const { t } = useTranslation();
   const f = { min: 0, max: MAX_GAP_MM };
   return (
-    <>
-      <Switch checked={linked} onChange={onLink} label={t("gapFields.link")} />
+    <ChainedFields
+      chain={
+        <ChainToggle
+          linked={linked}
+          onChange={onLink}
+          label={t("gapFields.link")}
+          linkedHint={t("gapFields.linked")}
+          unlinkedHint={t("gapFields.unlinked")}
+        />
+      }
+    >
       <MeasurementInput
         label={linked ? t("gapFields.gap") : t("gapFields.horizontal")}
         value={x}
@@ -31,6 +40,6 @@ export function GapFields({
         {...f}
       />
       {!linked && <MeasurementInput label={t("gapFields.vertical")} value={y} onChange={onY} {...f} />}
-    </>
+    </ChainedFields>
   );
 }

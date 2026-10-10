@@ -222,3 +222,25 @@ describe("InfoTip", () => {
     expect(screen.getByTestId("info-tip-bubble").parentElement?.tagName).toBe("DIALOG");
   });
 });
+
+describe("Chain icon on the gaps", () => {
+  it("shows one gap while linked and both when unlinked, and says which it is", async () => {
+    const { GapFields } = await import("./GapFields");
+    function Host() {
+      const [linked, setLinked] = useState(true);
+      return <GapFields linked={linked} onLink={setLinked} x={3} y={5} onX={() => {}} onY={() => {}} />;
+    }
+    render(<Host />);
+    const chain = screen.getByRole("button", { name: "Link horizontal and vertical" });
+    expect(chain.getAttribute("aria-pressed")).toBe("true");
+    expect(chain.getAttribute("title")).toContain("Linked");
+    expect(screen.getByText("Gap")).toBeTruthy();
+    expect(screen.queryByText("Vertical")).toBeNull();
+    fireEvent.click(chain);
+    expect(chain.getAttribute("aria-pressed")).toBe("false");
+    expect(chain.getAttribute("title")).toContain("Not linked");
+    expect(screen.getByText("Horizontal")).toBeTruthy();
+    expect(screen.getByText("Vertical")).toBeTruthy();
+    expect(screen.queryByRole("switch")).toBeNull(); // the old switch is gone
+  });
+});
