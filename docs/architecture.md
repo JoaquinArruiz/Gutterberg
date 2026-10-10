@@ -58,8 +58,10 @@ an error. `calculate_fitting_layout` is the variant that sizes the page around t
 
 The engine behind every export, in four steps:
 
-1. **Extract.** `extract_cards` turns page groups into `Card`s: `{ id, source, scale, turn }`. `turn` is 0, 90, 180
-   or 270 degrees clockwise; `scale` is 1 unless the user chose a real size.
+1. **Extract.** `extract_cards` turns page groups into `Card`s: `{ id, source, scale, scale_y, turn }`. `turn` is 0,
+   90, 180 or 270 degrees clockwise; `scale` is 1 unless the user chose a real size. `scale_y` is absent unless the
+   user set the width and height apart (the chain icon), in which case `scale` is the factor along the piece's own
+   width and `scale_y` along its height.
 2. **Paginate.** `paginate` puts `(Card, quantity)` pairs on `OutputSheet`s. Order is grouped or interleaved. Pieces
    are grouped by size (each size gets its own sheets; a slot is the group's largest width by largest height, and
    smaller pieces are centred in it), or share one grid if grouping is off. Pieces are laid out row by row, the block
@@ -71,14 +73,21 @@ The engine behind every export, in four steps:
 
 The plan the Print tab runs is `plan_print`: either `SameAsSource` (each grid page becomes one sheet through
 `calculate_layout`, byte-identical to what the Source tab exports) or `plan_sheets` with a sheet grid, copies and
-auto-fill. `card_transform` is the one place that does the matrix maths for placing a piece: undo the source angle,
-apply the turn and scale about the piece's centre, move the centre onto its slot.
+auto-fill. `card_transform` (and `card_transform_xy` for two factors) is the one place that does the matrix maths for
+placing a piece: `R(turn) · S(scale, scale_y) · R(-source angle)` about the piece's centre, then move the centre onto
+its slot. The piece is stretched along its own sides before it is turned; with equal factors it is a plain rotation
+and scale.
 
 ### Export (`export`)
 
-Each source page becomes a Form XObject named `/S{document}_{page}` and each piece is painted with
-`q <matrix> cm <clip> W n /Name Do Q`: a translate-and-clip for axis-aligned pieces, a rotated clip path for tilted
-ones. Details that matter:
+Each source page becomes a Form XObject named `/S{document}_{page}`, stored once however many pieces and copies use it.
+Each piece is painted with `q <matrix> cm /C{n} Do Q`, where `/C{n}` is a small *card form* whose `/BBox` is the
+piece's area and whose content is `<clip> W n /S… Do` (a translate-and-clip for axis-aligned pieces, a rotated clip
+path for tilted ones). Copies of a piece share its card form. The tight box lets a viewer draw only the piece's area
+instead of the whole page for every piece: faster, and no flash of the whole page before the clip applies. The text
+outside a piece is still in the file (it is the publisher's page, untouched), so a viewer may still find it when
+searching. `drawn_content` writes the card forms out in place, for tests and for looking into a file. Details that
+matter:
 
 - Page boxes are resolved with inheritance (MediaBox and CropBox separately, then intersected), `/Rotate` of 90, 180
   and 270 is handled, `/UserUnit` other than 1 is refused, and the page's transparency group is kept.
@@ -165,7 +174,8 @@ rebuilt on open.
   `version`, not text, over 64 MiB) is refused; an older version is migrated one step at a time; a newer one is
   refused whole (`ProjectTooNew`, "please update"). Nothing is ever opened partially. Migrations are a list of
   functions, each taking one version to the next (`v1_to_v2` adds the print finishing, `v2_to_v3` adds the document
-  kind); the current version is 3. A change to the format adds a version and a migration with a test file.
+  kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
+  the new number makes an older Gutterberg say "please update" instead of failing on them); the current version is 4. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
@@ -198,7 +208,16 @@ a document opens.
 Properties; piece library and print settings), positions (left, right, top, bottom, hidden), sizes and presets,
 remembered in preferences. A strip's height is built from its content, so a row of thumbnails is never cropped.
 
-**Shared controls** live in `src/components/ui` (Button, Switch, Checkbox, Segmented, RadioCard, InfoTip, Toast, ...);
+**The sheet.** The sheet size is the first setting of Print › Sheet: Same as source, A3, A4, A5, Letter, Legal, Tabloid /
+Ledger, Custom or Auto-fit (presets in `PAGE_PRESETS_MM`; Rust only ever gets a size in points). Image pieces always go
+through the card planner (`plannerRequired`), because their source page is the image itself; adding images while the
+size is still "Same as source" sets the usual paper of the user's region (`usualPaper`: Letter in the Americas that
+use it, A4 elsewhere) and says so in a toast. With nothing to print, the preview shows a white sheet of the chosen
+size with its margins dashed. Orientation, margins and gap are always the user's: nothing turns or shrinks to fit.
+
+**Shared controls** live in `src/components/ui` (Button, Switch, Checkbox, Segmented, RadioCard, InfoTip, Toast,
+ChainToggle, ...). Pairs of values that can follow each other (the horizontal and vertical gaps, a piece's width and
+height) have a chain icon beside them (`ChainToggle`, `ChainedFields`), pressed while linked;
 no native checkboxes or radios are left. Long explanations sit behind info tips; warnings and the reasons a control
 is off stay visible. AI actions are their own buttons, with a spark in the AI colour.
 
