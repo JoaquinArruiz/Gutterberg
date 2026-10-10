@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.9.2 (2026-10-10)
+
 ### Added
 
 - A chain icon next to a piece's width and height in Print › Selected pieces. Unlinked, the width and height are set separately (for example 63 × 90 mm), and the library, the sheets and the export show the piece at that size.
@@ -20,6 +22,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- The web view's own right-click menu and shortcuts (reload, print, find…) no longer show up in the app (thanks to Pablo Antuña).
 - Image pieces fit on the sheet: adding images while the sheet is "Same as source" (the size of one image) sets it to A4, or Letter where that is the usual paper, and says so. Image pieces never use a sheet the size of their source.
 
 ## 0.9.1 (2026-10-10)
