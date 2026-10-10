@@ -7,6 +7,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- Pages, thumbnails and pieces show in the installed app (Windows, macOS and Linux) instead of broken
+  images.
 - The welcome tour's clips play in the Linux app, instead of showing a black box. A clip that still cannot play
   shows its last frame.
 

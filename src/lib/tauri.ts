@@ -107,6 +107,14 @@ export type RenderKind = "viewport" | "magnifier" | "thumbnail" | "page";
 /** True when the backend skipped this request because a newer one of the same kind replaced it. */
 export const isSuperseded = isSupersededError;
 
+/**
+ * The bytes of a raw (binary) command reply. Through Tauri's IPC protocol they arrive as an `ArrayBuffer`; when the
+ * webview falls back to its postMessage interface (the protocol blocked or failing) they arrive as an array of
+ * numbers, which a Blob would otherwise turn into text such as "137,80,78,…" instead of a PNG.
+ */
+export const replyBytes = (reply: ArrayBuffer | number[]): BufferSource =>
+  Array.isArray(reply) ? Uint8Array.from(reply) : reply;
+
 /** Renders a page to a PNG blob URL. Caller owns the URL (revokeObjectURL). */
 export async function renderPage(
   kind: RenderKind,
@@ -114,8 +122,8 @@ export async function renderPage(
   pageIndex: number,
   widthPx: number,
 ): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_page", { kind, documentId, pageIndex, widthPx });
-  return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+  const reply = await invoke<ArrayBuffer | number[]>("render_page", { kind, documentId, pageIndex, widthPx });
+  return URL.createObjectURL(new Blob([replyBytes(reply)], { type: "image/png" }));
 }
 
 /** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
@@ -126,6 +134,12 @@ export async function renderRegion(
   region: NormalizedRect,
   fullWidthPx: number,
 ): Promise<string> {
-  const bytes = await invoke<ArrayBuffer>("render_region", { kind, documentId, pageIndex, region, fullWidthPx });
-  return URL.createObjectURL(new Blob([bytes], { type: "image/png" }));
+  const reply = await invoke<ArrayBuffer | number[]>("render_region", {
+    kind,
+    documentId,
+    pageIndex,
+    region,
+    fullWidthPx,
+  });
+  return URL.createObjectURL(new Blob([replyBytes(reply)], { type: "image/png" }));
 }
