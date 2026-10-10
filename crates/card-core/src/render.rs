@@ -58,11 +58,12 @@ pub fn bind_pdfium(lib_dirs: &[std::path::PathBuf]) -> Result<Pdfium> {
 
 pub fn document_info(pdfium: &Pdfium, path: &Path) -> Result<DocumentInfo> {
     let doc = pdfium.load_pdf_from_file(path, None).map_err(pdfium_err)?;
-    document_info_in(&doc)
+    document_info_in(&doc, path)
 }
 
-/// Like [`document_info`] on an already-loaded document (no re-parse).
-pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
+/// Like [`document_info`] on an already-loaded document (no re-parse). `path` is the file it was loaded from, read
+/// again only for the permissions of a PDF whose encryption pdfium-render cannot interpret.
+pub fn document_info_in(doc: &PdfDocument, path: &Path) -> Result<DocumentInfo> {
     let pages = doc
         .pages()
         .iter()
@@ -71,7 +72,7 @@ pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
             height_pt: p.height().value as f64,
         })
         .collect::<Vec<_>>();
-    let access = access_in(doc);
+    let access = access_in(doc).unwrap_or_else(|| access_from_file(path));
     Ok(DocumentInfo {
         page_count: pages.len(),
         pages,
@@ -83,12 +84,16 @@ pub fn document_info_in(doc: &PdfDocument) -> Result<DocumentInfo> {
 /// The publisher's permissions as pdfium reads them, for the badge. A flag pdfium cannot tell counts as allowed.
 /// Printing and modifying (what decides a refusal) are the same bits `access::access_of` reads from the file; for
 /// the others pdfium looks at the accessibility copy flag on newer PDFs, so the export is what applies them exactly.
-fn access_in(doc: &PdfDocument) -> PdfAccess {
+///
+/// `None` when pdfium-render does not know the file's security handler: it only knows revisions 2 to 4, so an
+/// AES-256 PDF (revision 5 or 6, what current tools write) would otherwise read as having no restrictions at all.
+fn access_in(doc: &PdfDocument) -> Option<PdfAccess> {
     let p = doc.permissions();
+    p.security_handler_revision().ok()?;
     let yes = |r: std::result::Result<bool, PdfiumError>| r.unwrap_or(true);
     let high = yes(p.can_print_high_quality());
     let low = yes(p.can_print_only_low_quality());
-    PdfAccess {
+    Some(PdfAccess {
         print: high || low,
         modify: yes(p.can_modify_document_content()),
         other_restricted: !(high
@@ -96,7 +101,15 @@ fn access_in(doc: &PdfDocument) -> PdfAccess {
             && yes(p.can_assemble_document())
             && yes(p.can_fill_existing_interactive_form_fields())
             && yes(p.can_add_or_modify_text_annotations())),
-    }
+    })
+}
+
+/// The permissions as the export reads them (lopdf), for a PDF pdfium-render cannot interpret. A file lopdf cannot
+/// read counts as unrestricted here: the export reads it the same way and stops with its own error.
+fn access_from_file(path: &Path) -> PdfAccess {
+    lopdf::Document::load(path)
+        .map(|d| crate::access::access_of(&d))
+        .unwrap_or_default()
 }
 
 /// Encode quickly: these PNGs are transient UI previews, so favour speed over size.

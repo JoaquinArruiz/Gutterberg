@@ -224,3 +224,34 @@ fn restrictions_are_carried_even_when_the_base_pdf_has_no_file_identifier() {
     let flags = access::permissions_of(&Document::load(&path).unwrap()).unwrap();
     assert!(!flags.contains(Permissions::COPYABLE));
 }
+
+/// An AES-256 PDF (security handler revision 6, what current tools write) that does not allow modifying, as made by
+/// the example generator (`examples/07-locked-no-modify.pdf`).
+fn aes256_no_modify() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/data/locked-aes256-no-modify.pdf")
+}
+
+#[test]
+fn an_aes256_pdf_locked_against_modifying_is_refused() {
+    let input = aes256_no_modify();
+    assert_eq!(
+        locked(validate_export_file(&input, &job().pages).unwrap_err()),
+        (DEFAULT_DOCUMENT_ID, "modifying".into())
+    );
+}
+
+#[test]
+fn an_aes256_pdf_shows_its_lock_when_it_opens() {
+    let Ok(pdfium) = bind_pdfium(&[]) else {
+        assert!(
+            std::env::var_os("CI").is_none(),
+            "pdfium not available in CI"
+        );
+        eprintln!("SKIPPED: pdfium not available (set PDFIUM_LIB_PATH)");
+        return;
+    };
+    // pdfium-render only knows security handler revisions 2 to 4; this one is 6, so the flags come from lopdf.
+    let info = document_info(&pdfium, &aes256_no_modify()).unwrap();
+    assert_eq!(info.locked.as_deref(), Some("modifying"));
+    assert!(!info.access.modify && info.access.print);
+}

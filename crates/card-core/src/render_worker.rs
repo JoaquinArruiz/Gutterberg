@@ -229,7 +229,7 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                     .load_pdf_from_file(&path, None)
                     .map_err(|e| Error::Pdfium(e.to_string()))
                     .and_then(|d| {
-                        let info = document_info_in(&d)?;
+                        let info = document_info_in(&d, &path)?;
                         docs.insert(id, d);
                         Ok(info)
                     });

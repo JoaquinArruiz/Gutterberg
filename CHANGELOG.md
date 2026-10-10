@@ -7,6 +7,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- A PDF locked with AES-256 encryption (what current tools write) shows its red lock as soon as it opens. The
+  export already refused it.
 - Pages, thumbnails and pieces show in the installed app (Windows, macOS and Linux) instead of broken
   images.
 - The welcome tour's clips play in the Linux app, instead of showing a black box. A clip that still cannot play
