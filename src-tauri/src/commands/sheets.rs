@@ -2,10 +2,9 @@ use super::export::{same_file, same_file_error};
 use crate::state::{internal, AppState};
 use card_core::card::PageGroup;
 use card_core::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
-use card_core::finish::{finish_sheets, Finishing};
+use card_core::finish::{plan_and_finish, Finishing};
 use card_core::sheet::{
-    extract_all_cards, plan_print_in, Card, CardSetting, DocumentSource, OutputSheet,
-    PaginateOptions, PrintLayout,
+    extract_all_cards, Card, CardSetting, DocumentSource, OutputSheet, PaginateOptions, PrintLayout,
 };
 use card_core::{ErrorInfo, ErrorParam};
 use serde::Deserialize;
@@ -28,7 +27,7 @@ pub fn compute_cards(documents: Vec<DocumentSource>) -> Result<Vec<Card>, ErrorI
     Ok(extract_all_cards(&documents)?)
 }
 
-/// Output sheets for the preview: the same planner the export runs (`plan_print_in`), fed with
+/// Output sheets for the preview: the same planner the export runs (`plan_and_finish`), fed with
 /// the page sizes the UI shows.
 #[tauri::command]
 pub fn compute_sheets(
@@ -38,10 +37,16 @@ pub fn compute_sheets(
     options: Option<PaginateOptions>,
     finishing: Option<Finishing>,
 ) -> Result<Vec<OutputSheet>, ErrorInfo> {
-    let planned = plan_print_in(&documents, &settings, &layout, &options.unwrap_or_default())?;
     // Pages the bleed cannot be taken from are reported by `validate_print`; the preview shows
     // them as a warning on the sheet.
-    Ok(finish_sheets(planned, &documents, &finishing.unwrap_or_default())?.0)
+    Ok(plan_and_finish(
+        &documents,
+        &settings,
+        &layout,
+        &options.unwrap_or_default(),
+        &finishing.unwrap_or_default(),
+    )?
+    .0)
 }
 
 /// The open file behind each document of the request.

@@ -380,8 +380,13 @@
       "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes."
     },
     "duplex": {
-      "on": "Imprimir dorsos (doble cara)",
-      "onHint": "Una hoja de dorsos después de cada hoja de frentes, en espejo para que los dorsos coincidan al dar vuelta el papel.",
+      "on": "Imprimir dorsos",
+      "onHint": "Imprime el dorso de cada pieza: en una hoja de dorsos después de cada hoja de frentes (doble cara), o junto al frente para doblar (gutterfold).",
+      "layout": "Dorsos",
+      "layouts": {
+        "duplex": "Del otro lado",
+        "gutterfold": "Junto al frente"
+      },
       "flip": "Voltear por el borde",
       "flips": {
         "long": "Largo",
@@ -390,11 +395,56 @@
       "offsetX": "Desfase del dorso en X",
       "offsetY": "Desfase del dorso en Y",
       "offsetNote": "Mueve todo lo que hay en las hojas de dorsos, para corregir el desvío de la impresora entre caras. Derecha y abajo son positivos.",
+      "fold": "Doblez",
+      "folds": {
+        "vertical": "Dorso a la derecha",
+        "horizontal": "Dorso debajo"
+      },
+      "foldNote": "Dónde va el dorso junto a su frente. La línea discontinua entre ambos es por donde se dobla; se corta alrededor del par.",
+      "backTurn": "Giro del dorso",
+      "backTurns": {
+        "fold": "Según el doblez",
+        "upright": "Como está",
+        "upsideDown": "Invertido"
+      },
+      "backTurnNote": "Según el doblez, un dorso a la derecha queda como está y uno debajo se invierte, para que se lea bien una vez doblado.",
+      "foldGap": "Separación en el doblez",
+      "foldGapNote": "Espacio entre un frente y su dorso. Con 0 el doblez queda en el borde de ambos; un poco ayuda con papel grueso.",
       "commonBack": "Dorso común",
       "none": "Ninguno",
       "useSelected": "Usar la pieza seleccionada como dorso común",
       "remove": "Quitar",
-      "backNote": "Una pieza sin dorso propio recibe el dorso común; si no hay ninguno, su lugar queda vacío en la hoja de dorsos."
+      "backNote": "Una pieza sin dorso propio recibe el dorso común; si no hay ninguno, su dorso queda vacío."
+    },
+    "pairing": {
+      "open": "Emparejar dorsos automáticamente…",
+      "openHint": "Encuentra el dorso de cada pieza según dónde está en el archivo, en vez de elegirlos uno por uno.",
+      "title": "Emparejar dorsos automáticamente",
+      "text": "¿Dónde están los dorsos en el archivo?",
+      "rule": "Dónde están los dorsos",
+      "rules": {
+        "alternating": "Páginas alternadas",
+        "alternatingHint": "Frentes en una página y sus dorsos en la siguiente: la 1 con la 2, la 3 con la 4…",
+        "afterFronts": "Dorsos después de los frentes",
+        "afterFrontsHint": "Primero todas las páginas de frentes y después todas las de dorsos, en el mismo orden.",
+        "beside": "Uno junto al otro en la página",
+        "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold)."
+      },
+      "split": "Dorsos en la",
+      "splits": {
+        "columns": "Mitad derecha",
+        "rows": "Mitad de abajo"
+      },
+      "mirrored": "Los dorsos están en espejo de izquierda a derecha",
+      "mirroredHint": "Habitual en archivos a doble cara: el dorso de la primera columna está en la última, para que quede detrás de su frente al dar vuelta el papel.",
+      "upsideDown": "Los dorsos están invertidos",
+      "upsideDownHint": "Gira cada dorso media vuelta para que quede como su frente. Habitual cuando los dorsos están debajo de los frentes.",
+      "pairs_one": "{{count}} frente emparejado con su dorso.",
+      "pairs_other": "{{count}} frentes emparejados con sus dorsos.",
+      "left_one": "{{count}} pieza quedó sin pareja.",
+      "left_other": "{{count}} piezas quedaron sin pareja.",
+      "none": "No se encontraron parejas con esta regla.",
+      "note": "Solo se imprimen los frentes; cada uno trae su dorso. Las piezas sin pareja conservan lo que tenían."
     },
     "warnings": {
       "marks_off_page": "Algunas marcas de corte quedan fuera de la página: deja márgenes más grandes.",

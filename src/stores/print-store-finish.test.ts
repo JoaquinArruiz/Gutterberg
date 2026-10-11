@@ -23,7 +23,17 @@ describe("cut marks, bleed and duplex in the print store", () => {
     expect(planOf(st()).finish).toEqual({
       marks: { style: "off", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 },
       bleed: { mm: 0, source: "mirror" },
-      duplex: { on: false, flip: "long", offsetXMm: 0, offsetYMm: 0, commonBack: null },
+      duplex: {
+        on: false,
+        layout: "duplex",
+        fold: "vertical",
+        foldGapMm: 0,
+        backUpsideDown: null,
+        flip: "long",
+        offsetXMm: 0,
+        offsetYMm: 0,
+        commonBack: null,
+      },
     });
   });
 

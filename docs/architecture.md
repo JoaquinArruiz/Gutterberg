@@ -109,6 +109,19 @@ matter:
 - **Duplex:** backs are mirrored left to right for a long-edge flip on a portrait sheet (or a short-edge flip on a
   landscape one), otherwise top to bottom, with the back's turn adjusted so a front corner and its back corner pair
   up. A common back or a back per piece, with an X/Y offset for printer drift.
+- **Gutterfold:** with `layout: Gutterfold`, pagination reserves a **pair slot** for every front (its size plus a
+  room the same size past the fold, plus the fold gap) and places slots exactly like pieces: grid, gaps, margins,
+  grouping by size, `DoesNotFit` for a pair too large, never shrinking. Finishing then puts the back in that room,
+  turned a half turn when the fold is horizontal (or as `back_upside_down` says), and adds the fold lines
+  (`OutputSheet.folds`, drawn dashed and grey by export and the preview). Cut marks and bleed warnings use the pair
+  outlines, so no mark crosses the fold. "Same as source" has no room for the backs, so the interface switches to the
+  planner and the engine refuses that combination.
+- **A back's own turn:** each `BackPair` (and the common back) carries the turn the user gave the back piece in the
+  library, added to the turn the flip or the fold needs. That is how upside-down backs in a file are set right.
+- **Automatic pairing** (`src/lib/pairing.ts`) is pure data over piece ids, in the interface: pages in order per PDF,
+  then rows and columns (mirrored columns for duplex files; the piece it meets when folded for "beside each other");
+  freeform pieces by their order. Applying writes the backs and the backs' turns into the per-piece edits and sets
+  the backs' copies to 0, as one undo step (`together` in `stores/history.ts` joins the layout and plan timelines).
 
 ### Permission flags (`access`)
 
@@ -175,7 +188,8 @@ rebuilt on open.
   refused whole (`ProjectTooNew`, "please update"). Nothing is ever opened partially. Migrations are a list of
   functions, each taking one version to the next (`v1_to_v2` adds the print finishing, `v2_to_v3` adds the document
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
-  the new number makes an older Gutterberg say "please update" instead of failing on them); the current version is 4. A change to the format adds a version and a migration with a test file.
+  the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
+  gutterfold settings of the duplex finish); the current version is 5. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.

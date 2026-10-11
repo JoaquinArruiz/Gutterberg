@@ -4,6 +4,7 @@ import type { OutputSettings } from "../stores/layout-store";
 import { cardIdKey, freeformCardId, gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
 import { defaultGroups, type PageGroup, setSkipped, updateGridGroup } from "./document-layout";
+import { DEFAULT_FINISH } from "./finish";
 import {
   buildPrintRequest,
   DEFAULT_PLAN,
@@ -143,6 +144,12 @@ describe("cards the user turned, resized or reordered", () => {
     const imageDocs = docs.map((d) => ({ ...d, images: true }));
     expect(buildPrintRequest(plan(), cards, imageDocs, output).layout.kind).toBe("grid");
   });
+  it("needs the planner for gutterfold, whose pairs 'same as source' has no room for", () => {
+    const finish = { ...DEFAULT_FINISH, duplex: { ...DEFAULT_FINISH.duplex, on: true, layout: "gutterfold" as const } };
+    expect(buildPrintRequest(plan({ finish }), cards, docs, output).layout.kind).toBe("grid");
+    const duplex = { ...finish, duplex: { ...finish.duplex, layout: "duplex" as const } };
+    expect(buildPrintRequest(plan({ finish: duplex }), cards, docs, output).layout).toEqual({ kind: "same_as_source" });
+  });
 });
 
 describe("the plan", () => {
@@ -235,7 +242,14 @@ describe("the IPC contract with the Rust planner", () => {
       finish: {
         marks: { style: "ticks", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 1.5 },
         bleed: { mm: 2, source: "mirror" },
-        duplex: { on: true, flip: "short", offsetXMm: 0.5, offsetYMm: -0.5, commonBack: cardIdKey(three[0].id) },
+        duplex: {
+          ...DEFAULT_FINISH.duplex,
+          on: true,
+          flip: "short",
+          offsetXMm: 0.5,
+          offsetYMm: -0.5,
+          commonBack: cardIdKey(three[0].id),
+        },
       },
     });
     const settings: OutputSettings = {

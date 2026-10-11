@@ -3,14 +3,14 @@
 use card_core::card::{CardId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
-    bleed_regions, finish_sheets, BackPair, BleedOptions, BleedSource, DuplexOptions,
-    FinishOptions, Finishing, Flip, MarkOptions, MarkStyle, SheetWarning, Side,
+    bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BleedOptions, BleedSource,
+    DuplexOptions, FinishOptions, Finishing, Flip, MarkOptions, MarkStyle, SheetWarning, Side,
 };
 use card_core::geometry::{PageSize, Point};
 use card_core::layout::GridLayout;
 use card_core::sample::{sample_grid, sample_pdf};
 use card_core::sheet::{
-    card_transform, plan_print_in, CardSetting, DocumentSource, Margins, OutputSheet,
+    card_transform, plan_print_in, CardSetting, DocumentSource, FoldAxis, Margins, OutputSheet,
     PaginateOptions, PrintLayout, SheetPage, SheetSpec, Turn,
 };
 use card_core::units::mm_to_pt;
@@ -384,6 +384,7 @@ fn duplex(flip: Flip, common_back: Option<CardId>) -> FinishOptions {
             offset_x_mm: 0.0,
             offset_y_mm: 0.0,
             common_back,
+            ..DuplexOptions::default()
         },
         ..FinishOptions::default()
     }
@@ -531,6 +532,7 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
         backs: vec![BackPair {
             card: card(0, 1),
             back: card(1, 1),
+            turn: Turn::R0,
         }],
     };
     let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
@@ -543,12 +545,39 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
         backs: vec![BackPair {
             card: card(0, 1),
             back: card(1, 1),
+            turn: Turn::R0,
         }],
     };
     let docs2 = [source()];
     let (out, _) = finish_sheets(plan(&docs2, spec(2, 2, 6.0, 15.0), &[]), &docs2, &f).unwrap();
     assert_eq!(out[1].placements[1].card_id, card(1, 1));
     assert_eq!(out[1].placements[0].card_id, card(0, 0));
+}
+
+#[test]
+fn a_back_turned_by_the_user_is_turned_that_much_more_on_the_back_sheet() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let pair = |turn| Finishing {
+        options: duplex(Flip::Long, None),
+        backs: vec![BackPair {
+            card: card(0, 0),
+            back: card(1, 1),
+            turn,
+        }],
+    };
+    let (plain, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R0)).unwrap();
+    let (turned, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R180)).unwrap();
+    let (p, t) = (plain[1].placements[0], turned[1].placements[0]);
+    // A long-edge flip of a portrait sheet keeps backs upright.
+    assert_eq!(p.turn, Turn::R0);
+    assert_eq!(t.turn, Turn::R180);
+    assert_eq!(p.destination, t.destination);
+    // The common back's own turn works the same way.
+    let mut options = duplex(Flip::Long, Some(card(1, 1)));
+    options.duplex.common_back_turn = Turn::R180;
+    let (common, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+    assert!(common[1].placements.iter().all(|b| b.turn == Turn::R180));
 }
 
 #[test]
@@ -592,4 +621,171 @@ fn a_back_of_another_size_is_reported_and_an_unknown_back_is_refused() {
         &finishing(duplex(Flip::Long, Some(missing))),
     );
     assert!(matches!(r, Err(Error::InvalidSheet(_))));
+}
+
+// ---- gutterfold ------------------------------------------------------------------------------
+
+fn gutterfold(fold: FoldAxis, gap_mm: f64) -> FinishOptions {
+    FinishOptions {
+        duplex: DuplexOptions {
+            on: true,
+            layout: BackLayout::Gutterfold,
+            fold,
+            fold_gap_mm: gap_mm,
+            ..DuplexOptions::default()
+        },
+        ..FinishOptions::default()
+    }
+}
+
+/// Settings that print only the piece at row 0, column 0, once (the other eight get no copies).
+fn only_first() -> Vec<CardSetting> {
+    (0..9)
+        .map(|i| CardSetting {
+            quantity: usize::from(i == 0),
+            ..setting(card(i / 3, i % 3), Turn::R0)
+        })
+        .collect()
+}
+
+/// Plans and finishes on an A4 sheet with no margins and a 5 mm gap, with every piece's back
+/// being the piece at row 2, column 2.
+fn gutterfold_sheets(options: FinishOptions, settings: &[CardSetting]) -> Vec<OutputSheet> {
+    let docs = [source()];
+    let mut s = spec(1, 1, 5.0, 0.0);
+    s.page = SheetPage::Size(PageSize {
+        width_pt: 595.0,
+        height_pt: 842.0,
+    });
+    s.rows = None;
+    s.columns = None;
+    let mut f = finishing(options);
+    f.options.duplex.common_back = Some(card(2, 2));
+    plan_and_finish(
+        &docs,
+        settings,
+        &PrintLayout::Grid { spec: s },
+        &PaginateOptions::default(),
+        &f,
+    )
+    .unwrap()
+    .0
+}
+
+#[test]
+fn a_vertical_fold_puts_each_back_beside_its_front_reading_as_printed() {
+    let out = gutterfold_sheets(gutterfold(FoldAxis::Vertical, 0.0), &only_first());
+    assert_eq!(out.len(), 1, "no back sheets with gutterfold");
+    let sheet = &out[0];
+    assert_eq!(sheet.side, Side::Front);
+    let [front, back] = [sheet.placements[0], sheet.placements[1]];
+    assert_eq!(back.card_id, card(2, 2));
+    // Same size, side by side, touching at the fold, at the same height.
+    let (f, b) = (front.destination, back.destination);
+    assert!((b.width - f.width).abs() < 1e-6 && (b.height - f.height).abs() < 1e-6);
+    assert!((b.x - (f.x + f.width)).abs() < 1e-6);
+    assert!((b.y - f.y).abs() < 1e-6);
+    assert_eq!(back.turn, Turn::R0);
+    // One fold line, down the edge they share.
+    assert_eq!(sheet.folds, vec![[b.x, f.y, b.x, f.y + f.height]]);
+}
+
+#[test]
+fn a_horizontal_fold_puts_each_back_below_its_front_upside_down() {
+    let out = gutterfold_sheets(gutterfold(FoldAxis::Horizontal, 2.0), &only_first());
+    let sheet = &out[0];
+    let [front, back] = [sheet.placements[0], sheet.placements[1]];
+    let (f, b) = (front.destination, back.destination);
+    let gap = mm_to_pt(2.0);
+    assert!((b.y - (f.y + f.height + gap)).abs() < 1e-6);
+    assert!((b.x - f.x).abs() < 1e-6);
+    assert_eq!(back.turn, Turn::R180);
+    // The fold is in the middle of the gap.
+    let y = f.y + f.height + gap / 2.0;
+    assert_eq!(sheet.folds, vec![[f.x, y, f.x + f.width, y]]);
+    // Upside down can be turned off for a file whose backs are printed upright.
+    let mut options = gutterfold(FoldAxis::Horizontal, 2.0);
+    options.duplex.back_upside_down = Some(false);
+    let out = gutterfold_sheets(options, &only_first());
+    assert_eq!(out[0].placements[1].turn, Turn::R0);
+}
+
+#[test]
+fn a_back_turned_by_the_user_adds_its_turn_to_the_fold() {
+    let mut options = gutterfold(FoldAxis::Horizontal, 0.0);
+    options.duplex.common_back_turn = Turn::R180;
+    let out = gutterfold_sheets(options, &only_first());
+    assert_eq!(out[0].placements[1].turn, Turn::R0);
+    let mut options = gutterfold(FoldAxis::Vertical, 0.0);
+    options.duplex.common_back_turn = Turn::R90;
+    let out = gutterfold_sheets(options, &only_first());
+    assert_eq!(out[0].placements[1].turn, Turn::R90);
+}
+
+#[test]
+fn pairs_fill_the_sheet_like_pieces_and_never_overlap() {
+    // Nine pieces 63.5 x 88 mm, folded side by side: a pair is 127 x 88 mm, so A4 portrait with a
+    // 5 mm gap holds 1 x 3 pairs; nine pieces need three sheets.
+    let out = gutterfold_sheets(gutterfold(FoldAxis::Vertical, 0.0), &[]);
+    assert_eq!(out.len(), 3);
+    assert!(out.iter().all(|s| s.side == Side::Front));
+    for sheet in &out {
+        let rects: Vec<_> = sheet.placements.iter().map(|p| p.destination).collect();
+        for (i, a) in rects.iter().enumerate() {
+            for b in &rects[i + 1..] {
+                let apart = a.x + a.width <= b.x + 1e-6
+                    || b.x + b.width <= a.x + 1e-6
+                    || a.y + a.height <= b.y + 1e-6
+                    || b.y + b.height <= a.y + 1e-6;
+                assert!(apart, "{a:?} overlaps {b:?}");
+            }
+        }
+    }
+}
+
+#[test]
+fn cut_marks_go_round_the_pair_not_across_the_fold() {
+    let mut options = gutterfold(FoldAxis::Vertical, 0.0);
+    options.marks.style = MarkStyle::Ticks;
+    let out = gutterfold_sheets(options, &only_first());
+    let sheet = &out[0];
+    let fold_x = sheet.folds[0][0];
+    let marks = sheet.marks.as_ref().unwrap();
+    // Vertical ticks only at the outer left and right edges of the pair, none at the fold.
+    let xs: Vec<f64> = marks
+        .lines
+        .iter()
+        .filter(|l| l[0] == l[2])
+        .map(|l| l[0])
+        .collect();
+    assert!(!xs.is_empty());
+    assert!(xs.iter().all(|x| (x - fold_x).abs() > 1.0), "{xs:?}");
+}
+
+#[test]
+fn gutterfold_needs_a_sheet_grid() {
+    let docs = [source()];
+    let err = plan_and_finish(
+        &docs,
+        &[],
+        &PrintLayout::SameAsSource,
+        &PaginateOptions::default(),
+        &finishing(gutterfold(FoldAxis::Vertical, 0.0)),
+    )
+    .unwrap_err();
+    assert!(matches!(err, Error::InvalidSheet(_)));
+}
+
+#[test]
+fn a_gutterfold_sheet_exports_with_dashed_fold_lines() {
+    let out = gutterfold_sheets(gutterfold(FoldAxis::Vertical, 0.0), &only_first());
+    let doc = export_sheets(vec![(0, sample_pdf())], &out).unwrap();
+    let id = *doc.get_pages().values().next().unwrap();
+    let content = card_core::export::drawn_content(&doc, id);
+    assert_eq!(
+        content.matches(" Do\n").count(),
+        2,
+        "the front and its back"
+    );
+    assert!(content.contains("[2 2] 0 d"), "a dashed fold line");
 }

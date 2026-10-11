@@ -20,12 +20,12 @@
 use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
-use crate::finish::{bleed_regions, finish_sheets, Finishing, SheetMarks};
+use crate::finish::{bleed_regions, plan_and_finish, Finishing, SheetMarks};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
-    card_transform_xy, plan_print_in, sheet_from_layout, Affine, CardSetting, DocumentSource,
-    OutputSheet, PaginateOptions, PrintLayout, SheetPlacement,
+    card_transform_xy, sheet_from_layout, Affine, CardSetting, DocumentSource, OutputSheet,
+    PaginateOptions, PrintLayout, SheetPlacement,
 };
 use crate::units::{mm_to_pt, pt_to_mm};
 use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
@@ -538,8 +538,7 @@ pub fn plan_print_files(
     if !issues.is_empty() {
         return Ok((Vec::new(), issues));
     }
-    let planned = plan_print_in(&sources, settings, layout, options)?;
-    let (sheets, mut issues) = finish_sheets(planned, &sources, finishing)?;
+    let (sheets, mut issues) = plan_and_finish(&sources, settings, layout, options, finishing)?;
     let loaded: Vec<(DocumentId, &Document)> =
         files.iter().map(|f| f.document_id).zip(&docs).collect();
     issues.extend(validate_sheets_in(&loaded, &sheets));
@@ -740,6 +739,23 @@ fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     ops
 }
 
+/// The operators that draw gutterfold fold lines: thin, grey and dashed, so they never read as a
+/// place to cut.
+fn fold_ops(folds: &[[f64; 4]], out_height: f64) -> String {
+    let mut ops = String::from("q\n0.6 0.6 0.6 RG\n0.35 w\n[2 2] 0 d\n");
+    for l in folds {
+        ops.push_str(&format!(
+            "{} {} m {} {} l S\n",
+            fmt(l[0]),
+            fmt(out_height - l[1]),
+            fmt(l[2]),
+            fmt(out_height - l[3]),
+        ));
+    }
+    ops.push_str("Q\n");
+    ops
+}
+
 /// Resource name of the form that stands in for page `page_index` of `document_id`.
 fn form_name(document_id: DocumentId, page_index: usize) -> String {
     format!("S{document_id}_{page_index}")
@@ -823,6 +839,9 @@ fn export_sheets_into(
         }
         if let Some(marks) = &sheet.marks {
             ops.push_str(&marks_ops(marks, out.height_pt));
+        }
+        if !sheet.folds.is_empty() {
+            ops.push_str(&fold_ops(&sheet.folds, out.height_pt));
         }
         let mut cs = Stream::new(Dictionary::new(), ops.into_bytes());
         let _ = cs.compress();

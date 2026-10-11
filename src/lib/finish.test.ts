@@ -18,6 +18,10 @@ describe("finish settings", () => {
     expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror" });
     expect(DEFAULT_FINISH.duplex).toEqual({
       on: false,
+      layout: "duplex",
+      fold: "vertical",
+      foldGapMm: 0,
+      backUpsideDown: null,
       flip: "long",
       offsetXMm: 0,
       offsetYMm: 0,
@@ -30,12 +34,25 @@ describe("finish settings", () => {
     const wild: Finish = {
       marks: { style: "ticks", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3 },
       bleed: { mm: 99, source: "source" },
-      duplex: { on: true, flip: "short", offsetXMm: -40, offsetYMm: Number.NaN, commonBack: "not a key" },
+      duplex: {
+        ...DEFAULT_FINISH.duplex,
+        on: true,
+        flip: "short",
+        offsetXMm: -40,
+        offsetYMm: Number.NaN,
+        commonBack: "not a key",
+      },
     };
     const clean = cleanFinish(wild);
     expect(clean.marks).toEqual({ style: "ticks", widthMm: 2, color: "#000000", lengthMm: 1, offsetMm: 0 });
     expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source" });
-    expect(clean.duplex).toEqual({ on: true, flip: "short", offsetXMm: -10, offsetYMm: 0, commonBack: null });
+    expect(clean.duplex).toEqual({
+      ...DEFAULT_FINISH.duplex,
+      on: true,
+      flip: "short",
+      offsetXMm: -10,
+      commonBack: null,
+    });
     expect(cleanColor("#ABCDEF")).toBe("#abcdef");
     expect(cleanColor("#abc")).toBe("#000000");
   });
@@ -56,7 +73,7 @@ describe("finishingPayload", () => {
   const finish: Finish = {
     marks: { style: "gaps", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
     bleed: { mm: 2, source: "mirror" },
-    duplex: { on: true, flip: "long", offsetXMm: 1, offsetYMm: -1, commonBack: "g:0:0:1:0" },
+    duplex: { ...DEFAULT_FINISH.duplex, on: true, flip: "long", offsetXMm: 1, offsetYMm: -1, commonBack: "g:0:0:1:0" },
   };
 
   it("uses the engine's snake_case names and card ids", () => {
@@ -68,8 +85,16 @@ describe("finishingPayload", () => {
       {
         card: { kind: "grid", document_id: 0, page_index: 0, row: 0, column: 0 },
         back: { kind: "grid", document_id: 0, page_index: 0, row: 0, column: 1 },
+        turn: 0,
       },
     ]);
+  });
+
+  it("sends the user's turn of each back and of the common back", () => {
+    const turns = { "g:0:0:0:1": 180, "g:0:0:1:0": 90 } as const;
+    const p = finishingPayload(finish, { "g:0:0:0:0": "g:0:0:0:1" }, known, turns);
+    expect(p.backs[0].turn).toBe(180);
+    expect(p.options.duplex.common_back_turn).toBe(90);
   });
 
   it("leaves out a back that points at a piece that is gone", () => {

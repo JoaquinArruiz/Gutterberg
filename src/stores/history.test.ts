@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { cardIdKey, gridCardId } from "../lib/card";
-import { clearHistory, redo, undo, useHistory } from "./history";
+import { clearHistory, redo, together, undo, useHistory } from "./history";
 import { beginEdit, endEdit, useLayoutStore } from "./layout-store";
 import { usePrintStore } from "./print-store";
 
@@ -233,5 +233,34 @@ describe("what forgets the history", () => {
     }
     expect(steps).toBeLessThanOrEqual(200);
     expect(steps).toBeGreaterThan(0);
+  });
+});
+
+describe("a change made in both stores at once", () => {
+  it("is one undo step, and one redo step", () => {
+    print().setOrder("interleaved");
+    together(() => {
+      layout().setCardEdits({ ...layout().cardEdits, backs: { [key(0)]: key(1) } });
+      print().startFromAllCards();
+      print().setQuantity([key(1)], 2);
+    });
+    undo();
+    expect(layout().cardEdits.backs).toEqual({});
+    expect(print().quantities).toEqual({});
+    expect(print().mode).toBe("all");
+    expect(print().order).toBe("interleaved");
+    redo();
+    expect(layout().cardEdits.backs).toEqual({ [key(0)]: key(1) });
+    expect(print().mode).toBe("custom");
+    expect(print().quantities[key(1)]).toBe(2);
+    undo();
+    undo();
+    expect(print().order).toBe("grouped");
+    expect(canUndo()).toBe(false);
+  });
+
+  it("makes no step when nothing changed", () => {
+    together(() => {});
+    expect(canUndo()).toBe(false);
   });
 });

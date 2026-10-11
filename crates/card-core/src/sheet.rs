@@ -280,7 +280,27 @@ pub enum Order {
     Interleaved,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// Which way a gutterfold pair folds: the back is beside its front (`Vertical`, fold line
+/// running up and down) or below it (`Horizontal`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FoldAxis {
+    #[default]
+    Vertical,
+    Horizontal,
+}
+
+/// Room for a back next to every piece (gutterfold): each slot holds the piece and, along
+/// `axis`, a space of the same size for its back, `gap_mm` apart. The piece takes the first half
+/// (left, or top); `finish_sheets` puts the back in the other.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Fold {
+    pub axis: FoldAxis,
+    pub gap_mm: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PaginateOptions {
     pub order: Order,
@@ -289,6 +309,10 @@ pub struct PaginateOptions {
     pub group_by_size: bool,
     /// Repeat the requested cards, in order, until the last sheet of each group is full.
     pub auto_fill: bool,
+    /// Gutterfold: every slot is a piece and the room for its back. Set from the finishing
+    /// options (`finish::paginate_options`), not by the user directly.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fold: Option<Fold>,
 }
 
 impl Default for PaginateOptions {
@@ -297,6 +321,7 @@ impl Default for PaginateOptions {
             order: Order::Grouped,
             group_by_size: true,
             auto_fill: false,
+            fold: None,
         }
     }
 }
@@ -338,6 +363,9 @@ pub struct OutputSheet {
     /// Things worth telling the user that do not stop the export.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub warnings: Vec<SheetWarning>,
+    /// Gutterfold: where each pair folds, `[x1, y1, x2, y2]` in points, drawn as dashed lines.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub folds: Vec<[f64; 4]>,
 }
 
 impl OutputSheet {
@@ -350,6 +378,7 @@ impl OutputSheet {
             bleed: SheetBleed::default(),
             marks: None,
             warnings: Vec::new(),
+            folds: Vec::new(),
         }
     }
 }
@@ -398,8 +427,12 @@ fn validate(spec: &SheetSpec) -> Result<()> {
 struct Entry<'a> {
     card: &'a Card,
     quantity: usize,
+    /// The slot it needs: the piece, or with a fold the piece and the room for its back.
     width: f64,
     height: f64,
+    /// The piece itself, the first part of the slot.
+    piece_w: f64,
+    piece_h: f64,
 }
 
 /// Copies in the order they go on the sheets, as indexes into `entries`.
@@ -542,12 +575,13 @@ fn lay_out(
                     SheetPlacement {
                         card_id: e.card.id,
                         source: e.card.source,
-                        // Smaller cards sit in the middle of their slot.
+                        // Smaller cards sit in the middle of their slot; with a fold the piece
+                        // takes the first part of its pair.
                         destination: Rect::new(
                             slot_x + (slot_w - e.width) / 2.0,
                             slot_y + (slot_h - e.height) / 2.0,
-                            e.width,
-                            e.height,
+                            e.piece_w,
+                            e.piece_h,
                         ),
                         turn: e.card.turn,
                         scale: e.card.scale,
@@ -587,11 +621,23 @@ pub fn paginate(
             )));
         }
         if *quantity > 0 {
+            let (slot_w, slot_h) = match options.fold {
+                None => (width, height),
+                Some(f) => {
+                    let gap = mm_to_pt(f.gap_mm.max(0.0));
+                    match f.axis {
+                        FoldAxis::Vertical => (2.0 * width + gap, height),
+                        FoldAxis::Horizontal => (width, 2.0 * height + gap),
+                    }
+                }
+            };
             entries.push(Entry {
                 card,
                 quantity: *quantity,
-                width,
-                height,
+                width: slot_w,
+                height: slot_h,
+                piece_w: width,
+                piece_h: height,
             });
         }
     }

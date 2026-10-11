@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { type CardId, freeformCardId, gridCardId } from "./card";
+import type { Turn } from "./sheet-api";
 
 export const MARK_STYLES = ["off", "ticks", "gaps"] as const;
 export type MarkStyle = (typeof MARK_STYLES)[number];
@@ -11,6 +12,12 @@ export const BLEED_SOURCES = ["mirror", "source"] as const;
 export type BleedSource = (typeof BLEED_SOURCES)[number];
 export const FLIPS = ["long", "short"] as const;
 export type Flip = (typeof FLIPS)[number];
+/** Where the backs go: on the other side of the paper, or beside each front to fold. */
+export const BACK_LAYOUTS = ["duplex", "gutterfold"] as const;
+export type BackLayout = (typeof BACK_LAYOUTS)[number];
+/** Gutterfold: the back beside its front (vertical fold) or below it (horizontal). */
+export const FOLDS = ["vertical", "horizontal"] as const;
+export type Fold = (typeof FOLDS)[number];
 
 /** Ranges the engine accepts (mm); the fields clamp to them so Rust never sees a value outside. */
 export const MARK_WIDTH_RANGE = [0.05, 2] as const;
@@ -18,12 +25,20 @@ export const MARK_LENGTH_RANGE = [1, 10] as const;
 export const MARK_OFFSET_RANGE = [0, 10] as const;
 export const MAX_BLEED_MM = 5;
 export const MAX_DUPLEX_OFFSET_MM = 10;
+export const MAX_FOLD_GAP_MM = 5;
 
 export type Finish = {
   marks: { style: MarkStyle; widthMm: number; color: string; lengthMm: number; offsetMm: number };
   bleed: { mm: number; source: BleedSource };
   duplex: {
     on: boolean;
+    layout: BackLayout;
+    /** Gutterfold only. */
+    fold: Fold;
+    /** Gutterfold: space between a front and its back, with the fold line in the middle. */
+    foldGapMm: number;
+    /** Gutterfold: backs a half turn round. Null follows the fold (upside down below the front, upright beside it). */
+    backUpsideDown: boolean | null;
     flip: Flip;
     /** Moves every back sheet in the printed sheet; right is positive. */
     offsetXMm: number;
@@ -37,7 +52,17 @@ export type Finish = {
 export const DEFAULT_FINISH: Finish = {
   marks: { style: "off", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 },
   bleed: { mm: 0, source: "mirror" },
-  duplex: { on: false, flip: "long", offsetXMm: 0, offsetYMm: 0, commonBack: null },
+  duplex: {
+    on: false,
+    layout: "duplex",
+    fold: "vertical",
+    foldGapMm: 0,
+    backUpsideDown: null,
+    flip: "long",
+    offsetXMm: 0,
+    offsetYMm: 0,
+    commonBack: null,
+  },
 };
 
 export const FinishSchema = z.object({
@@ -51,6 +76,10 @@ export const FinishSchema = z.object({
   bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES) }),
   duplex: z.object({
     on: z.boolean(),
+    layout: z.enum(BACK_LAYOUTS).default("duplex"),
+    fold: z.enum(FOLDS).default("vertical"),
+    foldGapMm: z.number().default(0),
+    backUpsideDown: z.boolean().nullable().default(null),
     flip: z.enum(FLIPS),
     offsetXMm: z.number(),
     offsetYMm: z.number(),
@@ -82,6 +111,10 @@ export function cleanFinish(f: Finish): Finish {
     bleed: { mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0), source: f.bleed.source },
     duplex: {
       on: f.duplex.on,
+      layout: f.duplex.layout,
+      fold: f.duplex.fold,
+      foldGapMm: clampTo(f.duplex.foldGapMm, 0, MAX_FOLD_GAP_MM, 0),
+      backUpsideDown: f.duplex.backUpsideDown,
       flip: f.duplex.flip,
       offsetXMm: clampTo(f.duplex.offsetXMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
       offsetYMm: clampTo(f.duplex.offsetYMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
@@ -106,27 +139,38 @@ export type FinishingPayload = {
     bleed: { mm: number; source: BleedSource };
     duplex: {
       on: boolean;
+      layout: BackLayout;
+      fold: Fold;
+      fold_gap_mm: number;
+      back_upside_down: boolean | null;
       flip: Flip;
       offset_x_mm: number;
       offset_y_mm: number;
       common_back: CardId | null;
+      common_back_turn: Turn;
     };
   };
-  backs: { card: CardId; back: CardId }[];
+  backs: { card: CardId; back: CardId; turn: Turn }[];
 };
 
 /**
  * The finishing for a request. `known` are the keys of the pieces that exist: a back that points at a piece
- * that is gone is left out rather than failing the plan.
+ * that is gone is left out rather than failing the plan. `turns` are the user's turns of the pieces: a back
+ * turned in the library is turned that much more on the sheet, so it faces like its front.
  */
-export function finishingPayload(finish: Finish, backs: Record<string, string>, known: Set<string>): FinishingPayload {
+export function finishingPayload(
+  finish: Finish,
+  backs: Record<string, string>,
+  known: Set<string>,
+  turns: Record<string, Turn> = {},
+): FinishingPayload {
   const f = cleanFinish(finish);
   const exists = (k: string | null): k is string => k !== null && known.has(k);
   const common = exists(f.duplex.commonBack) ? parseCardKey(f.duplex.commonBack) : null;
   const pairs: FinishingPayload["backs"] = [];
   for (const [card, back] of Object.entries(backs)) {
     const [from, to] = [parseCardKey(card), parseCardKey(back)];
-    if (known.has(card) && known.has(back) && from && to) pairs.push({ card: from, back: to });
+    if (known.has(card) && known.has(back) && from && to) pairs.push({ card: from, back: to, turn: turns[back] ?? 0 });
   }
   return {
     options: {
@@ -140,10 +184,15 @@ export function finishingPayload(finish: Finish, backs: Record<string, string>, 
       bleed: f.bleed,
       duplex: {
         on: f.duplex.on,
+        layout: f.duplex.layout,
+        fold: f.duplex.fold,
+        fold_gap_mm: f.duplex.foldGapMm,
+        back_upside_down: f.duplex.backUpsideDown,
         flip: f.duplex.flip,
         offset_x_mm: f.duplex.offsetXMm,
         offset_y_mm: f.duplex.offsetYMm,
         common_back: common,
+        common_back_turn: common && f.duplex.commonBack ? (turns[f.duplex.commonBack] ?? 0) : 0,
       },
     },
     backs: pairs,
@@ -160,6 +209,9 @@ export const SHEET_WARNINGS = [
   "bleed_exceeds_source_gap",
 ] as const;
 export type SheetWarning = (typeof SHEET_WARNINGS)[number];
+
+/** Whether the backs go beside the fronts, to fold: the plan then needs a sheet grid (not "same as source"). */
+export const gutterfoldOn = (f: Finish): boolean => f.duplex.on && f.duplex.layout === "gutterfold";
 
 /** Whether anything of the finishing is switched on. */
 export const finishingOn = (f: Finish): boolean => f.marks.style !== "off" || f.bleed.mm > 0 || f.duplex.on;

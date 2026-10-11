@@ -51,6 +51,8 @@ export const OutputSheetSchema = z.object({
     })
     .nullish(),
   warnings: z.array(z.enum(SHEET_WARNINGS)).optional(),
+  /** Gutterfold fold lines in points: `[x1, y1, x2, y2]` per pair. */
+  folds: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])).optional(),
 });
 export type OutputSheet = z.infer<typeof OutputSheetSchema>;
 

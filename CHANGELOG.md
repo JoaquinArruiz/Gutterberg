@@ -8,10 +8,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - On the first start, the welcome begins with a short setup: language, theme and units (inches in the United States, millimetres elsewhere), applied at once and kept in Preferences.
+- Pair backs automatically… in Print › Duplex: finds the back of every piece from where it is in the file (alternating pages, backs after fronts, or beside each other on the page), turns upside-down backs and prints only the fronts, in one step you can undo.
+- Gutterfold sheets: Print › Duplex › Backs › Beside the front prints each back next to its front (to the right or below), with a dashed fold line, cut marks around the pair and an optional gap at the fold. With pairing, a double-sided file becomes gutterfold and a gutterfold file becomes double-sided.
 
 ### Changed
 
 - The welcome tour is larger: its clips show up to 800 px wide, and smaller on a small window so everything still fits.
+- A back you turn in the piece library is printed turned that much more, so a back that is upside down in the file can be set right.
+- Projects are saved as version 5 (for the gutterfold settings); older projects open as before, and an older Gutterberg asks to be updated.
 
 ### Fixed
 

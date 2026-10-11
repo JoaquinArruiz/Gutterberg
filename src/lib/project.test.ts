@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_OUTPUT } from "../stores/layout-store";
 import { NO_EDITS } from "./card-edits";
 import { applyGridTo, defaultGroups, setSkipped, updateGridGroup } from "./document-layout";
+import { DEFAULT_FINISH } from "./finish";
 import { imageGroups } from "./images";
 import { DEFAULT_PLAN } from "./print-request";
 import {
@@ -72,7 +73,14 @@ function state(): ProjectState {
       finish: {
         marks: { style: "ticks", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
         bleed: { mm: 2, source: "source" },
-        duplex: { on: true, flip: "short", offsetXMm: 0.5, offsetYMm: -0.5, commonBack: "g:3:0:0:0" },
+        duplex: {
+          ...DEFAULT_FINISH.duplex,
+          on: true,
+          flip: "short",
+          offsetXMm: 0.5,
+          offsetYMm: -0.5,
+          commonBack: "g:3:0:0:0",
+        },
       },
     },
   };

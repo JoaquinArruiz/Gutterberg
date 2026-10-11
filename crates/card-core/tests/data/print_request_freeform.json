@@ -151,10 +151,15 @@
       },
       "duplex": {
         "on": false,
+        "layout": "duplex",
+        "fold": "vertical",
+        "fold_gap_mm": 0,
+        "back_upside_down": null,
         "flip": "long",
         "offset_x_mm": 0,
         "offset_y_mm": 0,
-        "common_back": null
+        "common_back": null,
+        "common_back_turn": 0
       }
     },
     "backs": []

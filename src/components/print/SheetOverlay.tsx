@@ -4,12 +4,14 @@ import { mmToPt } from "../../lib/units";
 /**
  * What the sheet adds around the pieces: the cut marks (drawn as the engine placed them) and, when there is
  * a bleed, a dashed frame around each piece showing how far it reaches. The mirrored art of the bleed is not
- * drawn here; the exported file has it. `k` is screen px per point.
+ * drawn here; the exported file has it. Gutterfold fold lines are dashed and grey, as exported. `k` is screen px
+ * per point.
  */
 export function SheetOverlay({ sheet, k }: { sheet: OutputSheet; k: number }) {
   const bleed = mmToPt(sheet.bleed?.mm ?? 0);
   const marks = sheet.marks;
-  if (bleed <= 0 && !marks) return null;
+  const folds = sheet.folds ?? [];
+  if (bleed <= 0 && !marks && folds.length === 0) return null;
   return (
     <svg
       className="pointer-events-none absolute inset-0"
@@ -45,6 +47,20 @@ export function SheetOverlay({ sheet, k }: { sheet: OutputSheet; k: number }) {
           y2={y2 * k}
           stroke={`rgb(${marks.color.join(",")})`}
           strokeWidth={Math.max(1, marks.width_pt * k)}
+        />
+      ))}
+      {folds.map(([x1, y1, x2, y2], i) => (
+        <line
+          // biome-ignore lint/suspicious/noArrayIndexKey: folds have no id; their position is their identity
+          key={i}
+          data-testid="fold-line"
+          x1={x1 * k}
+          y1={y1 * k}
+          x2={x2 * k}
+          y2={y2 * k}
+          stroke="#999999"
+          strokeWidth={1}
+          strokeDasharray="4 3"
         />
       ))}
     </svg>

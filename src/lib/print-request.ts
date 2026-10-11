@@ -6,7 +6,7 @@ import { cardIdKey, type DocumentId } from "./card";
 import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
 import { orientedToPoints } from "./coordinates";
 import type { FreeformCards, PageGroup } from "./document-layout";
-import { DEFAULT_FINISH, type Finish, finishingPayload } from "./finish";
+import { DEFAULT_FINISH, type Finish, finishingPayload, gutterfoldOn } from "./finish";
 import type {
   Card,
   CardSetting,
@@ -168,7 +168,11 @@ export function buildPrintRequest(
   // order are applied here.
   const ordered = applyEdits(cards, edits);
   const edited = hasCardEdits(cards, edits);
-  const grid = effectiveGrid(plan, plannerRequired(cards, edits, imageDocumentIds(documents)));
+  // Gutterfold slots are planned by the card planner too: "same as source" has no room for the backs.
+  const grid = effectiveGrid(
+    plan,
+    plannerRequired(cards, edits, imageDocumentIds(documents)) || gutterfoldOn(plan.finish),
+  );
   const layout: PrintLayoutPayload =
     grid === "same"
       ? { kind: "same_as_source" }
@@ -198,7 +202,7 @@ export function buildPrintRequest(
     settings: planSettings(plan, ordered, edited),
     layout,
     options,
-    finishing: finishingPayload(plan.finish, edits.backs, new Set(cards.map((c) => cardIdKey(c.id)))),
+    finishing: finishingPayload(plan.finish, edits.backs, new Set(cards.map((c) => cardIdKey(c.id))), edits.turns),
   };
 }
 

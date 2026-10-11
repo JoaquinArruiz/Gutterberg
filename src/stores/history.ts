@@ -17,11 +17,14 @@ type Timeline = {
 
 const timelines: Record<Source, Timeline> = { layout: useLayoutStore.temporal, print: usePrintStore.temporal };
 
-/** Which store made each step, oldest first; `future` holds the undone ones, the next to redo last. */
-let past: Source[] = [];
-let future: Source[] = [];
+/** Which stores made each step, oldest first (a `together` change lists every step it made in either store, in
+ * order); `future` holds the undone ones, the next to redo last. */
+let past: Source[][] = [];
+let future: Source[][] = [];
 /** True while this module is undoing or redoing, so the timelines' changes are not read as new steps. */
 let applying = false;
+/** The stores a `together` change has made steps in so far; null outside one. */
+let grouping: Source[] | null = null;
 
 /** Whether there is anything to undo or redo, for the toolbar buttons. */
 export const useHistory = create<{ canUndo: boolean; canRedo: boolean }>(() => ({ canUndo: false, canRedo: false }));
@@ -35,11 +38,16 @@ for (const source of Object.keys(timelines) as Source[]) {
       newest = latest;
     } else if (state.pastStates.length === 0) {
       // Cleared (another document, a project opened): its steps cannot be undone any more.
-      past = past.filter((s) => s !== source);
-      future = future.filter((s) => s !== source);
+      const without = (steps: Source[][]) => steps.map((s) => s.filter((x) => x !== source)).filter((s) => s.length);
+      past = without(past);
+      future = without(future);
     } else if (latest !== newest) {
       // A new step. (A pause or resume, or a change that made no step, leaves the newest one as it was.)
-      past = [...past, source].slice(-HISTORY_LIMIT);
+      if (grouping) {
+        grouping.push(source);
+      } else {
+        past = [...past, [source]].slice(-HISTORY_LIMIT);
+      }
       future = [];
     }
     newest = latest;
@@ -57,13 +65,32 @@ function apply(source: Source, action: "undo" | "redo") {
   }
 }
 
+/** Runs `change`, which may edit both stores, as a single undo step. */
+export function together(change: () => void) {
+  endEdit();
+  grouping = [];
+  try {
+    change();
+  } finally {
+    const made = grouping;
+    grouping = null;
+    if (made.length > 0) past = [...past, made].slice(-HISTORY_LIMIT);
+    publish();
+  }
+}
+
 /** Takes back the last step made in any store. */
 export function undo() {
   endEdit(); // a drag in progress is the newest step
-  for (let source = past.pop(); source; source = past.pop()) {
-    if (timelines[source].getState().pastStates.length === 0) continue; // nothing left to take back there
-    apply(source, "undo");
-    future = [...future, source];
+  for (let step = past.pop(); step; step = past.pop()) {
+    const done: Source[] = [];
+    for (const source of [...step].reverse()) {
+      if (timelines[source].getState().pastStates.length === 0) continue; // nothing left to take back there
+      apply(source, "undo");
+      done.unshift(source);
+    }
+    if (done.length === 0) continue;
+    future = [...future, done];
     break;
   }
   publish();
@@ -72,10 +99,15 @@ export function undo() {
 /** Puts back the step `undo` took back last. */
 export function redo() {
   endEdit();
-  for (let source = future.pop(); source; source = future.pop()) {
-    if (timelines[source].getState().futureStates.length === 0) continue;
-    apply(source, "redo");
-    past = [...past, source];
+  for (let step = future.pop(); step; step = future.pop()) {
+    const done: Source[] = [];
+    for (const source of step) {
+      if (timelines[source].getState().futureStates.length === 0) continue;
+      apply(source, "redo");
+      done.push(source);
+    }
+    if (done.length === 0) continue;
+    past = [...past, done];
     break;
   }
   publish();

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { formatError } from "../../lib/errors";
+import { gutterfoldOn } from "../../lib/finish";
 import { formatMeasurement } from "../../lib/measurement";
 import {
   type CardOrder,
@@ -66,7 +67,7 @@ export function PrintInspector() {
   );
   // Freeform, turned, resized or reordered cards, and pieces of images, need the card planner, which "same as
   // source" is not.
-  const planner = plannerRequired(rawCards, edits, imageDocs);
+  const planner = plannerRequired(rawCards, edits, imageDocs) || gutterfoldOn(P.finish);
   const grid = effectiveGrid(P, planner);
   // "Same as source" is the default plan only: one sheet per source page with its own grid.
   const sameAvailable = P.mode === "all" && !P.autoFill && !planner;

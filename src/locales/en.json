@@ -380,8 +380,13 @@
       "note": "Pieces keep their size: the bleed is extra art around each one. Leave room for it in the output gap and the margins."
     },
     "duplex": {
-      "on": "Print backs (duplex)",
-      "onHint": "A back sheet after every front sheet, mirrored so the backs line up when the paper is turned over.",
+      "on": "Print backs",
+      "onHint": "Prints each piece's back: on a back sheet after every front sheet (duplex), or beside the front to fold (gutterfold).",
+      "layout": "Backs",
+      "layouts": {
+        "duplex": "On the other side",
+        "gutterfold": "Beside the front"
+      },
       "flip": "Flip on",
       "flips": {
         "long": "Long edge",
@@ -390,11 +395,56 @@
       "offsetX": "Back offset X",
       "offsetY": "Back offset Y",
       "offsetNote": "Moves everything on the back sheets, to correct the printer's drift between sides. Right and down are positive.",
+      "fold": "Fold",
+      "folds": {
+        "vertical": "Back to the right",
+        "horizontal": "Back below"
+      },
+      "foldNote": "Where the back goes next to its front. The dashed line between them is where to fold; cut around the pair.",
+      "backTurn": "Back turn",
+      "backTurns": {
+        "fold": "Follow the fold",
+        "upright": "As printed",
+        "upsideDown": "Upside down"
+      },
+      "backTurnNote": "Following the fold, a back to the right stays as printed and a back below is turned upside down, so it reads the right way once folded.",
+      "foldGap": "Gap at the fold",
+      "foldGapNote": "Space between a front and its back. 0 puts the fold on the edge of both; a little helps with thick paper.",
       "commonBack": "Common back",
       "none": "None",
       "useSelected": "Use the selected piece as common back",
       "remove": "Remove",
-      "backNote": "A piece with no back of its own gets the common back; with neither, its place stays empty on the back sheet."
+      "backNote": "A piece with no back of its own gets the common back; with neither, its back stays empty."
+    },
+    "pairing": {
+      "open": "Pair backs automatically…",
+      "openHint": "Finds the back of every piece from where it is in the file, instead of picking each one.",
+      "title": "Pair backs automatically",
+      "text": "Where are the backs in the file?",
+      "rule": "Where the backs are",
+      "rules": {
+        "alternating": "Alternating pages",
+        "alternatingHint": "Fronts on one page, their backs on the next: page 1 with 2, 3 with 4…",
+        "afterFronts": "Backs after fronts",
+        "afterFrontsHint": "All the front pages first, then all the back pages in the same order.",
+        "beside": "Beside each other on the page",
+        "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold)."
+      },
+      "split": "Backs in the",
+      "splits": {
+        "columns": "Right half",
+        "rows": "Bottom half"
+      },
+      "mirrored": "Backs are mirrored left to right",
+      "mirroredHint": "Usual in double-sided files: the back of the first column is in the last, so it lands behind its front when the paper is turned over.",
+      "upsideDown": "Backs are upside down",
+      "upsideDownHint": "Turns every back a half turn so it faces like its front. Usual when the backs are below the fronts.",
+      "pairs_one": "{{count}} front paired with its back.",
+      "pairs_other": "{{count}} fronts paired with their backs.",
+      "left_one": "{{count}} piece left without a pair.",
+      "left_other": "{{count}} pieces left without a pair.",
+      "none": "No pairs found with this rule.",
+      "note": "Only the fronts are printed; each brings its back. Pieces left without a pair keep what they had."
     },
     "warnings": {
       "marks_off_page": "Some cut marks fall outside the page: leave larger margins.",

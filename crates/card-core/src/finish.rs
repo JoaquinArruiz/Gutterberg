@@ -16,7 +16,8 @@ use crate::error::{Error, Result};
 use crate::export::PageIssue;
 use crate::geometry::{PageSize, Point, Rect};
 use crate::sheet::{
-    extract_all_cards, Affine, Card, DocumentSource, OutputSheet, SheetPlacement, Turn,
+    extract_all_cards, plan_print_in, Affine, Card, CardSetting, DocumentSource, Fold, FoldAxis,
+    OutputSheet, PaginateOptions, PrintLayout, SheetPlacement, Turn,
 };
 use crate::units::{mm_to_pt, pt_to_mm};
 use serde::{Deserialize, Serialize};
@@ -24,6 +25,7 @@ use std::collections::HashMap;
 
 pub const MAX_BLEED_MM: f64 = 5.0;
 pub const MAX_DUPLEX_OFFSET_MM: f64 = 10.0;
+pub const MAX_FOLD_GAP_MM: f64 = 5.0;
 
 /// Positions closer than this (points) are the same position.
 const EPS: f64 = 0.01;
@@ -102,10 +104,28 @@ pub enum Flip {
     Short,
 }
 
+/// Where the backs go: on a sheet of their own, printed on the other side of the paper
+/// (`Duplex`), or beside each front on the same side, to fold (`Gutterfold`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BackLayout {
+    #[default]
+    Duplex,
+    Gutterfold,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct DuplexOptions {
     pub on: bool,
+    pub layout: BackLayout,
+    /// Gutterfold: the back beside the front (vertical fold) or below it (horizontal).
+    pub fold: FoldAxis,
+    /// Gutterfold: space between a front and its back, with the fold line in the middle.
+    pub fold_gap_mm: f64,
+    /// Gutterfold: turn every back a half turn. `None` follows the fold: a back below its front
+    /// is printed upside down so it reads right way up once folded; a back beside it is not.
+    pub back_upside_down: Option<bool>,
     pub flip: Flip,
     /// Moves everything on every back sheet, in the printed sheet (right is positive).
     pub offset_x_mm: f64,
@@ -113,6 +133,8 @@ pub struct DuplexOptions {
     pub offset_y_mm: f64,
     /// The back of every piece that has no back of its own.
     pub common_back: Option<CardId>,
+    /// The common back's own turn, as for `BackPair::turn`.
+    pub common_back_turn: Turn,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -128,6 +150,10 @@ pub struct FinishOptions {
 pub struct BackPair {
     pub card: CardId,
     pub back: CardId,
+    /// The back's own turn (the user's, in the library): how it is turned to face the same way as
+    /// its front, on top of the turn the flip or the fold needs.
+    #[serde(default)]
+    pub turn: Turn,
 }
 
 /// What the finishing needs from the user: the options and the backs chosen per piece.
@@ -221,7 +247,50 @@ fn validate(options: &FinishOptions) -> Result<()> {
         -MAX_DUPLEX_OFFSET_MM,
         MAX_DUPLEX_OFFSET_MM,
     )?;
+    check_range("the gap at the fold", d.fold_gap_mm, 0.0, MAX_FOLD_GAP_MM)?;
     Ok(())
+}
+
+/// Whether the backs go beside the fronts, to fold.
+fn gutterfold(options: &FinishOptions) -> bool {
+    options.duplex.on && options.duplex.layout == BackLayout::Gutterfold
+}
+
+/// The pagination options the finishing needs: with gutterfold, every slot keeps room for the
+/// piece's back.
+pub fn paginate_options(options: &PaginateOptions, finishing: &Finishing) -> PaginateOptions {
+    let d = &finishing.options.duplex;
+    PaginateOptions {
+        fold: gutterfold(&finishing.options).then_some(Fold {
+            axis: d.fold,
+            gap_mm: d.fold_gap_mm,
+        }),
+        ..*options
+    }
+}
+
+/// Plans the sheets and finishes them, as the preview and the export both do: the one place
+/// where the finishing can shape the plan (gutterfold slots). Gutterfold needs a sheet grid, so
+/// "same as source" is refused with it.
+pub fn plan_and_finish(
+    documents: &[DocumentSource],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+    finishing: &Finishing,
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
+    if gutterfold(&finishing.options) && matches!(layout, PrintLayout::SameAsSource) {
+        return Err(invalid(
+            "gutterfold needs a sheet grid (Auto or Rows x columns), not \"same as source\"",
+        ));
+    }
+    let planned = plan_print_in(
+        documents,
+        settings,
+        layout,
+        &paginate_options(options, finishing),
+    )?;
+    finish_sheets(planned, documents, finishing)
 }
 
 fn push_unique(warnings: &mut Vec<SheetWarning>, w: SheetWarning) {
@@ -275,18 +344,18 @@ fn gaps_along(spans: &mut [(f64, f64)]) -> (Vec<(f64, f64)>, usize) {
     (gaps, touching)
 }
 
+/// Cut marks around `rects`: the pieces, or with gutterfold each folded pair as one.
 fn marks_for(
-    placements: &[SheetPlacement],
+    rects: &[Rect],
     page: PageSize,
     options: &MarkOptions,
     bleed_pt: f64,
     warnings: &mut Vec<SheetWarning>,
 ) -> Result<Option<SheetMarks>> {
-    if options.style == MarkStyle::Off || placements.is_empty() {
+    if options.style == MarkStyle::Off || rects.is_empty() {
         return Ok(None);
     }
-    let rects: Vec<Rect> = placements.iter().map(|p| p.destination).collect();
-    let block = bounds(&rects).expect("there is at least one placement");
+    let block = bounds(rects).expect("there is at least one placement");
     let (left, top) = (block.x, block.y);
     let (right, bottom) = (block.x + block.width, block.y + block.height);
     let length = mm_to_pt(options.length_mm);
@@ -460,17 +529,15 @@ fn overlaps(a: &Rect, b: &Rect) -> bool {
         && b.y < a.y + a.height - EPS
 }
 
-fn bleed_warnings(sheet: &OutputSheet, warnings: &mut Vec<SheetWarning>) {
+/// Warnings about the bleed around `rects` (the pieces, or with gutterfold each pair, whose two
+/// halves share the fold edge and cover each other's bleed there).
+fn bleed_warnings(sheet: &OutputSheet, rects: &[Rect], warnings: &mut Vec<SheetWarning>) {
     let b = mm_to_pt(sheet.bleed.mm);
     if b <= 0.0 {
         return;
     }
     let page = Rect::new(0.0, 0.0, sheet.page.width_pt, sheet.page.height_pt);
-    let grown: Vec<Rect> = sheet
-        .placements
-        .iter()
-        .map(|p| grow(&p.destination, b))
-        .collect();
+    let grown: Vec<Rect> = rects.iter().map(|r| grow(r, b)).collect();
     if grown.iter().any(|r| {
         r.x < page.x - EPS
             || r.y < page.y - EPS
@@ -552,10 +619,26 @@ fn back_turn(front: Turn, mirror_x: bool) -> Turn {
     Turn::try_from(degrees.rem_euclid(360.0) as u16).expect("a multiple of 90")
 }
 
+/// The back printed for `card` and its own turn: its pair's, or the common back.
+fn back_of(
+    card: CardId,
+    duplex: &DuplexOptions,
+    pairs: &HashMap<CardId, (CardId, Turn)>,
+) -> Option<(CardId, Turn)> {
+    pairs
+        .get(&card)
+        .copied()
+        .or(duplex.common_back.map(|b| (b, duplex.common_back_turn)))
+}
+
+fn add_turns(a: Turn, b: Turn) -> Turn {
+    Turn::try_from(((a.degrees() + b.degrees()) as u16) % 360).expect("a multiple of 90")
+}
+
 fn back_sheet(
     front: &OutputSheet,
     duplex: &DuplexOptions,
-    pairs: &HashMap<CardId, CardId>,
+    pairs: &HashMap<CardId, (CardId, Turn)>,
     cards: &HashMap<CardId, Card>,
 ) -> Result<Option<OutputSheet>> {
     let page = front.page;
@@ -565,13 +648,13 @@ fn back_sheet(
     let mut placements = Vec::new();
     let mut warnings = Vec::new();
     for p in &front.placements {
-        let Some(back_id) = pairs.get(&p.card_id).copied().or(duplex.common_back) else {
+        let Some((back_id, own)) = back_of(p.card_id, duplex, pairs) else {
             continue;
         };
         let back = cards
             .get(&back_id)
             .ok_or_else(|| invalid("a back refers to a piece that does not exist"))?;
-        let turn = back_turn(p.turn, mirror_x);
+        let turn = add_turns(back_turn(p.turn, mirror_x), own);
         let sized = Card {
             scale: p.scale,
             scale_y: p.scale_y,
@@ -611,9 +694,81 @@ fn back_sheet(
     let mut sheet = OutputSheet::new(page, placements);
     sheet.side = Side::Back;
     sheet.bleed = front.bleed;
-    bleed_warnings(&sheet, &mut warnings);
+    let rects: Vec<Rect> = sheet.placements.iter().map(|p| p.destination).collect();
+    bleed_warnings(&sheet, &rects, &mut warnings);
     sheet.warnings = warnings;
     Ok(Some(sheet))
+}
+
+/// Gutterfold: puts each front's back in the room the plan left beside it (or below it), turned
+/// so it reads right way up once folded, and returns the pairs' outlines (for the cut marks and
+/// the bleed) and the fold lines.
+fn fold_backs(
+    sheet: &mut OutputSheet,
+    duplex: &DuplexOptions,
+    pairs: &HashMap<CardId, (CardId, Turn)>,
+    cards: &HashMap<CardId, Card>,
+    warnings: &mut Vec<SheetWarning>,
+) -> Result<(Vec<Rect>, Vec<[f64; 4]>)> {
+    let gap = mm_to_pt(duplex.fold_gap_mm);
+    let vertical = duplex.fold == FoldAxis::Vertical;
+    let upside_down = duplex.back_upside_down.unwrap_or(!vertical);
+    let mut outlines = Vec::new();
+    let mut folds = Vec::new();
+    let mut backs = Vec::new();
+    for p in &sheet.placements {
+        let f = p.destination;
+        // The room for the back: the same size as the front, past the fold.
+        let room = if vertical {
+            Rect::new(f.x + f.width + gap, f.y, f.width, f.height)
+        } else {
+            Rect::new(f.x, f.y + f.height + gap, f.width, f.height)
+        };
+        outlines.push(bounds(&[f, room]).expect("two rects"));
+        folds.push(if vertical {
+            let x = f.x + f.width + gap / 2.0;
+            [x, f.y, x, f.y + f.height]
+        } else {
+            let y = f.y + f.height + gap / 2.0;
+            [f.x, y, f.x + f.width, y]
+        });
+        let Some((back_id, own)) = back_of(p.card_id, duplex, pairs) else {
+            continue;
+        };
+        let back = cards
+            .get(&back_id)
+            .ok_or_else(|| invalid("a back refers to a piece that does not exist"))?;
+        let fold_turn = if upside_down { Turn::R180 } else { Turn::R0 };
+        let turn = add_turns(add_turns(p.turn, fold_turn), own);
+        let sized = Card {
+            scale: p.scale,
+            scale_y: p.scale_y,
+            turn,
+            ..*back
+        };
+        let (w, h) = sized.final_size();
+        if (w - f.width).abs() > mm_to_pt(BACK_SIZE_TOLERANCE_MM)
+            || (h - f.height).abs() > mm_to_pt(BACK_SIZE_TOLERANCE_MM)
+        {
+            push_unique(warnings, SheetWarning::BackSizeDiffers);
+        }
+        backs.push(SheetPlacement {
+            card_id: back_id,
+            source: back.source,
+            // Centred in its room, like a smaller piece in its slot.
+            destination: Rect::new(
+                room.x + (room.width - w) / 2.0,
+                room.y + (room.height - h) / 2.0,
+                w,
+                h,
+            ),
+            turn,
+            scale: p.scale,
+            scale_y: p.scale_y,
+        });
+    }
+    sheet.placements.extend(backs);
+    Ok((outlines, folds))
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -636,7 +791,11 @@ pub fn finish_sheets(
     }
     let cards = extract_all_cards(documents)?;
     let by_id: HashMap<CardId, Card> = cards.iter().map(|c| (c.id, *c)).collect();
-    let pairs: HashMap<CardId, CardId> = finishing.backs.iter().map(|p| (p.card, p.back)).collect();
+    let pairs: HashMap<CardId, (CardId, Turn)> = finishing
+        .backs
+        .iter()
+        .map(|p| (p.card, (p.back, p.turn)))
+        .collect();
     let bleed = SheetBleed {
         mm: options.bleed.mm,
         source: options.bleed.source,
@@ -655,20 +814,31 @@ pub fn finish_sheets(
         HashMap::new()
     };
 
+    let folding = gutterfold(options);
     let mut out = Vec::with_capacity(sheets.len() * if options.duplex.on { 2 } else { 1 });
     let mut issues: Vec<PageIssue> = Vec::new();
     for mut sheet in sheets {
         sheet.bleed = bleed;
         let mut warnings = Vec::new();
-        bleed_warnings(&sheet, &mut warnings);
+        // With gutterfold a front and its back are one piece of paper: marks and bleed go round
+        // the pair.
+        let outlines = if folding {
+            let (outlines, folds) =
+                fold_backs(&mut sheet, &options.duplex, &pairs, &by_id, &mut warnings)?;
+            sheet.folds = folds;
+            outlines
+        } else {
+            sheet.placements.iter().map(|p| p.destination).collect()
+        };
+        bleed_warnings(&sheet, &outlines, &mut warnings);
         sheet.marks = marks_for(
-            &sheet.placements,
+            &outlines,
             sheet.page,
             &options.marks,
             bleed_pt,
             &mut warnings,
         )?;
-        let back = if options.duplex.on {
+        let back = if options.duplex.on && !folding {
             back_sheet(&sheet, &options.duplex, &pairs, &by_id)?
         } else {
             None

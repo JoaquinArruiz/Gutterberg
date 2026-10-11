@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 4;
+pub const VERSION: u32 = 5;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -32,7 +32,7 @@ pub type Body = Map<String, Value>;
 /// `i + 1` to `i + 2`.
 pub type Migration = fn(&mut Body);
 
-const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3, v3_to_v4];
+const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5];
 
 /// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
 /// pieces to the edits. A version 1 project opens with every feature off.
@@ -72,6 +72,26 @@ fn v2_to_v3(body: &mut Body) {
 /// number is what makes an older Gutterberg say "made with a newer version" instead of failing on a value it does
 /// not know.
 fn v3_to_v4(_body: &mut Body) {}
+
+/// Version 5 adds gutterfold: the duplex settings say where the backs go (`layout`), and how a
+/// gutterfold pair folds. An older project prints its backs on the other side, as before.
+fn v4_to_v5(body: &mut Body) {
+    let duplex = body
+        .get_mut("plan")
+        .and_then(|p| p.get_mut("finish"))
+        .and_then(|f| f.get_mut("duplex"))
+        .and_then(Value::as_object_mut);
+    if let Some(duplex) = duplex {
+        duplex
+            .entry("layout")
+            .or_insert_with(|| Value::String("duplex".into()));
+        duplex
+            .entry("fold")
+            .or_insert_with(|| Value::String("vertical".into()));
+        duplex.entry("foldGapMm").or_insert_with(|| 0.into());
+        duplex.entry("backUpsideDown").or_insert(Value::Null);
+    }
+}
 
 /// A project file is a few hundred kilobytes at most; anything much larger is some other file.
 const MAX_PROJECT_BYTES: u64 = 64 * 1024 * 1024;

@@ -131,6 +131,30 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.getByTestId("common-back-none")).toBeTruthy();
   });
 
+  it("puts the backs beside the fronts to fold, with the fold, the back turn and the gap", () => {
+    render(<PrintInspector />);
+    fireEvent.click(screen.getByRole("button", { name: "Duplex" }));
+    fireEvent.click(screen.getByRole("switch", { name: /Print backs/ }));
+    expect(screen.getByRole("radio", { name: "Short edge" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Beside the front" }));
+    expect(print().finish.duplex.layout).toBe("gutterfold");
+    // The flip and the drift between sides mean nothing on one side of the paper.
+    expect(screen.queryByRole("radio", { name: "Short edge" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Back offset X" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Back below" }));
+    expect(print().finish.duplex.fold).toBe("horizontal");
+    expect(screen.getByRole("radio", { name: "Follow the fold" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: "As printed" }));
+    expect(print().finish.duplex.backUpsideDown).toBe(false);
+    fireEvent.click(screen.getByRole("radio", { name: "Upside down" }));
+    expect(print().finish.duplex.backUpsideDown).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Follow the fold" }));
+    expect(print().finish.duplex.backUpsideDown).toBeNull();
+    typeNumber(screen.getByRole("textbox", { name: "Gap at the fold" }), "9");
+    expect(print().finish.duplex.foldGapMm).toBe(5);
+  });
+
   it("shows the warnings the plan has next to the section they belong to", () => {
     print().setSheets([{ ...sheet(2), warnings: ["bleed_off_page", "marks_off_page"] }], null);
     render(<PrintInspector />);
@@ -229,6 +253,15 @@ describe("Sheet preview with finishing", () => {
     expect(page.getAllByTestId("cut-mark")).toHaveLength(3);
     expect(page.getAllByTestId("bleed-frame")).toHaveLength(2);
     expect(page.getAllByTestId("cut-mark")[0].getAttribute("stroke")).toBe("rgb(255,0,0)");
+  });
+
+  it("draws the fold lines of gutterfold pairs", async () => {
+    print().setSheets([{ ...sheet(2), folds: [[80, 40, 80, 110]] }], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    const page = within(screen.getByTestId("sheet-page"));
+    expect(page.getAllByTestId("fold-line")).toHaveLength(1);
+    expect(page.queryAllByTestId("cut-mark")).toHaveLength(0);
   });
 
   it("draws nothing extra when there are no marks and no bleed", async () => {

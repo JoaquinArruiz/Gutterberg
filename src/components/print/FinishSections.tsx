@@ -1,17 +1,23 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { cardIdKey } from "../../lib/card";
 import {
+  BACK_LAYOUTS,
+  type BackLayout,
   BLEED_SOURCES,
   type BleedSource,
   FLIPS,
   type Flip,
+  FOLDS,
+  type Fold,
   MARK_LENGTH_RANGE,
   MARK_OFFSET_RANGE,
   MARK_STYLES,
   MARK_WIDTH_RANGE,
   MAX_BLEED_MM,
   MAX_DUPLEX_OFFSET_MM,
+  MAX_FOLD_GAP_MM,
   type MarkStyle,
   type SheetWarning,
 } from "../../lib/finish";
@@ -25,6 +31,7 @@ import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { CardThumb } from "./CardThumb";
+import { PairBacksDialog } from "./PairBacksDialog";
 
 /** The warnings of every sheet, once each: what the plan as a whole needs the user to look at. */
 export function useSheetWarnings(): Set<SheetWarning> {
@@ -165,6 +172,7 @@ export function DuplexSection() {
   const selected = usePrintStore(useShallow((s) => s.selection.selected));
   const cards = useLibraryCards();
   const common = duplex.commonBack ? cards.find((c) => cardIdKey(c.id) === duplex.commonBack) : undefined;
+  const [pairing, setPairing] = useState(false);
   return (
     <CollapsibleSection id="print.duplex" title={t("print.sections.duplex")} defaultOpen={false}>
       <Switch
@@ -176,31 +184,20 @@ export function DuplexSection() {
       {duplex.on && (
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <span className="text-[var(--muted)]">{t("print.duplex.flip")}</span>
-            <Segmented<Flip>
-              label={t("print.duplex.flip")}
-              value={duplex.flip}
-              onChange={(flip) => setDuplex({ flip })}
-              options={FLIPS.map((value) => ({ value, label: t(`print.duplex.flips.${value}`) }))}
+            <span className="text-[var(--muted)]">{t("print.duplex.layout")}</span>
+            <Segmented<BackLayout>
+              label={t("print.duplex.layout")}
+              value={duplex.layout}
+              onChange={(layout) => setDuplex({ layout })}
+              options={BACK_LAYOUTS.map((value) => ({ value, label: t(`print.duplex.layouts.${value}`) }))}
             />
           </div>
-          <MeasurementInput
-            label={t("print.duplex.offsetX")}
-            info={t("print.duplex.offsetNote")}
-            precise
-            min={-MAX_DUPLEX_OFFSET_MM}
-            max={MAX_DUPLEX_OFFSET_MM}
-            value={duplex.offsetXMm}
-            onChange={(offsetXMm) => setDuplex({ offsetXMm })}
-          />
-          <MeasurementInput
-            label={t("print.duplex.offsetY")}
-            precise
-            min={-MAX_DUPLEX_OFFSET_MM}
-            max={MAX_DUPLEX_OFFSET_MM}
-            value={duplex.offsetYMm}
-            onChange={(offsetYMm) => setDuplex({ offsetYMm })}
-          />
+          {duplex.layout === "gutterfold" ? <GutterfoldFields /> : <DuplexFields />}
+          <div className="mt-1 flex items-center gap-1">
+            <Button onClick={() => setPairing(true)}>{t("print.pairing.open")}</Button>
+            <InfoTip text={t("print.pairing.openHint")} />
+          </div>
+          <PairBacksDialog open={pairing} onClose={() => setPairing(false)} />
           <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
             {t("print.duplex.commonBack")}
             <InfoTip text={t("print.duplex.backNote")} />
@@ -228,5 +225,92 @@ export function DuplexSection() {
         </>
       )}
     </CollapsibleSection>
+  );
+}
+
+/** Duplex backs on their own sheets: how the paper is turned over, and the printer's drift between sides. */
+function DuplexFields() {
+  const { t } = useTranslation();
+  const duplex = usePrintStore((s) => s.finish.duplex);
+  const setDuplex = usePrintStore((s) => s.setDuplex);
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <span className="text-[var(--muted)]">{t("print.duplex.flip")}</span>
+        <Segmented<Flip>
+          label={t("print.duplex.flip")}
+          value={duplex.flip}
+          onChange={(flip) => setDuplex({ flip })}
+          options={FLIPS.map((value) => ({ value, label: t(`print.duplex.flips.${value}`) }))}
+        />
+      </div>
+      <MeasurementInput
+        label={t("print.duplex.offsetX")}
+        info={t("print.duplex.offsetNote")}
+        precise
+        min={-MAX_DUPLEX_OFFSET_MM}
+        max={MAX_DUPLEX_OFFSET_MM}
+        value={duplex.offsetXMm}
+        onChange={(offsetXMm) => setDuplex({ offsetXMm })}
+      />
+      <MeasurementInput
+        label={t("print.duplex.offsetY")}
+        precise
+        min={-MAX_DUPLEX_OFFSET_MM}
+        max={MAX_DUPLEX_OFFSET_MM}
+        value={duplex.offsetYMm}
+        onChange={(offsetYMm) => setDuplex({ offsetYMm })}
+      />
+    </>
+  );
+}
+
+const BACK_TURNS = ["fold", "upright", "upsideDown"] as const;
+type BackTurn = (typeof BACK_TURNS)[number];
+const backTurnOf = (upsideDown: boolean | null): BackTurn =>
+  upsideDown === null ? "fold" : upsideDown ? "upsideDown" : "upright";
+const upsideDownOf = (turn: BackTurn): boolean | null => (turn === "fold" ? null : turn === "upsideDown");
+
+/** Gutterfold backs beside their fronts: which way the pair folds, how the back is turned, the gap at the fold. */
+function GutterfoldFields() {
+  const { t } = useTranslation();
+  const duplex = usePrintStore((s) => s.finish.duplex);
+  const setDuplex = usePrintStore((s) => s.setDuplex);
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <span className="flex items-center gap-1 text-[var(--muted)]">
+          {t("print.duplex.fold")}
+          <InfoTip text={t("print.duplex.foldNote")} />
+        </span>
+        <Segmented<Fold>
+          label={t("print.duplex.fold")}
+          value={duplex.fold}
+          onChange={(fold) => setDuplex({ fold })}
+          options={FOLDS.map((value) => ({ value, label: t(`print.duplex.folds.${value}`) }))}
+        />
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+        <span className="flex items-center gap-1 text-[var(--muted)]">
+          {t("print.duplex.backTurn")}
+          <InfoTip text={t("print.duplex.backTurnNote")} />
+        </span>
+        <Segmented<BackTurn>
+          label={t("print.duplex.backTurn")}
+          value={backTurnOf(duplex.backUpsideDown)}
+          onChange={(turn) => setDuplex({ backUpsideDown: upsideDownOf(turn) })}
+          options={BACK_TURNS.map((value) => ({ value, label: t(`print.duplex.backTurns.${value}`) }))}
+        />
+      </div>
+      <MeasurementInput
+        label={t("print.duplex.foldGap")}
+        info={t("print.duplex.foldGapNote")}
+        precise
+        min={0}
+        max={MAX_FOLD_GAP_MM}
+        value={duplex.foldGapMm}
+        onChange={(foldGapMm) => setDuplex({ foldGapMm })}
+      />
+    </>
   );
 }
