@@ -7,6 +7,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## 0.9.3 (2026-10-10)
 
+Version 0.9.2 was skipped: it was never published, and everything planned for it is in this release.
+
 ### Added
 
 - A chain icon next to a piece's width and height in Print › Selected pieces. Unlinked, the width and height are set separately (for example 63 × 90 mm), and the library, the sheets and the export show the piece at that size.
