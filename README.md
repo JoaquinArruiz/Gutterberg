@@ -120,9 +120,6 @@ sed -i 's|^Exec=|Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 |' ~/.local/share/app
 
 ### Why not just use…
 
-> **Draft: owner to review.** Written by the assistant from the kinds of tools there are, without naming or
-> judging any product. Edit it, cut it or replace it.
-
 - **A general PDF editor?** It can crop and arrange pages, but re-spacing pieces that are packed edge to edge is
   slow work by hand, piece by piece.
 - **Print-shop imposition software?** It is made for arranging whole pages on press sheets, not for cutting
@@ -164,6 +161,8 @@ cargo test --workspace         # the render tests need pdfium: PDFIUM_LIB_PATH=<
 How a release is made is in [docs/releasing.md](docs/releasing.md).
 
 ## Roadmap
+
+Nothing in mind currently, just bug fixes / small features
 
 ## Contributing
 
