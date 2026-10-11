@@ -6,6 +6,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
+import { usualUnit, WelcomeSetup } from "./WelcomeSetup";
 
 /**
  * Opens the welcome tour by itself, once: over the start screen, with nothing open, until the user has closed it
@@ -31,6 +32,7 @@ export function useWelcomeAutoOpen() {
  * Skip. A clip plays once when its step opens and stops on its last frame; Play again replays it. With reduced
  * motion the poster stays and a Play button starts it. Closing in any way (Skip, Esc, Get started) marks the tour
  * as seen. Clips play from memory (`loadClip`); one that cannot play at all shows its poster instead of a black box.
+ * On the first start it begins with `WelcomeSetup` (language, theme, units); a replay goes straight to the clips.
  */
 export function WelcomeDialog() {
   const { t } = useTranslation();
@@ -46,6 +48,8 @@ export function WelcomeDialog() {
   // The loaded clip, with the clip it belongs to, so a step never shows the previous step's file.
   const [loadedClip, setLoadedClip] = useState<{ clip: string; url: string } | null>(null);
   const [failed, setFailed] = useState(false);
+  // The setup step comes first while the tour has never been finished.
+  const [setup, setSetup] = useState(false);
   const step = WELCOME_STEPS[index];
   const last = index === WELCOME_STEPS.length - 1;
   const src = loadedClip?.clip === step.clip ? loadedClip.url : null;
@@ -56,6 +60,12 @@ export function WelcomeDialog() {
     if (open && !d.open) {
       setIndex(0);
       setPlayed(false);
+      const prefs = usePreferencesStore.getState();
+      const firstTime = prefs.prefs.help.welcomeSeen < WELCOME_VERSION;
+      setSetup(firstTime);
+      // Units start from the user's region when nothing was chosen yet (the default is millimetres).
+      if (firstTime && prefs.prefs.measurement.unit === "mm" && typeof navigator !== "undefined")
+        prefs.setUnit(usualUnit(navigator.language));
       d.showModal();
       next.current?.focus();
     }
@@ -81,13 +91,14 @@ export function WelcomeDialog() {
     };
   }, [step.clip, open]);
 
-  // Once the clip is there it plays from its first frame, by itself, unless the user wants less motion.
+  // Once the clip is there it plays from its first frame, by itself, unless the user wants less motion. During the
+  // setup step the first clip only loads; it plays when the setup is left.
   useEffect(() => {
     const v = video.current;
-    if (!open || !src || !v || prefersReducedMotion()) return;
+    if (!open || setup || !src || !v || prefersReducedMotion()) return;
     v.currentTime = 0;
     void v.play?.()?.catch(() => {}); // a webview that blocks autoplay leaves the poster, with Play again
-  }, [src, open]);
+  }, [src, open, setup]);
 
   const finish = () => {
     setSeen(WELCOME_VERSION);
@@ -112,57 +123,65 @@ export function WelcomeDialog() {
       }}
       onClose={() => open && finish()}
       className="m-auto rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/60"
-      style={{ width: "min(560px, 92vw, calc((100vh - 230px) * 16 / 9))" }}
+      // As wide as the clips can be shown: up to 800 px, less on a narrow window, and less on a short one so the clip,
+      // its text and the buttons always fit (the 16:9 clip is about 230 px shorter than the window at most).
+      style={{ width: "min(800px, 92vw, calc((100vh - 230px) * 16 / 9))" }}
     >
-      <div className="flex flex-col" data-testid="welcome" data-step={step.id}>
-        <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-black">
-          {failed ? (
-            // The webview could not play the clip: its last frame tells the step without moving.
-            <img
-              src={clipUrl(step.clip, "png")}
-              alt=""
-              data-testid="welcome-poster"
-              className="size-full object-contain"
-            />
-          ) : (
-            // Keyed by the step, so each clip starts fresh.
-            <video
-              key={step.clip}
-              ref={video}
-              src={src ?? undefined}
-              muted
-              playsInline
-              preload="auto"
-              poster={clipUrl(step.clip, "png")}
-              aria-hidden
-              data-testid="welcome-clip"
-              className="size-full object-contain"
-              onPlay={() => setPlayed(true)}
-              onError={() => setFailed(true)}
-            />
-          )}
-          {!failed && (
-            <Button
-              variant="ghost"
-              className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/55 text-white hover:bg-black/75 hover:text-white"
-              onClick={play}
-            >
-              {reduced && !played ? <Play size={12} /> : <RotateCcw size={12} />}
-              {reduced && !played ? t("welcome.play") : t("welcome.playAgain")}
-            </Button>
-          )}
-        </div>
+      <div className="flex flex-col" data-testid="welcome" data-step={setup ? "setup" : step.id}>
+        {setup ? (
+          <WelcomeSetup />
+        ) : (
+          <>
+            <div className="relative aspect-video w-full overflow-hidden rounded-t-lg bg-black">
+              {failed ? (
+                // The webview could not play the clip: its last frame tells the step without moving.
+                <img
+                  src={clipUrl(step.clip, "png")}
+                  alt=""
+                  data-testid="welcome-poster"
+                  className="size-full object-contain"
+                />
+              ) : (
+                // Keyed by the step, so each clip starts fresh.
+                <video
+                  key={step.clip}
+                  ref={video}
+                  src={src ?? undefined}
+                  muted
+                  playsInline
+                  preload="auto"
+                  poster={clipUrl(step.clip, "png")}
+                  aria-hidden
+                  data-testid="welcome-clip"
+                  className="size-full object-contain"
+                  onPlay={() => setPlayed(true)}
+                  onError={() => setFailed(true)}
+                />
+              )}
+              {!failed && (
+                <Button
+                  variant="ghost"
+                  className="absolute bottom-2 right-2 flex items-center gap-1 bg-black/55 text-white hover:bg-black/75 hover:text-white"
+                  onClick={play}
+                >
+                  {reduced && !played ? <Play size={12} /> : <RotateCcw size={12} />}
+                  {reduced && !played ? t("welcome.play") : t("welcome.playAgain")}
+                </Button>
+              )}
+            </div>
 
-        <div className="flex flex-col gap-1 px-4 pt-3" aria-live="polite">
-          <h2 className="text-sm font-semibold">{t(step.title)}</h2>
-          <p className="min-h-10 text-[var(--muted)]">{t(step.text)}</p>
-        </div>
+            <div className="flex flex-col gap-1 px-4 pt-3" aria-live="polite">
+              <h2 className="text-sm font-semibold">{t(step.title)}</h2>
+              <p className="min-h-10 max-w-[65ch] text-[var(--muted)]">{t(step.text)}</p>
+            </div>
+          </>
+        )}
 
         <div className="flex items-center justify-between gap-2 px-4 pb-3 pt-2">
           <Button variant="ghost" className="px-2" onClick={finish}>
             {t("welcome.skip")}
           </Button>
-          <fieldset className="m-0 flex items-center gap-1.5 border-0 p-0">
+          <fieldset className={`m-0 flex items-center gap-1.5 border-0 p-0 ${setup ? "invisible" : ""}`}>
             <legend className="sr-only">{t("welcome.steps.label")}</legend>
             {WELCOME_STEPS.map((s, i) => (
               <button
@@ -177,7 +196,7 @@ export function WelcomeDialog() {
           </fieldset>
           <div className="flex items-center gap-1.5">
             <Button
-              className="flex items-center gap-1"
+              className={`flex items-center gap-1 ${setup ? "hidden" : ""}`}
               disabled={index === 0}
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
             >
@@ -188,10 +207,10 @@ export function WelcomeDialog() {
               ref={next}
               variant="primary"
               className="flex items-center gap-1"
-              onClick={() => (last ? finish() : setIndex((i) => i + 1))}
+              onClick={() => (setup ? setSetup(false) : last ? finish() : setIndex((i) => i + 1))}
             >
-              {last ? t("welcome.getStarted") : t("welcome.next")}
-              {!last && <ChevronRight size={13} />}
+              {setup ? t("welcome.setup.continue") : last ? t("welcome.getStarted") : t("welcome.next")}
+              {(setup || !last) && <ChevronRight size={13} />}
             </Button>
           </div>
         </div>

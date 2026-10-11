@@ -5,6 +5,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- On the first start, the welcome begins with a short setup: language, theme and units (inches in the United States, millimetres elsewhere), applied at once and kept in Preferences.
+
+### Changed
+
+- The welcome tour is larger: its clips show up to 800 px wide, and smaller on a small window so everything still fits.
+
 ### Fixed
 
 - Turning on AI Mode (or closing any other window opened from Preferences) no longer closes Preferences, so you can enter your API key right away.

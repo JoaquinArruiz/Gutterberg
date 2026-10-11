@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { applyLocale } from "../../i18n";
 import { DEFAULT_PREFERENCES } from "../../lib/preferences";
@@ -34,6 +34,13 @@ const ui = () => useUiStore.getState();
 const seen = () => usePreferencesStore.getState().prefs.help.welcomeSeen;
 const step = () => screen.getByTestId("welcome").dataset.step;
 const next = () => screen.getByRole("button", { name: /^(Next|Get started)/ });
+/** Renders the app's welcome and, on a first start, goes past the setup step to the clips. */
+function start() {
+  const r = render(<Host />);
+  const go = screen.queryByRole("button", { name: /^(Continue|Continuar)/ });
+  if (go) fireEvent.click(go);
+  return r;
+}
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -71,7 +78,7 @@ afterEach(() => {
 
 describe("opening", () => {
   it("opens by itself on a first start, over the start screen", () => {
-    render(<Host />);
+    start();
     expect(dialog().open).toBe(true);
     expect(screen.getByRole("heading", { name: "Your PDF, cut into pieces" })).toBeTruthy();
     expect(ui().welcomeOpen).toBe(true);
@@ -79,20 +86,20 @@ describe("opening", () => {
 
   it("does not open again once it was closed", () => {
     usePreferencesStore.getState().setWelcomeSeen(WELCOME_VERSION);
-    render(<Host />);
+    start();
     expect(dialog().open).toBe(false);
     expect(ui().welcomeOpen).toBe(false);
   });
 
   it("only opens over the start screen, not over an open project", () => {
     useDocumentStore.getState().setDocuments([{ id: 0, path: "/a.pdf", pages: [A4], hash: "" }], 0);
-    render(<Host />);
+    start();
     expect(dialog().open).toBe(false);
   });
 
   it("waits for the next start screen when the app started with a file", () => {
     ui().deferWelcome();
-    render(<Host />);
+    start();
     expect(dialog().open).toBe(false);
     // The file opens: nothing to show, and the deferral is spent.
     act(() => useDocumentStore.getState().setDocuments([{ id: 0, path: "/a.gtr", pages: [A4], hash: "" }], 0));
@@ -105,7 +112,7 @@ describe("opening", () => {
 
   it("can be opened again whenever the user asks", () => {
     usePreferencesStore.getState().setWelcomeSeen(WELCOME_VERSION);
-    render(<Host />);
+    start();
     act(() => ui().setWelcomeOpen(true));
     expect(dialog().open).toBe(true);
     expect(step()).toBe("cut");
@@ -114,7 +121,7 @@ describe("opening", () => {
 
 describe("the steps", () => {
   it("go forward and back, with Get started on the last one", () => {
-    render(<Host />);
+    start();
     expect(screen.getByRole("button", { name: /Back/ }).hasAttribute("disabled")).toBe(true);
     const seenSteps = [step()];
     for (let i = 1; i < WELCOME_STEPS.length; i++) {
@@ -129,7 +136,7 @@ describe("the steps", () => {
   });
 
   it("have a dot for each, labelled for a screen reader, and the dots go to their step", () => {
-    render(<Host />);
+    start();
     const dots = screen.getAllByRole("button", { name: /^Step \d of 4: / });
     expect(dots).toHaveLength(4);
     expect(dots[0].getAttribute("aria-label")).toBe("Step 1 of 4: Your PDF, cut into pieces");
@@ -141,12 +148,12 @@ describe("the steps", () => {
   });
 
   it("start on Next, so Enter goes on", () => {
-    render(<Host />);
+    start();
     expect(document.activeElement).toBe(next());
   });
 
   it("show the clip from memory, with its last frame as the poster", async () => {
-    render(<Host />);
+    start();
     const video = screen.getByTestId("welcome-clip") as HTMLVideoElement;
     expect(video.getAttribute("poster")).toBe("/welcome/01-cut.png");
     expect(video.muted).toBe(true);
@@ -164,7 +171,7 @@ describe("the steps", () => {
   });
 
   it("load each clip once, so going back is instant", async () => {
-    render(<Host />);
+    start();
     await loads();
     fireEvent.click(next());
     await loads();
@@ -176,13 +183,13 @@ describe("the steps", () => {
 
   it("fall back to the file's own address when a clip cannot be loaded", async () => {
     served.delete("/welcome/01-cut.mp4");
-    render(<Host />);
+    start();
     await loads();
     expect(screen.getByTestId("welcome-clip").getAttribute("src")).toBe("/welcome/01-cut.mp4");
   });
 
   it("show the poster, not a black box, when the webview cannot play a clip", async () => {
-    render(<Host />);
+    start();
     await loads();
     fireEvent.error(screen.getByTestId("welcome-clip"));
     expect(screen.queryByTestId("welcome-clip")).toBeNull();
@@ -195,8 +202,9 @@ describe("the steps", () => {
   });
 
   it("is in Spanish when the language is", () => {
+    usePreferencesStore.getState().setLanguage("es");
     applyLocale({ language: "es", decimal: "auto" });
-    render(<Host />);
+    start();
     expect(screen.getByRole("heading", { name: "Tu PDF, cortado en piezas" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Omitir/ })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Siguiente/ }));
@@ -206,7 +214,7 @@ describe("the steps", () => {
 
 describe("the clips", () => {
   it("play once when their step opens, and again on request", async () => {
-    render(<Host />);
+    start();
     await loads();
     expect(play).toHaveBeenCalledTimes(1);
     fireEvent.click(next());
@@ -217,7 +225,7 @@ describe("the clips", () => {
   });
 
   it("do not move on by themselves", () => {
-    render(<Host />);
+    start();
     const video = screen.getByTestId("welcome-clip");
     fireEvent.ended(video);
     act(() => vi.advanceTimersByTime(10_000));
@@ -226,7 +234,7 @@ describe("the clips", () => {
 
   it("wait for a Play button with reduced motion, showing the poster", async () => {
     reducedMotion = true;
-    render(<Host />);
+    start();
     await loads();
     expect(play).not.toHaveBeenCalled();
     expect(screen.getByTestId("welcome-clip").getAttribute("poster")).toBe("/welcome/01-cut.png");
@@ -241,7 +249,7 @@ describe("the clips", () => {
 
 describe("closing", () => {
   it("is marked as seen by Skip", () => {
-    render(<Host />);
+    start();
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     expect(seen()).toBe(WELCOME_VERSION);
     expect(dialog().open).toBe(false);
@@ -249,7 +257,7 @@ describe("closing", () => {
   });
 
   it("is marked as seen by Esc", () => {
-    render(<Host />);
+    start();
     const cancel = new Event("cancel", { cancelable: true });
     act(() => {
       dialog().dispatchEvent(cancel);
@@ -260,7 +268,7 @@ describe("closing", () => {
   });
 
   it("is marked as seen by Get started, from any step", () => {
-    render(<Host />);
+    start();
     for (let i = 1; i < WELCOME_STEPS.length; i++) fireEvent.click(next());
     fireEvent.click(next());
     expect(seen()).toBe(WELCOME_VERSION);
@@ -268,14 +276,14 @@ describe("closing", () => {
   });
 
   it("does not open again after it closed, even with the start screen showing", () => {
-    const { rerender } = render(<Host />);
+    const { rerender } = start();
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     rerender(<Host />);
     expect(dialog().open).toBe(false);
   });
 
   it("starts from the first step when it is replayed", () => {
-    render(<Host />);
+    start();
     fireEvent.click(next());
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
     act(() => ui().setWelcomeOpen(true));
@@ -317,5 +325,65 @@ describe("help tips while it is open", () => {
     render(<Probe />);
     // Not registered by a component here, so nothing is "visible", but the hold is off.
     expect(ui().hintsHeld).toBe(false);
+  });
+});
+
+describe("the setup step", () => {
+  const prefs = () => usePreferencesStore.getState().prefs;
+
+  it("comes first on a first start, with language, theme and units, and Continue goes to the clips", () => {
+    render(<Host />);
+    expect(step()).toBe("setup");
+    expect(screen.getByRole("heading", { name: "Make Gutterberg yours" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Language" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Units" })).toBeTruthy();
+    expect(play).not.toHaveBeenCalled(); // the first clip waits behind the setup
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: /Continue/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue/ }));
+    expect(step()).toBe("cut");
+  });
+
+  it("applies each choice at once and keeps it", () => {
+    render(<Host />);
+    fireEvent.click(within(screen.getByRole("radiogroup", { name: "Theme" })).getByRole("radio", { name: "Dark" }));
+    fireEvent.click(
+      within(screen.getByRole("radiogroup", { name: "Units" })).getByRole("radio", { name: "Centimeters (cm)" }),
+    );
+    fireEvent.click(
+      within(screen.getByRole("radiogroup", { name: "Language" })).getByRole("radio", { name: "Español" }),
+    );
+    expect(prefs().appearance.theme).toBe("dark");
+    expect(prefs().measurement.unit).toBe("cm");
+    expect(prefs().locale.language).toBe("es");
+    // The step itself is in Spanish now, and so is the tour after it.
+    expect(screen.getByRole("heading", { name: "Configura Gutterberg a tu gusto" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Continuar/ }));
+    expect(screen.getByRole("heading", { name: "Tu PDF, cortado en piezas" })).toBeTruthy();
+  });
+
+  it("starts the units from the region: inches in the United States, millimetres elsewhere", () => {
+    vi.stubGlobal("navigator", { ...navigator, language: "en-US" });
+    const r = render(<Host />);
+    expect(prefs().measurement.unit).toBe("in");
+    r.unmount();
+    usePreferencesStore.setState({ prefs: DEFAULT_PREFERENCES });
+    useUiStore.setState({ welcomeOpen: false });
+    vi.stubGlobal("navigator", { ...navigator, language: "es-AR" });
+    render(<Host />);
+    expect(prefs().measurement.unit).toBe("mm");
+  });
+
+  it("is skipped like the rest of the tour, and a replay goes straight to the clips", () => {
+    render(<Host />);
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(seen()).toBe(WELCOME_VERSION);
+    act(() => ui().setWelcomeOpen(true));
+    expect(step()).toBe("cut");
+  });
+
+  it("is as wide as the clips can be shown, up to 800 px", () => {
+    render(<Host />);
+    expect(dialog().style.width).toContain("800px");
   });
 });

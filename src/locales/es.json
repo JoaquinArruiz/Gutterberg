@@ -1025,6 +1025,15 @@
         "title": "Listo para cortar",
         "text": "Exporta un PDF con marcas de corte, sangrado o doble cara si lo quieres. Tu arte nunca se modifica."
       }
+    },
+    "setup": {
+      "title": "Configura Gutterberg a tu gusto",
+      "text": "Elige tu idioma, cómo se ve la app y la unidad en la que mides. Todo empieza como lo tiene tu sistema, así que puedes simplemente continuar.",
+      "language": "Idioma",
+      "theme": "Tema",
+      "units": "Unidades",
+      "note": "Puedes cambiar todo esto cuando quieras en Preferencias.",
+      "continue": "Continuar"
     }
   },
   "toast": {

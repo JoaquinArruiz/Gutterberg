@@ -1025,6 +1025,15 @@
         "title": "Ready to cut",
         "text": "Export a PDF with cut marks, bleed or duplex if you want. Your artwork is never changed."
       }
+    },
+    "setup": {
+      "title": "Make Gutterberg yours",
+      "text": "Choose your language, how the app looks and the unit you measure in. Everything starts as your system has it, so you can just continue.",
+      "language": "Language",
+      "theme": "Theme",
+      "units": "Units",
+      "note": "You can change all of these any time in Preferences.",
+      "continue": "Continue"
     }
   },
   "toast": {
