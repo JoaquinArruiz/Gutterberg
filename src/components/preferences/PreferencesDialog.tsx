@@ -176,7 +176,8 @@ export function PreferencesDialog() {
     <dialog
       ref={ref}
       aria-label={t("preferences.title")}
-      onClose={() => setOpen(false)}
+      // Only its own close: React passes the close of a dialog inside it (the AI Mode warning) up to here too.
+      onClose={(e) => e.target === e.currentTarget && setOpen(false)}
       // A click on the backdrop (the dialog element itself) closes it.
       onMouseDown={(e) => e.target === ref.current && setOpen(false)}
       className="m-auto w-[680px] max-w-[92vw] rounded-lg border border-[var(--border)] bg-[var(--panel)] p-0 text-[var(--fg)] shadow-2xl shadow-black/50 backdrop:bg-black/50"

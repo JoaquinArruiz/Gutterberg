@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Fixed
+
+- Turning on AI Mode (or closing any other window opened from Preferences) no longer closes Preferences, so you can enter your API key right away.
+
 ## 0.9.3 (2026-10-10)
 
 Version 0.9.2 was skipped: it was never published, and everything planned for it is in this release.

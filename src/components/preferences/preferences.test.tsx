@@ -173,3 +173,27 @@ describe("About", () => {
     expect(screen.queryByTestId("app-version")).toBeNull();
   });
 });
+
+describe("a dialog inside Preferences", () => {
+  it("closing the AI Mode warning (Okay or Cancel) leaves Preferences open, to type the key next", async () => {
+    // As a browser does: close() fires a "close" event on that dialog.
+    HTMLDialogElement.prototype.close = function close() {
+      this.removeAttribute("open");
+      this.dispatchEvent(new Event("close"));
+    };
+    render(<PreferencesDialog />);
+    await openPreferences();
+    fireEvent.click(screen.getByRole("button", { name: "AI Mode (experimental)" }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
+    const warning = screen.getByTestId("ai-experimental");
+    fireEvent.click(within(warning).getByRole("button", { name: "Okay" }));
+    expect(usePreferencesStore.getState().prefs.ai.enabled).toBe(true);
+    expect(useUiStore.getState().prefsOpen).toBe(true);
+    expect(screen.getByRole("dialog", { name: "Preferences" }).hasAttribute("open")).toBe(true);
+    // Turned off and on again, then Cancel: still open.
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
+    fireEvent.click(screen.getByRole("switch", { name: /Use AI Mode/ }));
+    fireEvent.click(within(screen.getByTestId("ai-experimental")).getByRole("button", { name: "Cancel" }));
+    expect(useUiStore.getState().prefsOpen).toBe(true);
+  });
+});
