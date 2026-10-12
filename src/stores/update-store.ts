@@ -25,6 +25,8 @@ type UpdateState = {
   whatsNew: AvailableUpdate | null;
   /** The last check was asked for by the user (so a failure is shown), not by the timer. */
   manual: boolean;
+  /** The last check, asked for or not, could not reach the update server. A good check clears it. */
+  failed: boolean;
   set: (patch: Partial<Omit<UpdateState, "set">>) => void;
 };
 
@@ -35,5 +37,6 @@ export const useUpdateStore = create<UpdateState>((set) => ({
   progress: null,
   whatsNew: null,
   manual: false,
+  failed: false,
   set: (patch) => set(patch),
 }));

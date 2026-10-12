@@ -21,8 +21,10 @@ export const showUpdates = () => useUiStore.getState().setPrefsOpen(true, "Updat
 
 /**
  * Asks whether a newer version exists. `manual` is the button in Preferences: it shows the result either way,
- * including a failure. The automatic check (`manual: false`) stays silent when it fails or finds nothing, and
- * only a version the user wants to hear about (see `shouldNotify`) gets a toast.
+ * including a failure, and a newer version also gets the toast (the user asked, so "Tell me about" and a skipped
+ * version do not apply). The automatic check (`manual: false`) stays silent when it fails or finds nothing, and
+ * only a version the user wants to hear about (see `shouldNotify`) gets a toast. Either way a failure is
+ * remembered (`failed`), so Preferences › Updates can say the last check did not get through.
  */
 export async function checkForUpdates(manual: boolean): Promise<void> {
   const busy = state().status;
@@ -33,16 +35,19 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
     prefs().setLastCheck(Date.now());
     if (!update) {
       found = null;
-      state().set({ status: "upToDate", update: null });
+      state().set({ status: "upToDate", update: null, failed: false });
       return;
     }
     found = update;
-    state().set({ status: "available", update: { version: update.version, notes: update.body ?? "" } });
-    const current = await getVersion();
-    if (!manual && shouldNotify(current, update.version, prefs().prefs.updates)) announce(update.version);
+    state().set({
+      status: "available",
+      update: { version: update.version, notes: update.body ?? "" },
+      failed: false,
+    });
+    if (manual || shouldNotify(await getVersion(), update.version, prefs().prefs.updates)) announce(update.version);
   } catch {
     found = null;
-    state().set({ status: manual ? "error" : "idle", update: null });
+    state().set({ status: manual ? "error" : "idle", update: null, failed: true });
   }
 }
 

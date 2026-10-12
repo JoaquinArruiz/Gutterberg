@@ -39,7 +39,14 @@ beforeEach(() => {
   usePreferencesStore.setState({ prefs: DEFAULT_PREFERENCES });
   useToastStore.setState({ queue: [] });
   useUiStore.setState({ exporting: false, prefsOpen: false, prefsSection: null });
-  useUpdateStore.setState({ status: "idle", update: null, progress: null, whatsNew: null, manual: false });
+  useUpdateStore.setState({
+    status: "idle",
+    update: null,
+    progress: null,
+    whatsNew: null,
+    manual: false,
+    failed: false,
+  });
 });
 afterEach(() => vi.useRealTimers());
 
@@ -81,11 +88,23 @@ describe("checking for updates", () => {
     expect(useUpdateStore.getState().update?.version).toBe("1.1.1");
   });
 
-  it("never toasts for a check the user asked for", async () => {
+  it("also toasts for a check the user asked for", async () => {
     check.mockResolvedValue(found("1.2.0"));
     await checkForUpdates(true);
-    expect(toasts()).toEqual([]);
+    expect(toasts()).toEqual(["Gutterberg 1.2.0 is available"]);
     expect(useUpdateStore.getState().status).toBe("available");
+  });
+
+  it("toasts for a check the user asked for even when Tell me about is Never or the version was skipped", async () => {
+    setUpdates({ notify: "never", skippedVersion: "1.2.0" });
+    check.mockResolvedValue(found("1.2.0"));
+    await checkForUpdates(true);
+    expect(toasts()).toEqual(["Gutterberg 1.2.0 is available"]);
+  });
+
+  it("does not toast a manual check that finds nothing", async () => {
+    await checkForUpdates(true);
+    expect(toasts()).toEqual([]);
   });
 
   it("says up to date when there is nothing newer", async () => {
@@ -101,6 +120,20 @@ describe("checking for updates", () => {
     expect(updates().lastCheck).toBe(0);
     await checkForUpdates(true);
     expect(useUpdateStore.getState().status).toBe("error");
+  });
+
+  it("remembers that a check failed, even a silent one, until a check gets through", async () => {
+    check.mockRejectedValue(new Error("offline"));
+    await checkForUpdates(false);
+    expect(useUpdateStore.getState()).toMatchObject({ status: "idle", failed: true });
+    check.mockResolvedValue(null);
+    await checkForUpdates(false);
+    expect(useUpdateStore.getState()).toMatchObject({ status: "upToDate", failed: false });
+    check.mockRejectedValue(new Error("offline"));
+    await checkForUpdates(false);
+    check.mockResolvedValue(found("1.2.0"));
+    await checkForUpdates(false);
+    expect(useUpdateStore.getState()).toMatchObject({ status: "available", failed: false });
   });
 });
 

@@ -111,6 +111,26 @@ describe("Preferences › Updates", () => {
     expect(screen.getByRole("alert").textContent).toContain("Couldn't check for updates");
   });
 
+  it("says quietly when the last check, a silent one, could not reach the server", () => {
+    state({ status: "idle", failed: true });
+    render(<UpdatesSection />);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByText(/last check couldn't reach the update server/i)).toBeTruthy();
+  });
+
+  it("does not say that while checking, after a good check, or twice next to the failure of a manual check", () => {
+    state({ status: "checking", failed: true });
+    const { rerender } = render(<UpdatesSection />);
+    expect(screen.queryByText(/last check couldn't reach/i)).toBeNull();
+    act(() => useUpdateStore.setState({ status: "upToDate", failed: false }));
+    rerender(<UpdatesSection />);
+    expect(screen.queryByText(/last check couldn't reach/i)).toBeNull();
+    act(() => useUpdateStore.setState({ status: "error", failed: true }));
+    rerender(<UpdatesSection />);
+    expect(screen.queryByText(/last check couldn't reach/i)).toBeNull();
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't check for updates");
+  });
+
   it("shows What's new for the version just installed", () => {
     state({ whatsNew: { version: "1.1.0", notes: "- Better" } });
     render(<UpdatesSection />);

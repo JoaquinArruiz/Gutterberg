@@ -17,6 +17,11 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - A back you turn in the piece library is printed turned that much more, so a back that is upside down in the file can be set right.
 - Projects are saved as version 5 (for the gutterfold settings); older projects open as before, and an older Gutterberg asks to be updated.
 
+### Changed
+
+- Check for updates in Preferences › Updates now also shows the "update available" toast when it finds a newer version, whatever "Tell me about" says.
+- Preferences › Updates says when the last check could not reach the update server, so a failed check no longer looks like "up to date".
+
 ### Fixed
 
 - Turning on AI Mode (or closing any other window opened from Preferences) no longer closes Preferences, so you can enter your API key right away.

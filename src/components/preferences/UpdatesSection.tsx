@@ -31,6 +31,7 @@ export function UpdatesSection() {
   const update = useUpdateStore((s) => s.update);
   const progress = useUpdateStore((s) => s.progress);
   const whatsNew = useUpdateStore((s) => s.whatsNew);
+  const failed = useUpdateStore((s) => s.failed);
 
   const busy = status === "checking" || status === "downloading";
   const percent = progress?.total ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
@@ -54,6 +55,9 @@ export function UpdatesSection() {
           <p className="text-red-300" role="alert">
             ⚠ {t("preferences.updates.failed")}
           </p>
+        )}
+        {failed && status !== "error" && status !== "checking" && (
+          <p className="text-[var(--muted)]">{t("preferences.updates.lastCheckFailed")}</p>
         )}
 
         {update && status !== "upToDate" && (

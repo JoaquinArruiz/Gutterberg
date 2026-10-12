@@ -606,6 +606,7 @@
       "checking": "Buscando actualizaciones…",
       "upToDate": "Estás al día.",
       "failed": "No se pudo buscar actualizaciones. Revisa tu conexión e inténtalo de nuevo.",
+      "lastCheckFailed": "La última búsqueda no pudo conectarse con el servidor de actualizaciones. Revisa tu conexión.",
       "available": "La versión {{version}} está disponible",
       "whatsNewIn": "Novedades de la versión {{version}}",
       "downloading": "Descargando la actualización…",

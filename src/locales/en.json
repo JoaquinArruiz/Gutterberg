@@ -606,6 +606,7 @@
       "checking": "Checking for updates…",
       "upToDate": "You're up to date.",
       "failed": "Couldn't check for updates. Check your connection and try again.",
+      "lastCheckFailed": "The last check couldn't reach the update server. Check your connection.",
       "available": "{{version}} is available",
       "whatsNewIn": "What's new in {{version}}",
       "downloading": "Downloading the update…",

@@ -294,7 +294,8 @@ leaves a draft GitHub release with the installers, their updater signatures, `la
 [releasing.md](releasing.md). Builds are not code-signed; the updater verifies downloads with its own key.
 
 In the app, the Tauri updater checks about 10 seconds after start, at most once a day and never during an export; a
-failed or offline check is silent. Preferences › Updates shows the installed and the newer version with its notes and
+failed or offline check is silent, but Preferences › Updates says the last check did not get through. The "Check for
+updates" button there shows the result and also the toast for a newer version. Preferences › Updates shows the installed and the newer version with its notes and
 the "Tell me about" setting (all updates, new features, major versions only, never), which only decides the toast. The
 logic that needs no app (version order including pre-releases, who is told about what, what to say after an update) is
 in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. Before installing, the version is written down so

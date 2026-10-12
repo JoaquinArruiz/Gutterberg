@@ -78,7 +78,8 @@ about 10 seconds after start, or Preferences › Updates › Check for updates),
 ## What people see
 
 - The app checks about 10 seconds after start, at most once a day, never during an export. A failed or
-  offline check is silent.
+  offline check is silent, but Preferences › Updates says the last check could not reach the server. The
+  **Check for updates** button there shows the result and also the toast for a newer version.
 - Preferences › Updates shows the installed version, a newer one with its notes, and **Tell me about**
   (all updates, new features, major versions only, never). That setting only decides the toast.
 - On Windows the installer closes the app, so the project is saved first (the app asks if there are unsaved
