@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- On Windows and Linux, Gutterberg's saved settings now live in a folder named `Gutterberg` instead of `dev.joaquinarruiz.gutterberg`. What was in the old folder is moved there the first time you start this version, so your settings, recent projects and tour progress stay.
+
 ## 0.10.0 (2026-10-12)
 
 ### Added

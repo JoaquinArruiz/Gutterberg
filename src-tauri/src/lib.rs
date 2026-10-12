@@ -1,4 +1,5 @@
 mod commands;
+mod data_dirs;
 mod keychain;
 mod state;
 
@@ -14,6 +15,8 @@ fn project_arg(args: impl IntoIterator<Item = String>) -> Option<String> {
 }
 
 pub fn run() {
+    // Before the web view exists: it opens its storage in the (renamed) data folder.
+    data_dirs::migrate();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         // The system's name and version, for "Copy app info" in Preferences › Help.

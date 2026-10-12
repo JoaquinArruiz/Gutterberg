@@ -35,5 +35,9 @@ keyring = { version = "3", features = ["windows-native"] }
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
 
+# Where the old data folders were, for the one-time move to their new names (see src/data_dirs.rs).
+[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
+dirs = "7"
+
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"

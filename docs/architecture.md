@@ -311,8 +311,12 @@ One versioned model (`src/lib/preferences.ts`), kept in the webview's storage. `
 raw data becomes preferences: it merges onto the defaults, drops invalid values and repairs invariants, so the rest
 of the app never sees an invalid state. A newer version's added setting appears with its default for existing users,
 and a migration only exists where meaning changed. Document settings (gaps, page, margins) are never preferences.
-The key is `gutterberg:preferences`; the old `pdf-card-editor:preferences` is read once and removed. The
-application's identifier decides where the webview stores data, so it is not changed after a release.
+The key is `gutterberg:preferences`; the old `pdf-card-editor:preferences` is read once and removed. On Windows and
+Linux the webview keeps its storage in a folder named `Gutterberg` (`app.appDirectoriesOverride` in `tauri.conf.json`;
+the default would be named after the identifier). `src-tauri/src/data_dirs.rs` moves the old `dev.joaquinarruiz.gutterberg`
+folder there once, before the webview opens, and never overwrites or merges into a `Gutterberg` that already exists.
+macOS keeps its storage under the bundle identifier whatever the override says, so nothing moves there. The identifier
+itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
 ## Decisions
 

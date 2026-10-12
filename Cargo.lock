@@ -1759,6 +1759,7 @@ version = "0.10.0"
 dependencies = [
  "card-ai",
  "card-core",
+ "dirs",
  "keyring",
  "pdfium-render",
  "serde",

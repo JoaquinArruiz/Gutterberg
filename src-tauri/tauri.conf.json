@@ -11,6 +11,12 @@
   },
   "app": {
     "windows": [{ "title": "Gutterberg", "width": 1280, "height": 800, "minWidth": 900, "minHeight": 560 }],
+    "appDirectoriesOverride": {
+      "config": "$CONFIG/Gutterberg",
+      "data": "$DATA/Gutterberg",
+      "localData": "$LOCALDATA/Gutterberg",
+      "cache": "$CACHE/Gutterberg"
+    },
     "security": {
       "csp": "default-src 'self'; connect-src 'self' ipc: http://ipc.localhost; media-src 'self' blob:; img-src 'self' blob: data:; style-src 'self' 'unsafe-inline'"
     }
