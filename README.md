@@ -47,7 +47,7 @@ and pick the file for your system:
 | System | What it needs |
 | --- | --- |
 | Windows | Windows 10 or 11, 64-bit, with the Microsoft WebView2 runtime (Windows 11 and up-to-date Windows 10 already have it; the installer downloads it if it is missing) |
-| macOS | macOS 10.15 (Catalina) or later, on Apple silicon or Intel |
+| macOS | macOS 13 (Ventura) or later, on Apple silicon or Intel |
 | Linux | A 64-bit distribution with glibc 2.35 or newer (Ubuntu 22.04, Debian 12 or Fedora 36 and later, for example). The `.deb` and `.rpm` bring in the web view they need; the AppImage carries its own |
 
 Nothing else needs installing: the PDF engine comes with the app. Gutterberg works offline; the only things that
@@ -82,6 +82,45 @@ To keep it for the menu entry, copy the launcher to your own folder and add the 
 cp /usr/share/applications/Gutterberg.desktop ~/.local/share/applications/
 sed -i 's|^Exec=|Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 |' ~/.local/share/applications/Gutterberg.desktop
 ```
+
+### The app closes or does not start
+
+Gutterberg keeps a short log of what it did at start and of any error it hit. If the app closes by itself, does not
+open, or shows an error, the log is the best thing to send with your report. It is a plain text file named
+`gutterberg.log` (and `gutterberg.old.log`, an older copy, if there is one), in this folder:
+
+| System | Folder | How to open it |
+| --- | --- | --- |
+| macOS | `~/Library/Logs/Gutterberg` | In Finder, press **Shift+Cmd+G** (Go to Folder), paste the folder and press Return |
+| Windows | `%LOCALAPPDATA%\Gutterberg\logs` | Press **Win+R**, paste the folder and press Enter |
+| Linux | `~/.local/share/Gutterberg/logs` | Run `xdg-open ~/.local/share/Gutterberg/logs`, or show hidden files in your file manager |
+
+If the app does open, **Preferences › Help › Copy log** copies the end of the log for you. The log is added to each
+time the app starts, so the run that closed by itself is still in it when you open the app again; the end of the
+file is the part that matters. It stays small by itself (about half a megabyte at most, with one older copy kept),
+and you can delete the folder whenever you like. It has no PDFs, but an error can mention a file or folder name, so
+look it over before you send it.
+
+Versions up to 0.10.0 do not keep a log. On a Mac, send what Terminal prints when you run
+`/Applications/Gutterberg.app/Contents/MacOS/gutterberg`, and any file starting with "Gutterberg" in
+`~/Library/Logs/DiagnosticReports`.
+
+### Reporting a problem on GitHub
+
+You need a free [GitHub account](https://github.com/signup). Then:
+
+1. Open the [issues page](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose) and press **Get started**
+   next to **Bug report**. (In the app, **Preferences › Help › Report on GitHub** opens the same form with your
+   version and system already filled in.)
+2. Fill in the form: the version (**Preferences › About**, or **Copy app info** in **Preferences › Help**), your
+   system, what happened, the steps to make it happen again and what you expected. A PDF that does not work is the
+   best test case, if you are allowed to share it.
+3. Paste the log into the **Log** box (the last 100 lines or so are enough). It is optional, but it helps a lot when
+   the app closes by itself or does not start.
+4. Press **Submit new issue**. Before you do, a quick look at the
+   [open issues](https://github.com/JoaquinArruiz/Gutterberg/issues) tells you whether someone has already reported it.
+
+For an idea instead of a bug, pick **Feature request** on the same page.
 
 ## Features
 

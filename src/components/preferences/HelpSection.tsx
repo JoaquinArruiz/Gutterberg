@@ -1,7 +1,7 @@
 import { Check, Copy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { type AppInfo, formatAppInfo, loadAppInfo } from "../../lib/app-info";
+import { type AppInfo, formatAppInfo, loadAppInfo, loadLog } from "../../lib/app-info";
 import { bugReportUrl, DISCORD_URL, openExternalLink } from "../../lib/external-links";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -26,7 +26,10 @@ export function HelpSection() {
   const [info, setInfo] = useState<AppInfo | null>(null);
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState<"copy" | "open" | null>(null);
+  // "Copy log": what the last press did (the log may not exist yet, or may not be readable).
+  const [log, setLog] = useState<"copied" | "empty" | "failed" | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const logTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const language = i18n.resolvedLanguage ?? i18n.language;
 
   useEffect(() => {
@@ -37,6 +40,7 @@ export function HelpSection() {
     return () => {
       live = false;
       clearTimeout(timer.current);
+      clearTimeout(logTimer.current);
     };
   }, [language]);
 
@@ -50,6 +54,20 @@ export function HelpSection() {
       timer.current = setTimeout(() => setCopied(false), COPIED_FOR_MS);
     } catch {
       setFailed("copy");
+    }
+  };
+
+  const copyLog = async () => {
+    setLog(null);
+    try {
+      const text = await loadLog();
+      if (!text.trim()) return setLog("empty");
+      await navigator.clipboard.writeText(text);
+      setLog("copied");
+      clearTimeout(logTimer.current);
+      logTimer.current = setTimeout(() => setLog(null), COPIED_FOR_MS);
+    } catch {
+      setLog("failed");
     }
   };
 
@@ -106,6 +124,7 @@ export function HelpSection() {
           <li>{t("preferences.help.bugSteps")}</li>
           <li>{t("preferences.help.bugExpected")}</li>
           <li>{t("preferences.help.bugWorkaround")}</li>
+          <li>{t("preferences.help.bugLog")}</li>
         </ul>
         <p
           className="mt-1 select-text break-words rounded bg-[var(--bg)] px-2 py-1.5 font-mono text-[11px]"
@@ -117,6 +136,10 @@ export function HelpSection() {
           <Button size="md" className="flex items-center gap-2" disabled={!info} onClick={() => void copy()}>
             {copied ? <Check size={14} /> : <Copy size={14} />}
             {copied ? t("preferences.help.copied") : t("preferences.help.copyInfo")}
+          </Button>
+          <Button size="md" className="flex items-center gap-2" onClick={() => void copyLog()}>
+            {log === "copied" ? <Check size={14} /> : <Copy size={14} />}
+            {log === "copied" ? t("preferences.help.copied") : t("preferences.help.copyLog")}
           </Button>
           <Button size="md" className="flex items-center gap-2" disabled={!info} onClick={() => void report()}>
             <GitHubIcon />
@@ -136,6 +159,13 @@ export function HelpSection() {
             )}
           </Button>
         </div>
+        <p className="text-[var(--muted)]">{t("preferences.help.logNote")}</p>
+        {log === "empty" && <p className="text-[var(--muted)]">{t("preferences.help.logEmpty")}</p>}
+        {log === "failed" && (
+          <p className="text-red-300" role="alert">
+            {t("preferences.help.logFailed")}
+          </p>
+        )}
         {failed && (
           <p className="text-red-300" role="alert">
             ⚠ {failed === "copy" ? t("preferences.help.copyFailed") : t("preferences.about.openFailed")}

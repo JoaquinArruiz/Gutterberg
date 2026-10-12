@@ -5,8 +5,13 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- A log of what Gutterberg did at start and any error, so an app that closes by itself can be diagnosed. Preferences › Help › Copy log copies the end of it for a bug report, and the bug report form has a field for it. The log is added to at each start and kept small: about half a megabyte at most.
+
 ### Changed
 
+- On a Mac, Gutterberg now needs macOS 13 (Ventura) or later, which is what its PDF engine is built for; older Macs say so instead of failing when a PDF is opened.
 - On Windows and Linux, Gutterberg's saved settings now live in a folder named `Gutterberg` instead of `dev.joaquinarruiz.gutterberg`. What was in the old folder is moved there the first time you start this version, so your settings, recent projects and tour progress stay.
 
 ## 0.10.0 (2026-10-12)

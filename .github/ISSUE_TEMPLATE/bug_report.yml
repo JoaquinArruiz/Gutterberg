@@ -6,7 +6,7 @@ body:
     attributes:
       value: |
         Thanks for taking the time. English is preferred, but you are welcome to write in Spanish too (español también vale).
-        In the app, **Preferences › Help › Copy app info** gives you the version and system to paste below.
+        In the app, **Preferences › Help › Copy app info** gives you the version and system to paste below, and **Copy log** gives you the log.
   - type: input
     id: version
     attributes:
@@ -53,6 +53,20 @@ body:
     attributes:
       label: Workaround
       description: Did you find a way around it?
+    validations:
+      required: false
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: |
+        Optional, but it helps a lot if the app closed by itself, showed an error or did not start. In the app, press **Preferences › Help › Copy log** and paste it here. If the app does not open, paste the end of the file `gutterberg.log` (the last 100 lines or so) from this folder:
+        - macOS: `~/Library/Logs/Gutterberg`
+        - Windows: `%LOCALAPPDATA%\Gutterberg\logs`
+        - Linux: `~/.local/share/Gutterberg/logs`
+
+        Versions after 0.10.0 keep a log. It is plain text and has none of your PDFs; look it over before you send it, because an error can mention a file or folder name.
+      render: text
     validations:
       required: false
   - type: checkboxes

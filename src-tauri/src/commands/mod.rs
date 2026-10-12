@@ -6,6 +6,7 @@ pub mod export;
 pub mod images;
 pub mod layout;
 pub mod licenses;
+pub mod log;
 pub mod opened;
 pub mod project;
 pub mod render;

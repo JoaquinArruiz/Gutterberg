@@ -48,6 +48,11 @@ export function formatAppInfo(info: AppInfo): string {
   return parts.join(" · ");
 }
 
+/** The end of the app's log (what it did at start, and any error), as text to paste into a bug report. Empty when there is none. */
+export async function loadLog(): Promise<string> {
+  return invoke<string>("read_log");
+}
+
 /** Reads the app's name and version, the system and the pdfium build from the app and its plugins. */
 export async function loadAppInfo(language: string): Promise<AppInfo> {
   const [name, version, kind, systemVersion, architecture, extra] = await Promise.all([

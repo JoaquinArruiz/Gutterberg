@@ -7,14 +7,16 @@ import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { PreferencesDialog } from "./PreferencesDialog";
 
-const { loadAppInfo, openExternalLink, writeText } = vi.hoisted(() => ({
+const { loadAppInfo, loadLog, openExternalLink, writeText } = vi.hoisted(() => ({
   loadAppInfo: vi.fn(),
+  loadLog: vi.fn(),
   openExternalLink: vi.fn(),
   writeText: vi.fn(),
 }));
 vi.mock("../../lib/app-info", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/app-info")>()),
   loadAppInfo,
+  loadLog,
 }));
 vi.mock("../../lib/external-links", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/external-links")>()),
@@ -36,6 +38,7 @@ beforeEach(() => {
     this.removeAttribute("open");
   };
   loadAppInfo.mockReset().mockResolvedValue(INFO);
+  loadLog.mockReset().mockResolvedValue("2026-10-12 14:03:09Z  start  Gutterberg 0.10.0 on macos aarch64\n");
   openExternalLink.mockReset().mockResolvedValue("opened");
   writeText.mockReset().mockResolvedValue(undefined);
   Object.assign(navigator, { clipboard: { writeText } });
@@ -111,6 +114,7 @@ describe("Preferences › Help", () => {
       "step by step",
       "what you expected",
       "a way around it",
+      "the log, if the app closed by itself",
     ])
       expect(text).toContain(part);
     // The issue form has no field for attachments, so the app does not ask for files either.
@@ -126,6 +130,47 @@ describe("Preferences › Help", () => {
     await act(async () => {});
     expect(writeText).toHaveBeenCalledWith(line);
     expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
+  });
+
+  it("copies the log, and says so", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
+    await act(async () => {});
+    expect(writeText).toHaveBeenCalledWith("2026-10-12 14:03:09Z  start  Gutterberg 0.10.0 on macos aarch64\n");
+    expect(screen.getByRole("button", { name: "Copied" })).toBeTruthy();
+    // The app info button is separate and untouched.
+    expect(screen.getByRole("button", { name: "Copy app info" })).toBeTruthy();
+  });
+
+  it("says there is no log yet instead of copying nothing", async () => {
+    loadLog.mockResolvedValue("  \n");
+    render(<PreferencesDialog />);
+    await openHelp();
+    fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
+    expect(await screen.findByText("There is no log yet.")).toBeTruthy();
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  it("says when the log could not be read or copied", async () => {
+    loadLog.mockRejectedValue(new Error("no app"));
+    render(<PreferencesDialog />);
+    await openHelp();
+    fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Couldn't read or copy the log");
+    loadLog.mockResolvedValue("x\n");
+    writeText.mockRejectedValue(new Error("denied"));
+    fireEvent.click(screen.getByRole("button", { name: "Copy log" }));
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toContain("Couldn't read or copy the log");
+  });
+
+  it("explains what the log holds and to look it over before sending it", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    const note = await screen.findByText(/plain text about what the app did/);
+    expect(note.textContent).toContain("does not include your PDFs");
+    expect(note.textContent).toContain("look it over");
   });
 
   it("says when it could not copy", async () => {

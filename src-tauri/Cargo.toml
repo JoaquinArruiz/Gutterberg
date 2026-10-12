@@ -20,6 +20,8 @@ card-ai = { path = "../crates/card-ai" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 pdfium-render = "0.9"
+# Where the log goes (src/app_log.rs) and where the old data folders were (src/data_dirs.rs).
+dirs = "7"
 tauri-plugin-opener = "2"
 tauri-plugin-os = "2.4.0"
 tauri-plugin-process = "2"
@@ -34,10 +36,6 @@ keyring = { version = "3", features = ["windows-native"] }
 
 [target.'cfg(all(unix, not(target_os = "macos")))'.dependencies]
 keyring = { version = "3", features = ["sync-secret-service", "crypto-rust"] }
-
-# Where the old data folders were, for the one-time move to their new names (see src/data_dirs.rs).
-[target.'cfg(any(windows, target_os = "linux"))'.dependencies]
-dirs = "7"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"

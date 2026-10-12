@@ -305,6 +305,18 @@ Third-party notices are collected at release time (`scripts/third-party-licenses
 licenses`, and the licenses pdfium ships with) into `THIRD_PARTY_LICENSES`, built into the app and shown in
 Preferences › About with Gutterberg's own license.
 
+## The log (`src-tauri/src/app_log.rs`)
+
+A plain text log, `gutterberg.log`, so that "the app opens and closes" can be diagnosed: `start` (before anything
+else), `ready` (set up), `running` (the event loop is up), the window being closed, `exit`, and for a failure the error
+or a panic's message with a backtrace. A start with no `ready` died while starting. It lives in `~/Library/Logs/Gutterberg`
+on macOS and in the `logs` folder of the `Gutterberg` data folder elsewhere. It is added to across starts, never
+cleared, so the record of a run that crashed is there at the next start. It is bounded: a run writes at most 64 KB, a
+file over 256 KB is moved to `gutterberg.old.log` at the next start (replacing the previous one), so the folder holds
+about half a megabyte at most. Every write failure is ignored; logging never stops or slows the app. "Copy log" in
+Preferences › Help (the `read_log` command) hands over the last 24,000 characters, from a whole line, which keeps a
+bug report under GitHub's 65,536-character limit. Only the Rust side logs; the web view's own errors are not in it.
+
 ## Preferences
 
 One versioned model (`src/lib/preferences.ts`), kept in the webview's storage. `normalizePreferences` is the only way

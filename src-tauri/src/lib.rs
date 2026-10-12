@@ -1,3 +1,4 @@
+mod app_log;
 mod commands;
 mod data_dirs;
 mod keychain;
@@ -17,6 +18,7 @@ fn project_arg(args: impl IntoIterator<Item = String>) -> Option<String> {
 pub fn run() {
     // Before the web view exists: it opens its storage in the (renamed) data folder.
     data_dirs::migrate();
+    app_log::init();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         // The system's name and version, for "Copy app info" in Preferences › Help.
@@ -50,6 +52,7 @@ pub fn run() {
             commands::images::probe_images,
             commands::layout::compute_layout,
             commands::licenses::license_texts,
+            commands::log::read_log,
             commands::opened::take_opened_file,
             commands::sheets::compute_cards,
             commands::sheets::compute_sheets,
@@ -68,12 +71,31 @@ pub fn run() {
             if let Some(path) = project_arg(std::env::args()) {
                 app.state::<state::AppState>().file_opened(path);
             }
+            app_log::line("info", "ready: the app is set up");
             Ok(())
         })
         .build(tauri::generate_context!())
-        .expect("error while building Gutterberg");
+        .unwrap_or_else(|e| {
+            app_log::line("error", &format!("could not start: {e}"));
+            eprintln!("Gutterberg: could not start: {e}");
+            std::process::exit(1)
+        });
 
     app.run(|handle, event| {
+        // The end of the story, for a log that says how a run stopped.
+        match &event {
+            tauri::RunEvent::Ready => app_log::line("info", "running: the window is up"),
+            tauri::RunEvent::ExitRequested { code, .. } => {
+                app_log::line("info", &format!("exit requested (code {code:?})"))
+            }
+            tauri::RunEvent::Exit => app_log::line("info", "exit"),
+            tauri::RunEvent::WindowEvent {
+                label,
+                event: tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed,
+                ..
+            } => app_log::line("info", &format!("window {label}: closing")),
+            _ => {}
+        }
         // macOS hands a double-clicked file to the running app as an event, not as an argument.
         #[cfg(target_os = "macos")]
         if let tauri::RunEvent::Opened { urls } = &event {
@@ -85,7 +107,7 @@ pub fn run() {
             }
         }
         #[cfg(not(target_os = "macos"))]
-        let _ = (handle, event);
+        let _ = handle;
     });
 }
 
