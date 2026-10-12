@@ -2,6 +2,7 @@
 // engine (M12) and the freeform card tool (M18) build on these types.
 
 import { z } from "zod";
+import { t } from "../i18n";
 
 /** Which open PDF a card comes from. One document is open for now; sheets will mix several (M14). */
 export type DocumentId = number;
@@ -81,4 +82,33 @@ export function orientedBounds(r: OrientedRect): { x: number; y: number; width: 
 export function cropWidthPx(source: OrientedRect, turn: number, boxW: number, boxH: number): number {
   const cardWidth = turn === 90 || turn === 270 ? boxH : boxW;
   return (orientedBounds(source).width / source.width) * cardWidth;
+}
+
+/**
+ * The letter of a document in a project with several PDFs (A, B, C…, by its place in the project), so two pieces
+ * that are both on page 1 at row 1 column 1 can be told apart. With one document there is none.
+ */
+export function documentLetter(documentIds: DocumentId[], documentId: DocumentId): string | null {
+  const i = documentIds.indexOf(documentId);
+  if (documentIds.length < 2 || i < 0) return null;
+  return i < 26 ? String.fromCharCode(65 + i) : `#${i + 1}`;
+}
+
+/**
+ * A piece's reference in the words of the piece library: `p3 · r1 c2` (grid) or `p4 · #2` (freeform), with the
+ * document's letter in front when there is one: `A · p3 · r1 c2`. `short` is the position alone (`r1c2`, `#2`), for a
+ * place too small for the whole reference.
+ */
+export function pieceReference(id: CardId, letter: string | null = null, short = false): string {
+  if (short) {
+    return id.kind === "grid"
+      ? t("library.thumb.gridShort", { row: id.row + 1, column: id.column + 1 })
+      : t("library.thumb.freeformPosition", { n: id.index + 1 });
+  }
+  const position =
+    id.kind === "grid"
+      ? t("library.thumb.gridPosition", { row: id.row + 1, column: id.column + 1 })
+      : t("library.thumb.freeformPosition", { n: id.index + 1 });
+  const label = t("library.thumb.label", { page: id.page_index + 1, position });
+  return letter ? `${letter} · ${label}` : label;
 }

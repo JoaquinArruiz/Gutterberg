@@ -93,7 +93,7 @@ export function loadPreferences(storage: KeyValueStorage): AppPreferences {
     return {
       ...prefs,
       workspace: { ...prefs.workspace, layout: forgetUnremembered(prefs.workspace.layout) },
-      print: { layout: forgetUnremembered(prefs.print.layout) },
+      print: { ...prefs.print, layout: forgetUnremembered(prefs.print.layout) },
     };
   } catch {
     return DEFAULT_PREFERENCES;
@@ -123,6 +123,8 @@ type PreferencesState = {
   setWelcomeSeen: (version: number) => void;
   /** Remember that inspector section `id` was opened or closed. */
   setSectionOpen: (id: string, open: boolean) => void;
+  /** Piece references on the sheet preview, on or off. */
+  setShowReferences: (show: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -180,7 +182,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       edit((p) =>
         layout === "cards"
           ? { ...p, workspace: { ...p.workspace, layout: f(p.workspace.layout) } }
-          : { ...p, print: { layout: f(p.print.layout) } },
+          : { ...p, print: { ...p.print, layout: f(p.print.layout) } },
       );
     const layoutOf = (layout: LayoutId) =>
       layout === "cards" ? get().prefs.workspace.layout : get().prefs.print.layout;
@@ -236,6 +238,10 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setSectionOpen: (id, open) => {
         if (get().prefs.inspector.sections[id] !== open)
           edit((p) => ({ ...p, inspector: { sections: { ...p.inspector.sections, [id]: open } } }));
+      },
+      setShowReferences: (show) => {
+        if (get().prefs.print.showReferences !== show)
+          edit((p) => ({ ...p, print: { ...p.print, showReferences: show } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),
@@ -295,7 +301,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         edit((p) => ({
           ...p,
           workspace: { ...DEFAULT_PREFERENCES.workspace, layout: defaultLayout() },
-          print: { layout: defaultLayout("print") },
+          print: { ...p.print, layout: defaultLayout("print") },
         }));
         bumpEpoch();
       },

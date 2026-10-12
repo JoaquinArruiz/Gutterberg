@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.11.0 | `0.11-piece-references.md` | What is in `Unreleased` now, plus piece references on the sheets | unchanged (5) | 12 |
 | 0.12.0 | `0.12-exact-prints.md` | Piece size presets and a printer calibration sheet | unchanged | 13 |
 | 0.13.0 | `0.13-cutting-machines.md` | Registration marks for cutting machines and a cut file (SVG, DXF) | 6 | unchanged |
 | 0.14.0 | `0.14-grid-to-pieces.md` | Turn a grid into freeform pieces, so a second grid can be drawn on the page | unchanged | unchanged |

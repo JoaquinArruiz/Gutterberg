@@ -24,8 +24,9 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // layout is a panel layout like the Source tab's (print.layout was { libraryWidth, inspectorWidth }; those widths become
 // the sizes of its left and right regions). v10: adds help.welcomeSeen (the version of the welcome tour the user has
 // seen or skipped). v11: adds updates (what to be told about, the last check, the version being installed) and
-// experimental (the switches of unfinished features). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 11;
+// experimental (the switches of unfinished features). v12: adds print.showReferences (piece references on the sheet
+// preview, off by default). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 12;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -84,6 +85,8 @@ export interface AppPreferences {
   print: {
     /** The Print tab's own panel layout (piece library and settings around the sheets), separate from the Source tab's. */
     layout: WorkspaceLayoutPrefs;
+    /** Show each piece's reference (`p3 · r1 c2`) on the large sheet preview. Never in the exported PDF. */
+    showReferences: boolean;
   };
   files: {
     /** Project files opened or saved lately, newest first. */
@@ -147,7 +150,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   appearance: { theme: "system" },
   help: { dismissedHints: {}, welcomeSeen: 0 },
   inspector: { sections: {} },
-  print: { layout: defaultLayout("print") },
+  print: { layout: defaultLayout("print"), showReferences: false },
   files: { recent: [] },
   presets: [],
   images: { size: DEFAULT_IMAGE_SIZE },
@@ -288,6 +291,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
         rememberSizes: sourceLayout.rememberSizes,
         rememberCollapsed: sourceLayout.rememberCollapsed,
       },
+      showReferences: pr.showReferences === true,
     },
     files: { recent: normalizeRecent(fl.recent) },
     presets: normalizePresets(r.presets),

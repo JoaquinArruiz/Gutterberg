@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- A button in the sheet preview that shows each piece's reference on the sheet (`p3 · r1 c2`), the same one the piece library shows, so a piece on the sheet is easy to find. With several PDFs each gets a letter (A, B, …) that is shown in front of its references and in the library's filter menu. The references are only on screen, never in the exported PDF.
 - A calibration sheet for duplex printing: Print › Duplex › Calibration sheet… saves a front and a back to print on both sides of one sheet of paper. Held up to a light, the crosshairs of the front cross the rulers of the back at the printer's drift between sides, and the two numbers read go into the back offset in one step.
 - A link to RefractionHub on GitHub, with its logo, in Preferences › About.
 - A log of what Gutterberg did at start and any error, so an app that closes by itself can be diagnosed. Preferences › Help › Copy log copies the end of it for a bug report, and the bug report form has a field for it. The log is added to at each start and kept small: about half a megabyte at most.

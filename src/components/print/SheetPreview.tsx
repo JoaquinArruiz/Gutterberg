@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Tag } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
@@ -15,6 +15,7 @@ import { HintToast } from "../ui/HintToast";
 import { WarningList } from "./FinishSections";
 import { PlacedCard } from "./PlacedCard";
 import { SheetOverlay } from "./SheetOverlay";
+import { SheetReferences } from "./SheetReferences";
 import { SheetStrip } from "./SheetStrip";
 
 const PAD = 24;
@@ -43,6 +44,8 @@ export function SheetPreview() {
   const refresh = usePrintStore((s) => s.updateSheetsPreview);
   const stripOpen = usePreferencesStore((s) => s.prefs.inspector.sections[STRIP_SECTION_ID] ?? true);
   const setSectionOpen = usePreferencesStore((s) => s.setSectionOpen);
+  const showReferences = usePreferencesStore((s) => s.prefs.print.showReferences);
+  const setShowReferences = usePreferencesStore((s) => s.setShowReferences);
 
   // With Live Preview off the row of previews is frozen; the first plan after entering the stage is shown at once.
   const previews = live ? planned : snapshot;
@@ -92,6 +95,7 @@ export function SheetPreview() {
           <PlacedCard key={i} p={p} k={k} />
         ))}
         <SheetOverlay sheet={sheet} k={k} />
+        {showReferences && <SheetReferences sheet={sheet} k={k} />}
       </div>
     );
   }
@@ -136,6 +140,16 @@ export function SheetPreview() {
           className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
         >
           <ChevronRight size={14} />
+        </button>
+        <button
+          type="button"
+          aria-label={t("sheets.references")}
+          title={`${t("sheets.references")}. ${t("sheets.referencesHint")}`}
+          aria-pressed={showReferences}
+          onClick={() => setShowReferences(!showReferences)}
+          className={`rounded p-1 hover:bg-[var(--hover)] ${showReferences ? "bg-[var(--accent)]/25 text-[var(--accent)]" : ""}`}
+        >
+          <Tag size={14} />
         </button>
         <span className="ml-auto whitespace-nowrap text-[var(--muted)]" data-testid="sheet-summary">
           {t("sheets.summary", {

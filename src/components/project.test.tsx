@@ -133,12 +133,12 @@ describe("the piece library with two PDFs", () => {
     const options = screen.getAllByRole("option").map((o) => o.textContent);
     expect(options).toEqual([
       "All pieces",
-      "All pieces of a.pdf",
-      "All pieces of b.pdf",
-      "a.pdf: Pages 1–2 (3×3)",
-      "b.pdf: Page 1 (2×2)",
+      "All pieces of A · a.pdf",
+      "All pieces of B · b.pdf",
+      "A · a.pdf: Pages 1–2 (3×3)",
+      "B · b.pdf: Page 1 (2×2)",
     ]);
-    fireEvent.click(screen.getByRole("option", { name: "All pieces of b.pdf" }));
+    fireEvent.click(screen.getByRole("option", { name: "All pieces of B · b.pdf" }));
     expect(print().filter).toEqual({ kind: "document", document: 1 });
   });
 

@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { cardIdKey, cropWidthPx } from "../../lib/card";
+import { cardIdKey, cropWidthPx, documentLetter, pieceReference } from "../../lib/card";
 import { finalSizePt, formatCardSize, hasOwnHeight } from "../../lib/card-edits";
 import type { Card } from "../../lib/sheet-api";
 import { useCardImage } from "../../lib/use-card-image";
@@ -46,6 +46,12 @@ export function CardThumb({
   const path = useDocumentStore((s) => documentById(s, card.id.document_id)?.path ?? null);
   const page = useDocumentStore((s) => documentById(s, card.id.document_id)?.pages[card.id.page_index]);
   const image = useDocumentStore((s) => documentById(s, card.id.document_id)?.images?.pages[card.id.page_index]);
+  const letter = useDocumentStore((s) =>
+    documentLetter(
+      s.documents.map((d) => d.id),
+      card.id.document_id,
+    ),
+  );
   const unit = useUnit();
   const dpr = window.devicePixelRatio || 1;
   // The picture's box has the card's final shape, as large as the cell allows.
@@ -65,7 +71,7 @@ export function CardThumb({
       ? t("library.thumb.gridPosition", { row: card.id.row + 1, column: card.id.column + 1 })
       : t("library.thumb.freeformPosition", { n: card.id.index + 1 });
   const page1 = card.id.page_index + 1;
-  const label = t("library.thumb.label", { page: page1, position });
+  const label = pieceReference(card.id, letter);
   const size = formatCardSize(card, unit);
   const printed = copies === null || copies > 0;
   const scaled = Math.abs(card.scale - 1) > 1e-6 || hasOwnHeight(card);

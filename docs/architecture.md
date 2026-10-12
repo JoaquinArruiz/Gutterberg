@@ -215,6 +215,12 @@ skip) and shows the page as it is (**Original**), the re-spaced result (**Previe
 tab chooses what goes on the sheets (the piece library, copies, order, the sheet and page, marks, bleed, duplex) and
 exports. The Source tab's own export is the Print tab's default plan.
 
+**Piece references.** A piece is named `p3 · r1 c2` (grid) or `p4 · #2` (freeform) in the library, in the Selected
+pieces section and, when the switch in the sheet preview's header is on (`print.showReferences`), on the large sheet
+(`SheetReferences`: a chip at each piece's corner, shortened or left out when the piece is too small for it, never in
+the exported file). `pieceReference` and `documentLetter` in `lib/card.ts` build the text; with several PDFs each gets
+a letter by its place in the project (A, B, …) that goes in front.
+
 **Stores** (Zustand, read with per-field selectors, never the whole store): documents, the layout of the PDF being
 edited (the others are parked and swapped in), the print plan, editor session state, preferences, project state, the
 hint manager, update and toast state, and UI state. History is `zundo` on the layout and the print plan, joined by one

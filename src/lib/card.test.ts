@@ -4,10 +4,12 @@ import {
   cardIdKey,
   cropWidthPx,
   DEFAULT_DOCUMENT_ID,
+  documentLetter,
   freeformCardId,
   gridCardId,
   OrientedRectSchema,
   orientedBounds,
+  pieceReference,
 } from "./card";
 import { orientedFromPoints, orientedToPoints } from "./coordinates";
 
@@ -96,5 +98,31 @@ describe("cropWidthPx", () => {
     const ratio = orientedBounds(tilted).width / tilted.width;
     expect(ratio).toBeGreaterThan(1);
     expect(cropWidthPx(tilted, 0, 50, 100)).toBeCloseTo(50 * ratio);
+  });
+});
+
+describe("piece references", () => {
+  it("uses the words of the piece library", () => {
+    expect(pieceReference(gridCardId(0, 2, 0, 1))).toBe("p3 · r1 c2");
+    expect(pieceReference(freeformCardId(0, 3, 1))).toBe("p4 · #2");
+  });
+
+  it("puts the document's letter in front, and has a short form for small places", () => {
+    expect(pieceReference(gridCardId(1, 0, 0, 0), "B")).toBe("B · p1 · r1 c1");
+    expect(pieceReference(gridCardId(0, 2, 0, 1), null, true)).toBe("r1c2");
+    expect(pieceReference(freeformCardId(0, 3, 1), "A", true)).toBe("#2");
+  });
+
+  it("gives a document a letter only when the project has several, by its place", () => {
+    expect(documentLetter([4], 4)).toBeNull();
+    expect(documentLetter([4, 7, 9], 4)).toBe("A");
+    expect(documentLetter([4, 7, 9], 9)).toBe("C");
+    expect(documentLetter([4, 7], 99)).toBeNull();
+    expect(
+      documentLetter(
+        Array.from({ length: 30 }, (_, i) => i),
+        27,
+      ),
+    ).toBe("#28");
   });
 });

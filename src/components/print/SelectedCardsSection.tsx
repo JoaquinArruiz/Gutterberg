@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { cardIdKey } from "../../lib/card";
+import { cardIdKey, documentLetter, pieceReference } from "../../lib/card";
 import {
   cardScales,
   formatCardSize,
@@ -13,6 +13,7 @@ import {
 import { formatDecimal } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useLibraryCards } from "../../lib/use-library-cards";
+import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
@@ -31,6 +32,8 @@ const SAME_SIZE_PT = 0.5;
  * is shown, so a scale is never hidden.
  */
 export function SelectedCardsSection() {
+  const documentIds = useDocumentStore((s) => s.documents.map((d) => d.id).join(","));
+  const letterOf = (id: number) => documentLetter(documentIds === "" ? [] : documentIds.split(",").map(Number), id);
   const { t } = useTranslation();
   const cards = useLibraryCards();
   const selected = usePrintStore((s) => s.selection.selected);
@@ -84,13 +87,7 @@ export function SelectedCardsSection() {
     sharedBack === undefined
       ? t("print.selected.backMixed")
       : backCard
-        ? t("library.thumb.label", {
-            page: backCard.id.page_index + 1,
-            position:
-              backCard.id.kind === "grid"
-                ? t("library.thumb.gridPosition", { row: backCard.id.row + 1, column: backCard.id.column + 1 })
-                : t("library.thumb.freeformPosition", { n: backCard.id.index + 1 }),
-          })
+        ? pieceReference(backCard.id, letterOf(backCard.id.document_id))
         : commonBack
           ? t("print.selected.backCommon")
           : t("print.selected.backNone");

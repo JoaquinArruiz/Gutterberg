@@ -2,7 +2,7 @@ import { Minus, Plus, RotateCcw, RotateCw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { cardIdKey } from "../../lib/card";
+import { cardIdKey, documentLetter } from "../../lib/card";
 import { moveCards, orientCards, setBacks, turnCards } from "../../lib/card-edits";
 import { rangeLabel } from "../../lib/document-layout";
 import { useLayoutDocuments } from "../../lib/documents";
@@ -117,7 +117,13 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
   const several = documents.length > 1;
   const nameOf = (id: number) => {
     const doc = documentById(useDocumentStore.getState(), id);
-    return doc ? documentName(doc) : "";
+    if (!doc) return "";
+    // With several PDFs each is known by its letter too, the one its pieces carry.
+    const letter = documentLetter(
+      documents.map((d) => d.id),
+      id,
+    );
+    return letter ? `${letter} · ${documentName(doc)}` : documentName(doc);
   };
   const documentOptions = several
     ? documents.map((d) => ({
