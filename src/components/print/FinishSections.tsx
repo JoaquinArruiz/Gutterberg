@@ -30,6 +30,7 @@ import { MeasurementInput } from "../ui/MeasurementInput";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
+import { CalibrationDialog } from "./CalibrationDialog";
 import { CardThumb } from "./CardThumb";
 import { PairBacksDialog } from "./PairBacksDialog";
 
@@ -233,6 +234,7 @@ function DuplexFields() {
   const { t } = useTranslation();
   const duplex = usePrintStore((s) => s.finish.duplex);
   const setDuplex = usePrintStore((s) => s.setDuplex);
+  const [calibrating, setCalibrating] = useState(false);
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
@@ -261,6 +263,10 @@ function DuplexFields() {
         value={duplex.offsetYMm}
         onChange={(offsetYMm) => setDuplex({ offsetYMm })}
       />
+      <div>
+        <Button onClick={() => setCalibrating(true)}>{t("print.duplex.calibrate")}</Button>
+      </div>
+      <CalibrationDialog open={calibrating} onClose={() => setCalibrating(false)} />
     </>
   );
 }

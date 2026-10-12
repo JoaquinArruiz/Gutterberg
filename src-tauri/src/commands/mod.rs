@@ -1,5 +1,6 @@
 pub mod ai;
 pub mod app_info;
+pub mod calibration;
 pub mod detect;
 pub mod document;
 pub mod export;
