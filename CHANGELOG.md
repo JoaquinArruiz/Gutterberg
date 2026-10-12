@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.9.4 (2026-10-12)
+
 ### Added
 
 - On the first start, the welcome begins with a short setup: language, theme and units (inches in the United States, millimetres elsewhere), applied at once and kept in Preferences.
@@ -16,9 +18,6 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - The welcome tour is larger: its clips show up to 800 px wide, and smaller on a small window so everything still fits.
 - A back you turn in the piece library is printed turned that much more, so a back that is upside down in the file can be set right.
 - Projects are saved as version 5 (for the gutterfold settings); older projects open as before, and an older Gutterberg asks to be updated.
-
-### Changed
-
 - Check for updates in Preferences › Updates now also shows the "update available" toast when it finds a newer version, whatever "Tell me about" says.
 - Preferences › Updates says when the last check could not reach the update server, so a failed check no longer looks like "up to date".
 
