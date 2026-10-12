@@ -42,7 +42,16 @@ and pick the file for your system:
 | macOS, Intel | `Gutterberg_<version>_x64.dmg` |
 | Linux | `Gutterberg_<version>_amd64.AppImage` (make it executable, then run it), the `.deb` or the `.rpm` |
 
-Gutterberg needs macOS 10.15 (Catalina) or later on a Mac.
+### Requirements
+
+| System | What it needs |
+| --- | --- |
+| Windows | Windows 10 or 11, 64-bit, with the Microsoft WebView2 runtime (Windows 11 and up-to-date Windows 10 already have it; the installer downloads it if it is missing) |
+| macOS | macOS 10.15 (Catalina) or later, on Apple silicon or Intel |
+| Linux | A 64-bit distribution with glibc 2.35 or newer (Ubuntu 22.04, Debian 12 or Fedora 36 and later, for example). The `.deb` and `.rpm` bring in the web view they need; the AppImage carries its own |
+
+Nothing else needs installing: the PDF engine comes with the app. Gutterberg works offline; the only things that
+use the network are the check for new versions and, if you turn it on, AI Mode.
 
 Gutterberg checks for new versions by itself (Preferences › Updates) and installs them when you say so. On Linux
 the update replaces the AppImage; if you installed the `.deb` or `.rpm`, update by downloading the new one.
