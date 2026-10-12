@@ -114,7 +114,9 @@ You need a free [GitHub account](https://github.com/signup). Then:
    version and system already filled in.)
 2. Fill in the form: the version (**Preferences › About**, or **Copy app info** in **Preferences › Help**), your
    system, what happened, the steps to make it happen again and what you expected. A PDF that does not work is the
-   best test case, if you are allowed to share it.
+   best test case, if you are allowed to share it. If you cannot share yours, say whether
+   [`examples/09-bad-scan.pdf`](examples/09-bad-scan.pdf) (a crooked, mixed-size scan) does the same, which is
+   easy to reproduce, especially for **Detect pieces**.
 3. Paste the log into the **Log** box (the last 100 lines or so are enough). It is optional, but it helps a lot when
    the app closes by itself or does not start.
 4. Press **Submit new issue**. Before you do, a quick look at the
