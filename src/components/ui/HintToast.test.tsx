@@ -69,27 +69,40 @@ describe("HintToast", () => {
     // Mounted in the opposite order to the catalog: the catalog still decides.
     render(
       <>
-        <HintToast hint="print-stage-intro" />
         <HintToast hint="live-preview-sheets" />
+        <HintToast hint="print-stage-intro" />
       </>,
     );
-    expect(screen.queryByTestId("hint-print-stage-intro")).toBeNull();
-    expect(screen.getByTestId("hint-live-preview-sheets")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Dismiss tip" }));
     expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
     expect(screen.getByTestId("hint-print-stage-intro")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss tip" }));
+    expect(screen.queryByTestId("hint-print-stage-intro")).toBeNull();
+    expect(screen.getByTestId("hint-live-preview-sheets")).toBeTruthy();
+  });
+
+  it("lets a walkthrough of a screen go before the Live preview nudge on the same screen", () => {
+    render(
+      <>
+        <HintToast hint="live-preview-output" />
+        <HintToast hint="live-preview-sheets" />
+        <HintToast hint="print-stage-intro" />
+      </>,
+    );
+    expect(screen.getByTestId("hint-print-stage-intro")).toBeTruthy();
+    expect(screen.queryByTestId("hint-live-preview-output")).toBeNull();
+    expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
   });
 
   it("shows the next hint when the first stops being rendered", () => {
     const { rerender } = render(
       <>
-        <HintToast hint="live-preview-output" />
         <HintToast hint="print-stage-intro" />
+        <HintToast hint="live-preview-output" />
       </>,
     );
-    expect(screen.queryByTestId("hint-print-stage-intro")).toBeNull();
-    rerender(<HintToast hint="print-stage-intro" />);
-    expect(screen.getByTestId("hint-print-stage-intro")).toBeTruthy();
+    expect(screen.queryByTestId("hint-live-preview-output")).toBeNull();
+    rerender(<HintToast hint="live-preview-output" />);
+    expect(screen.getByTestId("hint-live-preview-output")).toBeTruthy();
   });
 
   it("stays hidden after a dismissal and returns after Reset help tips", () => {

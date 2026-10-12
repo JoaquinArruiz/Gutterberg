@@ -12,6 +12,7 @@ import { useUiStore } from "../../stores/ui-store";
 import { ApplyGridDialog } from "../sidebar/ApplyGridDialog";
 import { EditorToolbar } from "../toolbar/EditorToolbar";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { HintToast } from "../ui/HintToast";
 import { CardLibrary } from "./CardLibrary";
 import { PrintInspector } from "./PrintInspector";
 import { SheetPreview } from "./SheetPreview";
@@ -514,6 +515,24 @@ describe("sheet previews strip", () => {
 
   describe("with Live Preview off", () => {
     beforeEach(() => useLayoutStore.setState({ live: false }));
+
+    it("lets the Print walkthrough show first, and the Live Preview tip after it (they used to hide it)", () => {
+      print().setSheets([sheet(2)], null);
+      // What PrintStage mounts: the sheet preview and, with a document open, the walkthrough.
+      render(
+        <>
+          <SheetPreview />
+          <HintToast hint="print-stage-intro" />
+        </>,
+      );
+      expect(screen.getByTestId("hint-print-stage-intro")).toBeTruthy();
+      expect(screen.queryByTestId("hint-live-preview-sheets")).toBeNull();
+      fireEvent.click(
+        within(screen.getByTestId("hint-print-stage-intro")).getByRole("button", { name: "Dismiss tip" }),
+      );
+      expect(screen.queryByTestId("hint-print-stage-intro")).toBeNull();
+      expect(screen.getByTestId("hint-live-preview-sheets")).toBeTruthy();
+    });
 
     it("shows the first plan at once, with the tip and a refresh button", () => {
       print().setSheets([sheet(9), sheet(2)], null);

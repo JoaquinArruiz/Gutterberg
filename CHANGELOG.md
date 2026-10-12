@@ -25,6 +25,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - Turning on AI Mode (or closing any other window opened from Preferences) no longer closes Preferences, so you can enter your API key right away.
+- With Live Preview off, its tip no longer hides the Print tab's help tips: the tour of the Print tab shows first, and the Live Preview tip after it.
 - On a Mac with macOS older than 10.15 (Catalina), Gutterberg now says it needs a newer macOS instead of opening a blank window.
 
 ## 0.9.3 (2026-10-10)

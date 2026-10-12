@@ -6,7 +6,8 @@
 //
 // To add a hint:
 //   1. Add an entry to `HINTS` below. The key is its id; keep the entries in the order they
-//      should win when two want to show at once. A step holds the keys of its text in the
+//      should win when two want to show at once: a walkthrough of a screen comes before a
+//      one-off nudge that can show on the same screen, so a nudge never hides it. A step holds the keys of its text in the
 //      translation catalogs (`hints.<id>.<step>.title|text|action` in `locales/en.json` and
 //      `es.json`), not the text itself.
 //   2. Render `<HintToast hint="your-id" className="…" />` where the hint applies. The
@@ -107,22 +108,6 @@ export const HINTS = {
       },
     ],
   },
-  "live-preview-output": {
-    steps: [
-      {
-        text: "hints.live-preview-output.main.text",
-        action: { label: "hints.live-preview-output.main.action", run: "open-preferences:preview" },
-      },
-    ],
-  },
-  "live-preview-sheets": {
-    steps: [
-      {
-        text: "hints.live-preview-sheets.main.text",
-        action: { label: "hints.live-preview-sheets.main.action", run: "open-preferences:preview" },
-      },
-    ],
-  },
   "print-stage-intro": {
     steps: [
       {
@@ -149,6 +134,22 @@ export const HINTS = {
         target: "export-button",
         placement: "bottom",
         advanceOn: "export-started",
+      },
+    ],
+  },
+  "live-preview-output": {
+    steps: [
+      {
+        text: "hints.live-preview-output.main.text",
+        action: { label: "hints.live-preview-output.main.action", run: "open-preferences:preview" },
+      },
+    ],
+  },
+  "live-preview-sheets": {
+    steps: [
+      {
+        text: "hints.live-preview-sheets.main.text",
+        action: { label: "hints.live-preview-sheets.main.action", run: "open-preferences:preview" },
       },
     ],
   },
