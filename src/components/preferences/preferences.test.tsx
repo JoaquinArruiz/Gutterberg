@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import refractionHubLogo from "../../../assets/brand/refractionhub.svg";
 import { EXTERNAL_LINKS } from "../../lib/external-links";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -100,7 +101,7 @@ describe("the Preferences sections", () => {
 });
 
 describe("About", () => {
-  it("shows the app's name and version, who made it, and the two links", async () => {
+  it("shows the app's name and version, who made it, and the three links", async () => {
     render(<PreferencesDialog />);
     await openPreferences("About");
     expect(await screen.findByText("Gutterberg")).toBeTruthy();
@@ -108,11 +109,22 @@ describe("About", () => {
     expect(screen.getByText("Created by Joaquin Arruiz")).toBeTruthy();
     expect(screen.getByRole("button", { name: "LinkedIn" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "GitHub" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "RefractionHub" })).toBeTruthy();
     // Each carries its logo, drawn inline and hidden from screen readers (the button's text names it).
     expect(screen.getByRole("button", { name: "LinkedIn" }).querySelector("svg path")).toBeTruthy();
     expect(screen.getByRole("button", { name: "GitHub" }).querySelector("svg")?.getAttribute("aria-hidden")).toBe(
       "true",
     );
+    // RefractionHub is not the author's own page: it sits in a group of its own, after a divider.
+    const org = screen.getByTestId("about-org-link");
+    expect(within(org).getByRole("button", { name: "RefractionHub" })).toBeTruthy();
+    expect(within(org).queryByRole("button", { name: "LinkedIn" })).toBeNull();
+    expect(within(org).queryByRole("button", { name: "GitHub" })).toBeNull();
+    expect(org.className).toContain("border-l");
+    // RefractionHub's logo is its own image, not a text-coloured icon: decorative, with the name next to it.
+    const logo = screen.getByRole("button", { name: "RefractionHub" }).querySelector("img");
+    expect(logo?.getAttribute("alt")).toBe("");
+    expect(logo?.getAttribute("src")).toBe(refractionHubLogo); // the master in assets/brand, not another image
   });
 
   it("opens nothing by itself: a link goes through the confirmation with its exact address", async () => {
@@ -124,7 +136,9 @@ describe("About", () => {
     expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.linkedin);
     fireEvent.click(screen.getByRole("button", { name: "GitHub" }));
     expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.github);
-    expect(openExternalLink).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "RefractionHub" }));
+    expect(openExternalLink).toHaveBeenLastCalledWith("https://github.com/RefractionHub");
+    expect(openExternalLink).toHaveBeenCalledTimes(3);
   });
 
   it("states the terms in a line and shows the license and the third-party notices on request", async () => {

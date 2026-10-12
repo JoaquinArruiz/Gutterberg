@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- A link to RefractionHub on GitHub, with its logo, in Preferences › About.
 - A log of what Gutterberg did at start and any error, so an app that closes by itself can be diagnosed. Preferences › Help › Copy log copies the end of it for a bug report, and the bug report form has a field for it. The log is added to at each start and kept small: about half a megabyte at most.
 
 ### Changed

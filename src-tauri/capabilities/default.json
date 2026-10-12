@@ -19,6 +19,7 @@
       "allow": [
         { "url": "https://www.linkedin.com/in/joaquinarruiz" },
         { "url": "https://github.com/JoaquinArruiz" },
+        { "url": "https://github.com/RefractionHub" },
         { "url": "https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=bug_report.yml&*" }
       ]
     }

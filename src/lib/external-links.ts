@@ -10,6 +10,7 @@ import { t } from "../i18n";
 export const EXTERNAL_LINKS = {
   linkedin: "https://www.linkedin.com/in/joaquinarruiz",
   github: "https://github.com/JoaquinArruiz",
+  refractionHub: "https://github.com/RefractionHub",
 } as const;
 
 /**

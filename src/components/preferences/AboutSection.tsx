@@ -5,16 +5,19 @@ import appIcon from "../../../src-tauri/icons/128x128.png";
 import { useAppName } from "../../lib/app-info";
 import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
 import { type LicenseTexts, licenseTexts } from "../../lib/licenses";
-import { GitHubIcon, LinkedInIcon } from "../ui/BrandIcons";
+import { GitHubIcon, LinkedInIcon, RefractionHubIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
 import { Field } from "./Field";
 
+// The author's own pages.
 const LINKS = [
   { id: "linkedin", url: EXTERNAL_LINKS.linkedin, Icon: LinkedInIcon },
   { id: "github", url: EXTERNAL_LINKS.github, Icon: GitHubIcon },
 ] as const;
+// A link to an organization the author shares with friends, not a page of his own: shown apart, after a divider.
+const ORG_LINK = { id: "refractionHub", url: EXTERNAL_LINKS.refractionHub, Icon: RefractionHubIcon } as const;
 
-/** The app's name and version, who made it, and two links: each asks before it opens the web browser. */
+/** The app's name and version, who made it, and its links (his own, and one to an organization): each asks before it opens the web browser. */
 export function AboutSection() {
   const { t } = useTranslation();
   const name = useAppName();
@@ -72,13 +75,24 @@ export function AboutSection() {
         </div>
       </Field>
       <Field label={t("preferences.about.links")}>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {LINKS.map(({ id, url, Icon }) => (
             <Button key={id} size="md" className="flex items-center gap-2" title={url} onClick={() => void open(url)}>
               <Icon />
               {t(`preferences.about.${id}`)}
             </Button>
           ))}
+          <div className="ml-1 flex items-center border-l border-[var(--border)] pl-3" data-testid="about-org-link">
+            <Button
+              size="md"
+              className="flex items-center justify-center gap-2"
+              title={ORG_LINK.url}
+              onClick={() => void open(ORG_LINK.url)}
+            >
+              <ORG_LINK.Icon />
+              {t(`preferences.about.${ORG_LINK.id}`)}
+            </Button>
+          </div>
         </div>
         {failed && (
           <p className="text-red-300" role="alert">
