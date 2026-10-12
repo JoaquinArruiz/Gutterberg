@@ -42,6 +42,8 @@ and pick the file for your system:
 | macOS, Intel | `Gutterberg_<version>_x64.dmg` |
 | Linux | `Gutterberg_<version>_amd64.AppImage` (make it executable, then run it), the `.deb` or the `.rpm` |
 
+Gutterberg needs macOS 10.15 (Catalina) or later on a Mac.
+
 Gutterberg checks for new versions by itself (Preferences › Updates) and installs them when you say so. On Linux
 the update replaces the AppImage; if you installed the `.deb` or `.rpm`, update by downloading the new one.
 

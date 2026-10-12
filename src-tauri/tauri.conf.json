@@ -23,6 +23,7 @@
     "license": "PolyForm-Noncommercial-1.0.0",
     "licenseFile": "../LICENSE",
     "createUpdaterArtifacts": true,
+    "macOS": { "minimumSystemVersion": "10.15" },
     "linux": {
       "deb": { "depends": ["gstreamer1.0-plugins-good"] },
       "rpm": { "depends": ["gstreamer1-plugins-good"] },
