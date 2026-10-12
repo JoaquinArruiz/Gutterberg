@@ -262,7 +262,8 @@
       "hasBack": "This piece has a back",
       "commonBack": "Common back of the pieces without one",
       "backBadge": "Back",
-      "commonBadge": "Common back"
+      "commonBadge": "Common back",
+      "gridShort": "r{{row}}c{{column}}"
     },
     "allOfDocument": "All pieces of {{name}}",
     "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
@@ -496,7 +497,9 @@
     "front": "front",
     "back": "back",
     "positionFront": "Sheet {{current}} of {{total}} · front",
-    "positionBack": "Sheet {{current}} of {{total}} · back"
+    "positionBack": "Sheet {{current}} of {{total}} · back",
+    "references": "Show piece references",
+    "referencesHint": "Shows each piece's reference (page and position) on the sheet, to find it in the piece library. Only on screen: the exported PDF does not have them."
   },
   "preferences": {
     "title": "Preferences",

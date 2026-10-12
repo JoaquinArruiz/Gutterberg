@@ -255,6 +255,22 @@ describe("Sheet preview with finishing", () => {
     expect(page.getAllByTestId("cut-mark")[0].getAttribute("stroke")).toBe("rgb(255,0,0)");
   });
 
+  it("shows the piece references on the sheet only while the switch is pressed", async () => {
+    print().setSheets([sheet(2)], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    const page = within(screen.getByTestId("sheet-page"));
+    expect(page.queryByTestId("sheet-references")).toBeNull();
+    const toggle = screen.getByRole("button", { name: "Show piece references" });
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(toggle);
+    expect(usePreferencesStore.getState().prefs.print.showReferences).toBe(true);
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(page.getByTestId("sheet-references")).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(page.queryByTestId("sheet-references")).toBeNull();
+  });
+
   it("draws the fold lines of gutterfold pairs", async () => {
     print().setSheets([{ ...sheet(2), folds: [[80, 40, 80, 110]] }], null);
     render(<SheetPreview />);

@@ -373,3 +373,21 @@ describe("the updates and experimental preferences", () => {
     expect(migratePreferences({ version: PREFERENCES_VERSION, updates: saved }).updates).toEqual(saved);
   });
 });
+
+describe("the piece references preference", () => {
+  it("is off by default and when an older file lacks it", () => {
+    expect(DEFAULT_PREFERENCES.print.showReferences).toBe(false);
+    expect(migratePreferences({ version: 11 }).print.showReferences).toBe(false);
+  });
+
+  it("keeps it on, and ignores anything that is not true", () => {
+    expect(
+      migratePreferences({ version: PREFERENCES_VERSION, print: { showReferences: true } }).print.showReferences,
+    ).toBe(true);
+    for (const bad of ["true", 1, null]) {
+      expect(
+        migratePreferences({ version: PREFERENCES_VERSION, print: { showReferences: bad } }).print.showReferences,
+      ).toBe(false);
+    }
+  });
+});

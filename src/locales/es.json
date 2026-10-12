@@ -262,7 +262,8 @@
       "hasBack": "Esta pieza tiene dorso",
       "commonBack": "Dorso común de las piezas que no tienen uno",
       "backBadge": "Dorso",
-      "commonBadge": "Dorso común"
+      "commonBadge": "Dorso común",
+      "gridShort": "f{{row}}c{{column}}"
     },
     "allOfDocument": "Todas las piezas de {{name}}",
     "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
@@ -496,7 +497,9 @@
     "front": "frente",
     "back": "dorso",
     "positionFront": "Hoja {{current}} de {{total}} · frente",
-    "positionBack": "Hoja {{current}} de {{total}} · dorso"
+    "positionBack": "Hoja {{current}} de {{total}} · dorso",
+    "references": "Mostrar referencias de las piezas",
+    "referencesHint": "Muestra la referencia de cada pieza (página y posición) en la hoja, para encontrarla en la biblioteca de piezas. Solo en pantalla: el PDF exportado no las lleva."
   },
   "preferences": {
     "title": "Preferencias",
