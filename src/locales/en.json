@@ -414,7 +414,28 @@
       "none": "None",
       "useSelected": "Use the selected piece as common back",
       "remove": "Remove",
-      "backNote": "A piece with no back of its own gets the common back; with neither, its back stays empty."
+      "backNote": "A piece with no back of its own gets the common back; with neither, its back stays empty.",
+      "calibrate": "Calibration sheet…",
+      "calibration": {
+        "title": "Calibration sheet",
+        "intro": "Many printers move the back of a sheet by a millimetre or two. This sheet shows by how much, so the backs line up with the fronts.",
+        "step1": "Save the sheet and print it on both sides of one piece of paper, at actual size (100%, not “fit to page”). Use the same paper and printer settings as for your pieces.",
+        "step2": "Hold the paper up to a light with the back facing you. At each crosshair of the front, see where its lines cross the rulers of the back.",
+        "step3": "Type the numbers where the lines cross the rulers: the horizontal ruler gives X, the vertical one Y. Numbers to the right and downward are positive.",
+        "save": "Save the sheet…",
+        "saved": "Saved to {{path}}",
+        "readingX": "Reading on the horizontal ruler (X)",
+        "readingY": "Reading on the vertical ruler (Y)",
+        "cornersNote": "Read the centre first. If the corners give clearly different numbers, the printer also turns or scales the back, and an offset cannot fix that.",
+        "replaces": "These numbers replace the current back offset.",
+        "label": {
+          "title": "Gutterberg · duplex calibration",
+          "front": "FRONT",
+          "back": "BACK",
+          "actualSize": "This line is 100 mm long"
+        },
+        "fileName": "Duplex-calibration"
+      }
     },
     "pairing": {
       "open": "Pair backs automatically…",

@@ -414,7 +414,28 @@
       "none": "Ninguno",
       "useSelected": "Usar la pieza seleccionada como dorso común",
       "remove": "Quitar",
-      "backNote": "Una pieza sin dorso propio recibe el dorso común; si no hay ninguno, su dorso queda vacío."
+      "backNote": "Una pieza sin dorso propio recibe el dorso común; si no hay ninguno, su dorso queda vacío.",
+      "calibrate": "Hoja de calibración…",
+      "calibration": {
+        "title": "Hoja de calibración",
+        "intro": "Muchas impresoras desplazan el dorso de una hoja uno o dos milímetros. Esta hoja muestra cuánto, para que los dorsos coincidan con los frentes.",
+        "step1": "Guarda la hoja e imprímela por ambas caras de una misma hoja de papel, a tamaño real (100 %, no «ajustar a la página»). Usa el mismo papel y los mismos ajustes de impresión que para tus piezas.",
+        "step2": "Sostén el papel a contraluz con el dorso hacia ti. En cada cruz del frente, mira dónde sus líneas cruzan las reglas del dorso.",
+        "step3": "Escribe los números donde las líneas cruzan las reglas: la regla horizontal da X y la vertical, Y. Los números hacia la derecha y hacia abajo son positivos.",
+        "save": "Guardar la hoja…",
+        "saved": "Guardada en {{path}}",
+        "readingX": "Lectura en la regla horizontal (X)",
+        "readingY": "Lectura en la regla vertical (Y)",
+        "cornersNote": "Lee primero el centro. Si las esquinas dan números claramente distintos, la impresora además gira o escala el dorso, y un desfase no lo corrige.",
+        "replaces": "Estos números reemplazan el desfase actual del dorso.",
+        "label": {
+          "title": "Gutterberg · calibración a doble cara",
+          "front": "FRENTE",
+          "back": "DORSO",
+          "actualSize": "Esta línea mide 100 mm"
+        },
+        "fileName": "Calibracion-doble-cara"
+      }
     },
     "pairing": {
       "open": "Emparejar dorsos automáticamente…",

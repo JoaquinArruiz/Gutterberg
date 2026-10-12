@@ -281,7 +281,7 @@ fn page_to_form(
     Ok(doc.add_object(stream))
 }
 
-fn fmt(v: f64) -> String {
+pub(crate) fn fmt(v: f64) -> String {
     let s = format!("{v:.4}");
     let s = s.trim_end_matches('0').trim_end_matches('.');
     if s == "-0" {
@@ -292,7 +292,7 @@ fn fmt(v: f64) -> String {
 }
 
 /// Write `doc` beside `output`, then rename, so a failed export never leaves a truncated file.
-fn save_atomically(doc: &mut Document, output: &Path) -> Result<()> {
+pub(crate) fn save_atomically(doc: &mut Document, output: &Path) -> Result<()> {
     let name = output
         .file_name()
         .ok_or_else(|| Error::Malformed("output path has no file name".into()))?

@@ -108,7 +108,10 @@ matter:
   is an error; a source gap smaller than the bleed is a page issue that blocks export.
 - **Duplex:** backs are mirrored left to right for a long-edge flip on a portrait sheet (or a short-edge flip on a
   landscape one), otherwise top to bottom, with the back's turn adjusted so a front corner and its back corner pair
-  up. A common back or a back per piece, with an X/Y offset for printer drift.
+  up. A common back or a back per piece, with an X/Y offset for printer drift. `calibration.rs` writes the sheet that
+  measures that drift: a front with a crosshair at the four corners and the centre, and a back with a ruler beside
+  each place (placed with the same mirroring, `finish::mirrors_x`), in the back sheet's own frame, so the number read
+  where a front line crosses a ruler is the offset to type, with no sign to work out. The words come from the UI.
 - **Gutterfold:** with `layout: Gutterfold`, pagination reserves a **pair slot** for every front (its size plus a
   room the same size past the fold, plus the fold gap) and places slots exactly like pieces: grid, gaps, margins,
   grouping by size, `DoesNotFit` for a pair too large, never shrinking. Finishing then puts the back in that room,

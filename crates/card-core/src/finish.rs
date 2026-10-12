@@ -635,6 +635,14 @@ fn add_turns(a: Turn, b: Turn) -> Turn {
     Turn::try_from(((a.degrees() + b.degrees()) as u16) % 360).expect("a multiple of 90")
 }
 
+/// Whether the back of a sheet is the front mirrored left to right (turned over a vertical
+/// edge) rather than top to bottom: the long edge of a portrait page, the short edge of a
+/// landscape one.
+pub(crate) fn mirrors_x(page: &PageSize, flip: Flip) -> bool {
+    let portrait = page.width_pt <= page.height_pt;
+    (flip == Flip::Long) == portrait
+}
+
 fn back_sheet(
     front: &OutputSheet,
     duplex: &DuplexOptions,
@@ -642,8 +650,7 @@ fn back_sheet(
     cards: &HashMap<CardId, Card>,
 ) -> Result<Option<OutputSheet>> {
     let page = front.page;
-    let portrait = page.width_pt <= page.height_pt;
-    let mirror_x = (duplex.flip == Flip::Long) == portrait;
+    let mirror_x = mirrors_x(&page, duplex.flip);
     let (dx, dy) = (mm_to_pt(duplex.offset_x_mm), mm_to_pt(duplex.offset_y_mm));
     let mut placements = Vec::new();
     let mut warnings = Vec::new();

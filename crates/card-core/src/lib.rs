@@ -5,6 +5,7 @@
 //! truth for geometry.
 
 pub mod access;
+pub mod calibration;
 pub mod card;
 pub mod detect;
 pub mod error;

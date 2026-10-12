@@ -40,6 +40,7 @@ pub fn run() {
             commands::ai::ai_set_key,
             commands::ai::ai_sort_pages,
             commands::ai::ai_test_connection,
+            commands::calibration::save_calibration_sheet,
             commands::detect::detect_pieces,
             commands::document::open_pdf,
             commands::document::close_pdf,
