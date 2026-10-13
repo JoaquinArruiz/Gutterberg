@@ -1,7 +1,10 @@
 name: CI
 
+# Branches are checked by their pull request; a push builds only the branches a pull request merges into, and tags.
 on:
   push:
+    branches: [main, 'release/**']
+    tags: ['v*']
   pull_request:
 
 jobs:
