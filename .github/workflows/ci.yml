@@ -12,6 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: No AI tool as author or co-author
+        run: scripts/check-authorship.sh "${{ github.event.pull_request.base.sha || github.event.before }}..${{ github.sha }}"
       - name: Install Tauri Linux dependencies
         run: |
           sudo apt-get update
