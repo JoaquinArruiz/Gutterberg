@@ -25,6 +25,7 @@ const state = (patch: Partial<ReturnType<typeof useUpdateStore.getState>>) =>
   act(() => useUpdateStore.setState({ status: "idle", update: null, progress: null, whatsNew: null, ...patch }));
 
 beforeEach(() => {
+  Element.prototype.scrollIntoView = () => {};
   HTMLDialogElement.prototype.showModal = function showModal() {
     this.setAttribute("open", "");
   };
@@ -138,10 +139,34 @@ describe("Preferences › Updates", () => {
     expect(screen.getByText("Better")).toBeTruthy();
   });
 
-  it("saves Tell me about", () => {
+  it("saves Tell me about from a menu, with the hint of the chosen one under it", () => {
     render(<UpdatesSection />);
-    expect(screen.getByRole("radio", { name: /All updates/ }).getAttribute("aria-checked")).toBe("true");
-    fireEvent.click(screen.getByRole("radio", { name: /Major versions only/ }));
+    const menu = screen.getByRole("combobox", { name: "Tell me about" });
+    expect(menu.textContent).toContain("All updates");
+    expect(screen.getByText("Every new version, including fixes.")).toBeTruthy();
+    fireEvent.click(menu);
+    fireEvent.click(screen.getByRole("option", { name: /Major versions only/ }));
     expect(usePreferencesStore.getState().prefs.updates.notify).toBe("major");
+    expect(screen.getByText("Only big changes, such as 2.0.")).toBeTruthy();
+    expect(screen.getByText(/only decides whether a message appears/)).toBeTruthy();
+  });
+
+  it("keeps long notes in a box that scrolls", () => {
+    state({ status: "available", update: { version: "1.2.0", notes: "- Better" } });
+    render(<UpdatesSection />);
+    const cls = screen.getByTestId("release-notes").className;
+    expect(cls).toContain("max-h-60");
+    expect(cls).toContain("overflow-y-auto");
+  });
+
+  it("focuses Install when opened from the update toast, once", async () => {
+    vi.useFakeTimers();
+    state({ status: "available", update: { version: "1.2.0", notes: "- Better" } });
+    act(() => useUiStore.getState().setFocusInstall(true));
+    render(<UpdatesSection />);
+    await act(async () => void vi.advanceTimersByTime(5));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Download and install" }));
+    expect(useUiStore.getState().focusInstall).toBe(false);
+    vi.useRealTimers();
   });
 });

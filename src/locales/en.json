@@ -1178,7 +1178,7 @@
     "toast": {
       "available": "Gutterberg {{version}} is available",
       "whatsNew": "What's new",
-      "update": "Update",
+      "update": "Update…",
       "skip": "Skip this version",
       "updated": "Updated to {{version}}",
       "failed": "The update to {{version}} didn't finish",

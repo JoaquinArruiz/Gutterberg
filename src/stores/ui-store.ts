@@ -26,6 +26,9 @@ export const useUiStore = create<{
   /** Section to show next time the dialog opens (set by "open preferences" links), then cleared. */
   prefsSection: PrefsSection | null;
   setPrefsOpen: (open: boolean, section?: PrefsSection) => void;
+  /** Preferences › Updates should put the focus on its Install button when it shows it (the update toast), then clear this. */
+  focusInstall: boolean;
+  setFocusInstall: (focus: boolean) => void;
   /** The keyboard shortcuts sheet (`?`, or File menu). */
   shortcutsOpen: boolean;
   setShortcutsOpen: (open: boolean) => void;
@@ -50,6 +53,8 @@ export const useUiStore = create<{
   prefsOpen: false,
   prefsSection: null,
   setPrefsOpen: (prefsOpen, section) => set({ prefsOpen, prefsSection: section ?? null }),
+  focusInstall: false,
+  setFocusInstall: (focusInstall) => set({ focusInstall }),
   shortcutsOpen: false,
   setShortcutsOpen: (shortcutsOpen) => set({ shortcutsOpen }),
   welcomeOpen: false,

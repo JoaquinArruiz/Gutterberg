@@ -16,6 +16,9 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Changed
 
 - Projects are saved as version 6 (for cutting gutterfold pairs apart); older projects open as before, with their pairs folded, and an older Gutterberg asks to be updated.
+- The update toast no longer installs: its “Update…” button opens Preferences › Updates with the Install button focused, next to “Skip this version”, so an update is always installed from where its notes are.
+- Release notes scroll inside a box about 14 lines tall, for a newer version and for What's new after updating, so a long changelog no longer pushes the buttons out of view.
+- Preferences › Updates › Tell me about is a menu, with the hint of the chosen choice under it.
 
 ## 0.13.0 (2026-10-13)
 
