@@ -8,6 +8,7 @@ import { z } from "zod";
 import { t } from "../i18n";
 import type { NormalizedRect } from "./coordinates";
 import type { GridGroup, PageGroup } from "./document-layout";
+import type { BuiltInSizeId } from "./size-presets";
 
 /** The formats an import accepts; anything else is refused with a message naming the file. */
 export const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "webp"] as const;
@@ -107,14 +108,8 @@ export async function pickImages(): Promise<string[]> {
   return Array.isArray(picked) ? picked : typeof picked === "string" ? [picked] : [];
 }
 
-/** The size presets of the dialog, in mm. */
-export const SIZE_PRESETS = {
-  standard: { widthMm: 63, heightMm: 88 },
-  small: { widthMm: 59, heightMm: 86 },
-  tarot: { widthMm: 70, heightMm: 120 },
-} as const;
-
-export type SizePreset = keyof typeof SIZE_PRESETS | "image" | "custom";
+/** The size of the dialog: one of the shared presets (`size-presets.ts`), the image's own, or a custom one. */
+export type SizePreset = BuiltInSizeId | "image" | "custom";
 
 export const DEFAULT_BLEED_MM = 3;
 

@@ -109,7 +109,7 @@ describe("the size dialog", () => {
     await open([probe("a.png")]);
     await choose("Piece size", /^Tarot/);
     expect(screen.getByTestId("image-piece-size").textContent).toBe("Pieces print at 70 × 120 mm.");
-    await choose("Piece size", /^Small card/);
+    await choose("Piece size", /^Japanese:/);
     expect(screen.getByTestId("image-piece-size").textContent).toBe("Pieces print at 59 × 86 mm.");
     await confirmDialog();
     expect(answered?.placements[0]).toMatchObject({ widthMm: 59, heightMm: 86 });

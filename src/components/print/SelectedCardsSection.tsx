@@ -20,8 +20,10 @@ import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
 import { ChainedFields, ChainToggle } from "../ui/ChainToggle";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { FieldRow } from "../ui/FieldRow";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
+import { SizePresets } from "./SizePresets";
 
 /** Cards whose source sizes differ by less than this (points) can be given one real size together. */
 const SAME_SIZE_PT = 0.5;
@@ -102,12 +104,14 @@ export function SelectedCardsSection() {
         <p className="text-[var(--muted)]">{t("print.selected.empty")}</p>
       ) : (
         <>
-          <div className="flex justify-between gap-2" data-testid="card-size-summary">
-            <span className="text-[var(--muted)]">
-              {picked.length === 1
+          <FieldRow
+            data-testid="card-size-summary"
+            label={
+              picked.length === 1
                 ? t("print.selected.printedSize")
-                : t("print.selected.count", { count: picked.length })}
-            </span>
+                : t("print.selected.count", { count: picked.length })
+            }
+          >
             <span className="tabular-nums">
               {picked.length === 1
                 ? formatCardSize(first, unit)
@@ -115,7 +119,7 @@ export function SelectedCardsSection() {
                   ? t("print.selected.differentSizes")
                   : `${formatDecimal(scale * 100, 1)}%`}
             </span>
-          </div>
+          </FieldRow>
           <ChainedFields
             chain={
               <ChainToggle
@@ -144,6 +148,7 @@ export function SelectedCardsSection() {
               onChange={(mm) => (linked ? apply(scaleForSize(first.source, "height", mm)) : setSide("height", mm))}
             />
           </ChainedFields>
+          <SizePresets />
           <NumberField
             label={t("print.selected.scale")}
             value={scale === null || heightScale === null || Math.abs(scale - heightScale) > 1e-6 ? null : scale * 100}
@@ -156,7 +161,7 @@ export function SelectedCardsSection() {
             suffix="%"
             onCommit={(pct) => apply(pct / 100)}
           />
-          <div>
+          <FieldRow label={null} wrap>
             <Button
               disabled={picked.every((c) => c.scale === 1 && !hasOwnHeight(c))}
               onClick={() => {
@@ -166,12 +171,11 @@ export function SelectedCardsSection() {
             >
               {t("print.selected.backToPage")}
             </Button>
-          </div>
-          <div className="flex justify-between gap-2" data-testid="back-summary">
-            <span className="text-[var(--muted)]">{t("print.selected.back")}</span>
+          </FieldRow>
+          <FieldRow label={t("print.selected.back")} data-testid="back-summary">
             <span className="tabular-nums">{backText}</span>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
+          </FieldRow>
+          <FieldRow label={null} wrap>
             <Button aria-pressed={picking} onClick={() => setPicking(!picking)}>
               {t("print.selected.pickBack")}
             </Button>
@@ -181,7 +185,7 @@ export function SelectedCardsSection() {
             >
               {t("print.selected.clearBack")}
             </Button>
-          </div>
+          </FieldRow>
           {!sameSource && <p className="text-[var(--muted)]">{t("print.selected.differNote")}</p>}
         </>
       )}

@@ -30,7 +30,7 @@ included. `CONTRIBUTING.md` is the human version.
 
 ```sh
 pnpm install
-scripts/fetch-pdfium.sh        # pdfium into src-tauri/resources/pdfium
+scripts/fetch-pdfium.sh        # pdfium into src-tauri/resources/pdfium (pnpm tauri dev runs it when it is missing)
 pnpm tauri dev                 # run the app
 
 pnpm lint                      # Biome
@@ -101,7 +101,8 @@ These apply to everyone, whether a person or an AI tool is writing the change.
 - Work goes **feature branch → version branch → `main` → tag** (see "Branches and releases" below). Nobody commits
   to `main` or to a `release/*` branch directly, once the owner has turned on that protection.
 - No AI tool is an author or co-author: no `Co-Authored-By` lines, no session links, and no tool's name in commit
-  messages, branch names, code or docs.
+  messages, branch names, code or docs. CI fails a push or pull request that has one (`scripts/check-authorship.sh`);
+  check `git config user.name` and `user.email` before you commit, since a tool's default identity counts.
 - Do not commit, push, create branches or open pull requests unless you were asked to. When asked, branch from the
   version branch the work belongs to, with the names below.
 - The project is under the PolyForm Noncommercial License 1.0.0 (`LICENSE`). Never change the `LICENSE` file, and add
