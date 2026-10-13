@@ -30,7 +30,7 @@ included. `CONTRIBUTING.md` is the human version.
 
 ```sh
 pnpm install
-scripts/fetch-pdfium.sh        # pdfium into src-tauri/resources/pdfium
+scripts/fetch-pdfium.sh        # pdfium into src-tauri/resources/pdfium (pnpm tauri dev runs it when it is missing)
 pnpm tauri dev                 # run the app
 
 pnpm lint                      # Biome
