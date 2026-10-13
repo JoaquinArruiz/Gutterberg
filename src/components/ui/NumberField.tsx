@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDecimal, parseDecimal } from "../../lib/measurement";
 import { useDecimalSeparator } from "../../stores/preferences-store";
+import { FieldRow, useFieldLayout } from "./FieldRow";
 import { InfoTip } from "./InfoTip";
 
 /**
@@ -23,6 +24,7 @@ export function NumberField({
   label,
   hideLabel,
   hideSteppers,
+  fill,
   info,
 }: {
   value: number | null;
@@ -42,6 +44,8 @@ export function NumberField({
   hideLabel?: boolean;
   /** Leave out the built-in -/+ buttons, when the surroundings step the value another way. */
   hideSteppers?: boolean;
+  /** The input takes the room it is given instead of a fixed width (a field inside a `FieldRow`). */
+  fill?: boolean;
   /** A one-line explanation, behind an InfoTip beside the field. */
   info?: React.ReactNode;
 }) {
@@ -50,6 +54,10 @@ export function NumberField({
   const fmt = (v: number | null) => (v === null ? "" : formatDecimal(v, decimals, separator));
   const [text, setText] = useState(fmt(value));
   const focused = useRef(false);
+  const id = useId();
+  // In a column layout the label is the row's, and the field fills the control column.
+  const column = useFieldLayout() === "column" && !hideLabel;
+  const wide = column || fill;
 
   // Follow external changes (e.g. dragging the selection) unless the user is typing.
   // biome-ignore lint/correctness/useExhaustiveDependencies: `fmt` is recreated every render; `decimals` and `separator` are its inputs
@@ -79,63 +87,75 @@ export function NumberField({
     setText(fmt(value));
   };
 
+  const control = (
+    <span className={`flex items-center gap-1 ${wide ? "w-full min-w-0" : ""}`}>
+      {!hideSteppers && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={t("numberField.decrease", { label })}
+          disabled={disabled || value === null || (min !== undefined && value <= min)}
+          onClick={(e) => nudge(-1, e)}
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
+        >
+          −
+        </button>
+      )}
+      <input
+        aria-label={label}
+        disabled={disabled}
+        inputMode="decimal"
+        value={text}
+        placeholder="—"
+        onFocus={(e) => {
+          focused.current = true;
+          e.currentTarget.select();
+        }}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => {
+          focused.current = false;
+          commit();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") e.currentTarget.blur();
+          else if (e.key === "Escape") {
+            setText(fmt(value));
+            e.currentTarget.blur();
+          } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            nudge(e.key === "ArrowUp" ? 1 : -1, e);
+          }
+        }}
+        className={`${wide ? "min-w-0 flex-1" : "w-14"} rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 text-right tabular-nums outline-none focus:border-[var(--accent)] disabled:opacity-40`}
+      />
+      {!hideSteppers && (
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label={t("numberField.increase", { label })}
+          disabled={disabled || value === null || (max !== undefined && value >= max)}
+          onClick={(e) => nudge(1, e)}
+          className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
+        >
+          +
+        </button>
+      )}
+      {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
+    </span>
+  );
+  if (column)
+    return (
+      <FieldRow label={label} info={info}>
+        {control}
+      </FieldRow>
+    );
   const field = (
-    <label className={`flex items-center gap-2 ${hideLabel ? "" : "justify-between"} ${info ? "min-w-0 flex-1" : ""}`}>
+    <label
+      htmlFor={id}
+      className={`flex items-center gap-2 ${hideLabel ? "" : "justify-between"} ${info ? "min-w-0 flex-1" : ""}`}
+    >
       <span className={hideLabel ? "sr-only" : "text-[var(--muted)]"}>{label}</span>
-      <span className="flex items-center gap-1">
-        {!hideSteppers && (
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={t("numberField.decrease", { label })}
-            disabled={disabled || value === null || (min !== undefined && value <= min)}
-            onClick={(e) => nudge(-1, e)}
-            className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
-          >
-            −
-          </button>
-        )}
-        <input
-          aria-label={label}
-          disabled={disabled}
-          inputMode="decimal"
-          value={text}
-          placeholder="—"
-          onFocus={(e) => {
-            focused.current = true;
-            e.currentTarget.select();
-          }}
-          onChange={(e) => setText(e.target.value)}
-          onBlur={() => {
-            focused.current = false;
-            commit();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.currentTarget.blur();
-            else if (e.key === "Escape") {
-              setText(fmt(value));
-              e.currentTarget.blur();
-            } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-              e.preventDefault();
-              nudge(e.key === "ArrowUp" ? 1 : -1, e);
-            }
-          }}
-          className="w-14 rounded border border-[var(--border)] bg-[var(--bg)] px-1.5 py-0.5 text-right tabular-nums outline-none focus:border-[var(--accent)] disabled:opacity-40"
-        />
-        {!hideSteppers && (
-          <button
-            type="button"
-            tabIndex={-1}
-            aria-label={t("numberField.increase", { label })}
-            disabled={disabled || value === null || (max !== undefined && value >= max)}
-            onClick={(e) => nudge(1, e)}
-            className="h-5 w-5 rounded border border-[var(--border)] leading-none hover:bg-[var(--hover)] disabled:opacity-30"
-          >
-            +
-          </button>
-        )}
-        {suffix && <span className="w-5 text-[10px] text-[var(--muted)]">{suffix}</span>}
-      </span>
+      {control}
     </label>
   );
   if (!info) return field;

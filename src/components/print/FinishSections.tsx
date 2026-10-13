@@ -25,6 +25,7 @@ import { useLibraryCards } from "../../lib/use-library-cards";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { FieldRow } from "../ui/FieldRow";
 import { InfoTip } from "../ui/InfoTip";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { Segmented } from "../ui/Segmented";
@@ -70,15 +71,15 @@ export function MarksSection() {
       defaultOpen={false}
       info={t("print.marks.note")}
     >
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="text-[var(--muted)]">{t("print.marks.style")}</span>
+      <FieldRow label={t("print.marks.style")}>
         <Select<MarkStyle>
+          fill
           label={t("print.marks.style")}
           value={marks.style}
           onChange={(style) => setMarks({ style })}
           options={MARK_STYLES.map((value) => ({ value, label: t(`print.marks.styles.${value}`) }))}
         />
-      </div>
+      </FieldRow>
       {on && (
         <>
           <MeasurementInput
@@ -89,8 +90,7 @@ export function MarksSection() {
             value={marks.widthMm}
             onChange={(widthMm) => setMarks({ widthMm })}
           />
-          <label className="flex items-center justify-between gap-2">
-            <span className="text-[var(--muted)]">{t("print.marks.color")}</span>
+          <FieldRow label={t("print.marks.color")}>
             <input
               type="color"
               aria-label={t("print.marks.color")}
@@ -98,7 +98,7 @@ export function MarksSection() {
               onChange={(e) => setMarks({ color: e.target.value })}
               className="h-6 w-10 cursor-pointer rounded border border-[var(--border)] bg-transparent"
             />
-          </label>
+          </FieldRow>
           {marks.style === "ticks" && (
             <>
               <MeasurementInput
@@ -147,18 +147,18 @@ export function BleedSection() {
         onChange={(mm) => setBleed({ mm })}
       />
       {bleed.mm > 0 && (
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <span className="flex items-center gap-1 text-[var(--muted)]">
-            {t("print.bleed.source")}
-            <InfoTip text={bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")} />
-          </span>
+        <FieldRow
+          label={t("print.bleed.source")}
+          info={bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")}
+        >
           <Segmented<BleedSource>
+            fill
             label={t("print.bleed.source")}
             value={bleed.source}
             onChange={(source) => setBleed({ source })}
             options={BLEED_SOURCES.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
           />
-        </div>
+        </FieldRow>
       )}
       <WarningList codes={["bleed_overlaps_neighbour", "bleed_off_page", "bleed_exceeds_source_gap"]} />
     </CollapsibleSection>
@@ -184,36 +184,32 @@ export function DuplexSection() {
       />
       {duplex.on && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-            <span className="text-[var(--muted)]">{t("print.duplex.layout")}</span>
+          <FieldRow label={t("print.duplex.layout")}>
             <Segmented<BackLayout>
+              fill
               label={t("print.duplex.layout")}
               value={duplex.layout}
               onChange={(layout) => setDuplex({ layout })}
               options={BACK_LAYOUTS.map((value) => ({ value, label: t(`print.duplex.layouts.${value}`) }))}
             />
-          </div>
+          </FieldRow>
           {duplex.layout === "gutterfold" ? <GutterfoldFields /> : <DuplexFields />}
-          <div className="mt-1 flex items-center gap-1">
+          <FieldRow label={null}>
             <Button onClick={() => setPairing(true)}>{t("print.pairing.open")}</Button>
             <InfoTip text={t("print.pairing.openHint")} />
-          </div>
+          </FieldRow>
           <PairBacksDialog open={pairing} onClose={() => setPairing(false)} />
-          <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
-            {t("print.duplex.commonBack")}
-            <InfoTip text={t("print.duplex.backNote")} />
-          </div>
-          <div className="flex items-start gap-2">
-            {common ? (
-              <div className="shrink-0" data-testid="common-back">
-                <CardThumb card={common} width={64} height={92} selected={false} copies={null} onClick={() => {}} />
-              </div>
-            ) : (
-              <span className="text-[var(--muted)]" data-testid="common-back-none">
-                {t("print.duplex.none")}
-              </span>
-            )}
-            <div className="flex flex-col items-start gap-1">
+          <FieldRow label={t("print.duplex.commonBack")} info={t("print.duplex.backNote")}>
+            <div className="flex w-full flex-col items-stretch gap-1">
+              {common ? (
+                <div className="self-start" data-testid="common-back">
+                  <CardThumb card={common} width={64} height={92} selected={false} copies={null} onClick={() => {}} />
+                </div>
+              ) : (
+                <span className="text-[var(--muted)]" data-testid="common-back-none">
+                  {t("print.duplex.none")}
+                </span>
+              )}
               <Button disabled={selected.length !== 1} onClick={() => setDuplex({ commonBack: selected[0] ?? null })}>
                 {t("print.duplex.useSelected")}
               </Button>
@@ -221,7 +217,7 @@ export function DuplexSection() {
                 {t("print.duplex.remove")}
               </Button>
             </div>
-          </div>
+          </FieldRow>
           <WarningList codes={["back_size_differs"]} />
         </>
       )}
@@ -237,15 +233,15 @@ function DuplexFields() {
   const [calibrating, setCalibrating] = useState(false);
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="text-[var(--muted)]">{t("print.duplex.flip")}</span>
+      <FieldRow label={t("print.duplex.flip")}>
         <Segmented<Flip>
+          fill
           label={t("print.duplex.flip")}
           value={duplex.flip}
           onChange={(flip) => setDuplex({ flip })}
           options={FLIPS.map((value) => ({ value, label: t(`print.duplex.flips.${value}`) }))}
         />
-      </div>
+      </FieldRow>
       <MeasurementInput
         label={t("print.duplex.offsetX")}
         info={t("print.duplex.offsetNote")}
@@ -263,9 +259,9 @@ function DuplexFields() {
         value={duplex.offsetYMm}
         onChange={(offsetYMm) => setDuplex({ offsetYMm })}
       />
-      <div>
+      <FieldRow label={null}>
         <Button onClick={() => setCalibrating(true)}>{t("print.duplex.calibrate")}</Button>
-      </div>
+      </FieldRow>
       <CalibrationDialog open={calibrating} onClose={() => setCalibrating(false)} />
     </>
   );
@@ -284,30 +280,24 @@ function GutterfoldFields() {
   const setDuplex = usePrintStore((s) => s.setDuplex);
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="flex items-center gap-1 text-[var(--muted)]">
-          {t("print.duplex.fold")}
-          <InfoTip text={t("print.duplex.foldNote")} />
-        </span>
+      <FieldRow label={t("print.duplex.fold")} info={t("print.duplex.foldNote")}>
         <Segmented<Fold>
+          fill
           label={t("print.duplex.fold")}
           value={duplex.fold}
           onChange={(fold) => setDuplex({ fold })}
           options={FOLDS.map((value) => ({ value, label: t(`print.duplex.folds.${value}`) }))}
         />
-      </div>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="flex items-center gap-1 text-[var(--muted)]">
-          {t("print.duplex.backTurn")}
-          <InfoTip text={t("print.duplex.backTurnNote")} />
-        </span>
+      </FieldRow>
+      <FieldRow label={t("print.duplex.backTurn")} info={t("print.duplex.backTurnNote")}>
         <Segmented<BackTurn>
+          fill
           label={t("print.duplex.backTurn")}
           value={backTurnOf(duplex.backUpsideDown)}
           onChange={(turn) => setDuplex({ backUpsideDown: upsideDownOf(turn) })}
           options={BACK_TURNS.map((value) => ({ value, label: t(`print.duplex.backTurns.${value}`) }))}
         />
-      </div>
+      </FieldRow>
       <MeasurementInput
         label={t("print.duplex.foldGap")}
         info={t("print.duplex.foldGapNote")}

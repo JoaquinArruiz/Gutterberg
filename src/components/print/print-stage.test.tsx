@@ -361,7 +361,7 @@ describe("stage switch", () => {
 describe("compact number fields", () => {
   const isScreenReaderOnly = (text: string) => screen.getByText(text).className.includes("sr-only");
 
-  it("keep long names out of the layout in the library header, with one pair of steppers", () => {
+  it("keep long names out of the layout in the library header, without steppers of their own", () => {
     print().setCards([card(0, 0, 0)], null);
     render(<CardLibrary />);
     expect(isScreenReaderOnly("Copies of the selected pieces")).toBe(true);
@@ -370,8 +370,8 @@ describe("compact number fields", () => {
     expect(screen.queryByRole("button", { name: /Increase Copies/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /Decrease Copies/ })).toBeNull();
     expect(screen.getByRole("button", { name: "One copy more" })).toBeTruthy();
-    // The page filter keeps its own -/+.
-    expect(screen.getByRole("button", { name: "Increase Show only page" })).toBeTruthy();
+    // The page filter shares a row with the Show menu, so it has no -/+ buttons; the arrow keys step it.
+    expect(screen.queryByRole("button", { name: "Increase Show only page" })).toBeNull();
   });
 });
 

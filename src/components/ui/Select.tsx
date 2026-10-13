@@ -15,6 +15,7 @@ export function Select<T extends string>({
   label,
   className = "",
   testId,
+  fill,
 }: {
   value: T;
   options: SelectOption<T>[];
@@ -23,6 +24,8 @@ export function Select<T extends string>({
   label: string;
   className?: string;
   testId?: string;
+  /** Take the whole width of the room it is given (the control column of a row), and cut long text with an ellipsis. */
+  fill?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
@@ -140,7 +143,10 @@ export function Select<T extends string>({
   };
 
   return (
-    <div className={`relative inline-block min-w-0 max-w-full ${className}`} data-testid={testId}>
+    <div
+      className={`relative min-w-0 max-w-full ${fill ? "block w-full flex-1" : "inline-block"} ${className}`}
+      data-testid={testId}
+    >
       <button
         ref={btn}
         type="button"
@@ -153,7 +159,7 @@ export function Select<T extends string>({
         aria-activedescendant={open ? `${id}-opt-${active}` : undefined}
         onClick={() => (open ? close() : openList())}
         onKeyDown={onKeyDown}
-        className="flex w-full min-w-28 items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-left outline-none hover:border-[var(--muted)] focus-visible:border-[var(--accent)] aria-expanded:border-[var(--accent)]"
+        className={`flex w-full ${fill ? "min-w-0" : "min-w-28"} items-center justify-between gap-2 rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 text-left outline-none hover:border-[var(--muted)] focus-visible:border-[var(--accent)] aria-expanded:border-[var(--accent)]`}
       >
         <span className="truncate">{current?.label ?? ""}</span>
         <ChevronDown

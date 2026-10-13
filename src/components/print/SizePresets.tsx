@@ -21,6 +21,7 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
+import { FieldRow } from "../ui/FieldRow";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 
@@ -125,42 +126,40 @@ export function SizePresets() {
 
   return (
     <div className="flex flex-col gap-1.5" data-testid="size-presets">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[var(--muted)]">{t("sizePresets.title")}</span>
-        <Select
-          className="min-w-0 flex-1 [&>button]:w-full [&>button]:min-w-0"
-          label={t("sizePresets.title")}
-          value=""
-          onChange={choose}
-          options={options}
-        />
-      </div>
+      <FieldRow label={t("sizePresets.title")}>
+        <Select fill label={t("sizePresets.title")} value="" onChange={choose} options={options} />
+      </FieldRow>
       {first && (
-        <div className="flex flex-wrap items-center gap-1">
-          <Segmented<Sides>
-            label={t("sizePresets.sides")}
-            value={sides}
-            onChange={setSides}
-            options={[
-              { value: "both", label: t("sizePresets.both") },
-              { value: "width", label: t("sizePresets.widthOnly") },
-              { value: "height", label: t("sizePresets.heightOnly") },
-            ]}
-          />
-          <input
-            type="text"
-            aria-label={t("sizePresets.name")}
-            placeholder={suggestion}
-            maxLength={MAX_SIZE_PRESET_NAME}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && doSave()}
-            className="min-w-0 flex-1 rounded border border-[var(--border)] bg-transparent px-1.5 py-0.5"
-          />
-          <Button onClick={doSave} title={t("sizePresets.saveTitle")}>
-            {t("sizePresets.save")}
-          </Button>
-        </div>
+        <>
+          <FieldRow label={null}>
+            <Segmented<Sides>
+              fill
+              label={t("sizePresets.sides")}
+              value={sides}
+              onChange={setSides}
+              options={[
+                { value: "both", label: t("sizePresets.both") },
+                { value: "width", label: t("sizePresets.widthOnly") },
+                { value: "height", label: t("sizePresets.heightOnly") },
+              ]}
+            />
+          </FieldRow>
+          <FieldRow label={null}>
+            <input
+              type="text"
+              aria-label={t("sizePresets.name")}
+              placeholder={suggestion}
+              maxLength={MAX_SIZE_PRESET_NAME}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSave()}
+              className="min-w-0 flex-1 rounded border border-[var(--border)] bg-transparent px-1.5 py-0.5"
+            />
+            <Button onClick={doSave} title={t("sizePresets.saveTitle")}>
+              {t("sizePresets.save")}
+            </Button>
+          </FieldRow>
+        </>
       )}
       {saved.length > 0 && (
         <ul className="flex flex-col gap-1" aria-label={t("sizePresets.yours")}>

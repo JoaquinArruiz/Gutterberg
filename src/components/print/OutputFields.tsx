@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { MAX_MARGIN_MM, type PageMode, useLayoutStore } from "../../stores/layout-store";
+import { FieldRow } from "../ui/FieldRow";
 import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { Segmented } from "../ui/Segmented";
@@ -39,15 +40,15 @@ export function SheetSizeFields() {
   );
   return (
     <>
-      <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-        <span className="text-[var(--muted)]">{t("print.page.sizeLabel")}</span>
+      <FieldRow label={t("print.page.sizeLabel")}>
         <Select
+          fill
           label={t("print.page.sizeAria")}
           value={L.pageMode}
           onChange={L.setPageMode}
           options={PAGE_MODES.map((m) => ({ value: m, label: t(`print.page.modes.${m}`) }))}
         />
-      </div>
+      </FieldRow>
       {L.pageMode === "custom" && (
         <>
           <MeasurementInput
@@ -83,9 +84,9 @@ export function OutputPageFields() {
   return (
     <>
       {L.pageMode !== "same" && L.pageMode !== "fit" && (
-        <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
-          <span className="text-[var(--muted)]">{t("print.page.orientation")}</span>
+        <FieldRow label={t("print.page.orientation")}>
           <Segmented
+            fill
             label={t("print.page.orientation")}
             value={L.orientation}
             onChange={L.setOrientation}
@@ -94,7 +95,7 @@ export function OutputPageFields() {
               { value: "landscape", label: t("print.page.landscape") },
             ]}
           />
-        </div>
+        </FieldRow>
       )}
       {(["top", "right", "bottom", "left"] as const).map((side) => (
         <MeasurementInput
