@@ -22,6 +22,7 @@ import { documentById, documentName, useDocumentStore } from "../../stores/docum
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
+import { FieldLayout, FieldRow } from "../ui/FieldRow";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
 import { CardThumb } from "./CardThumb";
@@ -185,129 +186,137 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
       data-orientation={orientation}
       data-hint-target="card-library"
     >
-      <div
-        className={`flex shrink-0 flex-col gap-1.5 border-[var(--border)] p-2 ${strip ? "w-72 overflow-y-auto border-r" : "border-b"}`}
-      >
-        <div className="flex items-center gap-2">
-          <span className="shrink-0 text-[var(--muted)]">{t("library.show")}</span>
-          <Select
-            className="min-w-0 flex-1 [&>button]:min-w-0"
-            label={t("library.filterLabel")}
-            value={filterValue}
-            onChange={(v) => {
-              if (v === "all") P.setFilter({ kind: "all" });
-              else if (v.startsWith("doc:")) P.setFilter({ kind: "document", document: Number(v.slice(4)) });
-              else if (v.startsWith("group:")) {
-                const [document, index] = v.slice(6).split(":").map(Number);
-                P.setFilter({ kind: "group", document, index });
-              }
-            }}
-            options={[
-              { value: "all" as FilterChoice, label: t("library.all") },
-              // Shown while a single page is filtered, so the menu says what is on screen.
-              ...(P.filter.kind === "page"
-                ? [{ value: "page" as FilterChoice, label: t("common.page", { n: P.filter.page + 1 }) }]
-                : []),
-              ...documentOptions,
-              ...groupOptions,
-            ]}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="flex shrink-0 items-center gap-1 text-[var(--muted)]">
-            {t("library.page")}
+      <FieldLayout.Provider value="column">
+        <div
+          className={`flex shrink-0 flex-col gap-1.5 border-[var(--border)] p-2 ${strip ? "w-72 overflow-y-auto border-r" : "border-b"}`}
+        >
+          <FieldRow label={t("library.show")}>
+            <Select
+              fill
+              label={t("library.filterLabel")}
+              value={filterValue}
+              onChange={(v) => {
+                if (v === "all") P.setFilter({ kind: "all" });
+                else if (v.startsWith("doc:")) P.setFilter({ kind: "document", document: Number(v.slice(4)) });
+                else if (v.startsWith("group:")) {
+                  const [document, index] = v.slice(6).split(":").map(Number);
+                  P.setFilter({ kind: "group", document, index });
+                }
+              }}
+              options={[
+                { value: "all" as FilterChoice, label: t("library.all") },
+                // Shown while a single page is filtered, so the menu says what is on screen.
+                ...(P.filter.kind === "page"
+                  ? [{ value: "page" as FilterChoice, label: t("common.page", { n: P.filter.page + 1 }) }]
+                  : []),
+                ...documentOptions,
+                ...groupOptions,
+              ]}
+            />
+            <span className="flex shrink-0 items-center gap-1 text-[var(--muted)]">
+              {t("library.page")}
+              <span className="w-12">
+                <NumberField
+                  hideLabel
+                  hideSteppers
+                  fill
+                  label={t("library.showOnlyPage")}
+                  value={P.filter.kind === "page" ? P.filter.page + 1 : null}
+                  min={1}
+                  max={pageCount}
+                  onCommit={(p) => P.setFilter({ kind: "page", document: pageDocument, page: p - 1 })}
+                />
+              </span>
+            </span>
+          </FieldRow>
+          <FieldRow label={null}>
+            <div className="grid w-full grid-cols-2 gap-1.5">
+              <Button onClick={() => P.selectAll(keys)} disabled={keys.length === 0}>
+                {t("library.selectAll")}
+              </Button>
+              <Button onClick={P.clearSelection} disabled={picked.length === 0} title={t("library.clearTitle")}>
+                {t("library.clear")}
+              </Button>
+            </div>
+          </FieldRow>
+          <FieldRow label={null}>
+            <span className="text-[var(--muted)]">
+              {t("library.selected", { selected: picked.length, total: shown.length })}
+            </span>
+          </FieldRow>
+          <FieldRow label={t("library.copies")} data-hint-target="copies">
+            <Button
+              aria-label={t("library.copiesFewer")}
+              disabled={picked.length === 0}
+              onClick={() => P.adjustQuantity(picked, -1)}
+            >
+              <Minus size={12} />
+            </Button>
             <NumberField
               hideLabel
-              label={t("library.showOnlyPage")}
-              value={P.filter.kind === "page" ? P.filter.page + 1 : null}
-              min={1}
-              max={pageCount}
-              onCommit={(p) => P.setFilter({ kind: "page", document: pageDocument, page: p - 1 })}
+              hideSteppers
+              fill
+              label={t("library.copiesLabel")}
+              value={copies}
+              min={0}
+              max={MAX_QUANTITY}
+              disabled={picked.length === 0}
+              onCommit={(n) => P.setQuantity(picked, n)}
             />
-          </span>
+            <Button
+              aria-label={t("library.copiesMore")}
+              disabled={picked.length === 0}
+              onClick={() => P.adjustQuantity(picked, 1)}
+            >
+              <Plus size={12} />
+            </Button>
+          </FieldRow>
+          <FieldRow label={t("library.turn")} data-testid="card-turn">
+            <div className="grid w-full grid-cols-2 gap-1.5">
+              <Button
+                aria-label={t("library.turnLeft")}
+                title={t("library.turnLeftTitle")}
+                disabled={picked.length === 0}
+                onClick={() => turn(-90)}
+              >
+                <RotateCcw size={12} className="mx-auto" />
+              </Button>
+              <Button
+                aria-label={t("library.turnRight")}
+                title={t("library.turnRightTitle")}
+                disabled={picked.length === 0}
+                onClick={() => turn(90)}
+              >
+                <RotateCw size={12} className="mx-auto" />
+              </Button>
+            </div>
+          </FieldRow>
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button
+              className="truncate"
+              title={t("library.makePortraitTitle")}
+              disabled={picked.length === 0}
+              onClick={() => orient("portrait")}
+            >
+              {t("library.makePortrait")}
+            </Button>
+            <Button
+              className="truncate"
+              title={t("library.makeLandscapeTitle")}
+              disabled={picked.length === 0}
+              onClick={() => orient("landscape")}
+            >
+              {t("library.makeLandscape")}
+            </Button>
+          </div>
+          <p className="text-[var(--muted)]">{allMode ? t("library.modeAll") : t("library.modeCustom")}</p>
+          {pickingBack && (
+            <p className="rounded bg-[var(--accent)]/20 p-1.5" role="status" data-testid="picking-back">
+              {t("library.pickingBack")}
+            </p>
+          )}
         </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Button onClick={() => P.selectAll(keys)} disabled={keys.length === 0}>
-            {t("library.selectAll")}
-          </Button>
-          <Button onClick={P.clearSelection} disabled={picked.length === 0} title={t("library.clearTitle")}>
-            {t("library.clear")}
-          </Button>
-          <span className="text-[var(--muted)]">
-            {t("library.selected", { selected: picked.length, total: shown.length })}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5" data-hint-target="copies">
-          <span className="text-[var(--muted)]">{t("library.copies")}</span>
-          <Button
-            aria-label={t("library.copiesFewer")}
-            disabled={picked.length === 0}
-            onClick={() => P.adjustQuantity(picked, -1)}
-          >
-            <Minus size={12} />
-          </Button>
-          <NumberField
-            hideLabel
-            hideSteppers
-            label={t("library.copiesLabel")}
-            value={copies}
-            min={0}
-            max={MAX_QUANTITY}
-            disabled={picked.length === 0}
-            onCommit={(n) => P.setQuantity(picked, n)}
-          />
-          <Button
-            aria-label={t("library.copiesMore")}
-            disabled={picked.length === 0}
-            onClick={() => P.adjustQuantity(picked, 1)}
-          >
-            <Plus size={12} />
-          </Button>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5" data-testid="card-turn">
-          <span className="text-[var(--muted)]">{t("library.turn")}</span>
-          <Button
-            aria-label={t("library.turnLeft")}
-            title={t("library.turnLeftTitle")}
-            disabled={picked.length === 0}
-            onClick={() => turn(-90)}
-          >
-            <RotateCcw size={12} />
-          </Button>
-          <Button
-            aria-label={t("library.turnRight")}
-            title={t("library.turnRightTitle")}
-            disabled={picked.length === 0}
-            onClick={() => turn(90)}
-          >
-            <RotateCw size={12} />
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button
-            className="truncate"
-            title={t("library.makePortraitTitle")}
-            disabled={picked.length === 0}
-            onClick={() => orient("portrait")}
-          >
-            {t("library.makePortrait")}
-          </Button>
-          <Button
-            className="truncate"
-            title={t("library.makeLandscapeTitle")}
-            disabled={picked.length === 0}
-            onClick={() => orient("landscape")}
-          >
-            {t("library.makeLandscape")}
-          </Button>
-        </div>
-        <p className="text-[var(--muted)]">{allMode ? t("library.modeAll") : t("library.modeCustom")}</p>
-        {pickingBack && (
-          <p className="rounded bg-[var(--accent)]/20 p-1.5" role="status" data-testid="picking-back">
-            {t("library.pickingBack")}
-          </p>
-        )}
-      </div>
+      </FieldLayout.Provider>
 
       <div
         ref={ref}

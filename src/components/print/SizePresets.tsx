@@ -21,6 +21,7 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
+import { FieldRow } from "../ui/FieldRow";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 
@@ -125,16 +126,9 @@ export function SizePresets() {
 
   return (
     <div className="flex flex-col gap-1.5" data-testid="size-presets">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[var(--muted)]">{t("sizePresets.title")}</span>
-        <Select
-          className="min-w-0 flex-1 [&>button]:w-full [&>button]:min-w-0"
-          label={t("sizePresets.title")}
-          value=""
-          onChange={choose}
-          options={options}
-        />
-      </div>
+      <FieldRow label={t("sizePresets.title")}>
+        <Select fill label={t("sizePresets.title")} value="" onChange={choose} options={options} />
+      </FieldRow>
       {first && (
         <div className="flex flex-wrap items-center gap-1">
           <Segmented<Sides>
