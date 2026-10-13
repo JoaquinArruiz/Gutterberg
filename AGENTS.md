@@ -86,7 +86,7 @@ and type names) stay as they are.
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add
 every new string to both, never hard-code text in components. Spanish is neutral Latin
-American Spanish (`tú`, no voseo, no `vosotros`); the owner reviews it.
+American Spanish (`tú`, no voseo, no `vosotros`); I review it.
 
 Pieces are rectangles (optionally rotated). Round or custom shapes are not supported; a round
 token is marked and printed with its rectangle.
@@ -99,10 +99,12 @@ These apply to everyone, whether a person or an AI tool is writing the change.
 - Commit messages are **one sentence** that says what the change does, for example "Stop native selection
   highlight while dragging on the page canvas".
 - Work goes **feature branch → version branch → `main` → tag** (see "Branches and releases" below). Nobody commits
-  to `main` or to a `release/*` branch directly, once the owner has turned on that protection.
+  to `main` or to a `release/*` branch directly, once I have turned on that protection.
 - No AI tool is an author or co-author: no `Co-Authored-By` lines, no session links, and no tool's name in commit
   messages, branch names, code or docs. CI fails a push or pull request that has one (`scripts/check-authorship.sh`);
   check `git config user.name` and `user.email` before you commit, since a tool's default identity counts.
+- Docs, comments and pull request texts speak as the maintainer in the first person ("I tag `main`"), never about
+  "the owner".
 - Do not commit, push, create branches or open pull requests unless you were asked to. When asked, branch from the
   version branch the work belongs to, with the names below.
 - The project is under the PolyForm Noncommercial License 1.0.0 (`LICENSE`). Never change the `LICENSE` file, and add
@@ -124,7 +126,7 @@ feature/<name> or fix/<name>  →  release/<x.y.z>  →  main  →  tag v<x.y.z>
 - **The version branch merges into `main` with a pull request and a merge commit**, so a version is one unit in the
   history. Its last commit is "Release x.y.z": the version in `package.json` and `src-tauri/Cargo.toml`, and the
   `CHANGELOG.md` heading (see `docs/releasing.md`).
-- **The owner tags `main`**, with a signed tag (`git tag -s v<x.y.z>`), which builds the release.
+- **I tag `main`**, with a signed tag (`git tag -s v<x.y.z>`), which builds the release.
 - **A fix for a released version** is `fix/<what>` merged into `release/<x.y.z+1>` (a patch version branch started
   from `main`), then into `main` the same way. Merge `main` back into any version branch that is open.
 - A tool working here uses these names and these rules like anyone else, and never adds its own name to a branch,

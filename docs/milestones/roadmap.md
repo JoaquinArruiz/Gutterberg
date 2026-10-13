@@ -22,7 +22,7 @@ number.
 - **The command line comes last.** Today the UI builds the print request (`src/lib/print-request.ts`). A command
   line needs that in `card-core`, and moving it is the bulk of the work. Doing it after 0.14.0 moves it once, with
   the final shape of page groups, instead of moving it and then changing it for several grids.
-- **Signing is not a version.** It is mostly the owner buying certificates and adding secrets; the code side is the
+- **Signing is not a version.** It is mostly me buying certificates and adding secrets; the code side is the
   release workflow. It lands in whichever release is next once the certificates exist, ideally before a 1.0.0.
 
 ## Not planned

@@ -1,6 +1,6 @@
 # Welcome tour clips
 
-The owner's exports from Figma, one per step of the welcome tour, in order:
+My exports from Figma, one per step of the welcome tour, in order:
 
 | File | What it shows |
 | --- | --- |
