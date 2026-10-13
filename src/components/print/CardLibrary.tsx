@@ -188,6 +188,7 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
     >
       <FieldLayout.Provider value="column">
         <div
+          style={{ "--field-label": "4.25rem" } as React.CSSProperties}
           className={`flex shrink-0 flex-col gap-1.5 border-[var(--border)] p-2 ${strip ? "w-72 overflow-y-auto border-r" : "border-b"}`}
         >
           <FieldRow label={t("library.show")}>

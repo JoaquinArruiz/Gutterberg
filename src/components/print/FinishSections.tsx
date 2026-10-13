@@ -194,26 +194,22 @@ export function DuplexSection() {
             />
           </FieldRow>
           {duplex.layout === "gutterfold" ? <GutterfoldFields /> : <DuplexFields />}
-          <div className="mt-1 flex items-center gap-1">
+          <FieldRow label={null}>
             <Button onClick={() => setPairing(true)}>{t("print.pairing.open")}</Button>
             <InfoTip text={t("print.pairing.openHint")} />
-          </div>
+          </FieldRow>
           <PairBacksDialog open={pairing} onClose={() => setPairing(false)} />
-          <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
-            {t("print.duplex.commonBack")}
-            <InfoTip text={t("print.duplex.backNote")} />
-          </div>
-          <div className="flex items-start gap-2">
-            {common ? (
-              <div className="shrink-0" data-testid="common-back">
-                <CardThumb card={common} width={64} height={92} selected={false} copies={null} onClick={() => {}} />
-              </div>
-            ) : (
-              <span className="text-[var(--muted)]" data-testid="common-back-none">
-                {t("print.duplex.none")}
-              </span>
-            )}
-            <div className="flex flex-col items-start gap-1">
+          <FieldRow label={t("print.duplex.commonBack")} info={t("print.duplex.backNote")}>
+            <div className="flex w-full flex-col items-stretch gap-1">
+              {common ? (
+                <div className="self-start" data-testid="common-back">
+                  <CardThumb card={common} width={64} height={92} selected={false} copies={null} onClick={() => {}} />
+                </div>
+              ) : (
+                <span className="text-[var(--muted)]" data-testid="common-back-none">
+                  {t("print.duplex.none")}
+                </span>
+              )}
               <Button disabled={selected.length !== 1} onClick={() => setDuplex({ commonBack: selected[0] ?? null })}>
                 {t("print.duplex.useSelected")}
               </Button>
@@ -221,7 +217,7 @@ export function DuplexSection() {
                 {t("print.duplex.remove")}
               </Button>
             </div>
-          </div>
+          </FieldRow>
           <WarningList codes={["back_size_differs"]} />
         </>
       )}
@@ -263,9 +259,9 @@ function DuplexFields() {
         value={duplex.offsetYMm}
         onChange={(offsetYMm) => setDuplex({ offsetYMm })}
       />
-      <div>
+      <FieldRow label={null}>
         <Button onClick={() => setCalibrating(true)}>{t("print.duplex.calibrate")}</Button>
-      </div>
+      </FieldRow>
       <CalibrationDialog open={calibrating} onClose={() => setCalibrating(false)} />
     </>
   );

@@ -11,7 +11,7 @@ export const FieldLayout = createContext<FieldLayoutMode>("inline");
 export const useFieldLayout = () => useContext(FieldLayout);
 
 /** The track widths of a row: a label column, and the controls. One place, so every row lines up with every other. */
-export const FIELD_ROW_COLUMNS = "grid-cols-[minmax(5.5rem,34%)_minmax(0,1fr)]";
+export const FIELD_ROW_COLUMNS = "grid-cols-[var(--field-label,minmax(5.5rem,34%))_minmax(0,1fr)]";
 
 /**
  * One row of a settings panel: its label (with an optional help tip) in the label column and its control in the
@@ -23,6 +23,7 @@ export function FieldRow({
   info,
   children,
   className = "",
+  wrap,
   ...rest
 }: {
   label: string | null;
@@ -30,6 +31,8 @@ export function FieldRow({
   info?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
+  /** Let the controls go onto a second line when they do not fit (buttons). */
+  wrap?: boolean;
   "data-hint-target"?: string;
   "data-testid"?: string;
 }) {
@@ -39,7 +42,7 @@ export function FieldRow({
         {label !== null && <span className="min-w-0 break-words">{label}</span>}
         {label !== null && info && <InfoTip text={info} />}
       </span>
-      <div className="flex min-w-0 items-center gap-1 [&>*]:min-w-0">{children}</div>
+      <div className={`flex min-w-0 items-center gap-1 [&>*]:min-w-0 ${wrap ? "flex-wrap" : ""}`}>{children}</div>
     </div>
   );
 }

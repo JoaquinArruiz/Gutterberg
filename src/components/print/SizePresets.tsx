@@ -130,31 +130,36 @@ export function SizePresets() {
         <Select fill label={t("sizePresets.title")} value="" onChange={choose} options={options} />
       </FieldRow>
       {first && (
-        <div className="flex flex-wrap items-center gap-1">
-          <Segmented<Sides>
-            label={t("sizePresets.sides")}
-            value={sides}
-            onChange={setSides}
-            options={[
-              { value: "both", label: t("sizePresets.both") },
-              { value: "width", label: t("sizePresets.widthOnly") },
-              { value: "height", label: t("sizePresets.heightOnly") },
-            ]}
-          />
-          <input
-            type="text"
-            aria-label={t("sizePresets.name")}
-            placeholder={suggestion}
-            maxLength={MAX_SIZE_PRESET_NAME}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && doSave()}
-            className="min-w-0 flex-1 rounded border border-[var(--border)] bg-transparent px-1.5 py-0.5"
-          />
-          <Button onClick={doSave} title={t("sizePresets.saveTitle")}>
-            {t("sizePresets.save")}
-          </Button>
-        </div>
+        <>
+          <FieldRow label={null}>
+            <Segmented<Sides>
+              fill
+              label={t("sizePresets.sides")}
+              value={sides}
+              onChange={setSides}
+              options={[
+                { value: "both", label: t("sizePresets.both") },
+                { value: "width", label: t("sizePresets.widthOnly") },
+                { value: "height", label: t("sizePresets.heightOnly") },
+              ]}
+            />
+          </FieldRow>
+          <FieldRow label={null}>
+            <input
+              type="text"
+              aria-label={t("sizePresets.name")}
+              placeholder={suggestion}
+              maxLength={MAX_SIZE_PRESET_NAME}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && doSave()}
+              className="min-w-0 flex-1 rounded border border-[var(--border)] bg-transparent px-1.5 py-0.5"
+            />
+            <Button onClick={doSave} title={t("sizePresets.saveTitle")}>
+              {t("sizePresets.save")}
+            </Button>
+          </FieldRow>
+        </>
       )}
       {saved.length > 0 && (
         <ul className="flex flex-col gap-1" aria-label={t("sizePresets.yours")}>
