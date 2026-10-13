@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.12.0 (2026-10-13)
+
 ### Added
 
 - Size presets for the selected pieces (Print settings › Selected pieces › Size preset): the common sleeve sizes (poker, standard, mini American and European, European, Japanese, square, tarot), and your own, which you can save from the selection, rename and delete. A size can fix only the width or only the height, so "62 mm wide" keeps each piece's proportions. A size with both sides asks before it stretches a piece of other proportions, and applying one is a single undo step.
