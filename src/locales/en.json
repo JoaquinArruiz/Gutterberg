@@ -426,6 +426,17 @@
       "backTurnNote": "Following the fold, a back to the right stays as printed and a back below is turned upside down, so it reads the right way once folded.",
       "foldGap": "Gap at the fold",
       "foldGapNote": "Space between a front and its back. 0 puts the fold on the edge of both; a little helps with thick paper.",
+      "pairs": "Pairs",
+      "pairCuts": {
+        "fold": "Fold",
+        "apart": "Cut apart"
+      },
+      "pairsNote": "Fold: each back is folded behind its front, with a dashed line at the fold and cut marks around the pair. Cut apart: the front and the back stay two pieces side by side, for quick builds that are not double-sided: no fold line, and cut marks around each.",
+      "backPlace": "Back",
+      "backPlaceNote": "Where the back goes next to its front. Cut marks go around the front and the back each, and along the line between them.",
+      "backTurnApartNote": "A back that is cut apart is printed as it is in the file. Turn it upside down if the file has it that way.",
+      "apartGap": "Gap between front and back",
+      "apartGapNote": "Space between a front and its back. 0 puts them edge to edge, with one cut along the line they share.",
       "commonBack": "Common back",
       "none": "None",
       "useSelected": "Use the selected piece as common back",

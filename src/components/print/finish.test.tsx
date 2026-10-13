@@ -155,6 +155,31 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(print().finish.duplex.foldGapMm).toBe(5);
   });
 
+  it("cuts the pairs apart instead of folding them, with the turn and gap that apply", () => {
+    render(<PrintInspector />);
+    fireEvent.click(screen.getByRole("button", { name: "Duplex" }));
+    fireEvent.click(screen.getByRole("switch", { name: /Print backs/ }));
+    fireEvent.click(screen.getByRole("radio", { name: "Beside the front" }));
+    expect(screen.getByRole("radio", { name: "Fold" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("textbox", { name: "Gap at the fold" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("radio", { name: "Cut apart" }));
+    expect(print().finish.duplex.cutApart).toBe(true);
+    // No fold to follow: the back is as printed unless it is turned upside down.
+    expect(screen.queryByRole("radio", { name: "Follow the fold" })).toBeNull();
+    expect(screen.getByRole("radio", { name: "As printed" }).getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(screen.getByRole("radio", { name: "Upside down" }));
+    expect(print().finish.duplex.backUpsideDown).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "As printed" }));
+    expect(print().finish.duplex.backUpsideDown).toBe(false);
+    expect(screen.queryByRole("textbox", { name: "Gap at the fold" })).toBeNull();
+    typeNumber(screen.getByRole("textbox", { name: "Gap between front and back" }), "1");
+    expect(print().finish.duplex.foldGapMm).toBe(1);
+
+    fireEvent.click(screen.getByRole("radio", { name: "Fold" }));
+    expect(print().finish.duplex.cutApart).toBe(false);
+  });
+
   it("shows the warnings the plan has next to the section they belong to", () => {
     print().setSheets([{ ...sheet(2), warnings: ["bleed_off_page", "marks_off_page"] }], null);
     render(<PrintInspector />);

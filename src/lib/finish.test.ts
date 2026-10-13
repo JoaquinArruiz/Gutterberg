@@ -21,6 +21,7 @@ describe("finish settings", () => {
       layout: "duplex",
       fold: "vertical",
       foldGapMm: 0,
+      cutApart: false,
       backUpsideDown: null,
       flip: "long",
       offsetXMm: 0,
@@ -88,6 +89,12 @@ describe("finishingPayload", () => {
         turn: 0,
       },
     ]);
+  });
+
+  it("sends whether gutterfold pairs are cut apart", () => {
+    expect(finishingPayload(finish, {}, known).options.duplex.cut_apart).toBe(false);
+    const apart = { ...finish, duplex: { ...finish.duplex, layout: "gutterfold" as const, cutApart: true } };
+    expect(finishingPayload(apart, {}, known).options.duplex.cut_apart).toBe(true);
   });
 
   it("sends the user's turn of each back and of the common back", () => {

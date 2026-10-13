@@ -5,6 +5,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Gutterfold pairs can be cut apart instead of folded: Print › Duplex › Backs › Beside the front › Pairs › Cut apart puts each back next to its front with no fold line and cut marks around the front and the back each, so a set that is not double-sided can be laid out front-and-back and cut in one go. With a gap of 0 they share one cut. A back below its front stays upright, unless you turn it.
+
+### Changed
+
+- Projects are saved as version 6 (for cutting gutterfold pairs apart); older projects open as before, with their pairs folded, and an older Gutterberg asks to be updated.
+
 ## 0.13.0 (2026-10-13)
 
 ### Added

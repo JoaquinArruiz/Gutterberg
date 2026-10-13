@@ -28,6 +28,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
         layout: "duplex",
         fold: "vertical",
         foldGapMm: 0,
+        cutApart: false,
         backUpsideDown: null,
         flip: "long",
         offsetXMm: 0,

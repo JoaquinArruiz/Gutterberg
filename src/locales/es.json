@@ -426,6 +426,17 @@
       "backTurnNote": "Según el doblez, un dorso a la derecha queda como está y uno debajo se invierte, para que se lea bien una vez doblado.",
       "foldGap": "Separación en el doblez",
       "foldGapNote": "Espacio entre un frente y su dorso. Con 0 el doblez queda en el borde de ambos; un poco ayuda con papel grueso.",
+      "pairs": "Pares",
+      "pairCuts": {
+        "fold": "Doblar",
+        "apart": "Cortar por separado"
+      },
+      "pairsNote": "Doblar: cada dorso se dobla detrás de su frente, con una línea discontinua en el doblez y marcas de corte alrededor del par. Cortar por separado: el frente y el dorso quedan como dos piezas una al lado de la otra, para armados rápidos que no son de doble cara: sin línea de doblez y con marcas de corte alrededor de cada una.",
+      "backPlace": "Dorso",
+      "backPlaceNote": "Dónde va el dorso junto a su frente. Las marcas de corte van alrededor del frente y del dorso por separado, y a lo largo de la línea entre ambos.",
+      "backTurnApartNote": "Un dorso que se corta por separado se imprime como está en el archivo. Inviértelo si el archivo lo tiene así.",
+      "apartGap": "Separación entre frente y dorso",
+      "apartGapNote": "Espacio entre un frente y su dorso. Con 0 quedan borde con borde, con un solo corte a lo largo de la línea que comparten.",
       "commonBack": "Dorso común",
       "none": "Ninguno",
       "useSelected": "Usar la pieza seleccionada como dorso común",

@@ -122,8 +122,10 @@ matter:
   grouping by size, `DoesNotFit` for a pair too large, never shrinking. Finishing then puts the back in that room,
   turned a half turn when the fold is horizontal (or as `back_upside_down` says), and adds the fold lines
   (`OutputSheet.folds`, drawn dashed and grey by export and the preview). Cut marks and bleed warnings use the pair
-  outlines, so no mark crosses the fold. "Same as source" has no room for the backs, so the interface switches to the
-  planner and the engine refuses that combination.
+  outlines, so no mark crosses the fold. With `cut_apart` the pairs are not folded but cut into two pieces: the same
+  slots and placement, no fold lines, outlines for the front and the back each (so marks also run along the line
+  between them), and a back below its front stays upright unless `back_upside_down` says otherwise. "Same as source"
+  has no room for the backs, so the interface switches to the planner and the engine refuses that combination.
 - **A back's own turn:** each `BackPair` (and the common back) carries the turn the user gave the back piece in the
   library, added to the turn the flip or the fold needs. That is how upside-down backs in a file are set right.
 - **Automatic pairing** (`src/lib/pairing.ts`) is pure data over piece ids, in the interface: pages in order per PDF,
@@ -197,7 +199,8 @@ rebuilt on open.
   functions, each taking one version to the next (`v1_to_v2` adds the print finishing, `v2_to_v3` adds the document
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
-  gutterfold settings of the duplex finish); the current version is 5. A change to the format adds a version and a migration with a test file.
+  gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold); the current
+  version is 6. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
