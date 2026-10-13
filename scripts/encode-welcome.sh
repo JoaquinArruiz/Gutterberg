@@ -36,8 +36,8 @@ total=0
 for f in "$OUT"/*.webm "$OUT"/*.mp4; do
   size=$(wc -c <"$f")
   total=$((total + size))
-  [ "$size" -le 1572864 ] || { echo "$f is over the 1.5 MB budget ($size bytes): tell the owner" >&2; exit 1; }
+  [ "$size" -le 1572864 ] || { echo "$f is over the 1.5 MB budget ($size bytes): open an issue about it" >&2; exit 1; }
 done
 for f in "$OUT"/*.png; do total=$((total + $(wc -c <"$f"))); done
-[ "$total" -le 8388608 ] || { echo "public/welcome is over the 8 MB budget ($total bytes): tell the owner" >&2; exit 1; }
+[ "$total" -le 8388608 ] || { echo "public/welcome is over the 8 MB budget ($total bytes): open an issue about it" >&2; exit 1; }
 echo "public/welcome: $((total / 1024)) KB in all"
