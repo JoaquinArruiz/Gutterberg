@@ -48,7 +48,12 @@ cargo test --workspace         # the render tests need pdfium: PDFIUM_LIB_PATH=<
 - Every text the user sees goes in both `src/locales/en.json` and `src/locales/es.json`, never in a component.
 - A user-facing change gets a line under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
 - The commit message is one sentence that says what the change does.
-- Open the pull request against `main` and say what it does and why. A maintainer reviews it.
+- Branch from the version branch the change belongs to (`release/<x.y.z>`, the next version in
+  [docs/milestones/roadmap.md](docs/milestones/roadmap.md); if there is none open, from `main` and ask in the issue),
+  name the branch `feature/<what>` or `fix/<what>`, and open the pull request against that version branch. Say what
+  it does and why; a maintainer reviews it. It is squashed into one commit, so the pull request title is the commit
+  message: one sentence. The full flow (feature → version branch → `main` → tag) is in "Branches and releases" in
+  [AGENTS.md](AGENTS.md).
 
 ## Contributor license agreement
 
