@@ -26,6 +26,7 @@
       "card": "Piece tool",
       "pan": "Pan"
     },
+    "snap": "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Undo (Ctrl+Z)",
     "redo": "Redo (Shift+Ctrl+Z)",
@@ -204,10 +205,16 @@
     "count_one": "{{count}} freeform piece on this page. It is printed from the Print tab.",
     "count_other": "{{count}} freeform pieces on this page. They are printed from the Print tab.",
     "chooseTool": "Choose the Piece tool (C) to move, resize or rotate them.",
-    "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°.",
+    "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°. Shift-click picks several, Ctrl+A picks them all, and the arrow keys move what is picked.",
     "piece": "Piece",
     "angle": "Angle",
-    "delete": "Delete piece"
+    "delete": "Delete piece",
+    "picked_one": "{{count}} piece picked",
+    "picked_other": "{{count}} pieces picked",
+    "mixed": "{{label}} (mixed)",
+    "pickedNote": "A value typed here goes to every picked piece.",
+    "deleteMany_one": "Delete {{count}} piece",
+    "deleteMany_other": "Delete {{count}} pieces"
   },
   "pages": {
     "applyGrid": "Apply this grid to…",
@@ -757,6 +764,12 @@
       "one": {
         "title": "A grid and pieces on one page",
         "text": "A page can have one grid and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Turn into pieces, then draw the next grid."
+      }
+    },
+    "move-region": {
+      "one": {
+        "title": "Move the region",
+        "text": "Drag the region to move it, or its handles to resize it. Once you have clicked it, the arrow keys move it 1 mm at a time (Shift: 10 mm). Its edges snap to the page and to the pieces; the magnet in the toolbar turns that off."
       }
     }
   },

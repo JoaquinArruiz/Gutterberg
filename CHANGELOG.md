@@ -7,6 +7,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- More control on the page (Source tab): the arrow keys move the picked grid region or pieces 1 mm at a time (Shift: 10 mm; 0.05 and 0.5 in with inches), and change page only when nothing is picked. Shift-click picks several pieces, Ctrl/Cmd+A picks every piece of the page, and dragging one of them moves them all, which helps after Turn into pieces. Ctrl/Cmd+D duplicates the picked pieces and Alt-drag drags a copy. While dragging or resizing, the region and the pieces snap to the page's edges and middle and to each other, with a red guide line; hold Ctrl/Cmd to drag without it, or turn it off with the magnet in the toolbar. The Freeform pieces section sets the angle and size of every picked piece at once and deletes them together.
+- A help tip the first time a grid region is drawn says how to drag it, nudge it and snap it.
 - Gutterfold pairs can be cut apart instead of folded: Print › Duplex › Backs › Beside the front › Pairs › Cut apart puts each back next to its front with no fold line and cut marks around the front and the back each, so a set that is not double-sided can be laid out front-and-back and cut in one go. With a gap of 0 they share one cut. A back below its front stays upright, unless you turn it.
 
 ### Changed

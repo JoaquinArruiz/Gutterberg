@@ -234,6 +234,15 @@ pieces section and, when the switch in the sheet preview's header is on (`print.
 the exported file). `pieceReference` and `documentLetter` in `lib/card.ts` build the text; with several PDFs each gets
 a letter by its place in the project (A, B, …) that goes in front.
 
+**Editing on the page.** The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
+show), `pickedCards` (every picked piece of that page) and `pickedRegion` (the page whose grid region the arrow keys
+move). `lib/editor-actions.ts` holds what the keys do to them (nudge, with a burst of presses held open as one undo
+step; duplicate; pick all; delete), so `App.tsx` and the viewport's Alt-drag call the same functions. Snapping is pure
+maths in `lib/snap.ts`: the moving thing's upright box gives its edges and middle, which snap per axis to the page and
+to the other pieces and the region within a few screen pixels (`snapTolerance`), and the viewport draws the guides.
+The switch is `editor.snap` in preferences; `Ctrl/Cmd` held turns it off for a drag, which is why only `Shift`-click
+adds a piece to the picked ones.
+
 **Stores** (Zustand, read with per-field selectors, never the whole store): documents, the layout of the PDF being
 edited (the others are parked and swapped in), the print plan, editor session state, preferences, project state, the
 hint manager, update and toast state, and UI state. History is `zundo` on the layout and the print plan, joined by one

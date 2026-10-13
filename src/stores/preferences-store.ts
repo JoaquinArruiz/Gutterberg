@@ -126,6 +126,8 @@ type PreferencesState = {
   setSectionOpen: (id: string, open: boolean) => void;
   /** Piece references on the sheet preview, on or off. */
   setShowReferences: (show: boolean) => void;
+  /** Snapping while dragging on the page, on or off. */
+  setSnap: (snap: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -247,6 +249,9 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setShowReferences: (show) => {
         if (get().prefs.print.showReferences !== show)
           edit((p) => ({ ...p, print: { ...p.print, showReferences: show } }));
+      },
+      setSnap: (snap) => {
+        if (get().prefs.editor.snap !== snap) edit((p) => ({ ...p, editor: { ...p.editor, snap } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),

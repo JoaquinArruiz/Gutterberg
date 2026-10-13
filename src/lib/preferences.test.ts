@@ -415,3 +415,17 @@ describe("saved piece sizes", () => {
     );
   });
 });
+
+describe("the snapping preference", () => {
+  it("is on by default and when an older file lacks it", () => {
+    expect(DEFAULT_PREFERENCES.editor.snap).toBe(true);
+    expect(migratePreferences({ version: 13 }).editor.snap).toBe(true);
+  });
+
+  it("stays off only when it was turned off", () => {
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snap: false } }).editor.snap).toBe(false);
+    for (const other of ["false", 0, null]) {
+      expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snap: other } }).editor.snap).toBe(true);
+    }
+  });
+});

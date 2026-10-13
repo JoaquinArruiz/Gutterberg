@@ -116,6 +116,14 @@ export const HINTS = {
       },
     ],
   },
+  "move-region": {
+    steps: [
+      {
+        title: "hints.move-region.one.title",
+        text: "hints.move-region.one.text",
+      },
+    ],
+  },
   "print-stage-intro": {
     steps: [
       {

@@ -52,7 +52,14 @@ beforeEach(() => {
   usePreferencesStore.getState().resetToDefaults();
   useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4, A4], hash: "" }], 0);
   useLayoutStore.getState().resetDocument(2);
-  useEditorStore.setState({ tool: "card", selectedCard: null, viewMode: "source", fitMode: true });
+  useEditorStore.setState({
+    tool: "card",
+    selectedCard: null,
+    pickedCards: [],
+    pickedRegion: null,
+    viewMode: "source",
+    fitMode: true,
+  });
 });
 afterEach(() => {
   cleanup();
@@ -246,6 +253,26 @@ describe("the sidebar section", () => {
     expect(editor().selectedCard).toBeNull();
   });
 
+  it("sets the angle of every picked piece, says when values differ, and deletes them all", () => {
+    layout().addFreeformCard(0, start);
+    layout().addFreeformCard(0, { ...start, center: { x: 0.2, y: 0.2 }, angle_deg: 0 });
+    layout().addFreeformCard(0, { ...start, center: { x: 0.8, y: 0.8 } });
+    act(() => editor().pickCards(0, [0, 1]));
+    render(<FreeformSection />);
+    expect(screen.getByText("2 pieces picked")).toBeTruthy();
+    const angle = screen.getByRole("textbox", { name: "Angle (mixed)" }) as HTMLInputElement;
+    act(() => angle.focus());
+    fireEvent.change(angle, { target: { value: "12" } });
+    fireEvent.keyDown(angle, { key: "Enter" });
+    expect(cards()[0].angle_deg).toBe(12);
+    expect(cards()[1].angle_deg).toBe(12);
+    expect(cards()[2].angle_deg).toBe(start.angle_deg);
+    expect(screen.getByRole("textbox", { name: "Angle" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Delete 2 pieces" }));
+    expect(cards()).toHaveLength(1);
+    expect(cards()[0].center.x).toBe(0.8);
+  });
+
   it("wraps an angle typed past a half turn", () => {
     layout().addFreeformCard(0, start);
     useEditorStore.setState({ selectedCard: { page: 0, index: 0 } });
@@ -256,5 +283,91 @@ describe("the sidebar section", () => {
     fireEvent.keyDown(angle, { key: "Enter" });
     // The field clamps to its range; either way the stored angle is a valid one.
     expect(Math.abs(cards()[0].angle_deg)).toBeLessThanOrEqual(180);
+  });
+});
+
+describe("several pieces, copies and snapping", () => {
+  const piece = (x: number, y: number) => ({ center: { x, y }, width: 0.2, height: 0.1, angle_deg: 0 });
+  beforeEach(() => {
+    layout().addFreeformCard(0, piece(0.3, 0.3));
+    layout().addFreeformCard(0, piece(0.6, 0.6));
+  });
+  const drag = (target: Element, from: Point, to: Point, extra: Record<string, unknown> = {}) => {
+    fireEvent.pointerDown(target, at(from, extra));
+    fireEvent.pointerMove(svg(), at(to, extra));
+    fireEvent.pointerUp(svg(), at(to, extra));
+  };
+
+  it("picks a second piece with Shift-click and drags both, without handles", () => {
+    render(<EditorViewport />);
+    fireEvent.pointerDown(hit("card", 0), at({ x: 0.3, y: 0.3 }));
+    fireEvent.pointerUp(svg(), at({ x: 0.3, y: 0.3 }));
+    fireEvent.pointerDown(hit("card", 1), at({ x: 0.6, y: 0.6 }, { shiftKey: true }));
+    fireEvent.pointerUp(svg(), at({ x: 0.6, y: 0.6 }));
+    expect(editor().pickedCards).toEqual([0, 1]);
+    expect(hit("se", 0)).toBeNull();
+    expect(hit("se", 1)).toBeNull();
+    // Dragging one of them (no modifier) moves both by the same amount.
+    drag(hit("card", 0), { x: 0.3, y: 0.3 }, { x: 0.33, y: 0.27 });
+    expect(cards()[0].center.x).toBeCloseTo(0.33, 2);
+    expect(cards()[1].center.x).toBeCloseTo(0.63, 2);
+    expect(cards()[1].center.y).toBeCloseTo(0.57, 2);
+    expect(editor().pickedCards).toEqual([1, 0]);
+    // Shift-click on a picked piece takes it out; a plain click picks one alone.
+    fireEvent.pointerDown(hit("card", 1), at({ x: 0.63, y: 0.57 }, { shiftKey: true }));
+    fireEvent.pointerUp(svg(), at({ x: 0.63, y: 0.57 }));
+    expect(editor().pickedCards).toEqual([0]);
+    expect(hit("se", 0)).not.toBeNull();
+  });
+
+  it("leaves a copy behind when Alt is held at the start of a drag", () => {
+    render(<EditorViewport />);
+    drag(hit("card", 0), { x: 0.3, y: 0.3 }, { x: 0.33, y: 0.4 }, { altKey: true });
+    expect(cards()).toHaveLength(3);
+    expect(cards()[0]).toEqual(piece(0.3, 0.3));
+    expect(cards()[2].center.x).toBeCloseTo(0.33, 2);
+    expect(editor().pickedCards).toEqual([2]);
+    act(() => undo());
+    expect(cards()).toHaveLength(2);
+  });
+
+  it("snaps a dragged piece to the page edge, unless Ctrl is held or snapping is off", () => {
+    render(<EditorViewport />);
+    // The left edge ends 0.004 from the page's left edge: close enough to snap at this zoom.
+    drag(hit("card", 0), { x: 0.3, y: 0.3 }, { x: 0.104, y: 0.31 });
+    expect(cards()[0].center.x).toBeCloseTo(0.1, 6);
+    act(() => undo());
+    drag(hit("card", 0), { x: 0.3, y: 0.3 }, { x: 0.104, y: 0.31 }, { ctrlKey: true });
+    expect(cards()[0].center.x).toBeCloseTo(0.104, 3);
+    act(() => undo());
+    act(() => usePreferencesStore.getState().setSnap(false));
+    drag(hit("card", 0), { x: 0.3, y: 0.3 }, { x: 0.104, y: 0.31 });
+    expect(cards()[0].center.x).toBeCloseTo(0.104, 3);
+  });
+
+  it("shows the guide lines while a drag snaps, and hides them after", () => {
+    render(<EditorViewport />);
+    fireEvent.pointerDown(hit("card", 0), at({ x: 0.3, y: 0.3 }));
+    // Its left edge (0.2 + 0.302) lines up with the other piece's left edge (0.5).
+    fireEvent.pointerMove(svg(), at({ x: 0.602, y: 0.3 }));
+    expect(screen.getByTestId("snap-guides")).toBeTruthy();
+    expect(cards()[0].center.x).toBeCloseTo(0.6, 6);
+    fireEvent.pointerUp(svg(), at({ x: 0.602, y: 0.3 }));
+    expect(screen.queryByTestId("snap-guides")).toBeNull();
+  });
+
+  it("picks the grid region when it is pressed, and snaps it while it moves", () => {
+    useEditorStore.setState({ tool: "select" });
+    layout().setSelection(0, { x: 0.2, y: 0.2, width: 0.4, height: 0.4 });
+    render(<EditorViewport />);
+    const body = document.querySelector('[data-hit="body"]') as Element;
+    expect(body.getAttribute("data-picked")).toBeNull();
+    // Moved so its left edge ends 0.003 from the page's left edge.
+    drag(body, { x: 0.4, y: 0.4 }, { x: 0.203, y: 0.45 });
+    expect(editor().pickedRegion).toBe(0);
+    const group = layout().groups[0];
+    const region = group.kind === "grid" ? group.selection : null;
+    expect(region?.x).toBeCloseTo(0, 6);
+    expect(document.querySelector('[data-hit="body"]')?.getAttribute("data-picked")).toBe("true");
   });
 });

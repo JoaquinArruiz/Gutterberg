@@ -26,6 +26,7 @@
       "card": "Herramienta Pieza",
       "pan": "Desplazar"
     },
+    "snap": "Ajustar a la página y a otras piezas al arrastrar (mantén Ctrl/Cmd para arrastrar sin ajuste)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Deshacer (Ctrl+Z)",
     "redo": "Rehacer (Mayús+Ctrl+Z)",
@@ -204,10 +205,16 @@
     "count_one": "{{count}} pieza libre en esta página. Se imprime desde la pestaña Imprimir.",
     "count_other": "{{count}} piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
     "chooseTool": "Elige la Herramienta Pieza (C) para moverlas, cambiar su tamaño o girarlas.",
-    "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°.",
+    "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°. Mayús+clic elige varias, Ctrl+A las elige todas y las flechas mueven lo elegido.",
     "piece": "Pieza",
     "angle": "Ángulo",
-    "delete": "Eliminar pieza"
+    "delete": "Eliminar pieza",
+    "picked_one": "{{count}} pieza elegida",
+    "picked_other": "{{count}} piezas elegidas",
+    "mixed": "{{label}} (distintos)",
+    "pickedNote": "Un valor escrito aquí se aplica a todas las piezas elegidas.",
+    "deleteMany_one": "Eliminar {{count}} pieza",
+    "deleteMany_other": "Eliminar {{count}} piezas"
   },
   "pages": {
     "applyGrid": "Aplicar esta cuadrícula a…",
@@ -757,6 +764,12 @@
       "one": {
         "title": "Una cuadrícula y piezas en una página",
         "text": "Una página puede tener una cuadrícula y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Convertir en piezas y dibuja la siguiente."
+      }
+    },
+    "move-region": {
+      "one": {
+        "title": "Mover la región",
+        "text": "Arrastra la región para moverla, o sus tiradores para cambiar su tamaño. Después de hacer clic en ella, las flechas la mueven de a 1 mm (Mayús: 10 mm). Sus bordes se ajustan a la página y a las piezas; el imán de la barra de herramientas lo desactiva."
       }
     }
   },

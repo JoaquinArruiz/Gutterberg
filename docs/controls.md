@@ -3,9 +3,12 @@
 | Action | Input |
 | --- | --- |
 | Grid region / Piece / Pan tool | `V` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
-| Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear |
+| Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear. Pressing the region picks it: the arrow keys then move it 1 mm (0.05 in with inches), `Shift`+arrows 10 mm (0.5 in), a burst of presses being one undo step; `Esc` unpicks it |
 | Turn a grid into pieces (Source tab) | Source sidebar › Layout › Turn into pieces: every cell of the viewed page's grid becomes a freeform piece at the same place and size, and the region is cleared so the next grid can be drawn (three sizes on a page: grid, turn into pieces, grid, turn into pieces, grid). If the grid is shared by several pages it asks: this page only, or every page of the group. Copies, turn, size, back and place in the order of each piece are kept. One undo step |
-| Draw freeform pieces (Piece tool) | drag on the page for each piece; drag a piece to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked piece; the Freeform pieces section in the Source sidebar has its angle and size |
+| Draw freeform pieces (Piece tool) | drag on the page for each piece; drag a piece to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked pieces; the Freeform pieces section in the Source sidebar has their angle and size (a value typed goes to every picked piece) |
+| Pick and move several pieces (Piece tool) | `Shift`-click adds a piece to the picked ones or takes it out, `Ctrl/Cmd+A` picks every piece of the page, `Esc` picks none; dragging one of the picked pieces moves them all; the arrow keys move them 1 mm (`Shift`: 10 mm), and with nothing picked the arrows change page |
+| Copy pieces (Piece tool) | `Ctrl/Cmd+D` copies the picked pieces 5 mm down and to the right and picks the copies; `Alt`-drag leaves the pieces where they are and drags copies. Copies start with no turn, size, back or copies of their own |
+| Snapping | while dragging or resizing the grid region or a piece, its edges and middle snap to the page's edges and middle and to the other pieces and the region, with a red guide line; hold `Ctrl/Cmd` to drag without it, or turn it off with the magnet in the toolbar (kept in preferences). A turned piece snaps by its upright box, and only an upright piece snaps while resized |
 | Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
 | Fit page | `0` |
 | Pan | wheel / trackpad scroll |

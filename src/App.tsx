@@ -13,6 +13,7 @@ import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
 import { Toast } from "./components/ui/Toast";
 import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
+import { deletePicked, duplicatePicked, nudgePicked, pickAllPieces } from "./lib/editor-actions";
 import { resolveStartMode } from "./lib/preferences";
 import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
 import { useProjectTracking } from "./lib/project-state";
@@ -30,6 +31,14 @@ import { redo, undo } from "./stores/history";
 import { useLayoutStore } from "./stores/layout-store";
 import { usePreferencesStore } from "./stores/preferences-store";
 import { useUiStore } from "./stores/ui-store";
+
+/** The direction each arrow key moves what is picked. */
+const ARROWS: Record<string, [number, number]> = {
+  ArrowLeft: [-1, 0],
+  ArrowRight: [1, 0],
+  ArrowUp: [0, -1],
+  ArrowDown: [0, 1],
+};
 
 export default function App() {
   useLayoutSync();
@@ -103,7 +112,24 @@ export default function App() {
       }
       // The single-key shortcuts drive the page editor (tools, zoom, paging): the Print stage has none.
       if (useUiStore.getState().stage !== "cards") return;
-      if (mod || e.altKey || (e.target instanceof HTMLElement && /INPUT|TEXTAREA/.test(e.target.tagName))) return;
+      if (typing) return;
+      // Pick every piece of the page, and copy the picked ones.
+      if (mod && !e.shiftKey && !e.altKey && key === "a" && pickAllPieces()) {
+        e.preventDefault();
+        return;
+      }
+      if (mod && !e.shiftKey && !e.altKey && key === "d") {
+        e.preventDefault();
+        duplicatePicked();
+        return;
+      }
+      if (mod || e.altKey) return;
+      // The arrows move what is picked (Shift: a bigger step); with nothing picked, left and right change page.
+      const arrow = ARROWS[e.key];
+      if (arrow && nudgePicked(arrow[0], arrow[1], e.shiftKey)) {
+        e.preventDefault();
+        return;
+      }
       switch (e.key) {
         case "v":
         case "V":
@@ -118,18 +144,13 @@ export default function App() {
           ed.setTool("pan");
           break;
         case "Delete":
-        case "Backspace": {
-          // Deletes the freeform card being edited.
-          const picked = ed.selectedCard;
-          if (ed.tool === "card" && picked?.page === doc.currentPage) {
-            e.preventDefault();
-            useLayoutStore.getState().deleteFreeformCard(picked.page, picked.index);
-            ed.setSelectedCard(null);
-          }
+        case "Backspace":
+          // Deletes the picked freeform pieces.
+          if (ed.tool === "card" && deletePicked()) e.preventDefault();
           break;
-        }
         case "Escape":
           ed.setSelectedCard(null);
+          ed.setPickedRegion(null);
           break;
         case "+":
         case "=":

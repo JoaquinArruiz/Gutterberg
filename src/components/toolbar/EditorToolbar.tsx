@@ -1,6 +1,7 @@
 import {
   Download,
   Hand,
+  Magnet,
   Maximize,
   MousePointer2,
   RectangleVertical,
@@ -204,6 +205,8 @@ export function EditorToolbar() {
   const viewMode = useEditorStore((s) => s.viewMode);
   // The switcher is the ordered list from Preferences; with a single view there is nothing to switch.
   const visibleModes = usePreferencesStore((s) => s.prefs.workspace.visibleModes);
+  const snap = usePreferencesStore((s) => s.prefs.editor.snap);
+  const setSnap = usePreferencesStore((s) => s.setSnap);
   const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);
   const { zoomIn, zoomOut, fitPage } = zoomActions;
   const empty = pages.length === 0;
@@ -244,6 +247,19 @@ export function EditorToolbar() {
             <Icon size={14} />
           </button>
         ))}
+      {stage === "cards" && <div className="mx-0.5 h-4 w-px bg-[var(--border)]" />}
+      {stage === "cards" && (
+        <button
+          type="button"
+          title={t("toolbar.snap")}
+          aria-label={t("toolbar.snap")}
+          aria-pressed={snap}
+          onClick={() => setSnap(!snap)}
+          className={`${iconBtn} ${snap ? "bg-[var(--active)]" : ""}`}
+        >
+          <Magnet size={14} />
+        </button>
+      )}
       <div className="mx-1 h-4 w-px bg-[var(--border)]" />
       <button type="button" title={t("toolbar.undo")} onClick={undo} disabled={!canUndo} className={iconBtn}>
         <Undo2 size={14} />
