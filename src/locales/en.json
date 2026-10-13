@@ -1043,11 +1043,6 @@
       "title_other": "Add {{count}} images",
       "lead": "Each image becomes a piece. Choose the size it prints at; images are never stretched or resampled.",
       "sizeTitle": "Piece size",
-      "presets": {
-        "standard": "Standard card (poker, most TCGs): {{width}} × {{height}} mm",
-        "small": "Small card (Japanese size): {{width}} × {{height}} mm",
-        "tarot": "Tarot: {{width}} × {{height}} mm"
-      },
       "fromImage": "From the image (pixels ÷ resolution)",
       "fromImageOff": "From the image (not every file has a resolution)",
       "custom": "Custom",
@@ -1139,5 +1134,35 @@
     "printing": "“{{name}}” doesn't allow printing, so it can't be exported. Contact its publisher for an unlocked print-and-play version.",
     "modifying": "“{{name}}” doesn't allow changes, so it can't be exported. Contact its publisher for an unlocked print-and-play version.",
     "restrictedNote": "“{{name}}” has restrictions from its publisher (for example, copying). The exported PDF keeps them."
+  },
+  "sizePresets": {
+    "label": "{{name}}: {{dims}}",
+    "names": {
+      "poker": "Poker",
+      "standard": "Standard",
+      "miniAmerican": "Mini American",
+      "miniEuropean": "Mini European",
+      "european": "European",
+      "japanese": "Japanese",
+      "square": "Square",
+      "tarot": "Tarot"
+    },
+    "title": "Size preset",
+    "choose": "Choose a size…",
+    "wide": "{{mm}} mm wide",
+    "high": "{{mm}} mm high",
+    "sides": "Sides the size fixes",
+    "both": "Width and height",
+    "widthOnly": "Width only",
+    "heightOnly": "Height only",
+    "name": "Name for this size",
+    "save": "Save size",
+    "saveTitle": "Save the size of the first selected piece under this name, to use it on other pieces and in other projects",
+    "yours": "Your sizes",
+    "rename": "Rename {{name}}",
+    "delete": "Delete {{name}}",
+    "stretchTitle": "Different proportions",
+    "stretchAsk": "Some selected pieces have other proportions than {{name}} ({{size}}), so they will be stretched to that size. To keep their proportions, save or pick a size that fixes only the width or only the height.",
+    "dims": "{{width}} × {{height}} mm"
   }
 }

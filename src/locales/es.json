@@ -1043,11 +1043,6 @@
       "title_other": "Agregar {{count}} imágenes",
       "lead": "Cada imagen se convierte en una pieza. Elige el tamaño con el que se imprime; las imágenes nunca se deforman ni se remuestrean.",
       "sizeTitle": "Tamaño de la pieza",
-      "presets": {
-        "standard": "Carta estándar (póker, casi todos los TCG): {{width}} × {{height}} mm",
-        "small": "Carta pequeña (tamaño japonés): {{width}} × {{height}} mm",
-        "tarot": "Tarot: {{width}} × {{height}} mm"
-      },
       "fromImage": "Según la imagen (píxeles ÷ resolución)",
       "fromImageOff": "Según la imagen (no todos los archivos tienen resolución)",
       "custom": "Personalizado",
@@ -1139,5 +1134,35 @@
     "printing": "«{{name}}» no permite imprimir, así que no se puede exportar. Pide a su editor una versión de impresión y juego sin bloqueo.",
     "modifying": "«{{name}}» no permite cambios, así que no se puede exportar. Pide a su editor una versión de impresión y juego sin bloqueo.",
     "restrictedNote": "«{{name}}» tiene restricciones de su editor (por ejemplo, copiar). El PDF exportado las conserva."
+  },
+  "sizePresets": {
+    "label": "{{name}}: {{dims}}",
+    "names": {
+      "poker": "Póker",
+      "standard": "Estándar",
+      "miniAmerican": "Mini americana",
+      "miniEuropean": "Mini europea",
+      "european": "Europea",
+      "japanese": "Japonesa",
+      "square": "Cuadrada",
+      "tarot": "Tarot"
+    },
+    "title": "Tamaño predefinido",
+    "choose": "Elige un tamaño…",
+    "wide": "{{mm}} mm de ancho",
+    "high": "{{mm}} mm de alto",
+    "sides": "Lados que fija el tamaño",
+    "both": "Ancho y alto",
+    "widthOnly": "Solo el ancho",
+    "heightOnly": "Solo el alto",
+    "name": "Nombre de este tamaño",
+    "save": "Guardar tamaño",
+    "saveTitle": "Guarda el tamaño de la primera pieza seleccionada con este nombre, para usarlo en otras piezas y en otros proyectos",
+    "yours": "Tus tamaños",
+    "rename": "Renombrar {{name}}",
+    "delete": "Eliminar {{name}}",
+    "stretchTitle": "Proporciones distintas",
+    "stretchAsk": "Algunas piezas seleccionadas tienen otras proporciones que {{name}} ({{size}}), así que se estirarán a ese tamaño. Para conservar sus proporciones, guarda o elige un tamaño que fije solo el ancho o solo el alto.",
+    "dims": "{{width}} × {{height}} mm"
   }
 }

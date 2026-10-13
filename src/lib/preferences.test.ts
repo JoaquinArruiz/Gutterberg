@@ -391,3 +391,27 @@ describe("the piece references preference", () => {
     }
   });
 });
+
+describe("saved piece sizes", () => {
+  it("start empty, also for a file from before they existed", () => {
+    expect(DEFAULT_PREFERENCES.sizePresets).toEqual([]);
+    expect(migratePreferences({ version: 12 }).sizePresets).toEqual([]);
+  });
+
+  it("keep the valid ones", () => {
+    const p = migratePreferences({
+      version: PREFERENCES_VERSION,
+      sizePresets: [{ name: "Mine", widthMm: 62, heightMm: null }, { name: "" }],
+    });
+    expect(p.sizePresets).toEqual([{ name: "Mine", widthMm: 62, heightMm: null }]);
+  });
+
+  it("call the Japanese size what it was called before the shared list", () => {
+    expect(migratePreferences({ version: 12, images: { size: { preset: "small" } } }).images.size.preset).toBe(
+      "japanese",
+    );
+    expect(migratePreferences({ version: 13, images: { size: { preset: "square" } } }).images.size.preset).toBe(
+      "square",
+    );
+  });
+});

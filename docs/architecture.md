@@ -215,6 +215,11 @@ skip) and shows the page as it is (**Original**), the re-spaced result (**Previe
 tab chooses what goes on the sheets (the piece library, copies, order, the sheet and page, marks, bleed, duplex) and
 exports. The Source tab's own export is the Print tab's default plan.
 
+**Size presets.** `lib/size-presets.ts` holds the built-in sleeve sizes (shared by Selected pieces and Add images) and
+the helpers for the sizes a user saves (`sizePresets` in preferences). A preset sets an explicit per-piece scale like
+typing a size does (`presetScales`: both sides set each; one side keeps the proportions), so it is one undo step and
+is shown wherever a size is shown. A size with both sides is asked about first when it would stretch a piece.
+
 **Piece references.** A piece is named `p3 · r1 c2` (grid) or `p4 · #2` (freeform) in the library, in the Selected
 pieces section and, when the switch in the sheet preview's header is on (`print.showReferences`), on the large sheet
 (`SheetReferences`: a chip at each piece's corner, shortened or left out when the piece is too small for it, never in
