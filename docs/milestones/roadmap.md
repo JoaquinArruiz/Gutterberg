@@ -6,7 +6,7 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.14.0 | `0.14-editing-controls.md` | Arrow keys, several pieces picked, duplicate, snapping; backs from another PDF; gutterfold pairs cut apart; help tips off; update toast, notes and welcome polish; the shortcuts sheet | 6 | 14 |
+| 0.14.0 | `0.14-editing-controls.md` | Arrow keys, several pieces picked, duplicate, snapping; backs from another PDF; gutterfold pairs cut apart; help tips off; update toast, notes and welcome polish; light theme contrast and the empty toolbar; the shortcuts sheet | 6 | 14 |
 | 0.15.0 | `0.15-several-grids.md` | Several grids on one page | 7 | unchanged |
 | 0.16.0 | `0.16-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
