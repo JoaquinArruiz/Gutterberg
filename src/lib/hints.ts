@@ -108,6 +108,14 @@ export const HINTS = {
       },
     ],
   },
+  "grid-and-pieces": {
+    steps: [
+      {
+        title: "hints.grid-and-pieces.one.title",
+        text: "hints.grid-and-pieces.one.text",
+      },
+    ],
+  },
   "print-stage-intro": {
     steps: [
       {

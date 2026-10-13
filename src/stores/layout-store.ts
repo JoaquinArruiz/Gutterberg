@@ -6,6 +6,7 @@ import {
   backsWithoutDocument,
   type CardEdits,
   editsAfterDelete,
+  editsAfterRekey,
   editsWithoutFreeform,
   isCardOfDocument,
   NO_EDITS,
@@ -14,6 +15,7 @@ import type { NormalizedRect } from "../lib/coordinates";
 import type { DetectedGrid } from "../lib/detect";
 import {
   applyGridTo,
+  clearGridRegion,
   defaultGroups,
   type FreeformCards,
   type GridPatch,
@@ -27,9 +29,11 @@ import {
   updateGridGroup,
 } from "../lib/document-layout";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
+import { gridToPieces } from "../lib/grid-to-pieces";
 import { emitHintEvent } from "../lib/hint-events";
 import type { LayoutResult } from "../lib/layout-api";
 import { sessionDefaults } from "../lib/preferences";
+import type { Card } from "../lib/sheet-api";
 import type { GridPayload } from "../lib/tauri";
 import { mmToPt } from "../lib/units";
 import { useDocumentStore } from "./document-store";
@@ -157,6 +161,12 @@ type LayoutState = OutputSettings & {
   applyDetectedGrid: (page: number, grid: DetectedGrid) => void;
   /** Replaces the freeform pieces of `page` with detected ones: one undo step. */
   applyDetectedPieces: (page: number, cards: OrientedRect[]) => void;
+  /**
+   * Turns the grid of `page`'s group into freeform pieces, on this page only or on every page of the group: the cells
+   * (`cards` are the engine's) become pieces at the same place and size, the region is cleared and the pieces' turn,
+   * size, place in the order and backs follow. One undo step. Returns how many pieces were made.
+   */
+  turnGridIntoPieces: (page: number, onlyPage: boolean, cards: Card[]) => number;
   setGrid: (page: number, patch: GridPatch) => void;
   setSkipped: (page: number, skip: boolean) => void;
   /** Sets the skip state of several pages at once (page index to skipped): one undo step. */
@@ -203,6 +213,15 @@ export function onFreeformCardDeleted(fn: (documentId: DocumentId, page: number,
   deletedListeners.add(fn);
   return () => {
     deletedListeners.delete(fn);
+  };
+}
+
+// A grid turned into freeform pieces: the pieces have new keys. Copies and selection in the Print stage follow.
+const movedListeners = new Set<(moves: Record<string, string>) => void>();
+export function onCardKeysMoved(fn: (moves: Record<string, string>) => void): () => void {
+  movedListeners.add(fn);
+  return () => {
+    movedListeners.delete(fn);
   };
 }
 
@@ -308,6 +327,31 @@ export const useLayoutStore = create<LayoutState>()(
         });
         // The Print stage keys copies and the selection by piece number: the old pieces are gone.
         for (let i = 0; i < old; i++) for (const fn of deletedListeners) fn(documentId, page, 0);
+      },
+      turnGridIntoPieces: (page, onlyPage, cards) => {
+        const { groups, freeform } = get();
+        const group = gridGroupAt(groups, page);
+        const doc = useDocumentStore.getState();
+        const documentId = doc.activeId;
+        const sizes = doc.pages;
+        if (!group || group.selection === null) return 0;
+        const pages = onlyPage
+          ? [page]
+          : Array.from({ length: group.pages.last - group.pages.first + 1 }, (_, i) => group.pages.first + i);
+        const made = gridToPieces(cards, documentId, pages, sizes, freeform);
+        const count = Object.values(made.pieces).reduce((n, list) => n + list.length, 0);
+        if (count === 0) return 0;
+        set((s) => {
+          const next = { ...s.freeform };
+          for (const [p, list] of Object.entries(made.pieces)) next[Number(p)] = [...(next[Number(p)] ?? []), ...list];
+          return {
+            groups: clearGridRegion(s.groups, page, onlyPage),
+            freeform: next,
+            cardEdits: editsAfterRekey(s.cardEdits, made.moves),
+          };
+        });
+        for (const fn of movedListeners) fn(made.moves);
+        return count;
       },
       setGrid: (page, patch) => {
         set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) }));
