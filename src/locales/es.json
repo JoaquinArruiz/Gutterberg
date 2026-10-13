@@ -483,8 +483,14 @@
         "afterFronts": "Dorsos después de los frentes",
         "afterFrontsHint": "Primero todas las páginas de frentes y después todas las de dorsos, en el mismo orden.",
         "beside": "Uno junto al otro en la página",
-        "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold)."
+        "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold).",
+        "otherPdf": "Dorsos en otro PDF",
+        "otherPdfHint": "La página 1 de los frentes con la página 1 de los dorsos, la 2 con la 2…, pieza por pieza."
       },
+      "backsPdf": "PDF con los dorsos",
+      "commonBack": "Usarlo como dorso común",
+      "commonBackHint": "Ese PDF es una sola pieza: pasa a ser el dorso de todos los frentes, y no solo de los de la página 1.",
+      "common": "Todos los frentes reciben esa pieza como dorso.",
       "split": "Dorsos en la",
       "splits": {
         "columns": "Mitad derecha",

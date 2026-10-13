@@ -483,8 +483,14 @@
         "afterFronts": "Backs after fronts",
         "afterFrontsHint": "All the front pages first, then all the back pages in the same order.",
         "beside": "Beside each other on the page",
-        "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold)."
+        "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold).",
+        "otherPdf": "Backs in another PDF",
+        "otherPdfHint": "Page 1 of the fronts with page 1 of the backs, page 2 with 2…, piece by piece."
       },
+      "backsPdf": "PDF with the backs",
+      "commonBack": "Use it as the common back",
+      "commonBackHint": "That PDF is one single piece: it becomes the back of every front, instead of only those on page 1.",
+      "common": "Every front gets that piece as its back.",
       "split": "Backs in the",
       "splits": {
         "columns": "Right half",
