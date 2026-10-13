@@ -22,6 +22,7 @@ import { ChainedFields, ChainToggle } from "../ui/ChainToggle";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
+import { SizePresets } from "./SizePresets";
 
 /** Cards whose source sizes differ by less than this (points) can be given one real size together. */
 const SAME_SIZE_PT = 0.5;
@@ -144,6 +145,7 @@ export function SelectedCardsSection() {
               onChange={(mm) => (linked ? apply(scaleForSize(first.source, "height", mm)) : setSide("height", mm))}
             />
           </ChainedFields>
+          <SizePresets />
           <NumberField
             label={t("print.selected.scale")}
             value={scale === null || heightScale === null || Math.abs(scale - heightScale) > 1e-6 ? null : scale * 100}

@@ -14,6 +14,7 @@ import { clampCount } from "./grid";
 import { type HintId, isHintId } from "./hints";
 import { DECIMAL_PREFERENCES, type DecimalPreference, LANGUAGE_PREFERENCES, type LanguagePreference } from "./locale";
 import { MEASUREMENT_UNITS, type MeasurementUnit } from "./measurement";
+import { BUILT_IN_SIZE_IDS, type BuiltInSizeId, normalizeSizePresets, type UserSizePreset } from "./size-presets";
 import { DEFAULT_UPDATES, normalizeUpdates, type UpdatePrefs } from "./updates";
 import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayoutPrefs } from "./workspace-layout";
 
@@ -25,8 +26,9 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // the sizes of its left and right regions). v10: adds help.welcomeSeen (the version of the welcome tour the user has
 // seen or skipped). v11: adds updates (what to be told about, the last check, the version being installed) and
 // experimental (the switches of unfinished features). v12: adds print.showReferences (piece references on the sheet
-// preview, off by default). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 12;
+// preview, off by default). v13: adds sizePresets (named piece sizes) and the "Add images" size takes its ids from the
+// shared size list (the old "small" is "japanese"). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 13;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -94,6 +96,8 @@ export interface AppPreferences {
   };
   /** Saved grids, in the order they were made. */
   presets: GridPreset[];
+  /** Saved piece sizes, in the order they were made (the built-in ones are in `size-presets.ts`). */
+  sizePresets: UserSizePreset[];
   /** Images as pieces (M24). */
   images: { size: ImageSizePrefs };
   /** AI Mode (M19). */
@@ -106,7 +110,7 @@ export interface AppPreferences {
 
 /** The size the last import used, offered again by the next one (M24). */
 export type ImageSizePrefs = {
-  preset: "standard" | "small" | "tarot" | "image" | "custom";
+  preset: BuiltInSizeId | "image" | "custom";
   widthMm: number;
   heightMm: number;
   /** The images include bleed, and how much. */
@@ -122,7 +126,7 @@ export const DEFAULT_IMAGE_SIZE: ImageSizePrefs = {
   bleedMm: 3,
 };
 
-const IMAGE_SIZE_PRESETS = ["standard", "small", "tarot", "image", "custom"] as const;
+const IMAGE_SIZE_PRESETS = [...BUILT_IN_SIZE_IDS, "image", "custom"] as const;
 
 function normalizeImageSize(raw: unknown): ImageSizePrefs {
   const r = isObj(raw) ? raw : {};
@@ -130,7 +134,8 @@ function normalizeImageSize(raw: unknown): ImageSizePrefs {
   const mm = (v: unknown, fallback: number, lo: number, hi: number) =>
     typeof v === "number" && Number.isFinite(v) ? Math.min(Math.max(v, lo), hi) : fallback;
   return {
-    preset: oneOf(r.preset, IMAGE_SIZE_PRESETS, d.preset),
+    // Before v13 the Japanese size was called "small".
+    preset: oneOf(r.preset === "small" ? "japanese" : r.preset, IMAGE_SIZE_PRESETS, d.preset),
     widthMm: mm(r.widthMm, d.widthMm, 5, 1000),
     heightMm: mm(r.heightMm, d.heightMm, 5, 1000),
     bleed: typeof r.bleed === "boolean" ? r.bleed : d.bleed,
@@ -153,6 +158,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   print: { layout: defaultLayout("print"), showReferences: false },
   files: { recent: [] },
   presets: [],
+  sizePresets: [],
   images: { size: DEFAULT_IMAGE_SIZE },
   ai: DEFAULT_AI,
   updates: DEFAULT_UPDATES,
@@ -295,6 +301,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     },
     files: { recent: normalizeRecent(fl.recent) },
     presets: normalizePresets(r.presets),
+    sizePresets: normalizeSizePresets(r.sizePresets),
     images: { size: normalizeImageSize(isObj(r.images) ? r.images.size : undefined) },
     ai: normalizeAi(r.ai),
     updates: normalizeUpdates(r.updates),
