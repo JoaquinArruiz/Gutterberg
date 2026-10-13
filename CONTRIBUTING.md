@@ -88,7 +88,7 @@ click. A pull request cannot be merged before that.
 
 Contributions written with the help of an AI coding tool are welcome, under the same rules as any other: the tools read
 [AGENTS.md](AGENTS.md), you are responsible for what you submit, it must pass the same checks, and it is reviewed like
-any other change. Please do not add a tool as an author or co-author in commit messages.
+any other change. Please do not add a tool as an author or co-author in commit messages, and check that `git config user.name` and `user.email` are yours before you commit: a tool's default identity makes it a contributor on GitHub. CI runs `scripts/check-authorship.sh` and fails a commit that names a tool as author, committer or co-author, or links to a session.
 
 ## License
 
