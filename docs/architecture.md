@@ -283,8 +283,9 @@ an optional action named in a registry, an optional target element and an option
 `<HintToast hint="…" />` shows one; the call site decides when and where, the catalog decides what. One hint shows at
 a time. A tour step with a target points at it with a spotlight (React Joyride, MIT) and moves on when the app emits
 the matching event (`hint-events.ts`), however the user did it. If a target is not on screen, it falls back to a
-toast. Dismissals are stored with the hint's version, so a changed tip can come back; "Reset help tips" brings them all
-back. Tips can be turned off for good, so messages that matter (an update, how an update went) are not tips: they use
+toast. Dismissals are stored with the hint's version, so a changed tip can come back; "Show closed tips again" brings them all
+back. `help.tipsOn` (Preferences › Help, or "Don't show tips" on a tip) turns every tip and tour off with one check in
+`useHint`; the welcome tour is not a tip. Tips can be turned off for good, so messages that matter (an update, how an update went) are not tips: they use
 the general toast (`Toast`), a queue that shows one at a time.
 
 The **welcome tour** is four short clips (masters in `assets/welcome/`, encoded by `scripts/encode-welcome.sh` into

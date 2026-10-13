@@ -11,6 +11,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - A help tip the first time a grid region is drawn says how to drag it, nudge it and snap it.
 - Gutterfold pairs can be cut apart instead of folded: Print › Duplex › Backs › Beside the front › Pairs › Cut apart puts each back next to its front with no fold line and cut marks around the front and the back each, so a set that is not double-sided can be laid out front-and-back and cut in one go. With a gap of 0 they share one cut. A back below its front stays upright, unless you turn it.
 - Pair backs automatically… can take the backs from another PDF of the project (Backs in another PDF): page 1 of the fronts with page 1 of the backs, piece by piece, with the same mirrored and upside-down options. A backs PDF that is one single piece can be used as the common back of every front.
+- Help tips can be turned off: Preferences › Help › Help tips has a “Show help tips” switch, and each tip has a small “Don't show tips” that turns it off and says where to turn it on again. With the switch off no tip or screen tour shows; the welcome tour still opens once and can be replayed. The button that brings tips back is now “Show closed tips again”.
 
 ### Changed
 

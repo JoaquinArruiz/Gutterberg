@@ -644,10 +644,12 @@
       "welcomeNote": "Un recorrido corto por la aplicación, en cuatro clips.",
       "replayWelcome": "Ver de nuevo el recorrido de bienvenida",
       "tips": "Consejos",
-      "enableTips": "Activar todos los consejos",
-      "allTipsOn": "Todos los consejos están activados.",
-      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Actívalo para volver a verlo.",
-      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Actívalos para volver a verlos.",
+      "enableTips": "Mostrar de nuevo los consejos cerrados",
+      "showTips": "Mostrar consejos",
+      "tipsOff": "Los consejos están desactivados. Activa «Mostrar consejos» para volver a verlos.",
+      "allTipsOn": "Ningún consejo está cerrado.",
+      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Vuelve a mostrarlo para verlo.",
+      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Vuelve a mostrarlos para verlos.",
       "shortcuts": "Atajos de teclado",
       "bug": "¿Encontraste un error?",
       "bugIntro": "Si algo no funciona, abre un «issue» en GitHub (necesitas una cuenta gratuita de GitHub) e indica:",
@@ -709,7 +711,11 @@
     "skip": "Omitir",
     "done": "Listo",
     "dismiss": "Cerrar consejo",
-    "dismissTitle": "Cerrar (no se volverá a mostrar)"
+    "dismissTitle": "Cerrar (no se volverá a mostrar)",
+    "turnOff": "No mostrar consejos",
+    "offTitle": "Los consejos están desactivados",
+    "offText": "Para verlos de nuevo, activa «Mostrar consejos» en Preferencias › Ayuda.",
+    "offOpen": "Abrir Preferencias"
   },
   "hints": {
     "first-pdf-tour": {

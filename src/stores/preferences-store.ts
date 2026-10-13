@@ -120,6 +120,8 @@ type PreferencesState = {
   dismissHint: (id: HintId) => void;
   /** Show every help tip again. */
   resetHints: () => void;
+  /** Turn all help tips and screen tours on or off (the closed ones stay closed). */
+  setTipsOn: (on: boolean) => void;
   /** The welcome tour of this version was closed: it does not open by itself again. */
   setWelcomeSeen: (version: number) => void;
   /** Remember that inspector section `id` was opened or closed. */
@@ -241,6 +243,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           }));
       },
       resetHints: () => edit((p) => ({ ...p, help: { ...p.help, dismissedHints: {} } })),
+      setTipsOn: (tipsOn) => edit((p) => ({ ...p, help: { ...p.help, tipsOn } })),
       setWelcomeSeen: (version) => edit((p) => ({ ...p, help: { ...p.help, welcomeSeen: version } })),
       setSectionOpen: (id, open) => {
         if (get().prefs.inspector.sections[id] !== open)

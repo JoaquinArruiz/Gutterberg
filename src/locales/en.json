@@ -644,10 +644,12 @@
       "welcomeNote": "A short tour of the app, in four clips.",
       "replayWelcome": "Replay welcome tour",
       "tips": "Help tips",
-      "enableTips": "Enable all help tips",
-      "allTipsOn": "All help tips are enabled.",
-      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Enable it to see it again.",
-      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Enable them to see them again.",
+      "enableTips": "Show closed tips again",
+      "showTips": "Show help tips",
+      "tipsOff": "Help tips are off. Turn on “Show help tips” to see them again.",
+      "allTipsOn": "No help tip is closed.",
+      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Show it again to see it.",
+      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Show them again to see them.",
       "shortcuts": "Keyboard shortcuts",
       "bug": "Found a bug?",
       "bugIntro": "If something doesn't work, open an issue on GitHub (you need a free GitHub account) and tell us:",
@@ -709,7 +711,11 @@
     "skip": "Skip",
     "done": "Done",
     "dismiss": "Dismiss tip",
-    "dismissTitle": "Dismiss (won't show again)"
+    "dismissTitle": "Dismiss (won't show again)",
+    "turnOff": "Don't show tips",
+    "offTitle": "Help tips are off",
+    "offText": "To see them again, turn on “Show help tips” in Preferences › Help.",
+    "offOpen": "Open Preferences"
   },
   "hints": {
     "first-pdf-tour": {
