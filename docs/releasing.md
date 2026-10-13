@@ -40,14 +40,15 @@ Builds are not code-signed (no Apple or Windows certificate). The updater works 
 
 ## To release
 
-A version has its own branch, `release/1.1.0`, started from `main`; features and fixes are squashed into it with pull
-requests (see "Branches and releases" in `AGENTS.md`). When it holds everything the version needs:
+A version has its own branch, `release/1.1.0`, started from `main`; features and fixes are squashed into it with `git merge --squash`
+(see "Branches and releases" in `AGENTS.md`). When it holds everything the version needs:
 
 1. On `release/1.1.0`, merge `main` into it. Move the `Unreleased` notes under the new version in `CHANGELOG.md`;
    bump `version` in `package.json` and `src-tauri/Cargo.toml`; run `cargo build` to refresh `Cargo.lock`; delete the
    version's brief from `docs/milestones/` and its row from `roadmap.md`. To check before pushing:
    `scripts/check-release.sh v1.1.0`. Commit it as "Release 1.1.0".
-2. Open a pull request from `release/1.1.0` to `main` and merge it with a **merge commit** once CI passes.
+2. Once CI has passed on `release/1.1.0` and I have tested it, merge it into `main` with a **merge commit**:
+   `git switch main && git pull && git merge --no-ff release/1.1.0 && git push`.
 3. Tag `main` with a signed tag and push it:
    ```sh
    git switch main && git pull
@@ -62,9 +63,9 @@ requests (see "Branches and releases" in `AGENTS.md`). When it holds everything 
    GitHub's `releases/latest` skips drafts and pre-releases.
 6. Delete the version branch. A fix for this version is a `release/1.1.1` branch started from `main`.
 
-CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a branch is not built twice.
-Protect `main` and `release/*` in Settings › Branches (a pull request and a passing `check` are required) so nothing
-is pushed to them directly.
+CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a branch is not built twice. Feature and
+fix branches are merged locally into their version branch (no pull request), so CI checks them when the version branch
+is pushed.
 
 To fix the notes after a release, edit `CHANGELOG.md` and re-run the workflow for that tag (it replaces the
 release's files). Editing the text on GitHub alone does **not** change `latest.json`.
