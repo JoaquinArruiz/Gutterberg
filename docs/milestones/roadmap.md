@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.13.0 | `0.13-grid-to-pieces.md` | Turn a grid into freeform pieces, so a second grid can be drawn on the page | unchanged (5) | unchanged (13) |
 | 0.14.0 | `0.14-several-grids.md` | Several grids on one page | 6 | unchanged |
 | 0.15.0 | `0.15-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
@@ -16,8 +15,8 @@ number.
 
 ## Why this order
 
-- **Several grids come in two versions.** 0.13.0 is a small step that already lets someone mark two sizes on one
-  page (draw a grid, turn it into pieces, draw the next grid). 0.14.0 is the real thing: a grid number in every
+- **Several grids come in two versions.** 0.13.0 (turn a grid into pieces) is done; it already lets someone mark two
+  sizes on one page (draw a grid, turn it into pieces, draw the next grid). 0.14.0 is the real thing: a grid number in every
   piece's id, a project migration and a new way to edit the Source tab. Splitting them gives the requester
   something early and keeps the big migration in one place.
 - **The command line comes last.** Today the UI builds the print request (`src/lib/print-request.ts`). A command
@@ -31,7 +30,3 @@ number.
 - **Cutting machines** (registration marks for a print-and-cut machine, and a cut file in SVG or DXF) were in this
   roadmap as 0.13.0. No user asked for them, and how a machine such as the Silhouette reads marks from a PDF is not
   settled, so the brief was dropped. If someone asks, start from what they use and what they do today.
-
-Already possible today, worth a help tip or a line in the docs in 0.13.0: a page can have its grid **and** freeform
-pieces (`toRustGroups` puts a page's freeform pieces right after its grid pieces), and the same PDF can be added to a
-project twice (File › Add PDF) with a different grid on each copy.

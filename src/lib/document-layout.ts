@@ -163,6 +163,19 @@ export function updateGridGroup(groups: PageGroup[], page: number, edit: (g: Gri
   return next === g ? groups : groups.map((x, j) => (j === i ? next : x));
 }
 
+/**
+ * Clears the piece region of `page`'s grid group (the grid keeps its rows, columns and gaps, and finds no pieces until
+ * a region is drawn again). With `onlyPage` the page leaves its group first, as in "Apply this grid to…", so the
+ * other pages of the group keep their region.
+ */
+export function clearGridRegion(groups: PageGroup[], page: number, onlyPage: boolean): PageGroup[] {
+  const g = gridGroupAt(groups, page);
+  if (!g || g.selection === null) return groups;
+  if (!onlyPage) return updateGridGroup(groups, page, (x) => ({ ...x, selection: null }));
+  const range = { first: page, last: page };
+  return replaceRange(groups, range, { ...g, pages: range, selection: null });
+}
+
 /** Copies the grid and region of the grid group at `source` onto `pages`, as separate groups from the one they came from. */
 export function applyGridTo(groups: PageGroup[], source: number, pages: number[]): PageGroup[] {
   const from = gridGroupAt(groups, source);

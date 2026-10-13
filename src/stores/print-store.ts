@@ -2,7 +2,7 @@ import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import { cardIdKey } from "../lib/card";
-import { isCardOfDocument, keyAfterDelete, remapRecord } from "../lib/card-edits";
+import { isCardOfDocument, keyAfterDelete, rekeyRecord, remapRecord } from "../lib/card-edits";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { cleanFinish, type Finish } from "../lib/finish";
 import { emitHintEvent } from "../lib/hint-events";
@@ -25,7 +25,7 @@ import {
   type SheetGridMode,
 } from "../lib/print-request";
 import type { Card, OutputSheet } from "../lib/sheet-api";
-import { HISTORY_LIMIT, onFreeformCardDeleted } from "./layout-store";
+import { HISTORY_LIMIT, onCardKeysMoved, onFreeformCardDeleted } from "./layout-store";
 
 const grid = (n: number) => Math.min(Math.max(Math.round(Number.isFinite(n) ? n : 1), 1), MAX_SHEET_GRID);
 
@@ -194,6 +194,24 @@ onFreeformCardDeleted((documentId, page, index) => {
       quantities: remapRecord(s.quantities, documentId, page, index),
       selection: { selected: kept, anchor },
       finish: common === null ? s.finish : withCommonBack(s.finish, keyAfterDelete(common, documentId, page, index)),
+    };
+  });
+  usePrintStore.temporal.getState().clear();
+});
+
+// A grid was turned into freeform pieces, which have new keys: their copies, selection and the common back follow.
+// Earlier steps of the plan use the old keys, so they are dropped, as for a deleted piece.
+onCardKeysMoved((moves) => {
+  const to = (k: string) => moves[k] ?? k;
+  usePrintStore.setState((s) => {
+    const common = s.finish.duplex.commonBack;
+    return {
+      quantities: rekeyRecord(s.quantities, moves),
+      selection: {
+        selected: s.selection.selected.map(to),
+        anchor: s.selection.anchor === null ? null : to(s.selection.anchor),
+      },
+      finish: common === null ? s.finish : withCommonBack(s.finish, to(common)),
     };
   });
   usePrintStore.temporal.getState().clear();

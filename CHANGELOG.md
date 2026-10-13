@@ -5,6 +5,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Turn into pieces (Source sidebar › Layout): turns every cell of a page's grid into a piece of its own, at the same place and size, and clears the grid's region so you can draw the next grid. That is how a page with pieces of three sizes is marked: grid, turn into pieces, grid, turn into pieces, grid. A grid shared by several pages asks whether to turn this page only or all of them. The copies, turn, size, back and place in the order you gave each piece stay with it, and it is one undo step. A help tip says that a page can have a grid and pieces together.
+
+### Fixed
+
+- Deleting a piece drawn by hand no longer mixes up the height size of the pieces after it when a piece had its width and height set apart.
+
 ## 0.12.0 (2026-10-13)
 
 ### Added

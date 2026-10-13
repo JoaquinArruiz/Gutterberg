@@ -68,6 +68,8 @@ export function EditorViewport() {
   const group = useCurrentGridGroup();
   const skipped = useCurrentGroup()?.kind === "skip";
   const selection = group?.selection ?? null;
+  // A grid and freeform pieces on one page: the tip says that is allowed and how to get several sizes.
+  const hasGridAndPieces = selection !== null && freeform.length > 0;
   const fitMode = useEditorStore((s) => s.fitMode);
   const viewMode = useEditorStore((s) => s.viewMode);
   const previewResult = usePreviewResult();
@@ -416,6 +418,12 @@ export function EditorViewport() {
             )}
             {!output && (
               <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
+            )}
+            {!output && !cardTool && hasGridAndPieces && (
+              <HintToast
+                hint="grid-and-pieces"
+                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+              />
             )}
             {cardTool && (
               <HintToast

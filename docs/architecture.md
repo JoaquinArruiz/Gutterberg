@@ -46,7 +46,12 @@ A piece is identified by a `CardId`: a grid piece (document, page, row, column) 
 page, index), always carrying its `DocumentId` so several PDFs can share a project. An `OrientedRect` is a piece's
 source area, rotated about its centre; grid pieces have an angle of 0. The pages of a document are covered by
 `PageGroup`s with no gaps: `grid` (pages, rows, columns, a selection), `skip`, and `freeform`. Edits apply to the
-group the viewed page belongs to; "Apply this grid to…" copies a grid onto other pages as separate groups.
+group the viewed page belongs to; "Apply this grid to…" copies a grid onto other pages as separate groups. A page can
+have a grid and freeform pieces together (`toRustGroups` puts a page's freeform pieces after its grid pieces).
+"Turn into pieces" (`turnGridIntoPieces` in the layout store, `lib/grid-to-pieces.ts`) takes the cells the engine
+extracts for the page (`compute_cards`), appends them as freeform pieces, clears the group's region and re-keys the
+per-piece edits (`editsAfterRekey`) and the Print stage's copies, selection and common back (`onCardKeysMoved`), in one
+undo step; on one page of a shared group, the page first leaves the group.
 
 ### Layout (`layout`)
 
