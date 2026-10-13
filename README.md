@@ -197,8 +197,7 @@ You need Node 20 or later, [pnpm](https://pnpm.io/), Rust, and on Linux the Taur
 git clone https://github.com/JoaquinArruiz/Gutterberg.git
 cd Gutterberg
 pnpm install
-scripts/fetch-pdfium.sh        # downloads pdfium into src-tauri/resources/pdfium
-pnpm tauri dev                 # runs the app
+pnpm tauri dev                 # runs the app; the first time it also fetches pdfium (see CONTRIBUTING.md)
 ```
 
 The checks, as CI runs them:
