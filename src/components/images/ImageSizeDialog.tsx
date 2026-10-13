@@ -8,10 +8,10 @@ import {
   type ImagePlan,
   type ImageProbe,
   planImages,
-  SIZE_PRESETS,
   type SizePreset,
 } from "../../lib/images";
 import { formatDecimal } from "../../lib/measurement";
+import { BUILT_IN_SIZES, type BuiltInSizeId, builtInSize } from "../../lib/size-presets";
 import { useImageImportStore } from "../../stores/image-import-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { Button } from "../ui/Button";
@@ -89,8 +89,8 @@ function ImageSizeForm({
         heightMm: round1((first.nativeHeightMm ?? 0) - 2 * bleed),
       };
     if (preset === "custom") return custom;
-    if (preset === "image") return SIZE_PRESETS.standard;
-    return SIZE_PRESETS[preset];
+    if (preset === "image") return builtInSize("standard");
+    return builtInSize(preset);
   }, [preset, custom, hasNative, first, bleed]);
   const valid = size.widthMm >= 5 && size.heightMm >= 5;
 
@@ -138,10 +138,10 @@ function ImageSizeForm({
       widthMm: lock ? round1((mm * first.widthPx) / first.heightPx) : custom.widthMm,
     });
 
-  const presetLabel = (id: keyof typeof SIZE_PRESETS) =>
-    t(`images.dialog.presets.${id}`, {
-      width: formatDecimal(SIZE_PRESETS[id].widthMm, 0),
-      height: formatDecimal(SIZE_PRESETS[id].heightMm, 0),
+  const presetLabel = (id: BuiltInSizeId) =>
+    t("sizePresets.label", {
+      name: t(`sizePresets.names.${id}`),
+      dims: t("sizePresets.dims", { width: mmText(builtInSize(id).widthMm), height: mmText(builtInSize(id).heightMm) }),
     });
 
   const confirm = () => {
@@ -174,9 +174,7 @@ function ImageSizeForm({
             value={preset}
             onChange={setPreset}
             options={[
-              { value: "standard", label: presetLabel("standard") },
-              { value: "small", label: presetLabel("small") },
-              { value: "tarot", label: presetLabel("tarot") },
+              ...BUILT_IN_SIZES.map((size) => ({ value: size.id, label: presetLabel(size.id) })),
               {
                 value: "image",
                 label: hasNative ? t("images.dialog.fromImage") : t("images.dialog.fromImageOff"),

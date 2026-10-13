@@ -18,6 +18,7 @@ import {
   toggleMode,
   type WorkspaceMode,
 } from "../lib/preferences";
+import { normalizeSizePresets, type UserSizePreset } from "../lib/size-presets";
 import type { PendingUpdate, UpdateNotify } from "../lib/updates";
 import {
   applyPreset,
@@ -149,6 +150,10 @@ type PreferencesState = {
   setExperimental: (id: string, on: boolean) => void;
   savePreset: (preset: GridPreset) => void;
   deletePreset: (name: string) => void;
+  /** Saves a piece size under its name, replacing a saved size of the same name. */
+  saveSizePreset: (preset: UserSizePreset) => void;
+  renameSizePreset: (name: string, to: string) => void;
+  deleteSizePreset: (name: string) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
   /** The preset applies to one tab's layout. */
@@ -273,6 +278,25 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           const presets = at === -1 ? [...p.presets, preset] : p.presets.map((x, i) => (i === at ? preset : x));
           return { ...p, presets };
         }),
+      saveSizePreset: (preset) =>
+        edit((p) => ({
+          ...p,
+          sizePresets: normalizeSizePresets([
+            ...p.sizePresets.filter((x) => x.name.toLowerCase() !== preset.name.trim().toLowerCase()),
+            preset,
+          ]),
+        })),
+      renameSizePreset: (name, to) =>
+        edit((p) => {
+          const target = to.trim().toLowerCase();
+          // An empty name, or the name of another saved size, changes nothing.
+          if (!target || p.sizePresets.some((x) => x.name !== name && x.name.toLowerCase() === target)) return p;
+          return {
+            ...p,
+            sizePresets: normalizeSizePresets(p.sizePresets.map((x) => (x.name === name ? { ...x, name: to } : x))),
+          };
+        }),
+      deleteSizePreset: (name) => edit((p) => ({ ...p, sizePresets: p.sizePresets.filter((x) => x.name !== name) })),
       deletePreset: (name) => edit((p) => ({ ...p, presets: p.presets.filter((x) => x.name !== name) })),
       setPanelPosition: (id, position) => editLayout(layoutOfPanel(id), (l) => setPanelPosition(l, id, position)),
       setPanelCollapsed: (id, collapsed) => editLayout(layoutOfPanel(id), (l) => setPanelCollapsed(l, id, collapsed)),
