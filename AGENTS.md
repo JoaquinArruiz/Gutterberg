@@ -86,7 +86,7 @@ and type names) stay as they are.
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add
 every new string to both, never hard-code text in components. Spanish is neutral Latin
-American Spanish (`tú`, no voseo, no `vosotros`); the owner reviews it.
+American Spanish (`tú`, no voseo, no `vosotros`); I review it.
 
 Pieces are rectangles (optionally rotated). Round or custom shapes are not supported; a round
 token is marked and printed with its rectangle.
@@ -98,11 +98,13 @@ These apply to everyone, whether a person or an AI tool is writing the change.
 - The package manager is **pnpm**. Never use npm or npx; use `pnpm exec` for one-off tools.
 - Commit messages are **one sentence** that says what the change does, for example "Stop native selection
   highlight while dragging on the page canvas".
-- Work goes **feature branch → version branch → `main` → tag** (see "Branches and releases" below). Nobody commits
-  to `main` or to a `release/*` branch directly, once the owner has turned on that protection.
+- Work goes **feature branch → version branch → `main` → tag** (see "Branches and releases" below). Between my own
+  branches there are no pull requests: I merge locally and push. Pull requests are for contributors.
 - No AI tool is an author or co-author: no `Co-Authored-By` lines, no session links, and no tool's name in commit
   messages, branch names, code or docs. CI fails a push or pull request that has one (`scripts/check-authorship.sh`);
   check `git config user.name` and `user.email` before you commit, since a tool's default identity counts.
+- Docs, comments and pull request texts speak as the maintainer in the first person ("I tag `main`"), never about
+  "the owner".
 - Do not commit, push, create branches or open pull requests unless you were asked to. When asked, branch from the
   version branch the work belongs to, with the names below.
 - The project is under the PolyForm Noncommercial License 1.0.0 (`LICENSE`). Never change the `LICENSE` file, and add
@@ -118,13 +120,15 @@ feature/<name> or fix/<name>  →  release/<x.y.z>  →  main  →  tag v<x.y.z>
   version branch it belongs to. The name says what it does; it never names a tool, a person or a session.
 - **One version branch per release**, `release/<x.y.z>` (for example `release/0.12.0`), started from `main`. Its
   brief in `docs/milestones/` lives on it. Keep it short-lived, and merge `main` into it before it goes to `main`.
-- **A feature or fix merges into its version branch with a pull request, squashed**: the pull request title is the
-  commit message, one sentence. CI must pass. Merge features one at a time and update your branch from the version
-  branch first, since `CHANGELOG.md` (Unreleased) and the version numbers in `docs/milestones/roadmap.md` are shared.
-- **The version branch merges into `main` with a pull request and a merge commit**, so a version is one unit in the
-  history. Its last commit is "Release x.y.z": the version in `package.json` and `src-tauri/Cargo.toml`, and the
+- **A feature or fix merges into its version branch with `git merge --squash`** and a commit whose message is one
+  sentence, then the version branch is pushed (CI runs on it). Run the checks on the feature branch first. Merge
+  features one at a time and update the branch from the version branch first, since `CHANGELOG.md` (Unreleased) and
+  the version numbers in `docs/milestones/roadmap.md` are shared. A contributor's pull request is squashed the same
+  way, its title being the message.
+- **The version branch merges into `main` with a merge commit (`git merge --no-ff`)** once I have tested it, so a
+  version is one unit in the history. Its release commit is "Release x.y.z": the version in `package.json` and `src-tauri/Cargo.toml`, and the
   `CHANGELOG.md` heading (see `docs/releasing.md`).
-- **The owner tags `main`**, with a signed tag (`git tag -s v<x.y.z>`), which builds the release.
+- **I tag `main`**, with a signed tag (`git tag -s v<x.y.z>`), which builds the release.
 - **A fix for a released version** is `fix/<what>` merged into `release/<x.y.z+1>` (a patch version branch started
   from `main`), then into `main` the same way. Merge `main` back into any version branch that is open.
 - A tool working here uses these names and these rules like anyone else, and never adds its own name to a branch,

@@ -181,7 +181,22 @@
     "dragRegion": "Arrastra sobre la página para seleccionar la región que ocupan las piezas.",
     "gapNote": "Separación que ya hay entre las piezas en el PDF.",
     "outputNote": "La separación de salida entre piezas, el tamaño y los márgenes de la página, y qué piezas van en cada hoja se configuran en la pestaña Imprimir.",
-    "openPrint": "Abrir la pestaña Imprimir"
+    "openPrint": "Abrir la pestaña Imprimir",
+    "turnIntoPieces": {
+      "button": "Convertir en piezas",
+      "title": "Convierte cada celda de esta cuadrícula en una pieza propia, en el mismo lugar y con el mismo tamaño, y borra la región para que puedas dibujar la siguiente cuadrícula",
+      "done_one": "Se creó 1 pieza. Dibuja una cuadrícula para el siguiente tamaño de pieza.",
+      "done_other": "Se crearon {{count}} piezas. Dibuja una cuadrícula para el siguiente tamaño de pieza.",
+      "none": "Esta cuadrícula no tiene piezas para convertir.",
+      "dialog": "Convertir la cuadrícula en piezas",
+      "shared_one": "La cuadrícula de esta página la usa 1 página.",
+      "shared_other": "Esta cuadrícula la comparten {{count}} páginas.",
+      "onlyThisPage": "Solo esta página",
+      "onlyThisPageHint": "La página sale del grupo; las demás páginas conservan su cuadrícula.",
+      "everyPage_one": "Esta página",
+      "everyPage_other": "Todas las páginas del grupo ({{count}})",
+      "everyPageHint": "Todas se convierten en piezas y se borra la región de su cuadrícula."
+    }
   },
   "freeform": {
     "title": "Piezas libres",
@@ -725,6 +740,12 @@
       "export": {
         "title": "Exporta",
         "text": "Cuando las hojas se vean bien, exporta el PDF."
+      }
+    },
+    "grid-and-pieces": {
+      "one": {
+        "title": "Una cuadrícula y piezas en una página",
+        "text": "Una página puede tener una cuadrícula y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Convertir en piezas y dibuja la siguiente."
       }
     }
   },

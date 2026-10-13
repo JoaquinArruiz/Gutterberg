@@ -181,7 +181,22 @@
     "dragRegion": "Drag on the page to select the region the pieces occupy.",
     "gapNote": "Gap already between pieces in the PDF.",
     "outputNote": "The output gap between pieces, the page size and margins, and which pieces go on which sheet, are set in the Print tab.",
-    "openPrint": "Open the Print tab"
+    "openPrint": "Open the Print tab",
+    "turnIntoPieces": {
+      "button": "Turn into pieces",
+      "title": "Turns every cell of this grid into a piece of its own, at the same place and size, and clears the region so you can draw the next grid",
+      "done_one": "1 piece made. Draw a grid for the next size of piece.",
+      "done_other": "{{count}} pieces made. Draw a grid for the next size of piece.",
+      "none": "This grid has no pieces to turn.",
+      "dialog": "Turn the grid into pieces",
+      "shared_one": "This page's grid is used by 1 page.",
+      "shared_other": "This grid is shared by {{count}} pages.",
+      "onlyThisPage": "Only this page",
+      "onlyThisPageHint": "The page leaves the group; the other pages keep their grid.",
+      "everyPage_one": "This page",
+      "everyPage_other": "Every page of the group ({{count}})",
+      "everyPageHint": "All of them become pieces, and their grid region is cleared."
+    }
   },
   "freeform": {
     "title": "Freeform pieces",
@@ -725,6 +740,12 @@
       "export": {
         "title": "Export",
         "text": "When the sheets look right, export the PDF."
+      }
+    },
+    "grid-and-pieces": {
+      "one": {
+        "title": "A grid and pieces on one page",
+        "text": "A page can have one grid and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Turn into pieces, then draw the next grid."
       }
     }
   },

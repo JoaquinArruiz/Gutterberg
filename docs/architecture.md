@@ -46,7 +46,12 @@ A piece is identified by a `CardId`: a grid piece (document, page, row, column) 
 page, index), always carrying its `DocumentId` so several PDFs can share a project. An `OrientedRect` is a piece's
 source area, rotated about its centre; grid pieces have an angle of 0. The pages of a document are covered by
 `PageGroup`s with no gaps: `grid` (pages, rows, columns, a selection), `skip`, and `freeform`. Edits apply to the
-group the viewed page belongs to; "Apply this grid to…" copies a grid onto other pages as separate groups.
+group the viewed page belongs to; "Apply this grid to…" copies a grid onto other pages as separate groups. A page can
+have a grid and freeform pieces together (`toRustGroups` puts a page's freeform pieces after its grid pieces).
+"Turn into pieces" (`turnGridIntoPieces` in the layout store, `lib/grid-to-pieces.ts`) takes the cells the engine
+extracts for the page (`compute_cards`), appends them as freeform pieces, clears the group's region and re-keys the
+per-piece edits (`editsAfterRekey`) and the Print stage's copies, selection and common back (`onCardKeysMoved`), in one
+undo step; on one page of a shared group, the page first leaves the group.
 
 ### Layout (`layout`)
 
@@ -304,7 +309,7 @@ backs, rules, cover, other) and offers to skip the ones without pieces. A result
 
 A tag such as `v1.1.0` builds the app for Windows, macOS (Apple silicon and Intel) and Linux with `tauri-action`, and
 leaves a draft GitHub release with the installers, their updater signatures, `latest.json` and the notes from
-`CHANGELOG.md`; publishing the draft is what makes installed apps see it. The owner's steps are in
+`CHANGELOG.md`; publishing the draft is what makes installed apps see it. My steps are in
 [releasing.md](releasing.md). Builds are not code-signed; the updater verifies downloads with its own key.
 
 In the app, the Tauri updater checks about 10 seconds after start, at most once a day and never during an export; a
@@ -365,8 +370,8 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Help tips | One catalog; tours point at the interface with React Joyride (MIT); shown at the moment of need, never as a long tour at first launch except the short welcome. |
 | Images | Each import is a one-page-per-image PDF; pixels never resampled; the user picks the size, never stretched. |
 | Logo | The logo for light backgrounds, a dark variant, and an app icon on a bone-coloured plate (not pure white). |
-| License | PolyForm Noncommercial 1.0.0 in `LICENSE` (official text, unchanged). Personal and noncommercial use, changes and free forks are allowed; commercial use needs the owner's permission. No warranty, no liability. |
-| Versions | Semantic Versioning, tags `vX.Y.Z`, one place for the version (`package.json`); a tag builds a draft release and the owner publishes it. |
+| License | PolyForm Noncommercial 1.0.0 in `LICENSE` (official text, unchanged). Personal and noncommercial use, changes and free forks are allowed; commercial use needs my permission. No warranty, no liability. |
+| Versions | Semantic Versioning, tags `vX.Y.Z`, one place for the version (`package.json`); a tag builds a draft release and I publish it. |
 | Updates | The Tauri updater from GitHub Releases; the toast obeys "Tell me about"; a beta channel is for later. |
 | Signing | Builds are unsigned (no Apple or Windows certificate); the README explains the first-launch warnings. |
 | Planning | A feature being built may have one brief in `docs/milestones/`; when done, what is worth keeping moves here, the user-facing change goes into `CHANGELOG.md`, and the brief is deleted. |

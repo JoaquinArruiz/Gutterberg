@@ -5,10 +5,11 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-## 0.12.0 (2026-10-13)
+## 0.13.0 (2026-10-13)
 
 ### Added
 
+- Turn into pieces (Source sidebar › Layout): turns every cell of a page's grid into a piece of its own, at the same place and size, and clears the grid's region so you can draw the next grid. That is how a page with pieces of three sizes is marked: grid, turn into pieces, grid, turn into pieces, grid. A grid shared by several pages asks whether to turn this page only or all of them. The copies, turn, size, back and place in the order you gave each piece stay with it, and it is one undo step. A help tip says that a page can have a grid and pieces together.
 - Size presets for the selected pieces (Print settings › Selected pieces › Size preset): the common sleeve sizes (poker, standard, mini American and European, European, Japanese, square, tarot), and your own, which you can save from the selection, rename and delete. A size can fix only the width or only the height, so "62 mm wide" keeps each piece's proportions. A size with both sides asks before it stretches a piece of other proportions, and applying one is a single undo step.
 - A button in the sheet preview that shows each piece's reference on the sheet (`p3 · r1 c2`), the same one the piece library shows, so a piece on the sheet is easy to find. With several PDFs each gets a letter (A, B, …) that is shown in front of its references and in the library's filter menu. The references are only on screen, never in the exported PDF.
 - A calibration sheet for duplex printing: Print › Duplex › Calibration sheet… saves a front and a back to print on both sides of one sheet of paper. Held up to a light, the crosshairs of the front cross the rulers of the back at the printer's drift between sides, and the two numbers read go into the back offset in one step.
@@ -20,6 +21,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - The size list of Add images is now the same list of sleeve sizes (it had three), and keeps the size you last used.
 - On a Mac, Gutterberg now needs macOS 13 (Ventura) or later, which is what its PDF engine is built for; older Macs say so instead of failing when a PDF is opened.
 - On Windows and Linux, Gutterberg's saved settings now live in a folder named `Gutterberg` instead of `dev.joaquinarruiz.gutterberg`. What was in the old folder is moved there the first time you start this version, so your settings, recent projects and tour progress stay.
+
+### Fixed
+
+- Deleting a piece drawn by hand no longer mixes up the height size of the pieces after it when a piece had its width and height set apart.
 
 ## 0.10.0 (2026-10-12)
 

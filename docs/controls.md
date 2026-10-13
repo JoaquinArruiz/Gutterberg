@@ -4,6 +4,7 @@
 | --- | --- |
 | Grid region / Piece / Pan tool | `V` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag) |
 | Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear |
+| Turn a grid into pieces (Source tab) | Source sidebar › Layout › Turn into pieces: every cell of the viewed page's grid becomes a freeform piece at the same place and size, and the region is cleared so the next grid can be drawn (three sizes on a page: grid, turn into pieces, grid, turn into pieces, grid). If the grid is shared by several pages it asks: this page only, or every page of the group. Copies, turn, size, back and place in the order of each piece are kept. One undo step |
 | Draw freeform pieces (Piece tool) | drag on the page for each piece; drag a piece to move it, its handles to resize, the dot above it to rotate (`Shift` snaps to 15°); `Delete` removes the picked piece; the Freeform pieces section in the Source sidebar has its angle and size |
 | Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
 | Fit page | `0` |

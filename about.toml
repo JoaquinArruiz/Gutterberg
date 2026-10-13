@@ -1,5 +1,5 @@
 # Settings for `cargo about` (scripts/third-party-licenses.mjs): the licenses the Rust crates may be under.
-# A crate under any other license stops the build until the owner has looked at it.
+# A crate under any other license stops the build until I have looked at it.
 accepted = [
   "Apache-2.0",
   "Apache-2.0 WITH LLVM-exception",

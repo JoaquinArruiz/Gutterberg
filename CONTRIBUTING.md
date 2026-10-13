@@ -73,13 +73,13 @@ cargo test --workspace         # the render tests need pdfium: PDFIUM_LIB_PATH=<
 - Branch from the version branch the change belongs to (`release/<x.y.z>`, the next version in
   [docs/milestones/roadmap.md](docs/milestones/roadmap.md); if there is none open, from `main` and ask in the issue),
   name the branch `feature/<what>` or `fix/<what>`, and open the pull request against that version branch. Say what
-  it does and why; a maintainer reviews it. It is squashed into one commit, so the pull request title is the commit
+  it does and why; I review it. It is squashed into one commit, so the pull request title is the commit
   message: one sentence. The full flow (feature → version branch → `main` → tag) is in "Branches and releases" in
   [AGENTS.md](AGENTS.md).
 
 ## Contributor license agreement
 
-Gutterberg is under the [PolyForm Noncommercial License 1.0.0](LICENSE), and the owner can license it for commercial
+Gutterberg is under the [PolyForm Noncommercial License 1.0.0](LICENSE), and I can license it for commercial
 use. For that, contributions need a contributor license agreement (CLA). When you open your first pull request, a
 bot ([CLA Assistant](https://github.com/cla-assistant/cla-assistant)) asks you to read and agree to it once, with a
 click. A pull request cannot be merged before that.

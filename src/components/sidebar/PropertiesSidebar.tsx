@@ -19,6 +19,7 @@ import { AiSortSection } from "./AiSortSection";
 import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
+import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
 /** The Source tab inspector: where the pieces are on the viewed page. What to print is the Print tab's. */
 export function PropertiesSidebar() {
@@ -119,8 +120,9 @@ export function PropertiesSidebar() {
               onChange={(h) => selection && setSelection(selectionForCardSize(selection, page, spec, { height: h }))}
             />
             {!selection && <p className="text-[var(--muted)]">{t("source.dragRegion")}</p>}
-            <div>
+            <div className="flex flex-wrap gap-1.5">
               <Button onClick={() => L.setSkipped(currentPage, true)}>{t("source.skipPage")}</Button>
+              <TurnIntoPiecesButton />
             </div>
           </CollapsibleSection>
 

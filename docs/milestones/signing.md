@@ -4,7 +4,7 @@ Builds are not code-signed today (`docs/releasing.md`, README). macOS and Window
 macOS needs a right-click › Open or a trip to System Settings. This is the biggest hurdle for new users. It is not
 tied to a version: it lands in the next release after the certificates exist.
 
-## Owner does first (outside the code)
+## What I do first (outside the code)
 
 Prices and rules change; check each before paying.
 

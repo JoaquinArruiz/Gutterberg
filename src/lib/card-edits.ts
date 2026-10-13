@@ -246,7 +246,30 @@ export function editsAfterDelete(edits: CardEdits, documentId: number, page: num
   return {
     turns: remapRecord(edits.turns, documentId, page, index),
     scales: remapRecord(edits.scales, documentId, page, index),
+    ...(edits.scalesY ? { scalesY: remapRecord(edits.scalesY, documentId, page, index) } : {}),
     order: edits.order.flatMap((k) => keyAfterDelete(k, documentId, page, index) ?? []),
     backs: remapBacks(edits.backs, documentId, page, index),
+  };
+}
+
+/** `rec` with the entries of cards that changed identity filed under their new keys. */
+export function rekeyRecord<T>(rec: Record<string, T>, moves: Record<string, string>): Record<string, T> {
+  const out: Record<string, T> = {};
+  for (const [k, v] of Object.entries(rec)) out[moves[k] ?? k] = v;
+  return out;
+}
+
+/**
+ * The card edits after some cards changed identity (`moves` maps each old key to its new one), as when a grid is
+ * turned into freeform pieces: turn, size, place in the order, and the backs they have or are the back of, all follow.
+ */
+export function editsAfterRekey(edits: CardEdits, moves: Record<string, string>): CardEdits {
+  const to = (k: string) => moves[k] ?? k;
+  return {
+    turns: rekeyRecord(edits.turns, moves),
+    scales: rekeyRecord(edits.scales, moves),
+    ...(edits.scalesY ? { scalesY: rekeyRecord(edits.scalesY, moves) } : {}),
+    order: edits.order.map(to),
+    backs: Object.fromEntries(Object.entries(edits.backs).map(([k, v]) => [to(k), to(v)])),
   };
 }
