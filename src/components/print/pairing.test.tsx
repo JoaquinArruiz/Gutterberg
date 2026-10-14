@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cardIdKey, gridCardId } from "../../lib/card";
 import type { Card } from "../../lib/sheet-api";
+import { useDocumentStore } from "../../stores/document-store";
 import { clearHistory, undo } from "../../stores/history";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -33,6 +34,7 @@ beforeEach(() => {
   print().reset();
   print().setCards(cards, null);
   print().setDuplex({ on: true });
+  useDocumentStore.getState().clear();
   clearHistory();
 });
 afterEach(cleanup);
@@ -80,5 +82,55 @@ describe("Pair backs automatically", () => {
     undo();
     expect(layout().cardEdits.backs).toEqual({});
     expect(print().mode).toBe("all");
+  });
+});
+
+describe("Pair backs from another PDF", () => {
+  const doc = (id: number, name: string) => ({
+    id,
+    path: `/games/${name}`,
+    pages: [],
+    hash: "0".repeat(64),
+  });
+  const other = (page: number, column: number): Card => ({
+    ...piece(page, 0, column),
+    id: gridCardId(1, page, 0, column),
+  });
+
+  it("offers the choice only with two or more PDFs", () => {
+    useDocumentStore.getState().setDocuments([doc(0, "fronts.pdf")], 0);
+    openDialog();
+    expect(screen.queryByRole("radio", { name: /Backs in another PDF/ })).toBeNull();
+  });
+
+  it("pairs page n with page n of the PDF picked, takes the backs out of the copies, and is one undo step", () => {
+    useDocumentStore.getState().setDocuments([doc(0, "fronts.pdf"), doc(1, "backs.pdf")], 0);
+    print().setCards([piece(0, 0, 0), piece(0, 0, 1), other(0, 0), other(0, 1), other(1, 0)], null);
+    openDialog();
+    fireEvent.click(screen.getByRole("radio", { name: /Backs in another PDF/ }));
+    expect(screen.getByRole("combobox", { name: /PDF with the backs/ })).toBeTruthy();
+    expect(screen.getByTestId("pairing-summary").textContent).toBe(
+      "2 fronts paired with their backs. 1 piece left without a pair.",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(layout().cardEdits.backs).toEqual({
+      [key(piece(0, 0, 0))]: key(other(0, 1)),
+      [key(piece(0, 0, 1))]: key(other(0, 0)),
+    });
+    expect(print().quantities).not.toHaveProperty(key(other(0, 0)));
+    undo();
+    expect(layout().cardEdits.backs).toEqual({});
+  });
+
+  it("uses a backs PDF of one piece as the common back", () => {
+    useDocumentStore.getState().setDocuments([doc(0, "fronts.pdf"), doc(1, "backs.pdf")], 0);
+    print().setCards([piece(0, 0, 0), piece(0, 0, 1), piece(1, 0, 0), other(0, 0)], null);
+    openDialog();
+    fireEvent.click(screen.getByRole("radio", { name: /Backs in another PDF/ }));
+    expect(screen.getByTestId("pairing-summary").textContent).toBe("Every front gets that piece as its back.");
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    expect(print().finish.duplex.commonBack).toBe(key(other(0, 0)));
+    expect(layout().cardEdits.backs).toEqual({});
+    expect(print().quantities).not.toHaveProperty(key(other(0, 0)));
   });
 });

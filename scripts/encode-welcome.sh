@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Rebuilds public/welcome/ from the masters in assets/welcome/ (see the README there).
-# Each <nn>-<name>.mp4 master becomes, at 1280 x 720 and 30 fps with no audio:
+# Each <nn>-<name>.mp4 master becomes, cropped to the 1440 x 1080 picture and scaled to 960 x 720 (4:3)
+# at 30 fps with no audio:
 #   <nn>-<name>.webm  VP9, for webviews that cannot play H.264 (WebKitGTK on Linux)
 #   <nn>-<name>.mp4   H.264 with +faststart, for those that cannot play VP9 (older macOS)
 #   <nn>-<name>.png   the clip's last frame: the poster, and what shows after it ends
@@ -13,7 +14,7 @@ command -v ffmpeg >/dev/null || { echo "ffmpeg is needed (https://ffmpeg.org)" >
 
 SRC=assets/welcome
 OUT=public/welcome
-FILTER="scale=1280:720:flags=lanczos,fps=30"
+FILTER="crop=1440:1080:240:0,scale=960:720:flags=lanczos,fps=30"
 mkdir -p "$OUT"
 
 shopt -s nullglob

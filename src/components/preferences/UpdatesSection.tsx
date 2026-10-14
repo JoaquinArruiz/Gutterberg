@@ -1,12 +1,14 @@
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppVersion } from "../../lib/app-info";
 import { checkForUpdates, installUpdate, restartNow } from "../../lib/update-actions";
 import { UPDATE_NOTIFY, type UpdateNotify } from "../../lib/updates";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { useUiStore } from "../../stores/ui-store";
 import { useUpdateStore } from "../../stores/update-store";
 import { Button } from "../ui/Button";
-import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
 import { ReleaseNotes } from "../ui/ReleaseNotes";
+import { Select } from "../ui/Select";
 import { Field } from "./Field";
 
 const NOTIFY_KEY = {
@@ -32,6 +34,21 @@ export function UpdatesSection() {
   const progress = useUpdateStore((s) => s.progress);
   const whatsNew = useUpdateStore((s) => s.whatsNew);
   const failed = useUpdateStore((s) => s.failed);
+
+  const focusInstall = useUiStore((s) => s.focusInstall);
+  const installButton = useRef<HTMLButtonElement>(null);
+  const installShown = (status === "available" || status === "downloading") && !!update;
+
+  // Opened from the update toast: put the focus on Install. The dialog takes the focus itself when it opens, so
+  // this waits a tick.
+  useEffect(() => {
+    if (!focusInstall || !installShown) return;
+    const timer = setTimeout(() => {
+      installButton.current?.focus();
+      useUiStore.getState().setFocusInstall(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [focusInstall, installShown]);
 
   const busy = status === "checking" || status === "downloading";
   const percent = progress?.total ? Math.min(100, Math.round((progress.done / progress.total) * 100)) : null;
@@ -96,8 +113,14 @@ export function UpdatesSection() {
           <Button size="md" disabled={busy} onClick={() => void checkForUpdates(true)}>
             {t("preferences.updates.check")}
           </Button>
-          {(status === "available" || status === "downloading") && update && (
-            <Button size="md" variant="primary" disabled={busy} onClick={() => void installUpdate()}>
+          {installShown && (
+            <Button
+              ref={installButton}
+              size="md"
+              variant="primary"
+              disabled={busy}
+              onClick={() => void installUpdate()}
+            >
               {t("preferences.updates.install")}
             </Button>
           )}
@@ -122,16 +145,13 @@ export function UpdatesSection() {
       )}
 
       <Field label={t("preferences.updates.tellMe")}>
-        <RadioCardGroup<UpdateNotify> label={t("preferences.updates.tellMe")} value={notify} onChange={setNotify}>
-          {UPDATE_NOTIFY.map((n) => (
-            <RadioCard
-              key={n}
-              value={n}
-              title={t(`preferences.updates.${NOTIFY_KEY[n]}`)}
-              description={t(`preferences.updates.${NOTIFY_KEY[n]}Hint`)}
-            />
-          ))}
-        </RadioCardGroup>
+        <Select<UpdateNotify>
+          label={t("preferences.updates.tellMe")}
+          value={notify}
+          onChange={setNotify}
+          options={UPDATE_NOTIFY.map((n) => ({ value: n, label: t(`preferences.updates.${NOTIFY_KEY[n]}`) }))}
+        />
+        <p className="text-[var(--muted)]">{t(`preferences.updates.${NOTIFY_KEY[notify]}Hint`)}</p>
         <p className="text-[var(--muted)]">{t("preferences.updates.tellMeNote")}</p>
       </Field>
     </>

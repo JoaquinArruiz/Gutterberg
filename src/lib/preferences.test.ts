@@ -415,3 +415,37 @@ describe("saved piece sizes", () => {
     );
   });
 });
+
+describe("the help tips switch", () => {
+  it("is on by default", () => {
+    expect(DEFAULT_PREFERENCES.help.tipsOn).toBe(true);
+  });
+
+  it("is added to older files as on, keeping what they have", () => {
+    const p = migratePreferences({ version: 13, help: { dismissedHints: { "freeform-tool": 1 }, welcomeSeen: 1 } });
+    expect(p.help.tipsOn).toBe(true);
+    expect(p.help.dismissedHints).toEqual({ "freeform-tool": 1 });
+    expect(p.help.welcomeSeen).toBe(1);
+    expect(migratePreferences({ version: 3 }).help.tipsOn).toBe(true);
+  });
+
+  it("keeps off, and reads anything else as on", () => {
+    expect(migratePreferences({ version: PREFERENCES_VERSION, help: { tipsOn: false } }).help.tipsOn).toBe(false);
+    for (const other of [true, "no", 0, null, undefined])
+      expect(migratePreferences({ version: PREFERENCES_VERSION, help: { tipsOn: other } }).help.tipsOn).toBe(true);
+  });
+});
+
+describe("the snapping preference", () => {
+  it("is on by default and when an older file lacks it", () => {
+    expect(DEFAULT_PREFERENCES.editor.snap).toBe(true);
+    expect(migratePreferences({ version: 13 }).editor.snap).toBe(true);
+  });
+
+  it("stays off only when it was turned off", () => {
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snap: false } }).editor.snap).toBe(false);
+    for (const other of ["false", 0, null]) {
+      expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snap: other } }).editor.snap).toBe(true);
+    }
+  });
+});

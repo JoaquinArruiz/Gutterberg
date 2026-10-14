@@ -1,13 +1,14 @@
 import { parseNotes } from "../../lib/updates";
 
 /**
- * Release notes as plain text: headings, bullets and paragraphs. The notes come from the network, so they are only
- * ever put on the page as text (React escapes them); a tag in them is shown as typed, never run.
+ * Release notes as plain text: headings, bullets and paragraphs, in a box of about 14 lines that scrolls, so a long
+ * changelog never pushes the buttons out of view. The notes come from the network, so they are only ever put on
+ * the page as text (React escapes them); a tag in them is shown as typed, never run.
  */
 export function ReleaseNotes({ notes }: { notes: string }) {
   const blocks = parseNotes(notes);
   return (
-    <div className="flex select-text flex-col gap-1.5" data-testid="release-notes">
+    <div className="flex max-h-60 select-text flex-col gap-1.5 overflow-y-auto" data-testid="release-notes">
       {blocks.map((b, i) =>
         b.type === "bullets" ? (
           // biome-ignore lint/suspicious/noArrayIndexKey: the blocks come from one text and never reorder

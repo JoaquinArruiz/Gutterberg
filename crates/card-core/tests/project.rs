@@ -23,8 +23,8 @@ fn a_current_project_opens_as_it_is() {
 
 #[test]
 fn a_version_1_project_gets_the_finishing_defaults_and_nothing_else_changes() {
-    // (It also gets what versions 3 and 5 add: its documents are PDFs, its backs go on the other
-    // side.)
+    // (It also gets what versions 3, 5 and 6 add: its documents are PDFs, its backs go on the
+    // other side, gutterfold pairs fold.)
     let text = include_str!("data/project_v1_full.gtr");
     let original: serde_json::Value = serde_json::from_str(text).unwrap();
     let body = parse_project(text).unwrap();
@@ -38,6 +38,7 @@ fn a_version_1_project_gets_the_finishing_defaults_and_nothing_else_changes() {
             "duplex": {
                 "on": false, "flip": "long", "offsetXMm": 0, "offsetYMm": 0, "commonBack": null,
                 "layout": "duplex", "fold": "vertical", "foldGapMm": 0, "backUpsideDown": null,
+                "cutApart": false,
             },
         })
     );
@@ -95,18 +96,37 @@ fn a_version_4_project_prints_its_backs_on_the_other_side_in_version_5() {
 }
 
 #[test]
+fn a_version_5_project_folds_its_gutterfold_pairs_in_version_6() {
+    let text = r#"{"format":"gutterberg-project","version":5,"plan":{"finish":{"duplex":{"on":true,"layout":"gutterfold","fold":"horizontal","foldGapMm":1,"backUpsideDown":null}}}}"#;
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["version"], VERSION);
+    let duplex = &body["plan"]["finish"]["duplex"];
+    assert_eq!(duplex["cutApart"], false);
+    assert_eq!(duplex["layout"], "gutterfold");
+    assert_eq!(duplex["fold"], "horizontal");
+    assert_eq!(duplex["foldGapMm"], 1);
+    // A project that already says so keeps it.
+    let text = r#"{"format":"gutterberg-project","version":5,"plan":{"finish":{"duplex":{"cutApart":true}}}}"#;
+    assert_eq!(
+        parse_project(text).unwrap()["plan"]["finish"]["duplex"]["cutApart"],
+        true
+    );
+}
+
+#[test]
 fn a_version_3_project_opens_with_nothing_changed_but_the_new_duplex_defaults() {
     let text = include_str!("data/project_v3_images.gtr");
     let mut before: serde_json::Value = serde_json::from_str(text).unwrap();
     let mut after = serde_json::Value::Object(parse_project(text).unwrap());
     assert_eq!(after["version"], VERSION);
-    // Version 4 changes nothing; version 5 only adds where the backs go, as they were.
+    // Version 4 changes nothing; versions 5 and 6 only add where the backs go and how pairs are
+    // cut, as they were.
     if let Some(duplex) = after
         .pointer_mut("/plan/finish/duplex")
         .and_then(|d| d.as_object_mut())
     {
         assert_eq!(duplex.remove("layout"), Some(json!("duplex")));
-        for k in ["fold", "foldGapMm", "backUpsideDown"] {
+        for k in ["fold", "foldGapMm", "backUpsideDown", "cutApart"] {
             duplex.remove(k);
         }
     }

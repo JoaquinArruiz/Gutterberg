@@ -26,6 +26,7 @@
       "card": "Herramienta Pieza",
       "pan": "Desplazar"
     },
+    "snap": "Ajustar a la página y a otras piezas al arrastrar (mantén Ctrl/Cmd para arrastrar sin ajuste)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Deshacer (Ctrl+Z)",
     "redo": "Rehacer (Mayús+Ctrl+Z)",
@@ -91,7 +92,6 @@
   },
   "status": {
     "page": "Página {{current}} / {{total}}",
-    "noDocument": "Sin documento",
     "zoom": "Zoom {{percent}}%"
   },
   "viewport": {
@@ -204,10 +204,16 @@
     "count_one": "{{count}} pieza libre en esta página. Se imprime desde la pestaña Imprimir.",
     "count_other": "{{count}} piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
     "chooseTool": "Elige la Herramienta Pieza (C) para moverlas, cambiar su tamaño o girarlas.",
-    "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°.",
+    "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°. Mayús+clic elige varias, Ctrl+A las elige todas y las flechas mueven lo elegido.",
     "piece": "Pieza",
     "angle": "Ángulo",
-    "delete": "Eliminar pieza"
+    "delete": "Eliminar pieza",
+    "picked_one": "{{count}} pieza elegida",
+    "picked_other": "{{count}} piezas elegidas",
+    "mixed": "{{label}} (distintos)",
+    "pickedNote": "Un valor escrito aquí se aplica a todas las piezas elegidas.",
+    "deleteMany_one": "Eliminar {{count}} pieza",
+    "deleteMany_other": "Eliminar {{count}} piezas"
   },
   "pages": {
     "applyGrid": "Aplicar esta cuadrícula a…",
@@ -426,6 +432,17 @@
       "backTurnNote": "Según el doblez, un dorso a la derecha queda como está y uno debajo se invierte, para que se lea bien una vez doblado.",
       "foldGap": "Separación en el doblez",
       "foldGapNote": "Espacio entre un frente y su dorso. Con 0 el doblez queda en el borde de ambos; un poco ayuda con papel grueso.",
+      "pairs": "Pares",
+      "pairCuts": {
+        "fold": "Doblar",
+        "apart": "Cortar por separado"
+      },
+      "pairsNote": "Doblar: cada dorso se dobla detrás de su frente, con una línea discontinua en el doblez y marcas de corte alrededor del par. Cortar por separado: el frente y el dorso quedan como dos piezas una al lado de la otra, para armados rápidos que no son de doble cara: sin línea de doblez y con marcas de corte alrededor de cada una.",
+      "backPlace": "Dorso",
+      "backPlaceNote": "Dónde va el dorso junto a su frente. Las marcas de corte van alrededor del frente y del dorso por separado, y a lo largo de la línea entre ambos.",
+      "backTurnApartNote": "Un dorso que se corta por separado se imprime como está en el archivo. Inviértelo si el archivo lo tiene así.",
+      "apartGap": "Separación entre frente y dorso",
+      "apartGapNote": "Espacio entre un frente y su dorso. Con 0 quedan borde con borde, con un solo corte a lo largo de la línea que comparten.",
       "commonBack": "Dorso común",
       "none": "Ninguno",
       "useSelected": "Usar la pieza seleccionada como dorso común",
@@ -465,8 +482,14 @@
         "afterFronts": "Dorsos después de los frentes",
         "afterFrontsHint": "Primero todas las páginas de frentes y después todas las de dorsos, en el mismo orden.",
         "beside": "Uno junto al otro en la página",
-        "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold)."
+        "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold).",
+        "otherPdf": "Dorsos en otro PDF",
+        "otherPdfHint": "La página 1 de los frentes con la página 1 de los dorsos, la 2 con la 2…, pieza por pieza."
       },
+      "backsPdf": "PDF con los dorsos",
+      "commonBack": "Usarlo como dorso común",
+      "commonBackHint": "Ese PDF es una sola pieza: pasa a ser el dorso de todos los frentes, y no solo de los de la página 1.",
+      "common": "Todos los frentes reciben esa pieza como dorso.",
       "split": "Dorsos en la",
       "splits": {
         "columns": "Mitad derecha",
@@ -620,10 +643,12 @@
       "welcomeNote": "Un recorrido corto por la aplicación, en cuatro clips.",
       "replayWelcome": "Ver de nuevo el recorrido de bienvenida",
       "tips": "Consejos",
-      "enableTips": "Activar todos los consejos",
-      "allTipsOn": "Todos los consejos están activados.",
-      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Actívalo para volver a verlo.",
-      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Actívalos para volver a verlos.",
+      "enableTips": "Mostrar de nuevo los consejos cerrados",
+      "showTips": "Mostrar consejos",
+      "tipsOff": "Los consejos están desactivados. Activa «Mostrar consejos» para volver a verlos.",
+      "allTipsOn": "Ningún consejo está cerrado.",
+      "tipsHidden_one": "{{count}} consejo está oculto porque lo cerraste. Vuelve a mostrarlo para verlo.",
+      "tipsHidden_other": "{{count}} consejos están ocultos porque los cerraste. Vuelve a mostrarlos para verlos.",
       "shortcuts": "Atajos de teclado",
       "bug": "¿Encontraste un error?",
       "bugIntro": "Si algo no funciona, abre un «issue» en GitHub (necesitas una cuenta gratuita de GitHub) e indica:",
@@ -685,7 +710,11 @@
     "skip": "Omitir",
     "done": "Listo",
     "dismiss": "Cerrar consejo",
-    "dismissTitle": "Cerrar (no se volverá a mostrar)"
+    "dismissTitle": "Cerrar (no se volverá a mostrar)",
+    "turnOff": "No mostrar consejos",
+    "offTitle": "Los consejos están desactivados",
+    "offText": "Para verlos de nuevo, activa «Mostrar consejos» en Preferencias › Ayuda.",
+    "offOpen": "Abrir Preferencias"
   },
   "hints": {
     "first-pdf-tour": {
@@ -746,6 +775,12 @@
       "one": {
         "title": "Una cuadrícula y piezas en una página",
         "text": "Una página puede tener una cuadrícula y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Convertir en piezas y dibuja la siguiente."
+      }
+    },
+    "move-region": {
+      "one": {
+        "title": "Mover la región",
+        "text": "Arrastra la región para moverla, o sus tiradores para cambiar su tamaño. Después de hacer clic en ella, las flechas la mueven de a 1 mm (Mayús: 10 mm). Sus bordes se ajustan a la página y a las piezas; el imán de la barra de herramientas lo desactiva."
       }
     }
   },
@@ -995,7 +1030,9 @@
     "keys": {
       "Space": "Espacio",
       "Wheel": "Rueda del ratón",
-      "Click": "Clic"
+      "Click": "Clic",
+      "Drag": "Arrastrar",
+      "Arrows": "Flechas"
     },
     "items": {
       "preferences": "Abrir Preferencias",
@@ -1007,7 +1044,7 @@
       "undo": "Deshacer el último cambio (en cualquiera de las pestañas)",
       "redo": "Rehacer",
       "shortcuts": "Mostrar esta lista",
-      "closeDialog": "Cerrar un cuadro de diálogo, un menú o un consejo de información",
+      "closeDialog": "Cerrar un cuadro de diálogo, un menú, un consejo de información, un consejo o un mensaje",
       "gridRegionTool": "Herramienta Región de cuadrícula",
       "pieceTool": "Herramienta Pieza",
       "panTool": "Herramienta Desplazar",
@@ -1016,10 +1053,9 @@
       "zoomOut": "Alejar",
       "fitPage": "Ajustar la página",
       "zoomCursor": "Acercar o alejar en el cursor",
-      "nextPage": "Página siguiente",
-      "previousPage": "Página anterior",
+      "nextPage": "Página siguiente (la flecha, sin nada elegido)",
+      "previousPage": "Página anterior (la flecha, sin nada elegido)",
       "deletePiece": "Eliminar la pieza elegida (Herramienta Pieza)",
-      "putDownPiece": "Soltar la pieza elegida",
       "snapRotation": "Girar una pieza en pasos de 15° (mantén pulsada la tecla mientras la giras)",
       "applyProposal": "Aplicar la propuesta",
       "discardProposal": "Descartar la propuesta",
@@ -1032,8 +1068,19 @@
       "revertNumber": "Volver al número anterior",
       "nudgeNumber": "Subir o bajar el número",
       "nudgeFine": "Subir o bajar el número en pasos pequeños",
-      "nudgeCoarse": "Subir o bajar el número en pasos grandes"
-    }
+      "nudgeCoarse": "Subir o bajar el número en pasos grandes",
+      "panWheel": "Desplazar la página (con Mayús, de lado)",
+      "nudgePicked": "Mover 1 mm (0.05 in) la región o las piezas elegidas",
+      "nudgePickedBig": "Mover 10 mm (0.5 in) la región o las piezas elegidas",
+      "pickMore": "Agregar o quitar una pieza de las elegidas (Herramienta Pieza)",
+      "pickAll": "Elegir todas las piezas de la página",
+      "pickNone": "No elegir nada (ni las piezas ni la región)",
+      "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
+      "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
+      "dragFree": "Arrastrar una región o piezas sin que se ajusten"
+    },
+    "search": "Buscar atajos",
+    "noMatch": "Ningún atajo coincide."
   },
   "start": {
     "title": "Para empezar",
@@ -1142,7 +1189,7 @@
     "toast": {
       "available": "Gutterberg {{version}} está disponible",
       "whatsNew": "Novedades",
-      "update": "Actualizar",
+      "update": "Actualizar…",
       "skip": "Omitir esta versión",
       "updated": "Actualizado a la {{version}}",
       "failed": "La actualización a la {{version}} no terminó",

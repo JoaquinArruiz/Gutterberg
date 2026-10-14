@@ -154,6 +154,7 @@
         "layout": "duplex",
         "fold": "vertical",
         "fold_gap_mm": 0,
+        "cut_apart": false,
         "back_upside_down": null,
         "flip": "long",
         "offset_x_mm": 0,

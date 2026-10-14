@@ -1,4 +1,4 @@
-# Roadmap after 0.13.0
+# Roadmap after 0.14.0
 
 The order of the next versions and why. Each version has its own brief in this folder; when a version is released,
 its brief is deleted (see "Planning" in `AGENTS.md`) and its line here goes with it. When the last one is done, this
@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.14.0 | `0.14-editing-controls.md` | Arrow keys, several pieces picked, duplicate, snapping; backs from another PDF; gutterfold pairs cut apart; help tips off; update toast, notes and welcome polish; light theme contrast and the empty toolbar; the shortcuts sheet | 6 | 14 |
 | 0.15.0 | `0.15-precision-aids.md` | Sticky edges (a region's edges stick to the edges in the artwork) and rulers with guides | unchanged | 15 |
 | 0.16.0 | `0.16-several-grids.md` | Several grids on one page | 7 | unchanged |
 | 0.17.0 | `0.17-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
@@ -18,7 +17,7 @@ number.
 ## Why this order
 
 - **Editing controls before several grids.** Several grids needs a way to pick one grid among several on a page and
-  move it. 0.14.0 settles picking, the arrow keys, several pieces at once and snapping on what exists today (one
+  move it. 0.14.0 settled picking, the arrow keys, several pieces at once and snapping on what exists today (one
   region and freeform pieces), so 0.16.0 builds on them instead of inventing them. 0.13.0 made several pieces at
   once more urgent: a grid turned into pieces is otherwise moved one piece at a time. The smaller items (backs from
   another PDF, pairs cut apart, help, updates, welcome) are what users and testing asked for since 0.10.0.

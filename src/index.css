@@ -8,6 +8,8 @@
   --fg: #e4e5e9;
   --muted: #8d9099;
   --accent: #60a5fa;
+  --accent-fg: #000000;
+  --accent-hover: #6ab6ff;
   --ai: #a78bfa;
   --ai-soft: rgb(167 139 250 / 0.16);
   --canvas: #15161a;
@@ -24,6 +26,8 @@
   --fg: #1f2329;
   --muted: #5f6672;
   --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --accent-hover: #1d4ed8;
   --ai: #7c3aed;
   --ai-soft: rgb(124 58 237 / 0.1);
   --canvas: #dfe2e8;
@@ -39,6 +43,8 @@
     --fg: #1f2329;
     --muted: #5f6672;
     --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --accent-hover: #1d4ed8;
     --ai: #7c3aed;
     --ai-soft: rgb(124 58 237 / 0.1);
     --canvas: #dfe2e8;

@@ -15,7 +15,11 @@ export function ShortcutsDialog() {
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
+    if (open && !d.open) {
+      d.showModal();
+      // Opened to look something up: the search is ready to type in.
+      d.querySelector<HTMLInputElement>('input[type="search"]')?.focus();
+    }
     if (!open && d.open) d.close();
   }, [open]);
 
@@ -38,7 +42,7 @@ export function ShortcutsDialog() {
           <X size={14} />
         </button>
       </div>
-      <div className="max-h-[60vh] overflow-y-auto px-4 py-3" data-testid="shortcuts-list">
+      <div className="h-[60vh] overflow-y-auto px-4 pb-3" data-testid="shortcuts-list">
         <ShortcutsList />
       </div>
       <div className="flex items-center justify-between border-t border-[var(--border)] px-4 py-2.5">

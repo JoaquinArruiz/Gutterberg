@@ -35,8 +35,15 @@ type EditorState = {
   fitMode: boolean;
   tool: Tool;
   viewMode: ViewMode;
-  /** The freeform card being edited, by page and index; session state, not part of undo. */
+  /**
+   * The freeform card being edited, by page and index: the last one picked, the one whose handles and fields show.
+   * Session state, not part of undo.
+   */
   selectedCard: { page: number; index: number } | null;
+  /** Every picked freeform card of `selectedCard`'s page, by index, `selectedCard`'s own included. */
+  pickedCards: number[];
+  /** The page whose grid region is picked (the arrow keys move it), or null. Session state. */
+  pickedRegion: number | null;
   /** The draft a detection left on the page, if any; session state, not saved and not part of undo. */
   draft: DetectionDraft | null;
   /** A detection is running. */
@@ -50,7 +57,13 @@ type EditorState = {
   panBy: (dx: number, dy: number) => void;
   setPan: (panX: number, panY: number) => void;
   setTool: (t: Tool) => void;
+  /** Picks one card, or none. */
   setSelectedCard: (card: { page: number; index: number } | null) => void;
+  /** Picks the cards `indices` of `page` (the last one is the one being edited), or none when empty. */
+  pickCards: (page: number, indices: number[]) => void;
+  /** Adds the card to the picked ones of `page`, or takes it out when it is already picked. */
+  togglePickedCard: (page: number, index: number) => void;
+  setPickedRegion: (page: number | null) => void;
   setDraft: (draft: DetectionDraft | null) => void;
   /** Show the next proposal of the draft (wraps round). */
   nextProposal: () => void;
@@ -65,6 +78,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   fitMode: true,
   tool: "select",
   selectedCard: null,
+  pickedCards: [],
+  pickedRegion: null,
   draft: null,
   detecting: false,
   detectError: null,
@@ -83,7 +98,18 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   },
   setPan: (panX, panY) => set({ viewport: { ...get().viewport, panX, panY }, fitMode: false }),
   setTool: (tool) => set({ tool }),
-  setSelectedCard: (selectedCard) => set({ selectedCard }),
+  setSelectedCard: (selectedCard) => set({ selectedCard, pickedCards: selectedCard ? [selectedCard.index] : [] }),
+  pickCards: (page, indices) => {
+    const unique = [...new Set(indices)];
+    const last = unique.at(-1);
+    set({ selectedCard: last === undefined ? null : { page, index: last }, pickedCards: unique });
+  },
+  togglePickedCard: (page, index) => {
+    const s = get();
+    const own = s.selectedCard?.page === page ? s.pickedCards : [];
+    get().pickCards(page, own.includes(index) ? own.filter((i) => i !== index) : [...own, index]);
+  },
+  setPickedRegion: (pickedRegion) => set({ pickedRegion }),
   setDraft: (draft) => set({ draft }),
   nextProposal: () =>
     set((s) =>

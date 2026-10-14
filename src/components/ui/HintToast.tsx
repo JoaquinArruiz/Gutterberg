@@ -6,6 +6,9 @@ import { runHintAction } from "../../lib/hint-actions";
 import { onHintEvent } from "../../lib/hint-events";
 import { HINTS, type HintDef, type HintId, type HintStep, type HintTargetId } from "../../lib/hints";
 import { useHint } from "../../stores/hint-store";
+import { usePreferencesStore } from "../../stores/preferences-store";
+import { useToastStore } from "../../stores/toast-store";
+import { useUiStore } from "../../stores/ui-store";
 import { Button } from "./Button";
 
 type CardProps = {
@@ -15,12 +18,14 @@ type CardProps = {
   total: number;
   onGo: (to: number) => void;
   onDismiss: () => void;
+  /** "Don't show tips": turns every help tip off. */
+  onTurnOff: () => void;
   className?: string;
   onKeyDown?: React.KeyboardEventHandler;
 };
 
 /** The tip itself: the same look whether it floats where the caller put it or sits next to its target. */
-function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", onKeyDown }: CardProps) {
+function HintCard({ hint, step, index, total, onGo, onDismiss, onTurnOff, className = "", onKeyDown }: CardProps) {
   const { t } = useTranslation();
   const last = index === total - 1;
   const stepped = total > 1;
@@ -89,6 +94,13 @@ function HintCard({ hint, step, index, total, onGo, onDismiss, className = "", o
             )}
           </div>
         )}
+        <button
+          type="button"
+          onClick={onTurnOff}
+          className="mt-2 block text-[11px] text-[var(--muted)] hover:text-[var(--fg)] hover:underline"
+        >
+          {t("hintUi.turnOff")}
+        </button>
       </div>
       <Button
         variant="ghost"
@@ -146,12 +158,27 @@ const TOUR_OPTIONS: Partial<Options> = {
  * shows; the catalog decides what it says. A hint with several steps gets Back / Next. A step with a
  * `target` is shown next to that element with a spotlight (React Joyride); if the element is not on
  * screen it falls back to a toast at the caller's position. Closing it is remembered (saved in
- * preferences) and "Reset help tips" in Preferences brings every tip back. Renders nothing once
- * dismissed or while another hint is showing, so callers can mount it unconditionally wherever the
+ * preferences) and "Show closed tips again" in Preferences brings every tip back; "Show help tips" there
+ * (or "Don't show tips" on a tip) turns them all off. Renders nothing once dismissed, with tips off or
+ * while another hint is showing, so callers can mount it unconditionally wherever the
  * tip applies.
  */
 export function HintToast({ hint, className = "" }: { hint: HintId; className?: string }) {
+  const { t } = useTranslation();
   const { visible, dismiss, register } = useHint(hint);
+  const setTipsOn = usePreferencesStore((s) => s.setTipsOn);
+  const showToast = useToastStore((s) => s.show);
+  const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);
+  // The tip disappears with the switch, so a toast says where to turn tips on again.
+  const turnOff = () => {
+    setTipsOn(false);
+    showToast({
+      title: t("hintUi.offTitle"),
+      text: t("hintUi.offText"),
+      actions: [{ label: t("hintUi.offOpen"), onClick: () => setPrefsOpen(true, "Help") }],
+      autoCloseMs: 12000,
+    });
+  };
   const [index, setIndex] = useState(0);
   const [anchor, setAnchor] = useState<Found | null>(null);
   // biome-ignore lint/correctness/useExhaustiveDependencies: register is a fresh closure each render; only the id matters
@@ -209,7 +236,7 @@ export function HintToast({ hint, className = "" }: { hint: HintId; className?: 
   );
 
   if (!visible) return null;
-  const card: CardProps = { hint, step, index, total: steps.length, onGo: go, onDismiss: dismiss };
+  const card: CardProps = { hint, step, index, total: steps.length, onGo: go, onDismiss: dismiss, onTurnOff: turnOff };
 
   if (anchor) {
     return (

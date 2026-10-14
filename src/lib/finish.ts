@@ -37,7 +37,10 @@ export type Finish = {
     fold: Fold;
     /** Gutterfold: space between a front and its back, with the fold line in the middle. */
     foldGapMm: number;
-    /** Gutterfold: backs a half turn round. Null follows the fold (upside down below the front, upright beside it). */
+    /** Gutterfold: the pairs are cut apart instead of folded (no fold line, marks between front and back). */
+    cutApart: boolean;
+    /** Gutterfold: backs a half turn round. Null follows the fold (upside down below the front, upright beside it
+     * or when cut apart). */
     backUpsideDown: boolean | null;
     flip: Flip;
     /** Moves every back sheet in the printed sheet; right is positive. */
@@ -57,6 +60,7 @@ export const DEFAULT_FINISH: Finish = {
     layout: "duplex",
     fold: "vertical",
     foldGapMm: 0,
+    cutApart: false,
     backUpsideDown: null,
     flip: "long",
     offsetXMm: 0,
@@ -79,6 +83,7 @@ export const FinishSchema = z.object({
     layout: z.enum(BACK_LAYOUTS).default("duplex"),
     fold: z.enum(FOLDS).default("vertical"),
     foldGapMm: z.number().default(0),
+    cutApart: z.boolean().default(false),
     backUpsideDown: z.boolean().nullable().default(null),
     flip: z.enum(FLIPS),
     offsetXMm: z.number(),
@@ -114,6 +119,7 @@ export function cleanFinish(f: Finish): Finish {
       layout: f.duplex.layout,
       fold: f.duplex.fold,
       foldGapMm: clampTo(f.duplex.foldGapMm, 0, MAX_FOLD_GAP_MM, 0),
+      cutApart: f.duplex.cutApart,
       backUpsideDown: f.duplex.backUpsideDown,
       flip: f.duplex.flip,
       offsetXMm: clampTo(f.duplex.offsetXMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
@@ -142,6 +148,7 @@ export type FinishingPayload = {
       layout: BackLayout;
       fold: Fold;
       fold_gap_mm: number;
+      cut_apart: boolean;
       back_upside_down: boolean | null;
       flip: Flip;
       offset_x_mm: number;
@@ -187,6 +194,7 @@ export function finishingPayload(
         layout: f.duplex.layout,
         fold: f.duplex.fold,
         fold_gap_mm: f.duplex.foldGapMm,
+        cut_apart: f.duplex.cutApart,
         back_upside_down: f.duplex.backUpsideDown,
         flip: f.duplex.flip,
         offset_x_mm: f.duplex.offsetXMm,

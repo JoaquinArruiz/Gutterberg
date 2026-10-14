@@ -78,9 +78,9 @@ describe("Preferences › Help", () => {
   it("brings the help tips back, and says how many were hidden", async () => {
     render(<PreferencesDialog />);
     await openHelp();
-    const button = screen.getByRole("button", { name: "Enable all help tips" });
+    const button = screen.getByRole("button", { name: "Show closed tips again" });
     expect(button.hasAttribute("disabled")).toBe(true);
-    expect(screen.getByText("All help tips are enabled.")).toBeTruthy();
+    expect(screen.getByText("No help tip is closed.")).toBeTruthy();
     act(() => {
       usePreferencesStore.getState().dismissHint("live-preview-output");
       usePreferencesStore.getState().dismissHint("freeform-tool");
@@ -90,10 +90,50 @@ describe("Preferences › Help", () => {
     expect(usePreferencesStore.getState().prefs.help.dismissedHints).toEqual({});
   });
 
+  it("has a Show help tips switch, on by default, at the top of the field", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    const tips = screen.getByRole("switch", { name: "Show help tips" });
+    expect(tips.getAttribute("aria-checked")).toBe("true");
+    const button = screen.getByRole("button", { name: "Show closed tips again" });
+    expect(tips.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("turns the help tips off and on, and keeps the closed ones", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    act(() => usePreferencesStore.getState().dismissHint("freeform-tool"));
+    fireEvent.click(screen.getByRole("switch", { name: "Show help tips" }));
+    expect(usePreferencesStore.getState().prefs.help.tipsOn).toBe(false);
+    expect(usePreferencesStore.getState().prefs.help.dismissedHints).toEqual({ "freeform-tool": 1 });
+    expect(screen.getByText(/Help tips are off/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("switch", { name: "Show help tips" }));
+    expect(usePreferencesStore.getState().prefs.help.tipsOn).toBe(true);
+  });
+
+  it("shows closed tips again only when some were closed and the switch is on", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    const button = screen.getByRole("button", { name: "Show closed tips again" });
+    expect(button.hasAttribute("disabled")).toBe(true);
+    act(() => usePreferencesStore.getState().dismissHint("freeform-tool"));
+    expect(button.hasAttribute("disabled")).toBe(false);
+    act(() => usePreferencesStore.getState().setTipsOn(false));
+    expect(button.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("still replays the welcome tour with the tips off", async () => {
+    usePreferencesStore.getState().setTipsOn(false);
+    render(<PreferencesDialog />);
+    await openHelp();
+    fireEvent.click(screen.getByRole("button", { name: "Replay welcome tour" }));
+    expect(useUiStore.getState().welcomeOpen).toBe(true);
+  });
+
   it("no longer has the help tips under General", async () => {
     render(<PreferencesDialog />);
     await act(async () => useUiStore.getState().setPrefsOpen(true, "General" as never));
-    expect(screen.queryByRole("button", { name: "Enable all help tips" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Show closed tips again" })).toBeNull();
   });
 
   it("lists the keyboard shortcuts right in the section, and says ? opens them anywhere", async () => {

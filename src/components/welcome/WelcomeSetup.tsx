@@ -23,7 +23,7 @@ export function WelcomeSetup() {
   const setLanguage = usePreferencesStore((s) => s.setLanguage);
   const setTheme = usePreferencesStore((s) => s.setTheme);
   const setUnit = usePreferencesStore((s) => s.setUnit);
-  const row = "flex flex-col gap-1.5";
+  const row = "flex flex-col items-start gap-1.5";
   return (
     <div className="flex flex-col gap-4 px-6 py-6" data-testid="welcome-setup">
       <div className="flex flex-col gap-1">

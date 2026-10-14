@@ -23,10 +23,18 @@ export type ShortcutId =
   | "zoomOut"
   | "fitPage"
   | "zoomCursor"
+  | "panWheel"
   | "nextPage"
   | "previousPage"
+  | "nudgePicked"
+  | "nudgePickedBig"
+  | "pickMore"
+  | "pickAll"
+  | "pickNone"
+  | "duplicatePieces"
+  | "dragCopy"
+  | "dragFree"
   | "deletePiece"
-  | "putDownPiece"
   | "snapRotation"
   | "applyProposal"
   | "discardProposal"
@@ -75,10 +83,18 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
     { id: "zoomOut", keys: [["-"]] },
     { id: "fitPage", keys: [["0"]] },
     { id: "zoomCursor", keys: [["Mod", "Wheel"]] },
+    { id: "panWheel", keys: [["Wheel"]] },
     { id: "nextPage", keys: [["PageDown"], ["→"]] },
     { id: "previousPage", keys: [["PageUp"], ["←"]] },
+    { id: "nudgePicked", keys: [["Arrows"]] },
+    { id: "nudgePickedBig", keys: [["Shift", "Arrows"]] },
+    { id: "pickMore", keys: [["Shift", "Click"]] },
+    { id: "pickAll", keys: [["Mod", "A"]] },
+    { id: "pickNone", keys: [["Esc"]] },
+    { id: "duplicatePieces", keys: [["Mod", "D"]] },
+    { id: "dragCopy", keys: [["Alt", "Drag"]] },
+    { id: "dragFree", keys: [["Mod", "Drag"]] },
     { id: "deletePiece", keys: [["Delete"], ["Backspace"]] },
-    { id: "putDownPiece", keys: [["Esc"]] },
     { id: "snapRotation", keys: [["Shift"]] },
     { id: "applyProposal", keys: [["Enter"]] },
     { id: "discardProposal", keys: [["Esc"]] },
@@ -115,7 +131,7 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
 export const isMac = (): boolean => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
 
 /** The key names that are words of the user's language (the rest are shown as they are). */
-export const WORD_KEYS = ["Space", "Wheel", "Click"] as const;
+export const WORD_KEYS = ["Space", "Wheel", "Click", "Drag", "Arrows"] as const;
 export type WordKey = (typeof WORD_KEYS)[number];
 export const isWordKey = (key: string): key is WordKey => (WORD_KEYS as readonly string[]).includes(key);
 

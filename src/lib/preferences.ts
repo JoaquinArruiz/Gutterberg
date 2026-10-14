@@ -27,8 +27,9 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // seen or skipped). v11: adds updates (what to be told about, the last check, the version being installed) and
 // experimental (the switches of unfinished features). v12: adds print.showReferences (piece references on the sheet
 // preview, off by default). v13: adds sizePresets (named piece sizes) and the "Add images" size takes its ids from the
-// shared size list (the old "small" is "japanese"). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 13;
+// shared size list (the old "small" is "japanese"). v14: adds editor.snap (snapping while dragging on the page, on by
+// default) and help.tipsOn (help tips and screen tours show, on by default). Older files migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 14;
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -79,6 +80,12 @@ export interface AppPreferences {
     dismissedHints: Partial<Record<HintId, number>>;
     /** The welcome tour's version that was closed (seen, skipped or finished); 0 = never shown (M25). */
     welcomeSeen: number;
+    /** Help tips and screen tours show. Off: none does; the welcome tour still opens once and can be replayed. */
+    tipsOn: boolean;
+  };
+  editor: {
+    /** Pieces and the grid region snap to the page and to each other while they are dragged or resized. */
+    snap: boolean;
   };
   inspector: {
     /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
@@ -153,7 +160,8 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   workspace: { visibleModes: [...WORKSPACE_MODES], defaultMode: "source", lastMode: "source", layout: defaultLayout() },
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
-  help: { dismissedHints: {}, welcomeSeen: 0 },
+  help: { dismissedHints: {}, welcomeSeen: 0, tipsOn: true },
+  editor: { snap: true },
   inspector: { sections: {} },
   print: { layout: defaultLayout("print"), showReferences: false },
   files: { recent: [] },
@@ -257,6 +265,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
   const a = isObj(r.appearance) ? r.appearance : {};
   const h = isObj(r.help) ? r.help : {};
   const ins = isObj(r.inspector) ? r.inspector : {};
+  const ed = isObj(r.editor) ? r.editor : {};
   const pr = isObj(r.print) ? r.print : {};
   const fl = isObj(r.files) ? r.files : {};
 
@@ -288,7 +297,9 @@ export function normalizePreferences(raw: unknown): AppPreferences {
       dismissedHints: normalizeDismissed(h.dismissedHints),
       welcomeSeen:
         typeof h.welcomeSeen === "number" && Number.isInteger(h.welcomeSeen) && h.welcomeSeen > 0 ? h.welcomeSeen : 0,
+      tipsOn: h.tipsOn !== false,
     },
+    editor: { snap: ed.snap !== false },
     inspector: { sections: normalizeSections(ins.sections) },
     // The two "remember" switches are one setting for both tabs: the Source tab's copy is the one the user sets.
     print: {

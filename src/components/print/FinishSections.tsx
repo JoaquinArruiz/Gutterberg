@@ -272,35 +272,68 @@ type BackTurn = (typeof BACK_TURNS)[number];
 const backTurnOf = (upsideDown: boolean | null): BackTurn =>
   upsideDown === null ? "fold" : upsideDown ? "upsideDown" : "upright";
 const upsideDownOf = (turn: BackTurn): boolean | null => (turn === "fold" ? null : turn === "upsideDown");
+/** Pairs cut apart have no fold to follow: a back is as printed unless it is turned upside down. */
+const APART_TURNS = ["upright", "upsideDown"] as const;
 
-/** Gutterfold backs beside their fronts: which way the pair folds, how the back is turned, the gap at the fold. */
+const PAIR_CUTS = ["fold", "apart"] as const;
+type PairCut = (typeof PAIR_CUTS)[number];
+
+/**
+ * Gutterfold backs beside their fronts: whether the pairs are folded or cut apart, where the back goes, how it is
+ * turned, and the gap between front and back.
+ */
 function GutterfoldFields() {
   const { t } = useTranslation();
   const duplex = usePrintStore((s) => s.finish.duplex);
   const setDuplex = usePrintStore((s) => s.setDuplex);
+  const apart = duplex.cutApart;
   return (
     <>
-      <FieldRow label={t("print.duplex.fold")} info={t("print.duplex.foldNote")}>
+      <FieldRow label={t("print.duplex.pairs")} info={t("print.duplex.pairsNote")}>
+        <Segmented<PairCut>
+          fill
+          label={t("print.duplex.pairs")}
+          value={apart ? "apart" : "fold"}
+          onChange={(cut) => setDuplex({ cutApart: cut === "apart" })}
+          options={PAIR_CUTS.map((value) => ({ value, label: t(`print.duplex.pairCuts.${value}`) }))}
+        />
+      </FieldRow>
+      <FieldRow
+        label={apart ? t("print.duplex.backPlace") : t("print.duplex.fold")}
+        info={apart ? t("print.duplex.backPlaceNote") : t("print.duplex.foldNote")}
+      >
         <Segmented<Fold>
           fill
-          label={t("print.duplex.fold")}
+          label={apart ? t("print.duplex.backPlace") : t("print.duplex.fold")}
           value={duplex.fold}
           onChange={(fold) => setDuplex({ fold })}
           options={FOLDS.map((value) => ({ value, label: t(`print.duplex.folds.${value}`) }))}
         />
       </FieldRow>
-      <FieldRow label={t("print.duplex.backTurn")} info={t("print.duplex.backTurnNote")}>
-        <Segmented<BackTurn>
-          fill
-          label={t("print.duplex.backTurn")}
-          value={backTurnOf(duplex.backUpsideDown)}
-          onChange={(turn) => setDuplex({ backUpsideDown: upsideDownOf(turn) })}
-          options={BACK_TURNS.map((value) => ({ value, label: t(`print.duplex.backTurns.${value}`) }))}
-        />
-      </FieldRow>
+      {apart ? (
+        <FieldRow label={t("print.duplex.backTurn")} info={t("print.duplex.backTurnApartNote")}>
+          <Segmented<(typeof APART_TURNS)[number]>
+            fill
+            label={t("print.duplex.backTurn")}
+            value={duplex.backUpsideDown === true ? "upsideDown" : "upright"}
+            onChange={(turn) => setDuplex({ backUpsideDown: turn === "upsideDown" })}
+            options={APART_TURNS.map((value) => ({ value, label: t(`print.duplex.backTurns.${value}`) }))}
+          />
+        </FieldRow>
+      ) : (
+        <FieldRow label={t("print.duplex.backTurn")} info={t("print.duplex.backTurnNote")}>
+          <Segmented<BackTurn>
+            fill
+            label={t("print.duplex.backTurn")}
+            value={backTurnOf(duplex.backUpsideDown)}
+            onChange={(turn) => setDuplex({ backUpsideDown: upsideDownOf(turn) })}
+            options={BACK_TURNS.map((value) => ({ value, label: t(`print.duplex.backTurns.${value}`) }))}
+          />
+        </FieldRow>
+      )}
       <MeasurementInput
-        label={t("print.duplex.foldGap")}
-        info={t("print.duplex.foldGapNote")}
+        label={apart ? t("print.duplex.apartGap") : t("print.duplex.foldGap")}
+        info={apart ? t("print.duplex.apartGapNote") : t("print.duplex.foldGapNote")}
         precise
         min={0}
         max={MAX_FOLD_GAP_MM}

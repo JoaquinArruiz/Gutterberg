@@ -763,6 +763,60 @@ fn cut_marks_go_round_the_pair_not_across_the_fold() {
 }
 
 #[test]
+fn pairs_cut_apart_have_no_fold_line_and_marks_between_front_and_back() {
+    let mut options = gutterfold(FoldAxis::Vertical, 0.0);
+    options.duplex.cut_apart = true;
+    options.marks.style = MarkStyle::Ticks;
+    let out = gutterfold_sheets(options, &only_first());
+    let sheet = &out[0];
+    assert!(sheet.folds.is_empty(), "no fold line");
+    let [front, back] = [sheet.placements[0], sheet.placements[1]];
+    let (f, b) = (front.destination, back.destination);
+    // Placed as when folding: side by side, touching.
+    assert!((b.x - (f.x + f.width)).abs() < 1e-6);
+    assert_eq!(back.turn, Turn::R0);
+    // Vertical ticks at the left of the front, the edge they share and the right of the back.
+    let xs: Vec<f64> = sheet
+        .marks
+        .as_ref()
+        .unwrap()
+        .lines
+        .iter()
+        .filter(|l| l[0] == l[2])
+        .map(|l| l[0])
+        .collect();
+    for x in [f.x, b.x, b.x + b.width] {
+        assert!(
+            xs.iter().any(|m| (m - x).abs() < 1e-6),
+            "a tick at {x}: {xs:?}"
+        );
+    }
+}
+
+#[test]
+fn a_back_below_its_front_cut_apart_stays_upright_unless_asked() {
+    let mut options = gutterfold(FoldAxis::Horizontal, 2.0);
+    options.duplex.cut_apart = true;
+    let out = gutterfold_sheets(options, &only_first());
+    let sheet = &out[0];
+    assert!(sheet.folds.is_empty());
+    let [front, back] = [sheet.placements[0], sheet.placements[1]];
+    let (f, b) = (front.destination, back.destination);
+    // The gap at the fold is a plain gap.
+    assert!((b.y - (f.y + f.height + mm_to_pt(2.0))).abs() < 1e-6);
+    assert_eq!(
+        back.turn,
+        Turn::R0,
+        "nothing is folded, so nothing is upside down"
+    );
+    let mut options = gutterfold(FoldAxis::Horizontal, 2.0);
+    options.duplex.cut_apart = true;
+    options.duplex.back_upside_down = Some(true);
+    let out = gutterfold_sheets(options, &only_first());
+    assert_eq!(out[0].placements[1].turn, Turn::R180);
+}
+
+#[test]
 fn gutterfold_needs_a_sheet_grid() {
     let docs = [source()];
     let err = plan_and_finish(

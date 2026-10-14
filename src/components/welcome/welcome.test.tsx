@@ -382,8 +382,9 @@ describe("the setup step", () => {
     expect(step()).toBe("cut");
   });
 
-  it("is as wide as the clips can be shown, up to 800 px", () => {
+  it("is as wide as the clips can be shown: up to 960 px beside the text, 640 px stacked on a narrow window", () => {
     render(<Host />);
-    expect(dialog().style.width).toContain("800px");
+    expect(dialog().className).toContain("w-[min(640px,");
+    expect(dialog().className).toContain("min-[720px]:w-[min(960px,");
   });
 });

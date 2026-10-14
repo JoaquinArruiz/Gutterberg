@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { type CardId, cardIdKey, freeformCardId, gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
-import { applyPairing, DEFAULT_PAIRING, type PairingOptions, pairPieces } from "./pairing";
+import { applyPairing, DEFAULT_PAIRING, lonePiece, type PairingOptions, pairPieces } from "./pairing";
 import type { Card } from "./sheet-api";
 
 const piece = (id: CardId): Card => ({
@@ -11,7 +11,7 @@ const piece = (id: CardId): Card => ({
   turn: 0,
 });
 const g = (page: number, row: number, column: number, doc = 0) => piece(gridCardId(doc, page, row, column));
-const f = (page: number, index: number) => piece(freeformCardId(0, page, index));
+const f = (page: number, index: number, doc = 0) => piece(freeformCardId(doc, page, index));
 const k = (c: Card) => cardIdKey(c.id);
 /** A rows x columns grid of pieces on `page`. */
 const page = (n: number, rows: number, columns: number) =>
@@ -93,6 +93,71 @@ describe("pairing beside each other on the page", () => {
   it("matches freeform pieces first half with second half", () => {
     const { backs } = pairPieces([f(0, 0), f(0, 1), f(0, 2), f(0, 3)], opts({ rule: "beside" }));
     expect(backs).toEqual({ [k(f(0, 0))]: k(f(0, 2)), [k(f(0, 1))]: k(f(0, 3)) });
+  });
+});
+
+describe("pairing with the backs in another PDF", () => {
+  const fronts = [...page(0, 1, 2), ...page(1, 1, 2)];
+  const backsPdf = [g(0, 0, 0, 1), g(0, 0, 1, 1), g(1, 0, 0, 1), g(1, 0, 1, 1)];
+  const other = (o: Partial<PairingOptions> = {}) => opts({ rule: "otherPdf", backsDocument: 1, ...o });
+
+  it("pairs page n of the fronts with page n of the backs, mirrored", () => {
+    const { backs, unpaired } = pairPieces([...fronts, ...backsPdf], other());
+    expect(backs).toEqual({
+      [k(g(0, 0, 0))]: k(g(0, 0, 1, 1)),
+      [k(g(0, 0, 1))]: k(g(0, 0, 0, 1)),
+      [k(g(1, 0, 0))]: k(g(1, 0, 1, 1)),
+      [k(g(1, 0, 1))]: k(g(1, 0, 0, 1)),
+    });
+    expect(unpaired).toEqual([]);
+  });
+
+  it("or straight across, and freeform pieces by their order", () => {
+    const { backs } = pairPieces(
+      [...fronts, ...backsPdf, f(2, 0), f(2, 1), f(2, 0, 1), f(2, 1, 1)],
+      other({ mirrored: false }),
+    );
+    expect(backs[k(g(0, 0, 0))]).toBe(k(g(0, 0, 0, 1)));
+    expect(backs[k(f(2, 1))]).toBe(k(f(2, 1, 1)));
+  });
+
+  it("matches the page numbers in the file, so a page with no pieces does not shift the rest", () => {
+    const { backs } = pairPieces([g(0, 0, 0), g(2, 0, 0), g(2, 0, 0, 1), g(3, 0, 0, 1)], other());
+    expect(backs).toEqual({ [k(g(2, 0, 0))]: k(g(2, 0, 0, 1)) });
+  });
+
+  it("leaves unmatched pieces unpaired: missing pages, other rows, and backs with no front", () => {
+    const { backs, unpaired } = pairPieces([...page(0, 2, 1), g(1, 0, 0), g(0, 0, 0, 1), g(3, 0, 0, 1)], other());
+    expect(backs).toEqual({ [k(g(0, 0, 0))]: k(g(0, 0, 0, 1)) });
+    expect(unpaired.sort()).toEqual([k(g(0, 1, 0)), k(g(1, 0, 0)), k(g(3, 0, 0, 1))].sort());
+  });
+
+  it("pairs every other PDF with the backs one", () => {
+    const { backs } = pairPieces([g(0, 0, 0), g(0, 0, 0, 2), g(0, 0, 0, 1), g(1, 0, 0, 1)], other({ mirrored: false }));
+    expect(backs).toEqual({ [k(g(0, 0, 0))]: k(g(0, 0, 0, 1)), [k(g(0, 0, 0, 2))]: k(g(0, 0, 0, 1)) });
+  });
+
+  it("pairs nothing without a backs PDF", () => {
+    const { backs, unpaired } = pairPieces([...fronts, ...backsPdf], other({ backsDocument: null }));
+    expect(backs).toEqual({});
+    expect(unpaired).toHaveLength(8);
+  });
+
+  it("offers a backs PDF of one piece as the common back of every front", () => {
+    const cards = [...fronts, g(0, 0, 0, 1)];
+    expect(lonePiece(cards, 1)).toBe(k(g(0, 0, 0, 1)));
+    expect(lonePiece(cards, 0)).toBeNull();
+    const shared = pairPieces(cards, other());
+    expect(shared).toEqual({ backs: {}, unpaired: [], commonBack: k(g(0, 0, 0, 1)) });
+    // Or page by page, when that is chosen.
+    const byPage = pairPieces(cards, other({ commonBack: false, mirrored: false }));
+    expect(byPage.backs).toEqual({ [k(g(0, 0, 0))]: k(g(0, 0, 0, 1)) });
+    expect(byPage.commonBack).toBeUndefined();
+  });
+
+  it("turns the common back with the others when the backs are upside down", () => {
+    const after = applyPairing(NO_EDITS, { backs: {}, unpaired: [], commonBack: "g:1:0:0:0" }, true);
+    expect(after.turns).toEqual({ "g:1:0:0:0": 180 });
   });
 });
 
