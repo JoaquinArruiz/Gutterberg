@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.14.0 (2026-10-14)
+
 ### Added
 
 - More control on the page (Source tab): the arrow keys move the picked grid region or pieces 1 mm at a time (Shift: 10 mm; 0.05 and 0.5 in with inches), and change page only when nothing is picked. Shift-click picks several pieces, Ctrl/Cmd+A picks every piece of the page, and dragging one of them moves them all, which helps after Turn into pieces. Ctrl/Cmd+D duplicates the picked pieces and Alt-drag drags a copy. While dragging or resizing, the region and the pieces snap to the page's edges and middle and to each other, with a red guide line; hold Ctrl/Cmd to drag without it, or turn it off with the magnet in the toolbar. The Freeform pieces section sets the angle and size of every picked piece at once and deletes them together.
