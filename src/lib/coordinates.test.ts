@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   documentToScreen,
+  edgesToNormalized,
   fitViewport,
   normalizedToPdf,
   pageScreenRect,
@@ -88,5 +89,19 @@ describe("selection", () => {
     near(b.width, 0.01);
     const c = resizeRect(r0, "n", 0, -5); // clamps at page top
     near(c.y, 0);
+  });
+});
+
+describe("edgesToNormalized", () => {
+  it("divides by the page size, with no flip: card-core's edges already have a top-left origin", () => {
+    const page = { width_pt: 600, height_pt: 800 };
+    const n = edgesToNormalized(
+      {
+        vertical: [{ x: 60, y0: 80, y1: 400, strength: 1 }],
+        horizontal: [{ y: 200, x0: 30, x1: 300, strength: 0.5 }],
+      },
+      page,
+    );
+    expect(n).toEqual({ xs: [{ at: 0.1, from: 0.1, to: 0.5 }], ys: [{ at: 0.25, from: 0.05, to: 0.5 }] });
   });
 });

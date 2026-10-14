@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import type { OrientedRect } from "../../lib/card";
 import {
   documentToScreen,
+  edgesToNormalized,
   type NormalizedRect,
   type Point,
   pageScreenRect,
@@ -10,18 +11,26 @@ import {
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
+import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import {
   cardBox,
+  type EdgeLines,
+  edgeTargets,
+  FREE,
   type Guides,
+  joinLines,
+  NO_EDGES,
   NO_GUIDES,
+  RELEASE_PX,
   rectLines,
   type SnapLines,
-  snapOffset,
+  type Stick,
   snapTargets,
   snapTolerance,
+  stickyOffset,
 } from "../../lib/snap";
 import type { PageSize } from "../../lib/tauri";
 import { usePreviewResult } from "../../lib/view-page";
@@ -118,6 +127,10 @@ export function EditorViewport() {
   const [loupe, setLoupe] = useState<{ handle: Handle; active: boolean } | null>(null);
   // The lines a drag snapped to, shown while it holds.
   const [guides, setGuides] = useState<Guides>(NO_GUIDES);
+  // What the drag's snapping holds on to between two moves (sticky snapping).
+  const stick = useRef<Stick>(FREE);
+  // The straight edges in this page's artwork, normalized, while sticky edges are on.
+  const edges = useRef<EdgeLines>(NO_EDGES);
   const hold = useRef<{ timer: number; origin: Point } | null>(null);
   const lastPointer = useRef<Point>({ x: 0, y: 0 });
   const endHold = () => {
@@ -144,6 +157,23 @@ export function EditorViewport() {
   }, [output, live, result, snapshot]);
   const viewPageRef = useRef(viewPage);
   viewPageRef.current = viewPage;
+
+  // The page's edges, asked for once per page (the answer is kept for the session) while sticky edges are on.
+  const activeId = useDocumentStore((s) => s.activeId);
+  const snapEdges = usePreferencesStore((s) => s.prefs.editor.snapEdges);
+  useEffect(() => {
+    edges.current = NO_EDGES;
+    if (!snapEdges || !page) return;
+    let current = true;
+    pageEdges(activeId, currentPage)
+      .then((e) => {
+        if (current) edges.current = edgesToNormalized(e, page);
+      })
+      .catch(() => {}); // no edges: the rest of snapping still works
+    return () => {
+      current = false;
+    };
+  }, [activeId, currentPage, page, snapEdges]);
 
   useEffect(() => {
     const el = ref.current;
@@ -248,6 +278,7 @@ export function EditorViewport() {
     const p = local(e);
     const ed = useEditorStore.getState();
     e.currentTarget.setPointerCapture(e.pointerId);
+    stick.current = FREE;
     if (panMode || e.button === 1) {
       drag.current = { kind: "pan", start: p, panX: ed.viewport.panX, panY: ed.viewport.panY };
       setPanning(true);
@@ -331,24 +362,34 @@ export function EditorViewport() {
       return;
     }
     const doc = screenToDocument(p, ed.viewport, page);
-    // Snapping, unless it is off in the toolbar or Ctrl/Cmd is held; never in the magnifier's slow resize.
-    const snapping = usePreferencesStore.getState().prefs.editor.snap && !(e.ctrlKey || e.metaKey);
-    const tol = snapTolerance(page, pxPerPoint(ed.viewport.zoom));
+    // Snapping, unless Ctrl/Cmd is held; never in the magnifier's slow resize. The magnet decides the page and the
+    // pieces, sticky edges the edges in the artwork; either way a line that snapped sticks for RELEASE_PX.
+    const { snap: magnet, snapEdges: sticky } = usePreferencesStore.getState().prefs.editor;
+    const free = e.ctrlKey || e.metaKey;
+    const k = pxPerPoint(ed.viewport.zoom);
+    const tol = snapTolerance(page, k);
+    const release = snapTolerance(page, k, RELEASE_PX);
     const L0 = useLayoutStore.getState();
     const own0 = L0.freeform[currentPage] ?? NO_CARDS;
-    /** The page, the region and the pieces not in `skip`, as lines to snap to. */
-    const targets = (skip: number[], withRegion: boolean) => {
+    /**
+     * What to snap to: with the magnet, the page, the region and the pieces not in `skip`; with sticky edges, the
+     * edges in the artwork that run along `box`'s sides (none when there is no upright box).
+     */
+    const targets = (skip: number[], withRegion: boolean, box: NormalizedRect | null) => {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
       if (withRegion && region) others.push(region);
-      return snapTargets(others);
+      const lines = magnet ? snapTargets(others) : NO_GUIDES;
+      return sticky && box ? joinLines(lines, edgeTargets(box, edges.current)) : lines;
     };
     const snap = (moving: SnapLines, to: SnapLines) => {
-      if (!snapping) {
+      if (free) {
+        stick.current = FREE;
         setGuides(NO_GUIDES);
         return { dx: 0, dy: 0 };
       }
-      const s = snapOffset(moving, to, tol);
+      const s = stickyOffset(moving, to, tol, release, doc, stick.current);
+      stick.current = s.state;
       setGuides(s.guides);
       return s;
     };
@@ -369,7 +410,9 @@ export function EditorViewport() {
         const box = union(
           d.rects.map((r) => cardBox({ ...r, center: { x: r.center.x + dx, y: r.center.y + dy } }, page)),
         );
-        const s = snap(rectLines(box), targets(d.indices, true));
+        // Turned pieces are not along the page's axes: they snap by their box, but not to edges.
+        const upright = d.rects.every((r) => r.angle_deg === 0);
+        const s = snap(rectLines(box), targets(d.indices, true, upright ? box : null));
         movePieces(currentPage, d.indices, d.rects, dx + s.dx, dy + s.dy);
       } else if (d.kind === "card-rotate")
         L.updateFreeformCard(currentPage, d.index, rotateCardTo(d.rect, doc, page, e.shiftKey));
@@ -381,22 +424,25 @@ export function EditorViewport() {
         const s =
           d.fine || d.rect.angle_deg !== 0
             ? { dx: 0, dy: 0 }
-            : snap(movedEdges(cardBox(raw, page), d.handle), targets([d.index], true));
+            : snap(movedEdges(cardBox(raw, page), d.handle), targets([d.index], true, cardBox(raw, page)));
         L.updateFreeformCard(currentPage, d.index, resizeCard(d.rect, d.handle, dx + s.dx, dy + s.dy, page));
       }
       return;
     }
-    if (d.kind === "create") setCurrentSelection(rectFromPoints(d.anchor, doc));
-    else if (d.kind === "move") {
+    if (d.kind === "create") {
+      // The corner being drawn snaps.
+      const s = snap({ xs: [doc.x], ys: [doc.y] }, targets([], false, rectFromPoints(d.anchor, doc)));
+      setCurrentSelection(rectFromPoints(d.anchor, { x: doc.x + s.dx, y: doc.y + s.dy }));
+    } else if (d.kind === "move") {
       const [dx, dy] = [doc.x - d.start.x, doc.y - d.start.y];
-      const s = snap(rectLines(moveRect(d.rect, dx, dy)), targets([], false));
+      const moved = moveRect(d.rect, dx, dy);
+      const s = snap(rectLines(moved), targets([], false, moved));
       setCurrentSelection(moveRect(d.rect, dx + s.dx, dy + s.dy));
     } else {
       const k = d.fine ? 1 / MAG : 1;
       const [dx, dy] = [(doc.x - d.start.x) * k, (doc.y - d.start.y) * k];
-      const s = d.fine
-        ? { dx: 0, dy: 0 }
-        : snap(movedEdges(resizeRect(d.rect, d.handle, dx, dy), d.handle), targets([], false));
+      const raw = resizeRect(d.rect, d.handle, dx, dy);
+      const s = d.fine ? { dx: 0, dy: 0 } : snap(movedEdges(raw, d.handle), targets([], false, raw));
       setCurrentSelection(resizeRect(d.rect, d.handle, dx + s.dx, dy + s.dy));
     }
   };
@@ -404,6 +450,7 @@ export function EditorViewport() {
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
+    stick.current = FREE;
     setPanning(false);
     setGuides(NO_GUIDES);
     endHold();

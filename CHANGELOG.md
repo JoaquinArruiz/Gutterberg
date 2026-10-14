@@ -5,6 +5,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Sticky edges (Source tab): while the grid region is drawn, moved or resized, and while an upright piece is moved or resized, its sides stick to the straight edges in the artwork (piece borders, cut lines, the sides of drawn boxes and pictures, and long contrast lines on a scan). An edge only pulls a side it runs along for at least half of its length, so art inside a piece does not. Ctrl/Cmd held still drags freely.
+
+### Changed
+
+- Snapping is sticky: a side that snapped to the page, a piece or an edge stays there until the pointer has moved about 10 pixels on, so it is easier to land on and to leave. The corner of a grid region being drawn now snaps too.
+
 ## 0.14.0 (2026-10-14)
 
 ### Added

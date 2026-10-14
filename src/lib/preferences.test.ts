@@ -449,3 +449,22 @@ describe("the snapping preference", () => {
     }
   });
 });
+
+describe("the sticky edges preference", () => {
+  it("is on by default and when an older file lacks it", () => {
+    expect(DEFAULT_PREFERENCES.editor.snapEdges).toBe(true);
+    expect(migratePreferences({ version: 14, editor: { snap: false } }).editor).toEqual({
+      snap: false,
+      snapEdges: true,
+    });
+  });
+
+  it("stays off only when it was turned off", () => {
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snapEdges: false } }).editor.snapEdges).toBe(
+      false,
+    );
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snapEdges: "no" } }).editor.snapEdges).toBe(
+      true,
+    );
+  });
+});
