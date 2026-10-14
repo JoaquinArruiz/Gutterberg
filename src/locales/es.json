@@ -1078,7 +1078,9 @@
       "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
       "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
       "dragFree": "Arrastrar una región o piezas sin que se ajusten"
-    }
+    },
+    "search": "Buscar atajos",
+    "noMatch": "Ningún atajo coincide."
   },
   "start": {
     "title": "Para empezar",

@@ -306,7 +306,8 @@ at the sides, so a future export of the Figma frames should be 4:3) and shown be
 wide the dialog stacks with the clip on top. The keyboard shortcuts sheet is the catalog `src/lib/shortcuts.ts`
 (chords of key names, `Mod` being Ctrl or Command) plus a text per entry in both languages. It is written by hand,
 so a shortcut added or changed in a `keydown` handler changes there too; `shortcuts.test.tsx` checks the catalog and
-the texts have the same ids.
+the texts have the same ids. `ShortcutsList` (the sheet and Preferences › Help) has a sticky search field that filters by
+the translated text and the key names (`Mod` also matches Ctrl, Cmd and Command; `Alt` also Option).
 
 ## Languages (`i18n`)
 

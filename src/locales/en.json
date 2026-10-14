@@ -1078,7 +1078,9 @@
       "duplicatePieces": "Duplicate the picked pieces (Piece tool)",
       "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Piece tool)",
       "dragFree": "Drag a region or pieces without snapping"
-    }
+    },
+    "search": "Search shortcuts",
+    "noMatch": "No shortcut matches that."
   },
   "start": {
     "title": "Get started",

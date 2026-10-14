@@ -160,6 +160,45 @@ describe("the shortcuts sheet", () => {
     ]);
   });
 
+  it("has a search that keeps the shortcuts matching their text or their keys, and says when none does", async () => {
+    render(<ShortcutsDialog />);
+    await act(async () => useUiStore.getState().setShortcutsOpen(true));
+    const search = screen.getByRole("searchbox", { name: "Search shortcuts" }) as HTMLInputElement;
+    expect(document.activeElement).toBe(search);
+    const shown = () => [...document.querySelectorAll("[data-shortcut]")].map((r) => r.getAttribute("data-shortcut"));
+    const type = (value: string) => fireEvent.change(search, { target: { value } });
+    type("duplic");
+    expect(shown()).toEqual(["duplicatePieces"]);
+    type("ctrl dup"); // by keys too: Mod is Ctrl
+    expect(shown()).toEqual(["duplicatePieces"]);
+    type("option"); // Alt is also Option
+    expect(shown()).toContain("dragCopy");
+    type("PAGINA"); // not case or accent sensitive, in the language
+    expect(shown()).toEqual([]);
+    expect(screen.getByText("No shortcut matches that.")).toBeTruthy();
+    type("");
+    expect(shown().length).toBe(SHORTCUT_AREAS.flatMap((a) => SHORTCUTS[a]).length);
+    // an area with no match leaves with its heading
+    type("redo");
+    expect(screen.queryByRole("region", { name: "Source tab" })).toBeNull();
+    expect(screen.getByRole("region", { name: "General" })).toBeTruthy();
+  });
+
+  it("searches in Spanish ignoring accents, and sticks to the top of the list", async () => {
+    applyLocale({ language: "es", decimal: "auto" });
+    render(<ShortcutsDialog />);
+    await act(async () => useUiStore.getState().setShortcutsOpen(true));
+    fireEvent.change(screen.getByRole("searchbox", { name: "Buscar atajos" }), { target: { value: "pagina" } });
+    expect([...document.querySelectorAll("[data-shortcut]")].map((r) => r.getAttribute("data-shortcut"))).toEqual([
+      "fitPage",
+      "panWheel",
+      "nextPage",
+      "previousPage",
+      "pickAll",
+    ]);
+    expect(screen.getByRole("searchbox").closest("div")?.className).toContain("sticky");
+  });
+
   it("closes with its button, and the store follows", async () => {
     render(<ShortcutsDialog />);
     await act(async () => useUiStore.getState().setShortcutsOpen(true));
