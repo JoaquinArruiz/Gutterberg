@@ -19,6 +19,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - The update toast no longer installs: its “Update…” button opens Preferences › Updates with the Install button focused, next to “Skip this version”, so an update is always installed from where its notes are.
 - Release notes scroll inside a box about 14 lines tall, for a newer version and for What's new after updating, so a long changelog no longer pushes the buttons out of view.
 - Preferences › Updates › Tell me about is a menu, with the hint of the chosen choice under it.
+- The welcome has no black bars at the sides of its clips: the clips are cropped to their 4:3 picture and shown on the left, with the title, text and buttons on the right (stacked, clip on top, on a narrow window), and the first-start choices fit their content.
 
 ## 0.13.0 (2026-10-13)
 
