@@ -1030,7 +1030,9 @@
     "keys": {
       "Space": "Espacio",
       "Wheel": "Rueda del ratón",
-      "Click": "Clic"
+      "Click": "Clic",
+      "Drag": "Arrastrar",
+      "Arrows": "Flechas"
     },
     "items": {
       "preferences": "Abrir Preferencias",
@@ -1042,7 +1044,7 @@
       "undo": "Deshacer el último cambio (en cualquiera de las pestañas)",
       "redo": "Rehacer",
       "shortcuts": "Mostrar esta lista",
-      "closeDialog": "Cerrar un cuadro de diálogo, un menú o un consejo de información",
+      "closeDialog": "Cerrar un cuadro de diálogo, un menú, un consejo de información, un consejo o un mensaje",
       "gridRegionTool": "Herramienta Región de cuadrícula",
       "pieceTool": "Herramienta Pieza",
       "panTool": "Herramienta Desplazar",
@@ -1051,10 +1053,9 @@
       "zoomOut": "Alejar",
       "fitPage": "Ajustar la página",
       "zoomCursor": "Acercar o alejar en el cursor",
-      "nextPage": "Página siguiente",
-      "previousPage": "Página anterior",
+      "nextPage": "Página siguiente (la flecha, sin nada elegido)",
+      "previousPage": "Página anterior (la flecha, sin nada elegido)",
       "deletePiece": "Eliminar la pieza elegida (Herramienta Pieza)",
-      "putDownPiece": "Soltar la pieza elegida",
       "snapRotation": "Girar una pieza en pasos de 15° (mantén pulsada la tecla mientras la giras)",
       "applyProposal": "Aplicar la propuesta",
       "discardProposal": "Descartar la propuesta",
@@ -1067,7 +1068,16 @@
       "revertNumber": "Volver al número anterior",
       "nudgeNumber": "Subir o bajar el número",
       "nudgeFine": "Subir o bajar el número en pasos pequeños",
-      "nudgeCoarse": "Subir o bajar el número en pasos grandes"
+      "nudgeCoarse": "Subir o bajar el número en pasos grandes",
+      "panWheel": "Desplazar la página (con Mayús, de lado)",
+      "nudgePicked": "Mover 1 mm (0.05 in) la región o las piezas elegidas",
+      "nudgePickedBig": "Mover 10 mm (0.5 in) la región o las piezas elegidas",
+      "pickMore": "Agregar o quitar una pieza de las elegidas (Herramienta Pieza)",
+      "pickAll": "Elegir todas las piezas de la página",
+      "pickNone": "No elegir nada (ni las piezas ni la región)",
+      "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
+      "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
+      "dragFree": "Arrastrar una región o piezas sin que se ajusten"
     }
   },
   "start": {

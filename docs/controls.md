@@ -11,8 +11,8 @@
 | Snapping | while dragging or resizing the grid region or a piece, its edges and middle snap to the page's edges and middle and to the other pieces and the region, with a red guide line; hold `Ctrl/Cmd` to drag without it, or turn it off with the magnet in the toolbar (kept in preferences). A turned piece snaps by its upright box, and only an upright piece snaps while resized |
 | Zoom | `+` / `-`, toolbar, or `Ctrl/Cmd` + wheel / trackpad pinch (zooms at the cursor) |
 | Fit page | `0` |
-| Pan | wheel / trackpad scroll |
-| Pages | `PageUp`/`PageDown` or arrow keys |
+| Pan | wheel / trackpad scroll (`Shift` + wheel: sideways) |
+| Pages | `PageUp`/`PageDown`, or the left and right arrow keys when nothing is picked (with a region or pieces picked they move it) |
 | Source \| Print | tabs in the toolbar. Print: piece library (click, Ctrl/Cmd-click, Shift-click; Copies field and steppers), sheet preview (the sheet in front is always live; the tag button in its header shows each piece's reference, such as `p3 · r1 c2` or `A · p3 · r1 c2` with several PDFs, on the sheet, on screen only) with a hideable row of sheet thumbnails (follows Live Preview, with a refresh button when it is off), and the print settings with Plan, Sheet and Page sections that fold (and remember it) |
 | Move the panels | Panels menu in the toolbar, a panel's own menu, or Preferences › Workspace: put each panel on the left, right, top or bottom, or hide it. The Source tab has Pages and Properties around the page; the Print tab has the Piece library and the Print settings around the sheets. Each tab keeps its own layout and sizes, and the Print settings only go left or right |
 | Turn, size and sort pieces (Print tab) | piece library: `R` / `Shift+R` turn the selection 90° right / left, "Make all portrait / landscape"; drag pieces to reorder them (the sheets follow); the Selected pieces section of the print settings sets a real size (e.g. 63 × 88 mm), a percentage or a size preset (the common sleeve sizes, or sizes you save under a name, fixing both sides or only the width or the height), and scaled pieces carry a badge |
@@ -25,7 +25,7 @@
 | Different grid for some pages | draw the grid on a page, then "Apply this grid to…" (this page, a range, all pages of the same size); edits then apply to the group the viewed page belongs to |
 | Undo / redo | `Ctrl/Cmd+Z` / `Shift+Ctrl/Cmd+Z` (also `Ctrl+Y`), or the toolbar buttons. One history for everything, including the Print plan (copies and plan settings): it undoes the last change made in either tab; a whole drag is one step |
 | Welcome tour and Help | The welcome tour opens by itself once, over the start screen (Skip, `Esc` or Get started close it for good). Replay it from the start screen or Preferences › Help, which also turns the help tips on or off (a tip's own “Don't show tips” does the same) and brings the closed ones back, lists every shortcut, copies the app info (version, system, language, pdfium) or the end of the log, and opens the GitHub bug report form with the version and system filled in |
-| Keyboard shortcuts | `?`, or File › Keyboard shortcuts…: every shortcut by area, in the app's language |
+| Keyboard shortcuts | `?`, or File › Keyboard shortcuts…: every shortcut by area, in the app's language (`src/lib/shortcuts.ts`, kept in step with the code by hand: a shortcut added or changed in a `keydown` handler changes there too) |
 | Start screen | With nothing open: Open PDF, Open project and the recent projects |
 | Exact values | Source layout section: columns, rows, piece width/height and selection X/Y. Enter commits, Esc reverts, ↑/↓ nudge. Type `63.5` or `63,5`: both work whatever the decimal separator preference says |
 | Language and numbers | Preferences (`Ctrl/Cmd+,`) › General: Language (System / English / Español) and Decimal separator (Automatic / Dot / Comma) |

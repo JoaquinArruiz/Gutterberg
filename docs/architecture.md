@@ -132,6 +132,9 @@ matter:
   then rows and columns (mirrored columns for duplex files; the piece it meets when folded for "beside each other");
   freeform pieces by their order. Applying writes the backs and the backs' turns into the per-piece edits and sets
   the backs' copies to 0, as one undo step (`together` in `stores/history.ts` joins the layout and plan timelines).
+  "Backs in another PDF" pairs page *n* of the fronts' PDF with page *n* of the chosen PDF, piece by piece, or uses a
+  one-piece backs PDF as the common back. Nothing changes in the project: a back is stored by its full piece id
+  (`cardIdKey`), which names the document, and the common back is a `CardId`.
 
 ### Permission flags (`access`)
 
@@ -288,10 +291,22 @@ back. `help.tipsOn` (Preferences › Help, or "Don't show tips" on a tip) turns 
 `useHint`; the welcome tour is not a tip. Tips can be turned off for good, so messages that matter (an update, how an update went) are not tips: they use
 the general toast (`Toast`), a queue that shows one at a time.
 
+**Colour on the accent.** `--accent-fg` is the text colour on `--accent` (black in the dark theme, white in the light
+one, where black on `#2563eb` is 4.06:1, under WCAG AA's 4.5:1): primary buttons and accent badges use it, never
+`text-black`. **The empty toolbar:** with no document open the toolbar shows only File, the panels menu and
+Preferences; everything that needs a document appears when one is open.
+
 The **welcome tour** is four short clips (masters in `assets/welcome/`, encoded by `scripts/encode-welcome.sh` into
 `public/welcome/`) in a dialog that opens once over the start screen. Help tips wait while it is open. Preferences ›
 Help holds the tour, the tip reset, the shortcuts and "Found a bug?", which copies the app info or opens the GitHub
 issue form after asking, with the version and system filled in.
+
+The tour's clips are cropped to their 4:3 picture (`crop=1440:1080:240:0` in the encode script; the masters have black
+at the sides, so a future export of the Figma frames should be 4:3) and shown beside the text; below about 720 px
+wide the dialog stacks with the clip on top. The keyboard shortcuts sheet is the catalog `src/lib/shortcuts.ts`
+(chords of key names, `Mod` being Ctrl or Command) plus a text per entry in both languages. It is written by hand,
+so a shortcut added or changed in a `keydown` handler changes there too; `shortcuts.test.tsx` checks the catalog and
+the texts have the same ids.
 
 ## Languages (`i18n`)
 
@@ -330,7 +345,7 @@ failed or offline check is silent, but Preferences › Updates says the last che
 updates" button there shows the result and also the toast for a newer version. Preferences › Updates shows the installed and the newer version with its notes and
 the "Tell me about" setting (all updates, new features, major versions only, never), which only decides the toast. The
 logic that needs no app (version order including pre-releases, who is told about what, what to say after an update) is
-in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. Before installing, the version is written down so
+in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. The toast never installs: its "Update…" button opens Preferences › Updates with the Install button focused, so an update is installed only where its notes (`ReleaseNotes`, in a box of about 14 lines that scrolls) are. Before installing, the version is written down so
 the next start can say whether it worked. Experimental features are switches listed in `src/lib/experimental.ts`.
 
 Third-party notices are collected at release time (`scripts/third-party-licenses.mjs`: `cargo about`, `pnpm
