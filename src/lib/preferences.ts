@@ -29,7 +29,7 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // preview, off by default). v13: adds sizePresets (named piece sizes) and the "Add images" size takes its ids from the
 // shared size list (the old "small" is "japanese"). v14: adds editor.snap (snapping while dragging on the page, on by
 // default) and help.tipsOn (help tips and screen tours show, on by default). v15: adds editor.snapEdges (sticking to the
-// edges in the artwork, on by default). Older files migrate by taking the defaults of what they lack.
+// edges in the artwork, on by default) and editor.rulers (rulers along the page, off by default). Older files migrate by taking the defaults of what they lack.
 export const PREFERENCES_VERSION = 15;
 
 export type WorkspaceMode = "source" | "output" | "split";
@@ -89,6 +89,8 @@ export interface AppPreferences {
     snap: boolean;
     /** The grid region's and the pieces' sides stick to the edges in the artwork (sticky edges). */
     snapEdges: boolean;
+    /** Rulers along the top and the left of the page canvas. */
+    rulers: boolean;
   };
   inspector: {
     /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
@@ -164,7 +166,7 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
   help: { dismissedHints: {}, welcomeSeen: 0, tipsOn: true },
-  editor: { snap: true, snapEdges: true },
+  editor: { snap: true, snapEdges: true, rulers: false },
   inspector: { sections: {} },
   print: { layout: defaultLayout("print"), showReferences: false },
   files: { recent: [] },
@@ -302,7 +304,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
         typeof h.welcomeSeen === "number" && Number.isInteger(h.welcomeSeen) && h.welcomeSeen > 0 ? h.welcomeSeen : 0,
       tipsOn: h.tipsOn !== false,
     },
-    editor: { snap: ed.snap !== false, snapEdges: ed.snapEdges !== false },
+    editor: { snap: ed.snap !== false, snapEdges: ed.snapEdges !== false, rulers: ed.rulers === true },
     inspector: { sections: normalizeSections(ins.sections) },
     // The two "remember" switches are one setting for both tabs: the Source tab's copy is the one the user sets.
     print: {

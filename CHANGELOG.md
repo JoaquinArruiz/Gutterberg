@@ -8,6 +8,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Sticky edges (Source tab): while the grid region is drawn, moved or resized, and while an upright piece is moved or resized, its sides stick to the straight edges in the artwork (piece borders, cut lines, the sides of drawn boxes and pictures, and long contrast lines on a scan). An edge only pulls a side it runs along for at least half of its length, so art inside a piece does not. Ctrl/Cmd held still drags freely.
+- Rulers (Source tab): Ctrl/Cmd+R shows rulers along the top and the left of the page in the Original view and the Original side of Split. They measure from the page's top-left corner in the unit chosen in Preferences (mm, cm or in), with ticks that follow the zoom (1, 5, 10 or 50 mm; 1/16 to 1 in) and a mark that follows the pointer. Off by default; when off they take no room.
 
 ### Changed
 

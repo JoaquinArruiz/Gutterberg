@@ -456,6 +456,7 @@ describe("the sticky edges preference", () => {
     expect(migratePreferences({ version: 14, editor: { snap: false } }).editor).toEqual({
       snap: false,
       snapEdges: true,
+      rulers: false,
     });
   });
 
@@ -466,5 +467,14 @@ describe("the sticky edges preference", () => {
     expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { snapEdges: "no" } }).editor.snapEdges).toBe(
       true,
     );
+  });
+});
+
+describe("the rulers preference", () => {
+  it("is off by default, and on only when it was turned on", () => {
+    expect(DEFAULT_PREFERENCES.editor.rulers).toBe(false);
+    expect(migratePreferences({ version: 14 }).editor.rulers).toBe(false);
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { rulers: true } }).editor.rulers).toBe(true);
+    expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { rulers: "yes" } }).editor.rulers).toBe(false);
   });
 });

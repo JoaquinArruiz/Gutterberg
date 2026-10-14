@@ -123,6 +123,13 @@ export default function App() {
         duplicatePicked();
         return;
       }
+      // Rulers on and off. The web view's own reload is turned off (0.9.3); preventDefault keeps it so in development.
+      if (mod && !e.shiftKey && !e.altKey && key === "r") {
+        e.preventDefault();
+        const prefs = usePreferencesStore.getState();
+        prefs.setRulers(!prefs.prefs.editor.rulers);
+        return;
+      }
       if (mod || e.altKey) return;
       // The arrows move what is picked (Shift: a bigger step); with nothing picked, left and right change page.
       const arrow = ARROWS[e.key];

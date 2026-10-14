@@ -33,6 +33,7 @@ import {
   stickyOffset,
 } from "../../lib/snap";
 import type { PageSize } from "../../lib/tauri";
+import { mmToPt } from "../../lib/units";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
@@ -55,6 +56,7 @@ import { OutputNotice } from "./OutputNotice";
 import { OutputPane } from "./OutputPane";
 import { OutputPreview } from "./OutputPreview";
 import { PagePreview } from "./PagePreview";
+import { Ruler, RulerCorner, type RulerHandle } from "./Rulers";
 import { SelectionRect } from "./SelectionRect";
 
 type Drag =
@@ -131,6 +133,9 @@ export function EditorViewport() {
   const stick = useRef<Stick>(FREE);
   // The straight edges in this page's artwork, normalized, while sticky edges are on.
   const edges = useRef<EdgeLines>(NO_EDGES);
+  // The rulers' pointer marks, moved on every pointer move without a render.
+  const rulerX = useRef<RulerHandle>(null);
+  const rulerY = useRef<RulerHandle>(null);
   const hold = useRef<{ timer: number; origin: Point } | null>(null);
   const lastPointer = useRef<Point>({ x: 0, y: 0 });
   const endHold = () => {
@@ -142,6 +147,7 @@ export function EditorViewport() {
 
   const page = pages[currentPage];
   const output = viewMode === "output";
+  const rulers = usePreferencesStore((s) => s.prefs.editor.rulers) && !!page && !output;
   // The page the viewport pans/zooms: the (possibly differently sized) output page in Output view.
   const viewPage = output ? (previewResult?.output_page ?? page) : page;
   // Output view has no refresh button: showing it (re)generates the manual preview. Split keeps its button.
@@ -343,6 +349,11 @@ export function EditorViewport() {
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const d = drag.current;
+    if (rulers) {
+      const at = local(e);
+      rulerX.current?.mark(at.x);
+      rulerY.current?.mark(at.y);
+    }
     if (!d && page && !panMode) {
       // Hovering a handle starts rendering the magnifier crop, so it is ready when the hold fires.
       const hit = (e.target as SVGElement).dataset.hit;
@@ -479,135 +490,167 @@ export function EditorViewport() {
   const cursor = panMode ? (panning ? "grabbing" : "grab") : "crosshair";
 
   const split = viewMode === "split" && !!page;
+  const unit = usePreferencesStore((s) => s.prefs.measurement.unit);
+  // The rulers measure the source page: the Original view and the Original side of Split.
+  const pxPerMm = pxPerPoint(viewport.zoom) * mmToPt(1);
+  const ruler = (axis: "x" | "y") => (
+    <Ruler
+      axis={axis}
+      ref={axis === "x" ? rulerX : rulerY}
+      lengthPx={axis === "x" ? box.width : box.height}
+      originPx={axis === "x" ? viewport.panX : viewport.panY}
+      pxPerMm={pxPerMm}
+      unit={unit}
+    />
+  );
   return (
     <div className="flex h-full w-full">
-      <div
-        ref={ref}
-        data-viewport
-        data-hint-target="page-canvas"
-        className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]"
-      >
-        {/* Where tour tips sit when they point at the whole canvas: inside it, above this spot. */}
-        <span
-          aria-hidden
-          data-hint-target="page-canvas-tip"
-          className="pointer-events-none absolute bottom-6 left-1/2 size-px"
-        />
-        {page && pageRect ? (
-          <>
-            {output ? (
-              <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
-            ) : (
-              <PagePreview screen={pageRect} box={box} />
-            )}
-            <svg
-              role="img"
-              aria-label={t("viewport.pageCanvas")}
-              className="absolute inset-0 h-full w-full select-none"
-              style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onPointerLeave={() => !drag.current && setLoupe(null)}
-            >
-              {!output && selection && gridSpec && (
-                <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
-              )}
-              {!output && selScreen && (
-                // In the card tool the grid region is only a backdrop: it must not catch the pointer.
-                <g pointerEvents={tool === "card" ? "none" : undefined}>
-                  <SelectionRect
-                    screen={selScreen}
-                    movable={!panMode && tool !== "card"}
-                    picked={tool === "select" && pickedRegion === currentPage}
+      <div className="flex h-full min-w-0 flex-1 flex-col">
+        {rulers && (
+          <div className="flex shrink-0">
+            <RulerCorner />
+            {ruler("x")}
+          </div>
+        )}
+        <div className="flex min-h-0 flex-1">
+          {rulers && ruler("y")}
+          <div
+            ref={ref}
+            data-viewport
+            data-hint-target="page-canvas"
+            className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]"
+          >
+            {/* Where tour tips sit when they point at the whole canvas: inside it, above this spot. */}
+            <span
+              aria-hidden
+              data-hint-target="page-canvas-tip"
+              className="pointer-events-none absolute bottom-6 left-1/2 size-px"
+            />
+            {page && pageRect ? (
+              <>
+                {output ? (
+                  <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
+                ) : (
+                  <PagePreview screen={pageRect} box={box} />
+                )}
+                <svg
+                  role="img"
+                  aria-label={t("viewport.pageCanvas")}
+                  className="absolute inset-0 h-full w-full select-none"
+                  style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  onPointerLeave={() => {
+                    rulerX.current?.mark(null);
+                    rulerY.current?.mark(null);
+                    if (!drag.current) setLoupe(null);
+                  }}
+                >
+                  {!output && selection && gridSpec && (
+                    <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
+                  )}
+                  {!output && selScreen && (
+                    // In the card tool the grid region is only a backdrop: it must not catch the pointer.
+                    <g pointerEvents={tool === "card" ? "none" : undefined}>
+                      <SelectionRect
+                        screen={selScreen}
+                        movable={!panMode && tool !== "card"}
+                        picked={tool === "select" && pickedRegion === currentPage}
+                      />
+                    </g>
+                  )}
+                  {!output && freeform.length > 0 && (
+                    <FreeformOverlay
+                      cards={freeform}
+                      selected={single ? picked : null}
+                      picked={pickedHere}
+                      viewport={viewport}
+                      page={page}
+                      interactive={cardTool}
+                    />
+                  )}
+                  {!output && <DetectOverlay viewport={viewport} page={page} />}
+                  {!output && (guides.xs.length > 0 || guides.ys.length > 0) && (
+                    <g pointerEvents="none" data-testid="snap-guides">
+                      {guides.xs.map((x) => {
+                        const [a, b] = [
+                          documentToScreen({ x, y: 0 }, viewport, page),
+                          documentToScreen({ x, y: 1 }, viewport, page),
+                        ];
+                        return (
+                          <line key={`x${x}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />
+                        );
+                      })}
+                      {guides.ys.map((y) => {
+                        const [a, b] = [
+                          documentToScreen({ x: 0, y }, viewport, page),
+                          documentToScreen({ x: 1, y }, viewport, page),
+                        ];
+                        return (
+                          <line key={`y${y}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />
+                        );
+                      })}
+                    </g>
+                  )}
+                </svg>
+                {!output && loupe && !cardTool && selection && gridSpec && (
+                  <Magnifier
+                    handle={loupe.handle}
+                    active={loupe.active}
+                    selection={selection}
+                    page={page}
+                    pageRect={pageRect}
+                    box={box}
+                    grid={gridSpec}
                   />
-                </g>
-              )}
-              {!output && freeform.length > 0 && (
-                <FreeformOverlay
-                  cards={freeform}
-                  selected={single ? picked : null}
-                  picked={pickedHere}
-                  viewport={viewport}
-                  page={page}
-                  interactive={cardTool}
-                />
-              )}
-              {!output && <DetectOverlay viewport={viewport} page={page} />}
-              {!output && (guides.xs.length > 0 || guides.ys.length > 0) && (
-                <g pointerEvents="none" data-testid="snap-guides">
-                  {guides.xs.map((x) => {
-                    const [a, b] = [
-                      documentToScreen({ x, y: 0 }, viewport, page),
-                      documentToScreen({ x, y: 1 }, viewport, page),
-                    ];
-                    return <line key={`x${x}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
-                  })}
-                  {guides.ys.map((y) => {
-                    const [a, b] = [
-                      documentToScreen({ x: 0, y }, viewport, page),
-                      documentToScreen({ x: 1, y }, viewport, page),
-                    ];
-                    return <line key={`y${y}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
-                  })}
-                </g>
-              )}
-            </svg>
-            {!output && loupe && !cardTool && selection && gridSpec && (
-              <Magnifier
-                handle={loupe.handle}
-                active={loupe.active}
-                selection={selection}
-                page={page}
-                pageRect={pageRect}
-                box={box}
-                grid={gridSpec}
-              />
-            )}
-            {!output && loupe && cardTool && pickedCard && (
-              <Magnifier
-                handle={loupe.handle}
-                active={loupe.active}
-                card={pickedCard}
-                page={page}
-                pageRect={pageRect}
-                box={box}
-              />
-            )}
-            {!output && (
-              <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
-            )}
-            {!output && !cardTool && hasGridAndPieces && (
-              <HintToast
-                hint="grid-and-pieces"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
-              <HintToast
-                hint="move-region"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {cardTool && (
-              <HintToast
-                hint="freeform-tool"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {!output && skipped && (
-              <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
-                {t("viewport.pageSkipped")}
+                )}
+                {!output && loupe && cardTool && pickedCard && (
+                  <Magnifier
+                    handle={loupe.handle}
+                    active={loupe.active}
+                    card={pickedCard}
+                    page={page}
+                    pageRect={pageRect}
+                    box={box}
+                  />
+                )}
+                {!output && (
+                  <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
+                )}
+                {!output && !cardTool && hasGridAndPieces && (
+                  <HintToast
+                    hint="grid-and-pieces"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
+                  <HintToast
+                    hint="move-region"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {cardTool && (
+                  <HintToast
+                    hint="freeform-tool"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {!output && skipped && (
+                  <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
+                    {t("viewport.pageSkipped")}
+                  </p>
+                )}
+                {output && <OutputNotice />}
+              </>
+            ) : (
+              <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
+                {loading ? t("viewport.opening") : t("viewport.openHint")}
               </p>
             )}
-            {output && <OutputNotice />}
-          </>
-        ) : (
-          <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
-            {loading ? t("viewport.opening") : t("viewport.openHint")}
-          </p>
-        )}
+          </div>
+        </div>
       </div>
       {split && <div className="w-px shrink-0 bg-[var(--border)]" />}
       {split && <OutputPane />}
