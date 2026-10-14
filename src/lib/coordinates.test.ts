@@ -3,6 +3,8 @@ import {
   documentToScreen,
   edgesToNormalized,
   fitViewport,
+  guidesToNormalized,
+  normalizedToGuide,
   normalizedToPdf,
   pageScreenRect,
   pdfToNormalized,
@@ -103,5 +105,17 @@ describe("edgesToNormalized", () => {
       page,
     );
     expect(n).toEqual({ xs: [{ at: 0.1, from: 0.1, to: 0.5 }], ys: [{ at: 0.25, from: 0.05, to: 0.5 }] });
+  });
+});
+
+describe("guides", () => {
+  it("are kept in points from the corner and snapped to normalized, the same distance on any page size", () => {
+    const small = { width_pt: 300, height_pt: 400 };
+    const big = { width_pt: 600, height_pt: 800 };
+    const g = { xs: [60], ys: [100] };
+    expect(guidesToNormalized(g, small)).toEqual({ xs: [0.2], ys: [0.25] });
+    expect(guidesToNormalized(g, big)).toEqual({ xs: [0.1], ys: [0.125] });
+    expect(normalizedToGuide(0.25, "y", small)).toBe(100);
+    expect(normalizedToGuide(0.1, "x", big)).toBeCloseTo(60, 9);
   });
 });

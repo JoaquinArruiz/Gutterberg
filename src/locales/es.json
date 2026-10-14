@@ -98,7 +98,10 @@
     "opening": "Abriendo…",
     "openHint": "Abre un PDF para empezar (Ctrl/Cmd+O)",
     "pageCanvas": "Lienzo de la página",
-    "pageSkipped": "Esta página está omitida: no se incluye en la exportación."
+    "pageSkipped": "Esta página está omitida: no se incluye en la exportación.",
+    "guidesMenu": "Guías",
+    "clearGuides": "Borrar las guías",
+    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla."
   },
   "preview": {
     "title": "Vista previa",

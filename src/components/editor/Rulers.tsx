@@ -1,10 +1,13 @@
 // The rulers along the top and the left of the page canvas (0.15.0): ticks in the user's unit, measured from the
 // page's top-left corner, and a mark that follows the pointer. The maths is in lib/rulers.ts; this only draws it.
-// The pointer mark moves without a React render: the canvas calls `mark` on every pointer move.
+// The pointer mark moves without a React render: the canvas calls `mark` on every pointer move. Pressing on a ruler
+// drags out a guide; the canvas handles that drag, through the pointer handlers it passes in.
 
 import { type Ref, useImperativeHandle, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import type { MeasurementUnit } from "../../lib/measurement";
 import { RULER_PX, rulerTicks, type TickSize } from "../../lib/rulers";
+import { menuItem, Popover } from "../workspace/Popover";
 
 /** Lets the canvas move the pointer mark: a position along the ruler (screen px), or null to hide it. */
 export type RulerHandle = { mark: (px: number | null) => void };
@@ -18,6 +21,9 @@ export function Ruler({
   pxPerMm,
   unit,
   ref,
+  onPointerDown,
+  onPointerMove,
+  onPointerUp,
 }: {
   /** "x": the top ruler, along the page's width; "y": the left one. */
   axis: "x" | "y";
@@ -27,6 +33,9 @@ export function Ruler({
   pxPerMm: number;
   unit: MeasurementUnit;
   ref?: Ref<RulerHandle>;
+  onPointerDown?: (e: React.PointerEvent<SVGSVGElement>) => void;
+  onPointerMove?: (e: React.PointerEvent<SVGSVGElement>) => void;
+  onPointerUp?: (e: React.PointerEvent<SVGSVGElement>) => void;
 }) {
   const markLine = useRef<SVGLineElement>(null);
   useImperativeHandle(ref, () => ({
@@ -51,6 +60,11 @@ export function Ruler({
       className={`shrink-0 select-none bg-[var(--panel)] ${horizontal ? "border-b" : "border-r"} border-[var(--border)]`}
       width={horizontal ? lengthPx : RULER_PX}
       height={horizontal ? RULER_PX : lengthPx}
+      style={{ cursor: horizontal ? "row-resize" : "col-resize", touchAction: "none" }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
     >
       {ticks.map((t) => (
         <g key={t.px}>
@@ -80,13 +94,39 @@ export function Ruler({
   );
 }
 
-/** The square where the two rulers meet. */
-export function RulerCorner() {
+/** The square where the two rulers meet: a small menu for the guides. */
+export function RulerCorner({ hasGuides, onClear }: { hasGuides: boolean; onClear: () => void }) {
+  const { t } = useTranslation();
   return (
     <div
-      aria-hidden
       className="shrink-0 border-r border-b border-[var(--border)] bg-[var(--panel)]"
       style={{ width: RULER_PX, height: RULER_PX }}
-    />
+    >
+      <Popover
+        label={t("viewport.guidesMenu")}
+        align="left"
+        testId="ruler-corner"
+        trigger={<span aria-hidden className="block size-1.5 rounded-full bg-[var(--muted)]" />}
+        triggerClassName="flex size-[17px] items-center justify-center hover:bg-[var(--hover)]"
+      >
+        {(close) => (
+          <>
+            <button
+              type="button"
+              role="menuitem"
+              className={menuItem}
+              disabled={!hasGuides}
+              onClick={() => {
+                onClear();
+                close();
+              }}
+            >
+              {t("viewport.clearGuides")}
+            </button>
+            <p className="max-w-60 px-2 py-1 text-xs text-[var(--muted)]">{t("viewport.noGuides")}</p>
+          </>
+        )}
+      </Popover>
+    </div>
   );
 }

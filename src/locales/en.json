@@ -98,7 +98,10 @@
     "opening": "Opening…",
     "openHint": "Open a PDF to get started (Ctrl/Cmd+O)",
     "pageCanvas": "Page canvas",
-    "pageSkipped": "This page is skipped: it is left out of the export."
+    "pageSkipped": "This page is skipped: it is left out of the export.",
+    "guidesMenu": "Guides",
+    "clearGuides": "Clear guides",
+    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it."
   },
   "preview": {
     "title": "Preview",

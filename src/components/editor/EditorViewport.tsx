@@ -4,7 +4,9 @@ import type { OrientedRect } from "../../lib/card";
 import {
   documentToScreen,
   edgesToNormalized,
+  guidesToNormalized,
   type NormalizedRect,
+  normalizedToGuide,
   type Point,
   pageScreenRect,
   pxPerPoint,
@@ -14,6 +16,7 @@ import {
 import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
+import { dropGuide, type GuideAxis, NO_GUIDE_SET, overRuler } from "../../lib/guides";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import {
   cardBox,
@@ -51,6 +54,7 @@ import { HintToast } from "../ui/HintToast";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
+import { type GuideDrag, GuideLines } from "./GuideLines";
 import { MAG, Magnifier } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
 import { OutputPane } from "./OutputPane";
@@ -69,7 +73,9 @@ type Drag =
   // Moving one piece or several picked together; `rects` are where they were when the drag started.
   | { kind: "card-move"; indices: number[]; start: Point; rects: OrientedRect[] }
   | { kind: "card-resize"; index: number; handle: Handle; start: Point; rect: OrientedRect; fine?: boolean }
-  | { kind: "card-rotate"; index: number; rect: OrientedRect };
+  | { kind: "card-rotate"; index: number; rect: OrientedRect }
+  // A guide dragged out of a ruler (`index` null) or grabbed on the page.
+  | { kind: "guide"; axis: GuideAxis; index: number | null };
 
 const NO_CARDS: OrientedRect[] = [];
 const isHandle = (hit: string | undefined): hit is Handle => HANDLES.includes(hit as Handle);
@@ -136,6 +142,9 @@ export function EditorViewport() {
   // The rulers' pointer marks, moved on every pointer move without a render.
   const rulerX = useRef<RulerHandle>(null);
   const rulerY = useRef<RulerHandle>(null);
+  // The guide being dragged, drawn where the pointer is; the ref is what the release reads.
+  const [guideDrag, setGuideDrag] = useState<GuideDrag | null>(null);
+  const guideDragRef = useRef<GuideDrag | null>(null);
   const hold = useRef<{ timer: number; origin: Point } | null>(null);
   const lastPointer = useRef<Point>({ x: 0, y: 0 });
   const endHold = () => {
@@ -167,6 +176,7 @@ export function EditorViewport() {
   // The page's edges, asked for once per page (the answer is kept for the session) while sticky edges are on.
   const activeId = useDocumentStore((s) => s.activeId);
   const snapEdges = usePreferencesStore((s) => s.prefs.editor.snapEdges);
+  const rulerGuides = useEditorStore((s) => s.guides[activeId]) ?? NO_GUIDE_SET;
   useEffect(() => {
     edges.current = NO_EDGES;
     if (!snapEdges || !page) return;
@@ -274,6 +284,29 @@ export function EditorViewport() {
     };
   };
 
+  /** Follows a guide drag to `p` (canvas px). */
+  const trackGuide = (axis: GuideAxis, index: number | null, p: Point) => {
+    if (!page) return;
+    const doc = screenToDocument(p, useEditorStore.getState().viewport, page);
+    const g: GuideDrag = {
+      axis,
+      index,
+      pt: normalizedToGuide(axis === "x" ? doc.x : doc.y, axis, page),
+      onRuler: overRuler(axis, p),
+    };
+    guideDragRef.current = g;
+    setGuideDrag(g);
+  };
+
+  /** Pressing on a ruler drags out a new guide: a horizontal one from the top ruler, a vertical one from the left. */
+  const onRulerDown = (axis: GuideAxis) => (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!page || e.button !== 0) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { kind: "guide", axis, index: null };
+    trackGuide(axis, null, local(e));
+  };
+
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page) return;
     // Stop the webview from starting a native text/image selection (WebKit paints it
@@ -293,6 +326,14 @@ export function EditorViewport() {
     if (e.button !== 0) return;
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
+    if (hit === "guide") {
+      // A guide is grabbed with the Grid region or Piece tool: drag it, or back onto its ruler to delete it.
+      const data = (e.target as SVGElement).dataset;
+      const axis = data.axis === "x" ? "x" : "y";
+      drag.current = { kind: "guide", axis, index: Number(data.index) };
+      trackGuide(axis, Number(data.index), p);
+      return;
+    }
     if (cardTool) {
       const L = useLayoutStore.getState();
       const own = L.freeform[currentPage] ?? NO_CARDS;
@@ -372,6 +413,10 @@ export function EditorViewport() {
       ed.setPan(d.panX + p.x - d.start.x, d.panY + p.y - d.start.y);
       return;
     }
+    if (d.kind === "guide") {
+      trackGuide(d.axis, d.index, p);
+      return;
+    }
     const doc = screenToDocument(p, ed.viewport, page);
     // Snapping, unless Ctrl/Cmd is held; never in the magnifier's slow resize. The magnet decides the page and the
     // pieces, sticky edges the edges in the artwork; either way a line that snapped sticks for RELEASE_PX.
@@ -390,7 +435,11 @@ export function EditorViewport() {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
       if (withRegion && region) others.push(region);
-      const lines = magnet ? snapTargets(others) : NO_GUIDES;
+      // Guides show, and are snapped to, while the rulers are on.
+      const ownGuides = useEditorStore.getState().guides[activeId];
+      const lines = magnet
+        ? joinLines(snapTargets(others), rulers && ownGuides ? guidesToNormalized(ownGuides, page) : NO_GUIDES)
+        : NO_GUIDES;
       return sticky && box ? joinLines(lines, edgeTargets(box, edges.current)) : lines;
     };
     const snap = (moving: SnapLines, to: SnapLines) => {
@@ -466,6 +515,13 @@ export function EditorViewport() {
     setGuides(NO_GUIDES);
     endHold();
     setLoupe(null);
+    if (d?.kind === "guide") {
+      const g = guideDragRef.current;
+      guideDragRef.current = null;
+      setGuideDrag(null);
+      const ed = useEditorStore.getState();
+      if (g) ed.setGuides(activeId, dropGuide(ed.guides[activeId] ?? NO_GUIDE_SET, g.axis, g.index, g.pt, g.onRuler));
+    }
     if (d?.kind === "card-create" && d.index !== null && page) {
       // Shrunk back to nothing before letting go: not a card after all.
       const card = useLayoutStore.getState().freeform[currentPage]?.[d.index];
@@ -501,6 +557,10 @@ export function EditorViewport() {
       originPx={axis === "x" ? viewport.panX : viewport.panY}
       pxPerMm={pxPerMm}
       unit={unit}
+      // The top ruler gives horizontal guides (at a y), the left one vertical guides (at an x).
+      onPointerDown={onRulerDown(axis === "x" ? "y" : "x")}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
     />
   );
   return (
@@ -508,7 +568,10 @@ export function EditorViewport() {
       <div className="flex h-full min-w-0 flex-1 flex-col">
         {rulers && (
           <div className="flex shrink-0">
-            <RulerCorner />
+            <RulerCorner
+              hasGuides={rulerGuides.xs.length + rulerGuides.ys.length > 0}
+              onClear={() => useEditorStore.getState().setGuides(activeId, NO_GUIDE_SET)}
+            />
             {ruler("x")}
           </div>
         )}
@@ -548,6 +611,18 @@ export function EditorViewport() {
                     if (!drag.current) setLoupe(null);
                   }}
                 >
+                  {rulers && (
+                    // Under the region and the pieces, so a guide along a side never takes their handles.
+                    <GuideLines
+                      guides={rulerGuides}
+                      dragging={guideDrag}
+                      viewport={viewport}
+                      page={page}
+                      box={box}
+                      grabbable={!panMode}
+                      unit={unit}
+                    />
+                  )}
                   {!output && selection && gridSpec && (
                     <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
                   )}

@@ -11,6 +11,7 @@ import {
 } from "../lib/coordinates";
 import type { Detection } from "../lib/detect-api";
 import type { AppError } from "../lib/errors";
+import type { GuideSet } from "../lib/guides";
 import { sessionDefaults, type WorkspaceMode } from "../lib/preferences";
 import type { PageSize } from "../lib/tauri";
 import { usePreferencesStore } from "./preferences-store";
@@ -50,6 +51,8 @@ type EditorState = {
   detecting: boolean;
   /** Why the last detection failed. */
   detectError: AppError | null;
+  /** The guides of each PDF, by document id: session state, not saved and not part of undo. */
+  guides: Record<number, GuideSet>;
 
   fit: (box: Size, page: PageSize) => void;
   zoomBy: (factor: number, anchor: Point, page: PageSize) => void;
@@ -70,6 +73,9 @@ type EditorState = {
   setDetecting: (detecting: boolean) => void;
   setDetectError: (error: AppError | null) => void;
   setViewMode: (m: ViewMode) => void;
+  /** Replaces the guides of one PDF. */
+  setGuides: (documentId: number, guides: GuideSet) => void;
+  /** Back to a fitted view with no guides (a new or opened project). */
   reset: () => void;
 };
 
@@ -83,6 +89,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   draft: null,
   detecting: false,
   detectError: null,
+  guides: {},
   // Session state: starts in the preferred workspace; switching never edits the preference.
   viewMode: sessionDefaults(usePreferencesStore.getState().prefs).viewMode,
 
@@ -120,5 +127,6 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setDetecting: (detecting) => set({ detecting }),
   setDetectError: (detectError) => set({ detectError }),
   setViewMode: (viewMode) => set({ viewMode }),
-  reset: () => set({ fitMode: true }),
+  setGuides: (documentId, guides) => set((s) => ({ guides: { ...s.guides, [documentId]: guides } })),
+  reset: () => set({ fitMode: true, guides: {} }),
 }));
