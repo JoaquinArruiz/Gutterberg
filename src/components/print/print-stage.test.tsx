@@ -354,7 +354,7 @@ describe("stage switch", () => {
   it("has no stages to switch to without a document", () => {
     useDocumentStore.getState().clear();
     render(<EditorToolbar />);
-    expect(screen.getByRole("tab", { name: "Print" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.queryByRole("tab", { name: "Print" })).toBeNull();
   });
 });
 

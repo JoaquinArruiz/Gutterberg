@@ -20,6 +20,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Release notes scroll inside a box about 14 lines tall, for a newer version and for What's new after updating, so a long changelog no longer pushes the buttons out of view.
 - Preferences › Updates › Tell me about is a menu, with the hint of the chosen choice under it.
 - The welcome has no black bars at the sides of its clips: the clips are cropped to their 4:3 picture and shown on the left, with the title, text and buttons on the right (stacked, clip on top, on a narrow window), and the first-start choices fit their content.
+- Text on the accent colour (primary buttons, the badge on a piece, ticked boxes) is white in the light theme, where black on the blue was 4.06:1, below the 4.5:1 WCAG AA asks for; the hover colour of primary buttons keeps that contrast. The dark theme keeps black.
+- With no PDF open the toolbar shows only File, the panels menu and Preferences: the Source / Print tabs, tools, undo and redo, zoom, views and Export PDF appear once a PDF is open, and the status bar no longer says “No document” under the start screen.
 
 ## 0.13.0 (2026-10-13)
 

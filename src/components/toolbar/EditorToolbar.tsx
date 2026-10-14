@@ -213,93 +213,95 @@ export function EditorToolbar() {
   return (
     <header className="relative flex h-9 shrink-0 items-center gap-1 border-b border-[var(--border)] bg-[var(--panel)] px-2">
       <FileMenu />
-      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
-      <div
-        role="tablist"
-        aria-label={t("toolbar.stageTabs")}
-        data-hint-target="stage-tabs"
-        className="flex items-center gap-1"
-      >
-        {STAGES.map(({ id, label }) => (
-          <button
-            type="button"
-            key={id}
-            role="tab"
-            aria-selected={stage === id}
-            onClick={() => setStage(id)}
-            disabled={empty}
-            className={`${btn} ${stage === id ? "bg-[var(--active)]" : ""}`}
-          >
-            {t(label)}
-          </button>
-        ))}
-      </div>
-      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
-      {stage === "cards" &&
-        TOOLS.map(({ id, label, key, Icon }) => (
-          <button
-            type="button"
-            key={id}
-            title={t("toolbar.toolTitle", { label: t(label), key })}
-            onClick={() => setTool(id)}
-            className={`${iconBtn} ${tool === id ? "bg-[var(--active)]" : ""}`}
-          >
-            <Icon size={14} />
-          </button>
-        ))}
-      {stage === "cards" && <div className="mx-0.5 h-4 w-px bg-[var(--border)]" />}
-      {stage === "cards" && (
-        <button
-          type="button"
-          title={t("toolbar.snap")}
-          aria-label={t("toolbar.snap")}
-          aria-pressed={snap}
-          onClick={() => setSnap(!snap)}
-          className={`${iconBtn} ${snap ? "bg-[var(--active)]" : ""}`}
-        >
-          <Magnet size={14} />
-        </button>
-      )}
-      <div className="mx-1 h-4 w-px bg-[var(--border)]" />
-      <button type="button" title={t("toolbar.undo")} onClick={undo} disabled={!canUndo} className={iconBtn}>
-        <Undo2 size={14} />
-      </button>
-      <button type="button" title={t("toolbar.redo")} onClick={redo} disabled={!canRedo} className={iconBtn}>
-        <Redo2 size={14} />
-      </button>
-      {stage === "cards" && (
+      {!empty && (
         <>
           <div className="mx-1 h-4 w-px bg-[var(--border)]" />
-          <button type="button" title={t("toolbar.zoomOut")} onClick={zoomOut} disabled={empty} className={iconBtn}>
-            <ZoomOut size={14} />
-          </button>
-          <button type="button" title={t("toolbar.zoomIn")} onClick={zoomIn} disabled={empty} className={iconBtn}>
-            <ZoomIn size={14} />
-          </button>
-          <button type="button" title={t("toolbar.fitPage")} onClick={fitPage} disabled={empty} className={iconBtn}>
-            <Maximize size={14} />
-          </button>
+          <div
+            role="tablist"
+            aria-label={t("toolbar.stageTabs")}
+            data-hint-target="stage-tabs"
+            className="flex items-center gap-1"
+          >
+            {STAGES.map(({ id, label }) => (
+              <button
+                type="button"
+                key={id}
+                role="tab"
+                aria-selected={stage === id}
+                onClick={() => setStage(id)}
+                className={`${btn} ${stage === id ? "bg-[var(--active)]" : ""}`}
+              >
+                {t(label)}
+              </button>
+            ))}
+          </div>
           <div className="mx-1 h-4 w-px bg-[var(--border)]" />
-          {visibleModes.length > 1 && (
-            <div role="tablist" aria-label={t("toolbar.viewTabs")} className="flex items-center gap-1">
-              {visibleModes.map((id) => (
-                <button
-                  type="button"
-                  key={id}
-                  role="tab"
-                  aria-selected={viewMode === id}
-                  onClick={() => {
-                    switchWorkspace(id);
-                    // Clicking Preview (even when already there) refreshes a manual preview.
-                    if (id === "output") useLayoutStore.getState().updatePreview();
-                  }}
-                  disabled={empty}
-                  className={`${btn} ${viewMode === id ? "bg-[var(--active)]" : ""}`}
-                >
-                  {t(`views.${id}`)}
-                </button>
-              ))}
-            </div>
+          {stage === "cards" &&
+            TOOLS.map(({ id, label, key, Icon }) => (
+              <button
+                type="button"
+                key={id}
+                title={t("toolbar.toolTitle", { label: t(label), key })}
+                onClick={() => setTool(id)}
+                className={`${iconBtn} ${tool === id ? "bg-[var(--active)]" : ""}`}
+              >
+                <Icon size={14} />
+              </button>
+            ))}
+          {stage === "cards" && <div className="mx-0.5 h-4 w-px bg-[var(--border)]" />}
+          {stage === "cards" && (
+            <button
+              type="button"
+              title={t("toolbar.snap")}
+              aria-label={t("toolbar.snap")}
+              aria-pressed={snap}
+              onClick={() => setSnap(!snap)}
+              className={`${iconBtn} ${snap ? "bg-[var(--active)]" : ""}`}
+            >
+              <Magnet size={14} />
+            </button>
+          )}
+          <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+          <button type="button" title={t("toolbar.undo")} onClick={undo} disabled={!canUndo} className={iconBtn}>
+            <Undo2 size={14} />
+          </button>
+          <button type="button" title={t("toolbar.redo")} onClick={redo} disabled={!canRedo} className={iconBtn}>
+            <Redo2 size={14} />
+          </button>
+          {stage === "cards" && (
+            <>
+              <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+              <button type="button" title={t("toolbar.zoomOut")} onClick={zoomOut} className={iconBtn}>
+                <ZoomOut size={14} />
+              </button>
+              <button type="button" title={t("toolbar.zoomIn")} onClick={zoomIn} className={iconBtn}>
+                <ZoomIn size={14} />
+              </button>
+              <button type="button" title={t("toolbar.fitPage")} onClick={fitPage} className={iconBtn}>
+                <Maximize size={14} />
+              </button>
+              <div className="mx-1 h-4 w-px bg-[var(--border)]" />
+              {visibleModes.length > 1 && (
+                <div role="tablist" aria-label={t("toolbar.viewTabs")} className="flex items-center gap-1">
+                  {visibleModes.map((id) => (
+                    <button
+                      type="button"
+                      key={id}
+                      role="tab"
+                      aria-selected={viewMode === id}
+                      onClick={() => {
+                        switchWorkspace(id);
+                        // Clicking Preview (even when already there) refreshes a manual preview.
+                        if (id === "output") useLayoutStore.getState().updatePreview();
+                      }}
+                      className={`${btn} ${viewMode === id ? "bg-[var(--active)]" : ""}`}
+                    >
+                      {t(`views.${id}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </>
       )}
@@ -324,16 +326,18 @@ export function EditorToolbar() {
       >
         <Settings size={14} />
       </button>
-      <Button
-        variant="primary"
-        onClick={doExport}
-        data-hint-target="export-button"
-        disabled={!path || includedCount === 0 || exporting}
-        title={includedCount === 0 ? t("toolbar.everyPageSkipped") : t("toolbar.exportPdf")}
-        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
-      >
-        <Download size={14} /> {exporting ? t("toolbar.exporting") : t("toolbar.exportPdf")}
-      </Button>
+      {!empty && (
+        <Button
+          variant="primary"
+          onClick={doExport}
+          data-hint-target="export-button"
+          disabled={!path || includedCount === 0 || exporting}
+          title={includedCount === 0 ? t("toolbar.everyPageSkipped") : t("toolbar.exportPdf")}
+          className="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
+        >
+          <Download size={14} /> {exporting ? t("toolbar.exporting") : t("toolbar.exportPdf")}
+        </Button>
+      )}
       {issues.length === 0 && warnings.length > 0 && (
         <section
           aria-label={t("toolbar.warnings.label")}

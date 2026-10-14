@@ -92,7 +92,6 @@
   },
   "status": {
     "page": "Página {{current}} / {{total}}",
-    "noDocument": "Sin documento",
     "zoom": "Zoom {{percent}}%"
   },
   "viewport": {
