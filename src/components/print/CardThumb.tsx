@@ -99,7 +99,7 @@ export function CardThumb({
       </span>
       <span className="w-full truncate text-center text-[var(--muted)]">{label}</span>
       {copies !== null && copies > 0 && (
-        <span className="absolute right-1 top-1 rounded bg-[var(--accent)] px-1 font-semibold text-black">
+        <span className="absolute right-1 top-1 rounded bg-[var(--accent)] px-1 font-semibold text-[var(--accent-fg)]">
           ×{copies}
         </span>
       )}

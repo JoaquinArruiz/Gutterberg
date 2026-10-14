@@ -8,31 +8,37 @@ const MIN_LABEL_PX = 24;
 
 /**
  * The freeform cards of the viewed page, drawn in screen px, each rotated about its own centre. In the
- * card tool (`interactive`) every card can be picked and the selected one has its resize handles and a
- * rotate handle above the top edge; otherwise they are only shown, and never take a pointer event.
+ * card tool (`interactive`) every card can be picked; the picked ones are drawn solid, and the one being
+ * edited (`selected`, only when one is picked) has its resize handles and a rotate handle above the top edge.
+ * Otherwise they are only shown, and never take a pointer event.
  * Hit targets carry `data-hit` and `data-card` (the card's index).
  */
 export function FreeformOverlay({
   cards,
   selected,
+  picked = [],
   viewport,
   page,
   interactive,
 }: {
   cards: OrientedRect[];
   selected: number | null;
+  /** Every picked card, `selected` included. */
+  picked?: number[];
   viewport: ViewportState;
   page: PageSize;
   interactive: boolean;
 }) {
-  // The selected card is drawn last, so it is on top and its handles are never covered.
-  const order = cards.map((_, i) => i).sort((a, b) => Number(a === selected) - Number(b === selected));
+  // The picked cards are drawn last, the selected one on top, so its handles are never covered.
+  const rank = (i: number) => (i === selected ? 2 : picked.includes(i) ? 1 : 0);
+  const order = cards.map((_, i) => i).sort((a, b) => rank(a) - rank(b));
   return (
     <g pointerEvents={interactive ? undefined : "none"} data-testid="freeform-overlay">
       {order.map((i) => {
         const s = orientedToScreen(cards[i], viewport, page);
         const rect = { x: s.center.x - s.width / 2, y: s.center.y - s.height / 2, width: s.width, height: s.height };
         const isSelected = interactive && i === selected;
+        const isPicked = interactive && (isSelected || picked.includes(i));
         return (
           <g key={i} transform={`rotate(${s.angle_deg} ${s.center.x} ${s.center.y})`}>
             <rect
@@ -40,10 +46,11 @@ export function FreeformOverlay({
               data-card={i}
               {...rect}
               fill="var(--accent)"
-              fillOpacity={isSelected ? 0.16 : 0.08}
+              data-picked={isPicked || undefined}
+              fillOpacity={isPicked ? 0.16 : 0.08}
               stroke="var(--accent)"
-              strokeWidth={isSelected ? 1.5 : 1}
-              strokeDasharray={isSelected ? undefined : "5 3"}
+              strokeWidth={isPicked ? 1.5 : 1}
+              strokeDasharray={isPicked ? undefined : "5 3"}
               style={{ cursor: interactive ? "move" : "inherit" }}
             />
             {Math.min(s.width, s.height) > MIN_LABEL_PX && (

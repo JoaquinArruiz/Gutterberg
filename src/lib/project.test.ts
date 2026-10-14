@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_OUTPUT } from "../stores/layout-store";
+import { gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
 import { applyGridTo, defaultGroups, setSkipped, updateGridGroup } from "./document-layout";
 import { DEFAULT_FINISH } from "./finish";
 import { imageGroups } from "./images";
+import { applyPairing, DEFAULT_PAIRING, pairPieces } from "./pairing";
 import { DEFAULT_PLAN } from "./print-request";
 import {
   fromProject,
@@ -15,6 +17,7 @@ import {
   projectSignature,
   toProject,
 } from "./project";
+import type { Card } from "./sheet-api";
 
 const hash = (n: number) => n.toString(16).padStart(64, "0");
 const sel = { x: 0.1, y: 0.1, width: 0.8, height: 0.8 };
@@ -94,6 +97,29 @@ describe("the project file", () => {
   it("brings back everything it was made from: groups, freeform pieces, turns, scales, order, plan, output", () => {
     const before = state();
     expect(fromProject(parseProject(file(before)))).toEqual(before);
+  });
+
+  it("saves and reopens a project paired across two PDFs: backs by full piece id, the common back a piece id", () => {
+    const card = (doc: number, column: number): Card => ({
+      id: gridCardId(doc, 0, 0, column),
+      source: { center: { x: 100, y: 100 }, width: 180, height: 250, angle_deg: 0 },
+      scale: 1,
+      turn: 0,
+    });
+    const pairing = pairPieces([card(0, 0), card(0, 1), card(3, 0), card(3, 1)], {
+      ...DEFAULT_PAIRING,
+      rule: "otherPdf",
+      backsDocument: 3,
+    });
+    const before = state();
+    before.edits = applyPairing(before.edits, pairing, true);
+    before.plan.finish.duplex.commonBack = "g:3:0:0:1";
+    const back = fromProject(parseProject(file(before)));
+    expect(back.edits.backs["g:0:0:0:0"]).toBe("g:3:0:0:1");
+    expect(back.edits.backs["g:0:0:0:1"]).toBe("g:3:0:0:0");
+    expect(back.edits.turns["g:3:0:0:0"]).toBe(180);
+    expect(back.plan.finish.duplex.commonBack).toBe("g:3:0:0:1");
+    expect(back).toEqual(before);
   });
 
   it("holds each PDF's path, hash, page count and layout, not the PDFs", () => {

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { t } from "../../i18n";
 import { HINTS } from "../../lib/hints";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { useToastStore } from "../../stores/toast-store";
 import { useUiStore } from "../../stores/ui-store";
 import { HintToast } from "./HintToast";
 
@@ -111,6 +112,28 @@ describe("HintToast", () => {
     expect(screen.queryByTestId("hint-live-preview-output")).toBeNull();
     act(() => usePreferencesStore.getState().resetHints());
     expect(screen.getByTestId("hint-live-preview-output")).toBeTruthy();
+  });
+
+  it("shows nothing with the tips off, and the tip is back when they are on again", () => {
+    render(<HintToast hint="print-stage-intro" />);
+    act(() => usePreferencesStore.getState().setTipsOn(false));
+    expect(screen.queryByTestId("hint-print-stage-intro")).toBeNull();
+    act(() => usePreferencesStore.getState().setTipsOn(true));
+    expect(screen.getByTestId("hint-print-stage-intro")).toBeTruthy();
+  });
+
+  it("has a Don't show tips choice that turns the tips off and says where to turn them on again", () => {
+    useToastStore.setState({ queue: [] });
+    render(<HintToast hint="live-preview-output" />);
+    fireEvent.click(screen.getByRole("button", { name: "Don't show tips" }));
+    expect(usePreferencesStore.getState().prefs.help.tipsOn).toBe(false);
+    expect(dismissed()).toEqual({});
+    expect(screen.queryByTestId("hint-live-preview-output")).toBeNull();
+    const toast = useToastStore.getState().queue[0];
+    expect(toast.title).toBe("Help tips are off");
+    expect(toast.text).toContain("Preferences › Help");
+    toast.actions?.[0].onClick();
+    expect(useUiStore.getState().prefsSection).toBe("Help");
   });
 
   it("shows again when its catalog version is newer than the dismissal", () => {

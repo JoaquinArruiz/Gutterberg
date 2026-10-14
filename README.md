@@ -185,8 +185,9 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 ## Examples
 
-Nine small PDFs to try it on, from a plain 3 × 3 sheet to a rotated page, a scan and a locked file, with what
-each shows and what to expect: [examples/README.md](examples/README.md).
+Thirteen small PDFs to try it on, from a plain 3 × 3 sheet to a rotated page, a scan, a locked file, fronts and
+backs in separate PDFs and a page with pieces of three sizes, with what each shows and what to expect:
+[examples/README.md](examples/README.md).
 
 ## Build from source
 

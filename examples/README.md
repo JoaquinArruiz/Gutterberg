@@ -1,6 +1,6 @@
 # Examples
 
-Nine small PDFs to try Gutterberg on, from the plain case to the awkward ones. Every piece is a poker-sized
+Thirteen small PDFs to try Gutterberg on, from the plain case to the awkward ones. Every piece is a poker-sized
 card (63 × 88 mm) unless a file says otherwise, and each one says which way is up ("▲ TOP"), so you can see at a
 glance what turning and rotating do. All of them were made for this project: there is no one's game in here.
 
@@ -20,6 +20,10 @@ already between the pieces in the PDF, and **Output gap** (Print tab) is the spa
 | [`07-locked-no-modify.pdf`](07-locked-no-modify.pdf) | A PDF its publisher locked against changes |
 | [`08-raster-3x3-a4.pdf`](08-raster-3x3-a4.pdf) | A scanned sheet: one picture instead of vector content |
 | [`09-bad-scan.pdf`](09-bad-scan.pdf) | A messy scan: crooked pieces of different sizes |
+| [`10-fronts.pdf`](10-fronts.pdf) | 18 fronts on two pages, for pairing with the backs of file 11 or 12 |
+| [`11-backs.pdf`](11-backs.pdf) | The backs of file 10 in a PDF of their own, columns mirrored as double-sided files have them |
+| [`12-common-back.pdf`](12-common-back.pdf) | One back for every front, in a PDF of its own |
+| [`13-three-sizes.pdf`](13-three-sizes.pdf) | One page with pieces of three sizes and two orientations |
 
 ## 01 · Default 3 × 3 on A4
 
@@ -107,3 +111,38 @@ one, a 44 × 68 mm one, a 70 × 120 mm one and so on).
 - **Result:** every piece comes out straightened and at its own size, and shows up in the piece library. Pieces
   that do not share a size go on sheets of their own, or share one grid if you turn size grouping off. The pieces
   are only as sharp as the picture.
+
+## 10 · Fronts, and 11 · their backs in another PDF
+
+File 10 has 18 fronts (1 to 18) on two A4 pages, 3 × 3 each, edge to edge. File 11 has their backs (B1 to B18) on
+two pages of their own, the way many games ship them. As in a double-sided file, the backs' columns are mirrored:
+B1 is at the top right, so it lands behind front 1 when the paper is turned over on its long edge.
+
+- **How:** open file 10, then File › Add PDF with file 11. Mark both PDFs with a 3 × 3 grid (draw it on page 1 and
+  use "Apply this grid to…" for page 2). In the Print tab, Duplex › Print backs › Pair backs automatically… ›
+  Backs in another PDF, choose file 11, with Mirrored on. Turn on the piece references (the tag above the sheet) to
+  check the pairs. Then try Backs › Beside the front, with Pairs › Fold or Cut apart.
+- **Result:** every front gets the back with its number, and the backs are not printed as fronts of their own.
+  With Mirrored off, front 1 gets B3: the switch is what lines them up. Beside the front puts each back next to its
+  front; Cut apart leaves out the fold line and adds cut marks between them.
+
+## 12 · One common back
+
+A single back, "COMMON", for every front.
+
+- **How:** with file 10 open, add file 12 and mark its one piece (draw the Grid region around it, 1 × 1). Pair
+  backs automatically… › Backs in another PDF, choose file 12.
+- **Result:** it is offered as the common back of every front, instead of one back per page.
+
+## 13 · Three sizes on one page
+
+On one A4 page: four poker pieces (P1 to P4, 63 × 88 mm, 2 × 2, touching), ten tokens (T1 to T10, 25 × 25 mm,
+2 × 5, 3 mm apart), two minis (M1, M2, 41 × 63 mm, 2 mm apart) and one landscape piece (L1, 88 × 63 mm). The
+pieces have strong borders, so their edges are easy to see.
+
+- **How:** draw a grid over the poker pieces (2 × 2) and press Turn into pieces. Draw the next grid over the tokens
+  (5 rows, 2 columns, Source gap 3 mm) and turn it into pieces too. Draw the minis and the landscape piece with the
+  Piece tool (`C`). Try the editing controls: `Ctrl/Cmd+A` picks every piece, Shift-click adds or takes one out,
+  the arrow keys move what is picked, `Ctrl/Cmd+D` copies it, and dragging snaps to the page and the other pieces.
+- **Result:** every piece is in the piece library at its own size (the landscape one stays landscape), and pieces
+  of each size go on sheets of their own.

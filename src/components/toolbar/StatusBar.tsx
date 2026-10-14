@@ -14,9 +14,7 @@ export function StatusBar() {
   const zoom = useEditorStore((s) => s.viewport.zoom);
   return (
     <footer className="flex h-6 shrink-0 items-center gap-6 border-t border-[var(--border)] bg-[var(--panel)] px-3 text-[11px] text-[var(--muted)]">
-      <span>
-        {pages.length ? t("status.page", { current: currentPage + 1, total: pages.length }) : t("status.noDocument")}
-      </span>
+      {pages.length > 0 && <span>{t("status.page", { current: currentPage + 1, total: pages.length })}</span>}
       <span className="min-w-0 flex-1 truncate">{path}</span>
       {pages.length > 0 && (
         <span className="max-w-[30ch] truncate" title={projectPath ?? undefined}>

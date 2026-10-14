@@ -5,6 +5,27 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.14.0 (2026-10-14)
+
+### Added
+
+- More control on the page (Source tab): the arrow keys move the picked grid region or pieces 1 mm at a time (Shift: 10 mm; 0.05 and 0.5 in with inches), and change page only when nothing is picked. Shift-click picks several pieces, Ctrl/Cmd+A picks every piece of the page, and dragging one of them moves them all, which helps after Turn into pieces. Ctrl/Cmd+D duplicates the picked pieces and Alt-drag drags a copy. While dragging or resizing, the region and the pieces snap to the page's edges and middle and to each other, with a red guide line; hold Ctrl/Cmd to drag without it, or turn it off with the magnet in the toolbar. The Freeform pieces section sets the angle and size of every picked piece at once and deletes them together.
+- A help tip the first time a grid region is drawn says how to drag it, nudge it and snap it.
+- Gutterfold pairs can be cut apart instead of folded: Print › Duplex › Backs › Beside the front › Pairs › Cut apart puts each back next to its front with no fold line and cut marks around the front and the back each, so a set that is not double-sided can be laid out front-and-back and cut in one go. With a gap of 0 they share one cut. A back below its front stays upright, unless you turn it.
+- Pair backs automatically… can take the backs from another PDF of the project (Backs in another PDF): page 1 of the fronts with page 1 of the backs, piece by piece, with the same mirrored and upside-down options. A backs PDF that is one single piece can be used as the common back of every front.
+- Help tips can be turned off: Preferences › Help › Help tips has a “Show help tips” switch, and each tip has a small “Don't show tips” that turns it off and says where to turn it on again. With the switch off no tip or screen tour shows; the welcome tour still opens once and can be replayed. The button that brings tips back is now “Show closed tips again”.
+- The keyboard shortcuts sheet (`?`, or Preferences › Help) lists the new controls: the arrow keys and Shift+arrows with a region or pieces picked, Shift-click, Ctrl/Cmd+A and Esc to pick, Ctrl/Cmd+D and Alt-drag to copy, and Ctrl/Cmd held to drag without snapping. The arrows are listed as changing page only with nothing picked, and the sheet now also lists the scroll wheel panning and Esc closing a help tip or a message. The sheet has a search field that stays at the top while the list scrolls, in the sheet (ready to type when it opens) and in Preferences › Help: it keeps the shortcuts whose text or keys match, in either language, ignoring case and accents (“ctrl”, “option”, “página”).
+
+### Changed
+
+- Projects are saved as version 6 (for cutting gutterfold pairs apart); older projects open as before, with their pairs folded, and an older Gutterberg asks to be updated.
+- The update toast no longer installs: its “Update…” button opens Preferences › Updates with the Install button focused, next to “Skip this version”, so an update is always installed from where its notes are.
+- Release notes scroll inside a box about 14 lines tall, for a newer version and for What's new after updating, so a long changelog no longer pushes the buttons out of view.
+- Preferences › Updates › Tell me about is a menu, with the hint of the chosen choice under it.
+- The welcome has no black bars at the sides of its clips: the clips are cropped to their 4:3 picture and shown on the left, with the title, text and buttons on the right (stacked, clip on top, on a narrow window), and the first-start choices fit their content.
+- Text on the accent colour (primary buttons, the badge on a piece, ticked boxes) is white in the light theme, where black on the blue was 4.06:1, below the 4.5:1 WCAG AA asks for; the hover colour of primary buttons keeps that contrast. The dark theme keeps black.
+- With no PDF open the toolbar shows only File, the panels menu and Preferences: the Source / Print tabs, tools, undo and redo, zoom, views and Export PDF appear once a PDF is open, and the status bar no longer says “No document” under the start screen.
+
 ## 0.13.0 (2026-10-13)
 
 ### Added

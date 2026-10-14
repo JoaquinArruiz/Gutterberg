@@ -5,7 +5,7 @@ export type ButtonVariant = "default" | "primary" | "ghost" | "danger" | "ai";
 
 const VARIANT: Record<ButtonVariant, string> = {
   default: "border border-[var(--border)] hover:bg-[var(--hover)]",
-  primary: "bg-[var(--accent)] font-medium text-black hover:brightness-110",
+  primary: "bg-[var(--accent)] font-medium text-[var(--accent-fg)] hover:bg-[var(--accent-hover)]",
   // Icon buttons: quiet until hovered.
   ghost: "text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)]",
   danger: "border border-red-400/60 text-red-300 hover:bg-red-400/10",

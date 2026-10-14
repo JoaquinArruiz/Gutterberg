@@ -8,6 +8,7 @@ import { useUiStore } from "../../stores/ui-store";
 import { DiscordIcon, GitHubIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
 import { ShortcutsList } from "../ui/ShortcutsList";
+import { Switch } from "../ui/Switch";
 import { Field } from "./Field";
 
 const COPIED_FOR_MS = 2000;
@@ -20,6 +21,8 @@ const COPIED_FOR_MS = 2000;
 export function HelpSection() {
   const { t, i18n } = useTranslation();
   const hiddenTips = usePreferencesStore((s) => Object.keys(s.prefs.help.dismissedHints).length);
+  const tipsOn = usePreferencesStore((s) => s.prefs.help.tipsOn);
+  const setTipsOn = usePreferencesStore((s) => s.setTipsOn);
   const resetHints = usePreferencesStore((s) => s.resetHints);
   const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);
   const setWelcomeOpen = useUiStore((s) => s.setWelcomeOpen);
@@ -100,13 +103,18 @@ export function HelpSection() {
       </Field>
 
       <Field label={t("preferences.help.tips")}>
+        <Switch checked={tipsOn} onChange={setTipsOn} label={t("preferences.help.showTips")} />
         <div>
-          <Button size="md" disabled={hiddenTips === 0} onClick={resetHints}>
+          <Button size="md" disabled={!tipsOn || hiddenTips === 0} onClick={resetHints}>
             {t("preferences.help.enableTips")}
           </Button>
         </div>
         <p className="text-[var(--muted)]">
-          {hiddenTips === 0 ? t("preferences.help.allTipsOn") : t("preferences.help.tipsHidden", { count: hiddenTips })}
+          {!tipsOn
+            ? t("preferences.help.tipsOff")
+            : hiddenTips === 0
+              ? t("preferences.help.allTipsOn")
+              : t("preferences.help.tipsHidden", { count: hiddenTips })}
         </p>
       </Field>
 

@@ -13,3 +13,7 @@ These are the masters. `scripts/encode-welcome.sh` turns them into the WebM, MP4
 files the app ships in `public/welcome/`. To change a clip, replace its file here (same
 name) and run the script again. No text inside the clips: the words come from the language
 files.
+
+The masters are 1920 x 1080 with the picture in the 1440 x 1080 middle (4:3) and black at the sides; the script
+crops that out. Later masters are better exported from Figma at 4:3, so there is nothing to crop (then the `crop=`
+part of `FILTER` in the script goes too).

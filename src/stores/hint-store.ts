@@ -30,6 +30,7 @@ export function useHint(id: HintId) {
   const remove = useMountedHints((s) => s.remove);
   const mounted = useMountedHints((s) => s.mounted);
   const dismissed = usePreferencesStore((s) => s.prefs.help.dismissedHints);
+  const tipsOn = usePreferencesStore((s) => s.prefs.help.tipsOn);
   const dismissHint = usePreferencesStore((s) => s.dismissHint);
   // No tip shows while the welcome tour is open, nor in the moment after it closes.
   const held = useUiStore((s) => s.hintsHeld);
@@ -38,7 +39,7 @@ export function useHint(id: HintId) {
       add(id);
       return () => remove(id);
     },
-    visible: !held && HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
+    visible: tipsOn && !held && HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
     dismiss: () => dismissHint(id),
   };
 }

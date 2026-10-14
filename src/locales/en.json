@@ -26,6 +26,7 @@
       "card": "Piece tool",
       "pan": "Pan"
     },
+    "snap": "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Undo (Ctrl+Z)",
     "redo": "Redo (Shift+Ctrl+Z)",
@@ -91,7 +92,6 @@
   },
   "status": {
     "page": "Page {{current}} / {{total}}",
-    "noDocument": "No document",
     "zoom": "Zoom {{percent}}%"
   },
   "viewport": {
@@ -204,10 +204,16 @@
     "count_one": "{{count}} freeform piece on this page. It is printed from the Print tab.",
     "count_other": "{{count}} freeform pieces on this page. They are printed from the Print tab.",
     "chooseTool": "Choose the Piece tool (C) to move, resize or rotate them.",
-    "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°.",
+    "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°. Shift-click picks several, Ctrl+A picks them all, and the arrow keys move what is picked.",
     "piece": "Piece",
     "angle": "Angle",
-    "delete": "Delete piece"
+    "delete": "Delete piece",
+    "picked_one": "{{count}} piece picked",
+    "picked_other": "{{count}} pieces picked",
+    "mixed": "{{label}} (mixed)",
+    "pickedNote": "A value typed here goes to every picked piece.",
+    "deleteMany_one": "Delete {{count}} piece",
+    "deleteMany_other": "Delete {{count}} pieces"
   },
   "pages": {
     "applyGrid": "Apply this grid to…",
@@ -426,6 +432,17 @@
       "backTurnNote": "Following the fold, a back to the right stays as printed and a back below is turned upside down, so it reads the right way once folded.",
       "foldGap": "Gap at the fold",
       "foldGapNote": "Space between a front and its back. 0 puts the fold on the edge of both; a little helps with thick paper.",
+      "pairs": "Pairs",
+      "pairCuts": {
+        "fold": "Fold",
+        "apart": "Cut apart"
+      },
+      "pairsNote": "Fold: each back is folded behind its front, with a dashed line at the fold and cut marks around the pair. Cut apart: the front and the back stay two pieces side by side, for quick builds that are not double-sided: no fold line, and cut marks around each.",
+      "backPlace": "Back",
+      "backPlaceNote": "Where the back goes next to its front. Cut marks go around the front and the back each, and along the line between them.",
+      "backTurnApartNote": "A back that is cut apart is printed as it is in the file. Turn it upside down if the file has it that way.",
+      "apartGap": "Gap between front and back",
+      "apartGapNote": "Space between a front and its back. 0 puts them edge to edge, with one cut along the line they share.",
       "commonBack": "Common back",
       "none": "None",
       "useSelected": "Use the selected piece as common back",
@@ -465,8 +482,14 @@
         "afterFronts": "Backs after fronts",
         "afterFrontsHint": "All the front pages first, then all the back pages in the same order.",
         "beside": "Beside each other on the page",
-        "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold)."
+        "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold).",
+        "otherPdf": "Backs in another PDF",
+        "otherPdfHint": "Page 1 of the fronts with page 1 of the backs, page 2 with 2…, piece by piece."
       },
+      "backsPdf": "PDF with the backs",
+      "commonBack": "Use it as the common back",
+      "commonBackHint": "That PDF is one single piece: it becomes the back of every front, instead of only those on page 1.",
+      "common": "Every front gets that piece as its back.",
       "split": "Backs in the",
       "splits": {
         "columns": "Right half",
@@ -620,10 +643,12 @@
       "welcomeNote": "A short tour of the app, in four clips.",
       "replayWelcome": "Replay welcome tour",
       "tips": "Help tips",
-      "enableTips": "Enable all help tips",
-      "allTipsOn": "All help tips are enabled.",
-      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Enable it to see it again.",
-      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Enable them to see them again.",
+      "enableTips": "Show closed tips again",
+      "showTips": "Show help tips",
+      "tipsOff": "Help tips are off. Turn on “Show help tips” to see them again.",
+      "allTipsOn": "No help tip is closed.",
+      "tipsHidden_one": "{{count}} help tip is hidden because you closed it. Show it again to see it.",
+      "tipsHidden_other": "{{count}} help tips are hidden because you closed them. Show them again to see them.",
       "shortcuts": "Keyboard shortcuts",
       "bug": "Found a bug?",
       "bugIntro": "If something doesn't work, open an issue on GitHub (you need a free GitHub account) and tell us:",
@@ -685,7 +710,11 @@
     "skip": "Skip",
     "done": "Done",
     "dismiss": "Dismiss tip",
-    "dismissTitle": "Dismiss (won't show again)"
+    "dismissTitle": "Dismiss (won't show again)",
+    "turnOff": "Don't show tips",
+    "offTitle": "Help tips are off",
+    "offText": "To see them again, turn on “Show help tips” in Preferences › Help.",
+    "offOpen": "Open Preferences"
   },
   "hints": {
     "first-pdf-tour": {
@@ -746,6 +775,12 @@
       "one": {
         "title": "A grid and pieces on one page",
         "text": "A page can have one grid and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Turn into pieces, then draw the next grid."
+      }
+    },
+    "move-region": {
+      "one": {
+        "title": "Move the region",
+        "text": "Drag the region to move it, or its handles to resize it. Once you have clicked it, the arrow keys move it 1 mm at a time (Shift: 10 mm). Its edges snap to the page and to the pieces; the magnet in the toolbar turns that off."
       }
     }
   },
@@ -995,7 +1030,9 @@
     "keys": {
       "Space": "Space",
       "Wheel": "Scroll wheel",
-      "Click": "Click"
+      "Click": "Click",
+      "Drag": "Drag",
+      "Arrows": "Arrow keys"
     },
     "items": {
       "preferences": "Open Preferences",
@@ -1007,7 +1044,7 @@
       "undo": "Undo the last change (in either tab)",
       "redo": "Redo",
       "shortcuts": "Show this list",
-      "closeDialog": "Close a dialog, a menu or an info tip",
+      "closeDialog": "Close a dialog, a menu, an info tip, a help tip or a message",
       "gridRegionTool": "Grid region tool",
       "pieceTool": "Piece tool",
       "panTool": "Pan tool",
@@ -1016,10 +1053,9 @@
       "zoomOut": "Zoom out",
       "fitPage": "Fit the page",
       "zoomCursor": "Zoom at the cursor",
-      "nextPage": "Next page",
-      "previousPage": "Previous page",
+      "nextPage": "Next page (the arrow, with nothing picked)",
+      "previousPage": "Previous page (the arrow, with nothing picked)",
       "deletePiece": "Delete the picked piece (Piece tool)",
-      "putDownPiece": "Put down the picked piece",
       "snapRotation": "Rotate a piece in 15° steps (hold while turning it)",
       "applyProposal": "Apply the proposal",
       "discardProposal": "Discard the proposal",
@@ -1032,8 +1068,19 @@
       "revertNumber": "Go back to the previous number",
       "nudgeNumber": "Raise or lower the number",
       "nudgeFine": "Raise or lower it in small steps",
-      "nudgeCoarse": "Raise or lower it in big steps"
-    }
+      "nudgeCoarse": "Raise or lower it in big steps",
+      "panWheel": "Pan the page (with Shift, sideways)",
+      "nudgePicked": "Move the picked region or pieces 1 mm (0.05 in)",
+      "nudgePickedBig": "Move the picked region or pieces 10 mm (0.5 in)",
+      "pickMore": "Add or remove a piece from the picked ones (Piece tool)",
+      "pickAll": "Pick every piece of the page",
+      "pickNone": "Pick nothing (the pieces and the region)",
+      "duplicatePieces": "Duplicate the picked pieces (Piece tool)",
+      "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Piece tool)",
+      "dragFree": "Drag a region or pieces without snapping"
+    },
+    "search": "Search shortcuts",
+    "noMatch": "No shortcut matches that."
   },
   "start": {
     "title": "Get started",
@@ -1142,7 +1189,7 @@
     "toast": {
       "available": "Gutterberg {{version}} is available",
       "whatsNew": "What's new",
-      "update": "Update",
+      "update": "Update…",
       "skip": "Skip this version",
       "updated": "Updated to {{version}}",
       "failed": "The update to {{version}} didn't finish",

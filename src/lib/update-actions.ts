@@ -51,17 +51,16 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
   }
 }
 
-/** The "update available" toast. */
+/** The "update available" toast: it never installs, it takes you to the notes and the Install button. */
 function announce(version: string) {
   toast().show({
     title: t("updates.toast.available", { version }),
     actions: [
-      { label: t("updates.toast.whatsNew"), onClick: showUpdates },
       {
         label: t("updates.toast.update"),
         onClick: () => {
+          useUiStore.getState().setFocusInstall(true);
           showUpdates();
-          void installUpdate();
         },
       },
       { label: t("updates.toast.skip"), onClick: () => prefs().skipVersion(version) },

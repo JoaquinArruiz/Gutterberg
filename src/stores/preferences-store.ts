@@ -120,12 +120,16 @@ type PreferencesState = {
   dismissHint: (id: HintId) => void;
   /** Show every help tip again. */
   resetHints: () => void;
+  /** Turn all help tips and screen tours on or off (the closed ones stay closed). */
+  setTipsOn: (on: boolean) => void;
   /** The welcome tour of this version was closed: it does not open by itself again. */
   setWelcomeSeen: (version: number) => void;
   /** Remember that inspector section `id` was opened or closed. */
   setSectionOpen: (id: string, open: boolean) => void;
   /** Piece references on the sheet preview, on or off. */
   setShowReferences: (show: boolean) => void;
+  /** Snapping while dragging on the page, on or off. */
+  setSnap: (snap: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -239,6 +243,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           }));
       },
       resetHints: () => edit((p) => ({ ...p, help: { ...p.help, dismissedHints: {} } })),
+      setTipsOn: (tipsOn) => edit((p) => ({ ...p, help: { ...p.help, tipsOn } })),
       setWelcomeSeen: (version) => edit((p) => ({ ...p, help: { ...p.help, welcomeSeen: version } })),
       setSectionOpen: (id, open) => {
         if (get().prefs.inspector.sections[id] !== open)
@@ -247,6 +252,9 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setShowReferences: (show) => {
         if (get().prefs.print.showReferences !== show)
           edit((p) => ({ ...p, print: { ...p.print, showReferences: show } }));
+      },
+      setSnap: (snap) => {
+        if (get().prefs.editor.snap !== snap) edit((p) => ({ ...p, editor: { ...p.editor, snap } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),

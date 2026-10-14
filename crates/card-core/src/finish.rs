@@ -123,8 +123,12 @@ pub struct DuplexOptions {
     pub fold: FoldAxis,
     /// Gutterfold: space between a front and its back, with the fold line in the middle.
     pub fold_gap_mm: f64,
+    /// Gutterfold: the pairs are cut apart instead of folded. No fold line, cut marks round the
+    /// front and the back each, and the gap at the fold is a plain gap.
+    pub cut_apart: bool,
     /// Gutterfold: turn every back a half turn. `None` follows the fold: a back below its front
-    /// is printed upside down so it reads right way up once folded; a back beside it is not.
+    /// is printed upside down so it reads right way up once folded; a back beside it is not, and
+    /// neither is a back that is cut apart.
     pub back_upside_down: Option<bool>,
     pub flip: Flip,
     /// Moves everything on every back sheet, in the printed sheet (right is positive).
@@ -708,8 +712,9 @@ fn back_sheet(
 }
 
 /// Gutterfold: puts each front's back in the room the plan left beside it (or below it), turned
-/// so it reads right way up once folded, and returns the pairs' outlines (for the cut marks and
-/// the bleed) and the fold lines.
+/// so it reads right way up once folded, and returns the outlines for the cut marks and the bleed
+/// (each pair, or each front and back when they are cut apart) and the fold lines (none when cut
+/// apart).
 fn fold_backs(
     sheet: &mut OutputSheet,
     duplex: &DuplexOptions,
@@ -719,7 +724,9 @@ fn fold_backs(
 ) -> Result<(Vec<Rect>, Vec<[f64; 4]>)> {
     let gap = mm_to_pt(duplex.fold_gap_mm);
     let vertical = duplex.fold == FoldAxis::Vertical;
-    let upside_down = duplex.back_upside_down.unwrap_or(!vertical);
+    let upside_down = duplex
+        .back_upside_down
+        .unwrap_or(!vertical && !duplex.cut_apart);
     let mut outlines = Vec::new();
     let mut folds = Vec::new();
     let mut backs = Vec::new();
@@ -731,14 +738,18 @@ fn fold_backs(
         } else {
             Rect::new(f.x, f.y + f.height + gap, f.width, f.height)
         };
-        outlines.push(bounds(&[f, room]).expect("two rects"));
-        folds.push(if vertical {
-            let x = f.x + f.width + gap / 2.0;
-            [x, f.y, x, f.y + f.height]
+        if duplex.cut_apart {
+            outlines.extend([f, room]);
         } else {
-            let y = f.y + f.height + gap / 2.0;
-            [f.x, y, f.x + f.width, y]
-        });
+            outlines.push(bounds(&[f, room]).expect("two rects"));
+            folds.push(if vertical {
+                let x = f.x + f.width + gap / 2.0;
+                [x, f.y, x, f.y + f.height]
+            } else {
+                let y = f.y + f.height + gap / 2.0;
+                [f.x, y, f.x + f.width, y]
+            });
+        }
         let Some((back_id, own)) = back_of(p.card_id, duplex, pairs) else {
             continue;
         };
@@ -828,7 +839,7 @@ pub fn finish_sheets(
         sheet.bleed = bleed;
         let mut warnings = Vec::new();
         // With gutterfold a front and its back are one piece of paper: marks and bleed go round
-        // the pair.
+        // the pair (or round each of them, when the pairs are cut apart).
         let outlines = if folding {
             let (outlines, folds) =
                 fold_backs(&mut sheet, &options.duplex, &pairs, &by_id, &mut warnings)?;

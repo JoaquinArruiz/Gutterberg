@@ -122,14 +122,19 @@ matter:
   grouping by size, `DoesNotFit` for a pair too large, never shrinking. Finishing then puts the back in that room,
   turned a half turn when the fold is horizontal (or as `back_upside_down` says), and adds the fold lines
   (`OutputSheet.folds`, drawn dashed and grey by export and the preview). Cut marks and bleed warnings use the pair
-  outlines, so no mark crosses the fold. "Same as source" has no room for the backs, so the interface switches to the
-  planner and the engine refuses that combination.
+  outlines, so no mark crosses the fold. With `cut_apart` the pairs are not folded but cut into two pieces: the same
+  slots and placement, no fold lines, outlines for the front and the back each (so marks also run along the line
+  between them), and a back below its front stays upright unless `back_upside_down` says otherwise. "Same as source"
+  has no room for the backs, so the interface switches to the planner and the engine refuses that combination.
 - **A back's own turn:** each `BackPair` (and the common back) carries the turn the user gave the back piece in the
   library, added to the turn the flip or the fold needs. That is how upside-down backs in a file are set right.
 - **Automatic pairing** (`src/lib/pairing.ts`) is pure data over piece ids, in the interface: pages in order per PDF,
   then rows and columns (mirrored columns for duplex files; the piece it meets when folded for "beside each other");
   freeform pieces by their order. Applying writes the backs and the backs' turns into the per-piece edits and sets
   the backs' copies to 0, as one undo step (`together` in `stores/history.ts` joins the layout and plan timelines).
+  "Backs in another PDF" pairs page *n* of the fronts' PDF with page *n* of the chosen PDF, piece by piece, or uses a
+  one-piece backs PDF as the common back. Nothing changes in the project: a back is stored by its full piece id
+  (`cardIdKey`), which names the document, and the common back is a `CardId`.
 
 ### Permission flags (`access`)
 
@@ -197,7 +202,8 @@ rebuilt on open.
   functions, each taking one version to the next (`v1_to_v2` adds the print finishing, `v2_to_v3` adds the document
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
-  gutterfold settings of the duplex finish); the current version is 5. A change to the format adds a version and a migration with a test file.
+  gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold); the current
+  version is 6. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
@@ -230,6 +236,15 @@ pieces section and, when the switch in the sheet preview's header is on (`print.
 (`SheetReferences`: a chip at each piece's corner, shortened or left out when the piece is too small for it, never in
 the exported file). `pieceReference` and `documentLetter` in `lib/card.ts` build the text; with several PDFs each gets
 a letter by its place in the project (A, B, …) that goes in front.
+
+**Editing on the page.** The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
+show), `pickedCards` (every picked piece of that page) and `pickedRegion` (the page whose grid region the arrow keys
+move). `lib/editor-actions.ts` holds what the keys do to them (nudge, with a burst of presses held open as one undo
+step; duplicate; pick all; delete), so `App.tsx` and the viewport's Alt-drag call the same functions. Snapping is pure
+maths in `lib/snap.ts`: the moving thing's upright box gives its edges and middle, which snap per axis to the page and
+to the other pieces and the region within a few screen pixels (`snapTolerance`), and the viewport draws the guides.
+The switch is `editor.snap` in preferences; `Ctrl/Cmd` held turns it off for a drag, which is why only `Shift`-click
+adds a piece to the picked ones.
 
 **Stores** (Zustand, read with per-field selectors, never the whole store): documents, the layout of the PDF being
 edited (the others are parked and swapped in), the print plan, editor session state, preferences, project state, the
@@ -271,14 +286,28 @@ an optional action named in a registry, an optional target element and an option
 `<HintToast hint="…" />` shows one; the call site decides when and where, the catalog decides what. One hint shows at
 a time. A tour step with a target points at it with a spotlight (React Joyride, MIT) and moves on when the app emits
 the matching event (`hint-events.ts`), however the user did it. If a target is not on screen, it falls back to a
-toast. Dismissals are stored with the hint's version, so a changed tip can come back; "Reset help tips" brings them all
-back. Tips can be turned off for good, so messages that matter (an update, how an update went) are not tips: they use
+toast. Dismissals are stored with the hint's version, so a changed tip can come back; "Show closed tips again" brings them all
+back. `help.tipsOn` (Preferences › Help, or "Don't show tips" on a tip) turns every tip and tour off with one check in
+`useHint`; the welcome tour is not a tip. Tips can be turned off for good, so messages that matter (an update, how an update went) are not tips: they use
 the general toast (`Toast`), a queue that shows one at a time.
+
+**Colour on the accent.** `--accent-fg` is the text colour on `--accent` (black in the dark theme, white in the light
+one, where black on `#2563eb` is 4.06:1, under WCAG AA's 4.5:1): primary buttons and accent badges use it, never
+`text-black`. **The empty toolbar:** with no document open the toolbar shows only File, the panels menu and
+Preferences; everything that needs a document appears when one is open.
 
 The **welcome tour** is four short clips (masters in `assets/welcome/`, encoded by `scripts/encode-welcome.sh` into
 `public/welcome/`) in a dialog that opens once over the start screen. Help tips wait while it is open. Preferences ›
 Help holds the tour, the tip reset, the shortcuts and "Found a bug?", which copies the app info or opens the GitHub
 issue form after asking, with the version and system filled in.
+
+The tour's clips are cropped to their 4:3 picture (`crop=1440:1080:240:0` in the encode script; the masters have black
+at the sides, so a future export of the Figma frames should be 4:3) and shown beside the text; below about 720 px
+wide the dialog stacks with the clip on top. The keyboard shortcuts sheet is the catalog `src/lib/shortcuts.ts`
+(chords of key names, `Mod` being Ctrl or Command) plus a text per entry in both languages. It is written by hand,
+so a shortcut added or changed in a `keydown` handler changes there too; `shortcuts.test.tsx` checks the catalog and
+the texts have the same ids. `ShortcutsList` (the sheet and Preferences › Help) has a sticky search field that filters by
+the translated text and the key names (`Mod` also matches Ctrl, Cmd and Command; `Alt` also Option).
 
 ## Languages (`i18n`)
 
@@ -317,7 +346,7 @@ failed or offline check is silent, but Preferences › Updates says the last che
 updates" button there shows the result and also the toast for a newer version. Preferences › Updates shows the installed and the newer version with its notes and
 the "Tell me about" setting (all updates, new features, major versions only, never), which only decides the toast. The
 logic that needs no app (version order including pre-releases, who is told about what, what to say after an update) is
-in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. Before installing, the version is written down so
+in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. The toast never installs: its "Update…" button opens Preferences › Updates with the Install button focused, so an update is installed only where its notes (`ReleaseNotes`, in a box of about 14 lines that scrolls) are. Before installing, the version is written down so
 the next start can say whether it worked. Experimental features are switches listed in `src/lib/experimental.ts`.
 
 Third-party notices are collected at release time (`scripts/third-party-licenses.mjs`: `cargo about`, `pnpm

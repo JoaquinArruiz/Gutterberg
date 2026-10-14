@@ -38,7 +38,7 @@ beforeEach(() => {
   saveBeforeRestart.mockReset().mockResolvedValue(true);
   usePreferencesStore.setState({ prefs: DEFAULT_PREFERENCES });
   useToastStore.setState({ queue: [] });
-  useUiStore.setState({ exporting: false, prefsOpen: false, prefsSection: null });
+  useUiStore.setState({ exporting: false, prefsOpen: false, prefsSection: null, focusInstall: false });
   useUpdateStore.setState({
     status: "idle",
     update: null,
@@ -51,15 +51,11 @@ beforeEach(() => {
 afterEach(() => vi.useRealTimers());
 
 describe("checking for updates", () => {
-  it("announces a newer version with a toast that has What's new, Update and Skip", async () => {
+  it("announces a newer version with a toast that has Update… and Skip", async () => {
     check.mockResolvedValue(found("1.2.0"));
     await checkForUpdates(false);
     expect(toasts()).toEqual(["Gutterberg 1.2.0 is available"]);
-    expect(useToastStore.getState().queue[0].actions?.map((a) => a.label)).toEqual([
-      "What's new",
-      "Update",
-      "Skip this version",
-    ]);
+    expect(useToastStore.getState().queue[0].actions?.map((a) => a.label)).toEqual(["Update…", "Skip this version"]);
     expect(useUpdateStore.getState()).toMatchObject({
       status: "available",
       update: { version: "1.2.0", notes: "- Better" },
@@ -67,12 +63,14 @@ describe("checking for updates", () => {
     expect(updates().lastCheck).toBeGreaterThan(0);
   });
 
-  it("What's new opens Preferences › Updates, and Skip remembers the version", async () => {
+  it("Update… opens Preferences › Updates for the Install button without installing, and Skip remembers the version", async () => {
     check.mockResolvedValue(found("1.2.0"));
     await checkForUpdates(false);
-    const [whatsNew, , skip] = useToastStore.getState().queue[0].actions ?? [];
-    whatsNew.onClick();
-    expect(useUiStore.getState()).toMatchObject({ prefsOpen: true, prefsSection: "Updates" });
+    const [update, skip] = useToastStore.getState().queue[0].actions ?? [];
+    update.onClick();
+    expect(useUiStore.getState()).toMatchObject({ prefsOpen: true, prefsSection: "Updates", focusInstall: true });
+    expect(saveBeforeRestart).not.toHaveBeenCalled();
+    expect(useUpdateStore.getState().status).toBe("available");
     skip.onClick();
     expect(updates().skippedVersion).toBe("1.2.0");
     useToastStore.setState({ queue: [] });

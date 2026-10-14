@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OrientedRect } from "../../lib/card";
 import {
+  documentToScreen,
   type NormalizedRect,
   type Point,
   pageScreenRect,
@@ -9,8 +10,19 @@ import {
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
-import { drawCard, isTooSmall, moveCard, resizeCard, rotateCardTo } from "../../lib/freeform";
+import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
+import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
+import {
+  cardBox,
+  type Guides,
+  NO_GUIDES,
+  rectLines,
+  type SnapLines,
+  snapOffset,
+  snapTargets,
+  snapTolerance,
+} from "../../lib/snap";
 import type { PageSize } from "../../lib/tauri";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
@@ -24,6 +36,7 @@ import {
   useCurrentGroup,
   useLayoutStore,
 } from "../../stores/layout-store";
+import { usePreferencesStore } from "../../stores/preferences-store";
 import { HintToast } from "../ui/HintToast";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
@@ -42,7 +55,8 @@ type Drag =
   | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect; fine?: boolean }
   // The card tool: `index` is null until a drawn card is big enough to exist.
   | { kind: "card-create"; anchor: Point; index: number | null }
-  | { kind: "card-move"; index: number; start: Point; rect: OrientedRect }
+  // Moving one piece or several picked together; `rects` are where they were when the drag started.
+  | { kind: "card-move"; indices: number[]; start: Point; rects: OrientedRect[] }
   | { kind: "card-resize"; index: number; handle: Handle; start: Point; rect: OrientedRect; fine?: boolean }
   | { kind: "card-rotate"; index: number; rect: OrientedRect };
 
@@ -56,6 +70,20 @@ const HOLD_TOLERANCE_PX = 4;
 
 const MIN_CLICK_DRAG = 0.005; // normalized; smaller than this counts as a click
 
+/** The edges of `r` a resize handle moves, for snapping just those. */
+const movedEdges = (r: NormalizedRect, handle: Handle): SnapLines => ({
+  xs: handle.includes("w") ? [r.x] : handle.includes("e") ? [r.x + r.width] : [],
+  ys: handle.includes("n") ? [r.y] : handle.includes("s") ? [r.y + r.height] : [],
+});
+
+/** The box around several rectangles. */
+function union(rects: NormalizedRect[]): NormalizedRect {
+  const [x, y] = [Math.min(...rects.map((r) => r.x)), Math.min(...rects.map((r) => r.y))];
+  const right = Math.max(...rects.map((r) => r.x + r.width));
+  const bottom = Math.max(...rects.map((r) => r.y + r.height));
+  return { x, y, width: right - x, height: bottom - y };
+}
+
 export function EditorViewport() {
   const { t } = useTranslation();
   const pages = useDocumentStore((s) => s.pages);
@@ -64,6 +92,8 @@ export function EditorViewport() {
   const viewport = useEditorStore((s) => s.viewport);
   const tool = useEditorStore((s) => s.tool);
   const selectedCard = useEditorStore((s) => s.selectedCard);
+  const pickedCards = useEditorStore((s) => s.pickedCards);
+  const pickedRegion = useEditorStore((s) => s.pickedRegion);
   const freeform = useLayoutStore((s) => s.freeform[currentPage]) ?? NO_CARDS;
   const group = useCurrentGridGroup();
   const skipped = useCurrentGroup()?.kind === "skip";
@@ -86,6 +116,8 @@ export function EditorViewport() {
   const [panning, setPanning] = useState(false);
   // Magnifier: `pending` while a handle is held (raster prefetching), `active` once the hold fired.
   const [loupe, setLoupe] = useState<{ handle: Handle; active: boolean } | null>(null);
+  // The lines a drag snapped to, shown while it holds.
+  const [guides, setGuides] = useState<Guides>(NO_GUIDES);
   const hold = useRef<{ timer: number; origin: Point } | null>(null);
   const lastPointer = useRef<Point>({ x: 0, y: 0 });
   const endHold = () => {
@@ -173,7 +205,10 @@ export function EditorViewport() {
   // The card tool edits freeform cards; skipped pages are left out of the export, so they take none.
   const cardTool = tool === "card" && !output && !skipped && !panMode;
   const picked = selectedCard?.page === currentPage ? selectedCard.index : null;
-  const pickedCard = picked === null ? null : (freeform[picked] ?? null);
+  // Every picked piece of this page; the handles and the magnifier are for one piece at a time.
+  const pickedHere = selectedCard?.page === currentPage ? pickedCards : [];
+  const single = pickedHere.length <= 1;
+  const pickedCard = picked === null || !single ? null : (freeform[picked] ?? null);
 
   /** A handle was pressed: prefetch the magnifier, and open it if the pointer stays put for a moment. */
   const startHold = (handle: Handle, p: Point, pg: PageSize) => {
@@ -227,6 +262,8 @@ export function EditorViewport() {
       const index = Number((e.target as SVGElement).dataset.card);
       const card = own[index];
       const select = (i: number | null) => ed.setSelectedCard(i === null ? null : { page: currentPage, index: i });
+      // Shift adds a piece to the picked ones (or takes it out). Ctrl/Cmd is left for dragging without snapping.
+      const adding = e.shiftKey;
       beginEdit(); // the whole drag is one undo step
       if (card && hit === "rotate") {
         select(index);
@@ -236,17 +273,29 @@ export function EditorViewport() {
         drag.current = { kind: "card-resize", index, handle: hit, start: doc, rect: card };
         startHold(hit, p, page);
       } else if (card && hit === "card") {
-        select(index);
-        drag.current = { kind: "card-move", index, start: doc, rect: card };
+        const before = pickedOnPage();
+        if (adding) ed.togglePickedCard(currentPage, index);
+        // A piece that is already among several picked ones moves them all; another one is picked alone.
+        else if (before.includes(index) && before.length > 1)
+          ed.pickCards(currentPage, [...before.filter((i) => i !== index), index]);
+        else select(index);
+        let indices = pickedOnPage();
+        if (!indices.includes(index)) return; // taken out of the picked ones: nothing to drag
+        // Alt-drag leaves the pieces where they were and drags copies of them.
+        if (e.altKey) indices = copyPieces(currentPage, indices);
+        const now = useLayoutStore.getState().freeform[currentPage] ?? NO_CARDS;
+        drag.current = { kind: "card-move", indices, start: doc, rects: indices.map((i) => now[i]) };
       } else {
         // Dragging on empty page draws a new card; a bare click only drops the selection.
-        select(null);
+        if (!adding) select(null);
         drag.current = { kind: "card-create", anchor: doc, index: null };
       }
       return;
     }
     if (!group) return; // a skipped page has no region to edit
     const current = getCurrentSelection();
+    // Pressing on the region, or drawing a new one, picks it: the arrow keys then move it.
+    ed.setPickedRegion(currentPage);
     beginEdit(); // the whole drag is one undo step
     if (hit && current) {
       drag.current =
@@ -282,6 +331,27 @@ export function EditorViewport() {
       return;
     }
     const doc = screenToDocument(p, ed.viewport, page);
+    // Snapping, unless it is off in the toolbar or Ctrl/Cmd is held; never in the magnifier's slow resize.
+    const snapping = usePreferencesStore.getState().prefs.editor.snap && !(e.ctrlKey || e.metaKey);
+    const tol = snapTolerance(page, pxPerPoint(ed.viewport.zoom));
+    const L0 = useLayoutStore.getState();
+    const own0 = L0.freeform[currentPage] ?? NO_CARDS;
+    /** The page, the region and the pieces not in `skip`, as lines to snap to. */
+    const targets = (skip: number[], withRegion: boolean) => {
+      const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
+      const region = getCurrentSelection();
+      if (withRegion && region) others.push(region);
+      return snapTargets(others);
+    };
+    const snap = (moving: SnapLines, to: SnapLines) => {
+      if (!snapping) {
+        setGuides(NO_GUIDES);
+        return { dx: 0, dy: 0 };
+      }
+      const s = snapOffset(moving, to, tol);
+      setGuides(s.guides);
+      return s;
+    };
     if (d.kind === "card-create") {
       const L = useLayoutStore.getState();
       const card = drawCard(d.anchor, doc, page);
@@ -294,25 +364,40 @@ export function EditorViewport() {
     }
     if (d.kind === "card-move" || d.kind === "card-resize" || d.kind === "card-rotate") {
       const L = useLayoutStore.getState();
-      if (d.kind === "card-move")
-        L.updateFreeformCard(currentPage, d.index, moveCard(d.rect, doc.x - d.start.x, doc.y - d.start.y));
-      else if (d.kind === "card-rotate")
+      if (d.kind === "card-move") {
+        const [dx, dy] = [doc.x - d.start.x, doc.y - d.start.y];
+        const box = union(
+          d.rects.map((r) => cardBox({ ...r, center: { x: r.center.x + dx, y: r.center.y + dy } }, page)),
+        );
+        const s = snap(rectLines(box), targets(d.indices, true));
+        movePieces(currentPage, d.indices, d.rects, dx + s.dx, dy + s.dy);
+      } else if (d.kind === "card-rotate")
         L.updateFreeformCard(currentPage, d.index, rotateCardTo(d.rect, doc, page, e.shiftKey));
       else {
         const k = d.fine ? 1 / MAG : 1;
-        L.updateFreeformCard(
-          currentPage,
-          d.index,
-          resizeCard(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k, page),
-        );
+        const [dx, dy] = [(doc.x - d.start.x) * k, (doc.y - d.start.y) * k];
+        const raw = resizeCard(d.rect, d.handle, dx, dy, page);
+        // Only an upright piece's edges follow the page's axes, so only it snaps while resized.
+        const s =
+          d.fine || d.rect.angle_deg !== 0
+            ? { dx: 0, dy: 0 }
+            : snap(movedEdges(cardBox(raw, page), d.handle), targets([d.index], true));
+        L.updateFreeformCard(currentPage, d.index, resizeCard(d.rect, d.handle, dx + s.dx, dy + s.dy, page));
       }
       return;
     }
     if (d.kind === "create") setCurrentSelection(rectFromPoints(d.anchor, doc));
-    else if (d.kind === "move") setCurrentSelection(moveRect(d.rect, doc.x - d.start.x, doc.y - d.start.y));
-    else {
+    else if (d.kind === "move") {
+      const [dx, dy] = [doc.x - d.start.x, doc.y - d.start.y];
+      const s = snap(rectLines(moveRect(d.rect, dx, dy)), targets([], false));
+      setCurrentSelection(moveRect(d.rect, dx + s.dx, dy + s.dy));
+    } else {
       const k = d.fine ? 1 / MAG : 1;
-      setCurrentSelection(resizeRect(d.rect, d.handle, (doc.x - d.start.x) * k, (doc.y - d.start.y) * k));
+      const [dx, dy] = [(doc.x - d.start.x) * k, (doc.y - d.start.y) * k];
+      const s = d.fine
+        ? { dx: 0, dy: 0 }
+        : snap(movedEdges(resizeRect(d.rect, d.handle, dx, dy), d.handle), targets([], false));
+      setCurrentSelection(resizeRect(d.rect, d.handle, dx + s.dx, dy + s.dy));
     }
   };
 
@@ -320,6 +405,7 @@ export function EditorViewport() {
     const d = drag.current;
     drag.current = null;
     setPanning(false);
+    setGuides(NO_GUIDES);
     endHold();
     setLoupe(null);
     if (d?.kind === "card-create" && d.index !== null && page) {
@@ -333,7 +419,10 @@ export function EditorViewport() {
     if (d?.kind === "create") {
       const s = getCurrentSelection();
       // A plain click (no real drag) clears the selection.
-      if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) setCurrentSelection(null);
+      if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) {
+        setCurrentSelection(null);
+        useEditorStore.getState().setPickedRegion(null);
+      }
     }
     endEdit();
   };
@@ -381,19 +470,42 @@ export function EditorViewport() {
               {!output && selScreen && (
                 // In the card tool the grid region is only a backdrop: it must not catch the pointer.
                 <g pointerEvents={tool === "card" ? "none" : undefined}>
-                  <SelectionRect screen={selScreen} movable={!panMode && tool !== "card"} />
+                  <SelectionRect
+                    screen={selScreen}
+                    movable={!panMode && tool !== "card"}
+                    picked={tool === "select" && pickedRegion === currentPage}
+                  />
                 </g>
               )}
               {!output && freeform.length > 0 && (
                 <FreeformOverlay
                   cards={freeform}
-                  selected={picked}
+                  selected={single ? picked : null}
+                  picked={pickedHere}
                   viewport={viewport}
                   page={page}
                   interactive={cardTool}
                 />
               )}
               {!output && <DetectOverlay viewport={viewport} page={page} />}
+              {!output && (guides.xs.length > 0 || guides.ys.length > 0) && (
+                <g pointerEvents="none" data-testid="snap-guides">
+                  {guides.xs.map((x) => {
+                    const [a, b] = [
+                      documentToScreen({ x, y: 0 }, viewport, page),
+                      documentToScreen({ x, y: 1 }, viewport, page),
+                    ];
+                    return <line key={`x${x}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
+                  })}
+                  {guides.ys.map((y) => {
+                    const [a, b] = [
+                      documentToScreen({ x: 0, y }, viewport, page),
+                      documentToScreen({ x: 1, y }, viewport, page),
+                    ];
+                    return <line key={`y${y}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
+                  })}
+                </g>
+              )}
             </svg>
             {!output && loupe && !cardTool && selection && gridSpec && (
               <Magnifier
@@ -422,6 +534,12 @@ export function EditorViewport() {
             {!output && !cardTool && hasGridAndPieces && (
               <HintToast
                 hint="grid-and-pieces"
+                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+              />
+            )}
+            {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
+              <HintToast
+                hint="move-region"
                 className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
               />
             )}
