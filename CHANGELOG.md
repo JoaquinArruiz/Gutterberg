@@ -7,12 +7,14 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- Sticky edges (Source tab): while the grid region is drawn, moved or resized, and while an upright piece is moved or resized, its sides stick to the straight edges in the artwork (piece borders, cut lines, the sides of drawn boxes and pictures, and long contrast lines on a scan). An edge only pulls a side it runs along for at least half of its length, so art inside a piece does not. Ctrl/Cmd held still drags freely.
-- Rulers (Source tab): Ctrl/Cmd+R shows rulers along the top and the left of the page in the Original view and the Original side of Split. They measure from the page's top-left corner in the unit chosen in Preferences (mm, cm or in), with ticks that follow the zoom (1, 5, 10 or 50 mm; 1/16 to 1 in) and a mark that follows the pointer. Off by default; when off they take no room.
+- Sticky edges (Source tab): while the grid region is drawn, moved or resized, and while an upright piece is moved or resized, its sides stick to the straight edges in the artwork (piece borders, cut lines, the sides of drawn boxes and pictures, and long contrast lines on a scan). An edge only pulls a side it runs along for at least half of its length, so art inside a piece does not. Ctrl/Cmd held still drags freely, and the sticky edges button next to the magnet turns it off. A help tip at that button explains it the first time a side sticks.
+- Rulers (Source tab): the rulers button in the toolbar, or Ctrl/Cmd+R, shows rulers along the top and the left of the page in the Original view and the Original side of Split. They measure from the page's top-left corner in the unit chosen in Preferences (mm, cm or in), with ticks that follow the zoom (1, 5, 10 or 50 mm; 1/16 to 1 in) and a mark that follows the pointer. Off by default; when off they take no room.
 - Guides (Source tab, with the rulers on): drag from the top ruler for a horizontal guide or from the left one for a vertical guide; its distance from the page's corner shows while it is dragged. With the Grid region or Piece tool, press on a guide to move it, or drag it back onto its ruler to delete it; the corner where the rulers meet has Clear guides. The grid region and the pieces snap to guides when the magnet is on. Guides are kept for the session, the same on every page of a PDF; they are not saved in the project.
+- The keyboard shortcuts sheet lists Ctrl/Cmd+R and how to make, move and delete a guide.
 
 ### Changed
 
+- The magnet, sticky edges and rulers are together in their own group in the Source tab's toolbar, after the tools.
 - Snapping is sticky: a side that snapped to the page, a piece or an edge stays there until the pointer has moved about 10 pixels on, so it is easier to land on and to leave. The corner of a grid region being drawn now snaps too.
 
 ## 0.14.0 (2026-10-14)

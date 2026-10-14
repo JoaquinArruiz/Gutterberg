@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -13,6 +13,8 @@ const TITLES = [
   "Piece tool (C)",
   "Pan (H)",
   "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",
+  "Stick to edges in the artwork while dragging (hold Ctrl/Cmd to drag without it)",
+  "Rulers and guides (Ctrl/Cmd+R)",
   "Undo (Ctrl+Z)",
   "Redo (Shift+Ctrl+Z)",
   "Zoom out (-)",
@@ -60,5 +62,24 @@ describe("the toolbar with a document open", () => {
     for (const title of TITLES) expect(screen.getByTitle(title), title).toBeTruthy();
     expect(screen.getByText("Export PDF")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Preferences" })).toBeTruthy();
+  });
+});
+
+describe("the precision aids", () => {
+  it("are switches in their own group after the tools, that remember their state", () => {
+    useDocumentStore.getState().setDocuments([{ id: 0, path: "/demo.pdf", pages: [A4], hash: "" }], 0);
+    useLayoutStore.getState().resetDocument(1);
+    render(<EditorToolbar />);
+    const group = screen.getByRole("group", { name: "Precision aids" });
+    const [magnet, edges, rulers] = within(group).getAllByRole("button");
+    expect(magnet.getAttribute("aria-pressed")).toBe("true");
+    expect(edges.getAttribute("aria-pressed")).toBe("true");
+    expect(rulers.getAttribute("aria-pressed")).toBe("false");
+    expect(edges.getAttribute("data-hint-target")).toBe("sticky-edges-button");
+    fireEvent.click(edges);
+    fireEvent.click(rulers);
+    expect(usePreferencesStore.getState().prefs.editor).toEqual({ snap: true, snapEdges: false, rulers: true });
+    expect(edges.getAttribute("aria-pressed")).toBe("false");
+    expect(rulers.getAttribute("aria-pressed")).toBe("true");
   });
 });

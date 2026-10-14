@@ -132,6 +132,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
   Piece tool (movable, resizable and rotatable). Sizes are exact, in mm, cm or inches.
 - **Detect pieces** proposes the grid or the rectangles of a page from the PDF's own objects, from repeating
   edges, or from the shapes in a scan. It is a draft until you apply it.
+- Snapping to the page and the other pieces, sticky edges that hold a side on the borders and cut lines of the
+  artwork, and rulers with guides in your unit.
 - Source gap, output gap, margins and page size; **Original**, **Preview** and **Split** views; skip pages;
   give page ranges their own grid; save grids as presets.
 - A pre-flight check lists the pages that cannot be exported before anything is written.

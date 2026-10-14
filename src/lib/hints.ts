@@ -35,7 +35,8 @@ export type HintTargetId =
   | "card-library"
   | "copies"
   | "sheet-inspector"
-  | "export-button";
+  | "export-button"
+  | "sticky-edges-button";
 
 /** App events that can move a step forward, fired with `emitHintEvent`. */
 export type HintEventId =
@@ -44,7 +45,8 @@ export type HintEventId =
   | "grid-changed"
   | "stage-changed:print"
   | "copies-changed"
-  | "export-started";
+  | "export-started"
+  | "edge-stuck";
 
 export type HintStep = {
   title?: TextKey;
@@ -97,6 +99,16 @@ export const HINTS = {
         target: "stage-tabs",
         placement: "bottom",
         advanceOn: "stage-changed:print",
+      },
+    ],
+  },
+  "sticky-edges": {
+    steps: [
+      {
+        title: "hints.sticky-edges.one.title",
+        text: "hints.sticky-edges.one.text",
+        target: "sticky-edges-button",
+        placement: "bottom",
       },
     ],
   },

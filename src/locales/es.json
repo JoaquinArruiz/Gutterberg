@@ -27,6 +27,9 @@
       "pan": "Desplazar"
     },
     "snap": "Ajustar a la página y a otras piezas al arrastrar (mantén Ctrl/Cmd para arrastrar sin ajuste)",
+    "precisionAids": "Ayudas de precisión",
+    "snapEdges": "Pegar a los bordes del arte al arrastrar (mantén Ctrl/Cmd para arrastrar sin pegar)",
+    "rulers": "Reglas y guías (Ctrl/Cmd+R)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Deshacer (Ctrl+Z)",
     "redo": "Rehacer (Mayús+Ctrl+Z)",
@@ -785,6 +788,12 @@
         "title": "Mover la región",
         "text": "Arrastra la región para moverla, o sus tiradores para cambiar su tamaño. Después de hacer clic en ella, las flechas la mueven de a 1 mm (Mayús: 10 mm). Sus bordes se ajustan a la página y a las piezas; el imán de la barra de herramientas lo desactiva."
       }
+    },
+    "sticky-edges": {
+      "one": {
+        "title": "Bordes que se pegan",
+        "text": "Ese lado se pegó a un borde del arte. Se queda ahí unos píxeles y se suelta si sigues arrastrando. Mantén Ctrl/Cmd para arrastrar libremente, o desactiva los bordes que se pegan con este botón."
+      }
     }
   },
   "errors": {
@@ -1080,7 +1089,10 @@
       "pickNone": "No elegir nada (ni las piezas ni la región)",
       "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
       "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
-      "dragFree": "Arrastrar una región o piezas sin que se ajusten"
+      "dragFree": "Arrastrar una región o piezas sin que se ajusten ni se peguen a los bordes",
+      "toggleRulers": "Mostrar u ocultar las reglas",
+      "makeGuide": "Crear una guía: arrastra desde una regla hasta la página (con las reglas visibles)",
+      "deleteGuide": "Mover una guía, o borrarla al soltarla sobre su regla"
     },
     "search": "Buscar atajos",
     "noMatch": "Ningún atajo coincide."

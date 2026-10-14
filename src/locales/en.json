@@ -27,6 +27,9 @@
       "pan": "Pan"
     },
     "snap": "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",
+    "precisionAids": "Precision aids",
+    "snapEdges": "Stick to edges in the artwork while dragging (hold Ctrl/Cmd to drag without it)",
+    "rulers": "Rulers and guides (Ctrl/Cmd+R)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Undo (Ctrl+Z)",
     "redo": "Redo (Shift+Ctrl+Z)",
@@ -785,6 +788,12 @@
         "title": "Move the region",
         "text": "Drag the region to move it, or its handles to resize it. Once you have clicked it, the arrow keys move it 1 mm at a time (Shift: 10 mm). Its edges snap to the page and to the pieces; the magnet in the toolbar turns that off."
       }
+    },
+    "sticky-edges": {
+      "one": {
+        "title": "Sticky edges",
+        "text": "That side stuck to an edge in the artwork. It stays there for a few pixels, then lets go if you keep dragging. Hold Ctrl/Cmd to drag freely, or turn sticky edges off with this button."
+      }
     }
   },
   "errors": {
@@ -1080,7 +1089,10 @@
       "pickNone": "Pick nothing (the pieces and the region)",
       "duplicatePieces": "Duplicate the picked pieces (Piece tool)",
       "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Piece tool)",
-      "dragFree": "Drag a region or pieces without snapping"
+      "dragFree": "Drag a region or pieces without snapping or sticking to edges",
+      "toggleRulers": "Show or hide the rulers",
+      "makeGuide": "Make a guide: drag from a ruler onto the page (rulers on)",
+      "deleteGuide": "Move a guide, or delete it by dragging it back onto its ruler"
     },
     "search": "Search shortcuts",
     "noMatch": "No shortcut matches that."

@@ -181,6 +181,16 @@ A proposal is never applied by itself. It is a draft drawn on the page (dashed o
 words) that the user applies in one undo step, steps through ("Next proposal") or discards. The weights were tuned
 on generated fixtures; they are constants at the top of each engine.
 
+**Page edges** (`detect::page_edges`, for sticky edges) reads the same `PageData` for a different answer: the strong
+straight edges of the page, vertical and horizontal segments in points with a strength 0..1. The sides of the page's
+drawn rectangles, images and cut lines come first, exact, joined where they touch on one line. The grey render adds
+runs of strong, same-sign contrast down every pixel column (and along every row), found with a central difference so
+an edge between two pixels gives its whole step, merged across columns no more than two pixels apart (so a diagonal in
+the art cannot chain into a long edge), placed at the contrast-weighted mean and kept from 5 mm long (`MIN_EDGE_MM`).
+A render edge an object already explains is dropped, and each axis keeps its strongest 300. The `page_edges` command
+runs it on the render worker; the UI asks once per page and keeps the answer for the session (`lib/edges-api.ts`,
+forgotten when a PDF is opened or closed under that id).
+
 ### Errors
 
 `Error` serialises to `ErrorInfo { code, message, ...values }`: a stable code, the values the message needs (page
@@ -245,6 +255,19 @@ maths in `lib/snap.ts`: the moving thing's upright box gives its edges and middl
 to the other pieces and the region within a few screen pixels (`snapTolerance`), and the viewport draws the guides.
 The switch is `editor.snap` in preferences; `Ctrl/Cmd` held turns it off for a drag, which is why only `Shift`-click
 adds a piece to the picked ones.
+
+**Precision aids** (0.15.0) build on that. Sticky edges (`editor.snapEdges`) add the page's edges as targets, normalized
+by `edgesToNormalized`; `edgeTargets` keeps only those running along at least half of the moving box's side, so art
+inside a piece never pulls a border. Every snap is sticky: `stickyOffset` is the same search with hysteresis, as a
+pure function of the previous move's state, holding a line on its target until the pointer has moved `RELEASE_PX` from
+where it snapped, then refusing that target until the lines are clear of it. The magnet decides the page, the pieces
+and the guides; sticky edges decide the artwork's edges. The rulers (`editor.rulers`, `Ctrl/Cmd+R`) sit outside the
+canvas element, so turning them on shrinks the canvas instead of covering the page, and their tick maths is pure
+(`lib/rulers.ts`); the pointer mark is moved by the canvas through a handle, without a render. Guides live in the
+editor store, by document id, in points from the page's corner (`lib/guides.ts`), so they stay at the same distance
+on pages of different sizes; they are session state, outside undo and the project file. They show, take presses and
+are snapped to only while the rulers are on, and are drawn under the region and the pieces so a guide along a side
+never takes their handles.
 
 **Stores** (Zustand, read with per-field selectors, never the whole store): documents, the layout of the PDF being
 edited (the others are parked and swapped in), the print plan, editor session state, preferences, project state, the

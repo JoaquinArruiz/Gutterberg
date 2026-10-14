@@ -147,3 +147,29 @@ describe("sticky edges", () => {
     expect((region()?.x ?? 0) + (region()?.width ?? 0)).toBeCloseTo(EDGE_X, 9);
   });
 });
+
+describe("the sticky edges help tip", () => {
+  it("shows the first time a side sticks to an edge, not before", async () => {
+    usePreferencesStore.getState().setSnap(false);
+    await show();
+    expect(screen.queryByTestId("hint-sticky-edges")).toBeNull();
+    const body = document.querySelector('[data-hit="body"]') as Element;
+    fireEvent.pointerDown(body, at({ x: 0.5, y: 0.4 }));
+    // Not near the edge yet: no tip.
+    fireEvent.pointerMove(svg(), at({ x: 0.45, y: 0.4 }));
+    expect(screen.queryByTestId("hint-sticky-edges")).toBeNull();
+    fireEvent.pointerMove(svg(), at({ x: 0.4 + pxX(2), y: 0.4 }));
+    fireEvent.pointerUp(svg(), at({ x: 0.4 + pxX(2), y: 0.4 }));
+    expect(screen.getByTestId("hint-sticky-edges").textContent).toContain("Ctrl/Cmd");
+  });
+
+  it("does not show with help tips turned off", async () => {
+    usePreferencesStore.getState().setSnap(false);
+    usePreferencesStore.getState().setTipsOn(false);
+    await show();
+    const body = document.querySelector('[data-hit="body"]') as Element;
+    fireEvent.pointerDown(body, at({ x: 0.5, y: 0.4 }));
+    fireEvent.pointerMove(svg(), at({ x: 0.4 + pxX(2), y: 0.4 }));
+    expect(screen.queryByTestId("hint-sticky-edges")).toBeNull();
+  });
+});

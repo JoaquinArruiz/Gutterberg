@@ -17,6 +17,7 @@ import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import { dropGuide, type GuideAxis, NO_GUIDE_SET, overRuler } from "../../lib/guides";
+import { emitHintEvent } from "../../lib/hint-events";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import {
   cardBox,
@@ -62,6 +63,7 @@ import { OutputPreview } from "./OutputPreview";
 import { PagePreview } from "./PagePreview";
 import { Ruler, RulerCorner, type RulerHandle } from "./Rulers";
 import { SelectionRect } from "./SelectionRect";
+import { StickyEdgesTip } from "./StickyEdgesTip";
 
 type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
@@ -431,6 +433,8 @@ export function EditorViewport() {
      * What to snap to: with the magnet, the page, the region and the pieces not in `skip`; with sticky edges, the
      * edges in the artwork that run along `box`'s sides (none when there is no upright box).
      */
+    // The edges in the artwork among the targets, to tell when one of them holds a side.
+    let fromEdges: SnapLines = NO_GUIDES;
     const targets = (skip: number[], withRegion: boolean, box: NormalizedRect | null) => {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
@@ -440,7 +444,9 @@ export function EditorViewport() {
       const lines = magnet
         ? joinLines(snapTargets(others), rulers && ownGuides ? guidesToNormalized(ownGuides, page) : NO_GUIDES)
         : NO_GUIDES;
-      return sticky && box ? joinLines(lines, edgeTargets(box, edges.current)) : lines;
+      if (!sticky || !box) return lines;
+      fromEdges = edgeTargets(box, edges.current);
+      return joinLines(lines, fromEdges);
     };
     const snap = (moving: SnapLines, to: SnapLines) => {
       if (free) {
@@ -451,6 +457,8 @@ export function EditorViewport() {
       const s = stickyOffset(moving, to, tol, release, doc, stick.current);
       stick.current = s.state;
       setGuides(s.guides);
+      if (s.guides.xs.some((x) => fromEdges.xs.includes(x)) || s.guides.ys.some((y) => fromEdges.ys.includes(y)))
+        emitHintEvent("edge-stuck");
       return s;
     };
     if (d.kind === "card-create") {
@@ -706,6 +714,7 @@ export function EditorViewport() {
                     className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
                   />
                 )}
+                {!output && <StickyEdgesTip />}
                 {cardTool && (
                   <HintToast
                     hint="freeform-tool"
