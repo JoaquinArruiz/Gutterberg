@@ -42,6 +42,7 @@ pub fn run() {
             commands::ai::ai_test_connection,
             commands::calibration::save_calibration_sheet,
             commands::detect::detect_pieces,
+            commands::detect::page_edges,
             commands::document::open_pdf,
             commands::document::close_pdf,
             commands::project::open_project,

@@ -9,15 +9,22 @@
 //! list without changing the command or the UI. The engines are pure functions of [`PageData`] and
 //! work in PDF points with a top-left origin, in the page as displayed. A proposal is never applied
 //! by this module: the UI shows it as a draft.
+//!
+//! [`page_edges`] reads the same data for another purpose: the straight edges a region's side sticks
+//! to while it is edited (sticky edges).
 
 mod blobs;
 mod edges;
 mod objects;
+mod page_edges;
 pub mod read;
 
 pub use blobs::BlobsEngine;
 pub use edges::EdgesEngine;
 pub use objects::ObjectsEngine;
+pub use page_edges::{
+    page_edges, HorizontalEdge, PageEdges, VerticalEdge, MAX_EDGES_PER_AXIS, MIN_EDGE_MM,
+};
 
 use crate::card::OrientedRect;
 use crate::geometry::{PageSize, Rect};
