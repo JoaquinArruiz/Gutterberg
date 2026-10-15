@@ -286,9 +286,11 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
   const folders = folderNames(group);
   const nameOf = (n: number) => group.grids[n].name ?? t("source.grids.item", { n: n + 1 });
   const isRenaming = (r: ListRef) => renaming !== null && listItemKey(renaming) === listItemKey(r);
-  // The arrow keys then move what was picked, with the Grid region tool.
+  // The arrow keys then move what was picked, with the Select or the Grid tool.
   const pickOnPage = () => {
-    useEditorStore.getState().setTool("select");
+    const ed = useEditorStore.getState();
+    if (ed.tool !== "pick") ed.setTool("grid");
+    ed.setSelectedCard(null);
     useEditorStore.getState().setPickedRegion(page);
   };
   const toggleFold = (name: string) =>
@@ -652,7 +654,7 @@ function PiecesList({ page }: { page: number }) {
       <ul className="flex flex-col gap-1">
         {pieces.map((p, i) => {
           const name = t("source.grids.piece", { n: i + 1 });
-          const pressed = tool === "card" && picked.includes(i);
+          const pressed = (tool === "card" || tool === "pick") && picked.includes(i);
           return (
             // biome-ignore lint/suspicious/noArrayIndexKey: a piece's place on its page is its identity
             <li key={i} className="flex items-center gap-1">
@@ -668,7 +670,8 @@ function PiecesList({ page }: { page: number }) {
                 }
                 onClick={() => {
                   const ed = useEditorStore.getState();
-                  ed.setTool("card");
+                  if (ed.tool !== "pick") ed.setTool("card");
+                  ed.setPickedRegion(null);
                   ed.setSelectedCard({ page, index: i });
                 }}
                 className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded px-2 py-0.5 text-left ${

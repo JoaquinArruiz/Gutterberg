@@ -76,7 +76,9 @@ export function nudgePicked(dirX: number, dirY: number, big: boolean): boolean {
   if (!page) return false;
   const step = mmToPt(nudgeStepMm(big));
   const [dx, dy] = [(dirX * step) / page.width_pt, (dirY * step) / page.height_pt];
-  if (ed.tool === "card") {
+  // With the Select tool, the picked pieces when there are any, else the picked region.
+  const pieces = ed.tool === "card" || (ed.tool === "pick" && pickedOnPage().length > 0);
+  if (pieces) {
     const picked = pickedOnPage();
     if (picked.length === 0) return false;
     const own = useLayoutStore.getState().freeform[current] ?? [];
@@ -90,7 +92,7 @@ export function nudgePicked(dirX: number, dirY: number, big: boolean): boolean {
     );
     return true;
   }
-  if (ed.tool === "select" && ed.pickedRegion === current) {
+  if ((ed.tool === "grid" || ed.tool === "pick") && ed.pickedRegion === current) {
     // A picked folder moves as one.
     const folder = getPickedFolderGrids();
     if (folder.length > 0) {
@@ -145,7 +147,8 @@ export function duplicatePicked(): boolean {
   const picked = pickedOnPage();
   const { pages, currentPage } = useDocumentStore.getState();
   const page = pages[currentPage];
-  if (picked.length === 0 || !page || useEditorStore.getState().tool !== "card") return false;
+  const { tool } = useEditorStore.getState();
+  if (picked.length === 0 || !page || (tool !== "card" && tool !== "pick")) return false;
   const off = mmToPt(DUPLICATE_OFFSET_MM);
   beginEdit();
   copyPieces(currentPage, picked, off / page.width_pt, off / page.height_pt);
@@ -159,7 +162,7 @@ export function pickAllPieces(): boolean {
   const own = useLayoutStore.getState().freeform[current] ?? [];
   if (own.length === 0) return false;
   const ed = useEditorStore.getState();
-  ed.setTool("card");
+  if (ed.tool !== "pick") ed.setTool("card");
   ed.pickCards(
     current,
     own.map((_, i) => i),

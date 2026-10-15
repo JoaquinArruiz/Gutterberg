@@ -109,7 +109,7 @@ describe("drawing cards", () => {
   });
 
   it("leaves the grid tool as it was: it draws the region, not cards", () => {
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     render(<EditorViewport />);
     draw({ x: 0.2, y: 0.2 }, { x: 0.5, y: 0.45 });
     expect(cards()).toHaveLength(0);
@@ -121,7 +121,7 @@ describe("drawing cards", () => {
 
   it("shows the cards in the grid tool too, without letting them take the pointer", () => {
     layout().addFreeformCard(0, { center: { x: 0.5, y: 0.5 }, width: 0.2, height: 0.3, angle_deg: 5 });
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     render(<EditorViewport />);
     expect(screen.getByTestId("freeform-overlay").getAttribute("pointer-events")).toBe("none");
     expect(hit("rotate")).toBeNull(); // no handles when not selected for editing
@@ -217,14 +217,14 @@ describe("the sidebar section", () => {
 
   it("asks for the Piece tool when the page has pieces and another tool is active", () => {
     layout().addFreeformCard(0, start);
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     render(<FreeformSection />);
     expect(screen.getByText(/1 freeform piece on this page/)).toBeTruthy();
-    expect(screen.getByText(/Choose the Piece tool/)).toBeTruthy();
+    expect(screen.getByText(/Choose the Select tool \(V\) or the Piece tool/)).toBeTruthy();
   });
 
   it("is absent with no cards and no card tool", () => {
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     const { container } = render(<FreeformSection />);
     expect(container.firstChild).toBeNull();
   });
@@ -357,7 +357,7 @@ describe("several pieces, copies and snapping", () => {
   });
 
   it("picks the grid region when it is pressed, and snaps it while it moves", () => {
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     layout().setSelection(0, { x: 0.2, y: 0.2, width: 0.4, height: 0.4 });
     render(<EditorViewport />);
     const body = document.querySelector('[data-hit="body"]') as Element;

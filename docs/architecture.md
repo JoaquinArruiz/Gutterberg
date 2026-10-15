@@ -280,7 +280,10 @@ pieces section and, when the switch in the sheet preview's header is on (`print.
 the exported file). `pieceReference` and `documentLetter` in `lib/card.ts` build the text; with several PDFs each gets
 a letter by its place in the project (A, B, …) that goes in front.
 
-**Editing on the page.** The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
+**Editing on the page.** Four tools: Select (`pick`) takes whatever is pressed, a piece over a grid, and draws
+nothing; Grid (`grid`) draws and edits grid regions; Piece (`card`) draws and edits pieces; Pan. Select only routes a
+press to the Grid or Piece tool's own handling by what was hit (`data-card` or `data-hit`), so the drags are the same.
+The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
 show), `pickedCards` (every picked piece of that page) and `pickedRegion` (the page whose grid region the arrow keys
 move). `lib/editor-actions.ts` holds what the keys do to them (nudge, with a burst of presses held open as one undo
 step; duplicate; pick all; delete), so `App.tsx` and the viewport's Alt-drag call the same functions. Snapping is pure

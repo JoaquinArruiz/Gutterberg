@@ -267,6 +267,8 @@ export function EditorViewport() {
   const panMode = output || tool === "pan" || spaceDown;
   // The card tool edits freeform cards; skipped pages are left out of the export, so they take none.
   const cardTool = tool === "card" && !output && !skipped && !panMode;
+  // The Select tool picks and edits whatever is pressed, a piece or a grid, and draws nothing.
+  const pickTool = tool === "pick" && !output && !panMode;
   const picked = selectedCard?.page === currentPage ? selectedCard.index : null;
   // Every picked piece of this page; the handles and the magnifier are for one piece at a time.
   const pickedHere = selectedCard?.page === currentPage ? pickedCards : [];
@@ -350,14 +352,16 @@ export function EditorViewport() {
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
     if (hit === "guide") {
-      // A guide is grabbed with the Grid region or Piece tool: drag it, or back onto its ruler to delete it.
+      // A guide is grabbed with any tool but Pan: drag it, or back onto its ruler to delete it.
       const data = (e.target as SVGElement).dataset;
       const axis = data.axis === "x" ? "x" : "y";
       drag.current = { kind: "guide", axis, index: Number(data.index) };
       trackGuide(axis, Number(data.index), p);
       return;
     }
-    if (cardTool) {
+    const onPiece = (e.target as SVGElement).dataset.card !== undefined;
+    if (cardTool || (pickTool && !skipped && onPiece)) {
+      if (pickTool) ed.setPickedRegion(null);
       const L = useLayoutStore.getState();
       const own = L.freeform[currentPage] ?? NO_CARDS;
       const index = Number((e.target as SVGElement).dataset.card);
@@ -393,6 +397,14 @@ export function EditorViewport() {
       }
       return;
     }
+    const onGrid = hit === "body" || hit === "other-grid" || isHandle(hit);
+    if (pickTool && !onGrid) {
+      // A press on the empty page picks nothing.
+      ed.setSelectedCard(null);
+      ed.setPickedRegion(null);
+      return;
+    }
+    if (pickTool) ed.setSelectedCard(null);
     if (!group) return; // a skipped page has no region to edit
     // A hidden grid is out of reach; another grid pressed on the page is still picked.
     if (hiddenGrid && hit !== "other-grid") return;
@@ -647,7 +659,7 @@ export function EditorViewport() {
 
   const pageRect = viewPage ? pageScreenRect(viewport, viewPage) : null;
   const selScreen = page && selection ? rectToScreen(selection, viewport, page) : null;
-  const cursor = panMode ? (panning ? "grabbing" : "grab") : "crosshair";
+  const cursor = panMode ? (panning ? "grabbing" : "grab") : pickTool ? "default" : "crosshair";
 
   const split = viewMode === "split" && !!page;
   const unit = usePreferencesStore((s) => s.prefs.measurement.unit);
@@ -736,7 +748,7 @@ export function EditorViewport() {
                       folder={pickedFolder}
                       viewport={viewport}
                       page={page}
-                      pickable={tool === "select" && !panMode}
+                      pickable={(tool === "grid" || tool === "pick") && !panMode}
                     />
                   )}
                   {!output && selection && gridSpec && (
@@ -754,7 +766,7 @@ export function EditorViewport() {
                       <SelectionRect
                         screen={selScreen}
                         movable={!panMode && tool !== "card"}
-                        picked={tool === "select" && pickedRegion === currentPage}
+                        picked={(tool === "grid" || tool === "pick") && pickedRegion === currentPage}
                         resizable={pickedFolder === null}
                         color={current?.color}
                       />
@@ -767,7 +779,7 @@ export function EditorViewport() {
                       picked={pickedHere}
                       viewport={viewport}
                       page={page}
-                      interactive={cardTool}
+                      interactive={cardTool || (pickTool && !skipped)}
                     />
                   )}
                   {!output && <DetectOverlay viewport={viewport} page={page} />}
@@ -824,7 +836,7 @@ export function EditorViewport() {
                     className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
                   />
                 )}
-                {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
+                {!output && (tool === "grid" || tool === "pick") && !panMode && selection && !hasGridAndPieces && (
                   <HintToast
                     hint="move-region"
                     className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"

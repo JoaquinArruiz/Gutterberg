@@ -69,7 +69,7 @@ beforeEach(() => {
   useLayoutStore.getState().resetDocument(2);
   editor().setDraft(null);
   editor().setDetectError(null);
-  editor().setTool("select");
+  editor().setTool("grid");
 });
 afterEach(cleanup);
 

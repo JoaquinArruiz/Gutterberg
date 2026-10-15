@@ -64,7 +64,7 @@ beforeEach(() => {
   useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4], hash: "" }], 0);
   store().resetDocument(1);
   store().setSelection(0, TOP);
-  useEditorStore.setState({ tool: "select", pickedRegion: null, viewMode: "source", fitMode: true });
+  useEditorStore.setState({ tool: "grid", pickedRegion: null, viewMode: "source", fitMode: true });
 });
 afterEach(() => {
   cleanup();
@@ -78,7 +78,7 @@ describe("the list of grids", () => {
     fireEvent.click(screen.getByRole("button", { name: "Add grid" }));
     expect(group().grids).toHaveLength(2);
     expect(store().activeGrid).toBe(1);
-    expect(useEditorStore.getState().tool).toBe("select");
+    expect(useEditorStore.getState().tool).toBe("grid");
   });
 
   it("picks a grid and deletes one", () => {
@@ -448,5 +448,55 @@ describe("right-click menus", () => {
     fireEvent.contextMenu(svg, at({ x: 0.3, y: 0.2 }));
     pick("Hide Grid 1");
     expect(group().grids[0].hidden).toBe(true);
+  });
+});
+
+describe("the Select tool", () => {
+  const PIECE = { center: { x: 0.85, y: 0.85 }, width: 0.1, height: 0.1, angle_deg: 0 };
+  const drag = (el: Element, from: Point, to: Point) => {
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    fireEvent.pointerDown(el, at(from));
+    fireEvent.pointerMove(svg, at(to));
+    fireEvent.pointerUp(svg, at(to));
+  };
+
+  it("picks and drags a piece or a grid, whichever is pressed, and draws nothing on the empty page", async () => {
+    store().addFreeformCard(0, PIECE);
+    useEditorStore.setState({ tool: "pick", pickedRegion: 0 });
+    render(<EditorViewport />);
+    await act(async () => {});
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    // A piece: picked on its own, and moved.
+    drag(svg.querySelector("[data-hit='card'][data-card='0']") as Element, { x: 0.85, y: 0.85 }, { x: 0.8, y: 0.8 });
+    expect(useEditorStore.getState().pickedCards).toEqual([0]);
+    expect(useEditorStore.getState().pickedRegion).toBeNull();
+    expect(store().freeform[0][0].center.x).toBeLessThan(0.85);
+    // The grid: picked instead of the piece, and moved.
+    drag(svg.querySelector("[data-hit='body']") as Element, { x: 0.3, y: 0.2 }, { x: 0.35, y: 0.25 });
+    expect(useEditorStore.getState().selectedCard).toBeNull();
+    expect(useEditorStore.getState().pickedRegion).toBe(0);
+    expect(group().grids[0].selection?.x).toBeGreaterThan(TOP.x);
+    // The empty page: nothing is drawn, and nothing stays picked.
+    const before = group().grids[0].selection;
+    drag(svg, { x: 0.1, y: 0.6 }, { x: 0.3, y: 0.8 });
+    expect(group().grids[0].selection).toEqual(before);
+    expect(store().freeform[0]).toHaveLength(1);
+    expect(useEditorStore.getState().pickedRegion).toBeNull();
+  });
+
+  it("picks another grid on the page, and the list keeps the tool", async () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    useEditorStore.setState({ tool: "pick" });
+    render(<EditorViewport />);
+    await act(async () => {});
+    const other = screen.getByTestId("other-grids").querySelector("[data-hit='other-grid']") as Element;
+    fireEvent.pointerDown(other, at({ x: 0.3, y: 0.2 }));
+    fireEvent.pointerUp(other, at({ x: 0.3, y: 0.2 }));
+    expect(store().activeGrid).toBe(0);
+    cleanup();
+    render(<GridsPanel />);
+    fireEvent.click(screen.getByRole("button", { name: /^Grid 2/ }));
+    expect(useEditorStore.getState().tool).toBe("pick");
   });
 });

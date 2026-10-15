@@ -49,7 +49,7 @@ beforeEach(() => {
   editor().setDraft(null);
   editor().setDetectError(null);
   editor().setDetecting(false);
-  editor().setTool("select");
+  editor().setTool("grid");
 });
 
 describe("detecting", () => {
@@ -95,7 +95,7 @@ describe("detecting", () => {
       () => useEditorStore.getState().setTool("card"),
     ]) {
       useDocumentStore.getState().setCurrentPage(0);
-      useEditorStore.getState().setTool("select");
+      useEditorStore.getState().setTool("grid");
       await runDetect();
       expect(editor().draft).not.toBeNull();
       move();

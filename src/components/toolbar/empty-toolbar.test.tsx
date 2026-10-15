@@ -9,7 +9,8 @@ import { EditorToolbar } from "./EditorToolbar";
 import { StatusBar } from "./StatusBar";
 
 const TITLES = [
-  "Grid region (V)",
+  "Select (V)",
+  "Grid tool (G)",
   "Piece tool (C)",
   "Pan (H)",
   "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",

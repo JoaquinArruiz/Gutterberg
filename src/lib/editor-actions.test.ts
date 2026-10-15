@@ -77,7 +77,7 @@ describe("the arrow keys", () => {
   });
 
   it("move the grid region once it is picked, and change page otherwise", () => {
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     layout().setSelection(0, { x: 0.1, y: 0.1, width: 0.5, height: 0.5 });
     expect(nudgePicked(1, 0, false)).toBe(false);
     editor().setPickedRegion(0);
@@ -88,6 +88,20 @@ describe("the arrow keys", () => {
     // A region picked on another page does not move this one.
     editor().setPickedRegion(1);
     expect(nudgePicked(1, 0, false)).toBe(false);
+  });
+
+  it("move what the Select tool picked: the pieces when there are any, else the region", () => {
+    useEditorStore.setState({ tool: "pick" });
+    layout().setSelection(0, { x: 0.1, y: 0.1, width: 0.5, height: 0.5 });
+    editor().setPickedRegion(0);
+    editor().pickCards(0, [1]);
+    const x = pieces()[1].center.x;
+    expect(nudgePicked(1, 0, false)).toBe(true);
+    expect(pieces()[1].center.x).toBeCloseTo(x + mmX(1), 9);
+    editor().setSelectedCard(null);
+    expect(nudgePicked(1, 0, false)).toBe(true);
+    const group = layout().groups[0];
+    expect(group.kind === "grid" ? group.grids[0].selection?.x : 0).toBeCloseTo(0.1 + mmX(1), 9);
   });
 
   it("do nothing with nothing picked, or with the pieces picked on another page", () => {
@@ -112,7 +126,7 @@ describe("duplicate, pick all and delete", () => {
   });
 
   it("picks every piece of the page with the Piece tool", () => {
-    useEditorStore.setState({ tool: "select" });
+    useEditorStore.setState({ tool: "grid" });
     expect(pickAllPieces()).toBe(true);
     expect(editor().tool).toBe("card");
     expect(editor().pickedCards).toEqual([0, 1, 2]);
@@ -146,7 +160,7 @@ describe("the arrow keys with a folder of grids", () => {
     layout().setSelection(0, C);
     layout().setGridLook(0, 0, { folder: "Top" });
     layout().setGridLook(0, 1, { folder: "Top" });
-    useEditorStore.setState({ tool: "select", pickedRegion: 0 });
+    useEditorStore.setState({ tool: "grid", pickedRegion: 0 });
   });
 
   it("move every grid of the picked folder, and only them", () => {

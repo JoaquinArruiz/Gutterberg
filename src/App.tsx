@@ -141,7 +141,11 @@ export default function App() {
       switch (e.key) {
         case "v":
         case "V":
-          ed.setTool("select");
+          ed.setTool("pick");
+          break;
+        case "g":
+        case "G":
+          ed.setTool("grid");
           break;
         case "c":
         case "C":
@@ -154,7 +158,7 @@ export default function App() {
         case "Delete":
         case "Backspace":
           // Deletes the picked freeform pieces.
-          if (ed.tool === "card" && deletePicked()) e.preventDefault();
+          if ((ed.tool === "card" || ed.tool === "pick") && deletePicked()) e.preventDefault();
           break;
         case "Escape":
           ed.setSelectedCard(null);
