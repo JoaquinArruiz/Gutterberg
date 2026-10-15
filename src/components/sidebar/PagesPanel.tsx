@@ -120,7 +120,7 @@ function DocumentSwitcher() {
         onClick={() => void removeActiveDocument()}
         disabled={loading}
         title={t("toolbar.docName.remove")}
-        className="w-full whitespace-nowrap rounded border border-[var(--border)] px-2 py-0.5 text-[11px] hover:bg-[var(--hover)] disabled:opacity-40"
+        className="w-full whitespace-nowrap rounded border border-red-400/60 px-2 py-0.5 text-[11px] text-red-300 hover:bg-red-400/10 disabled:opacity-40"
       >
         {t("pages.removePdf")}
       </button>
@@ -141,7 +141,7 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
   return (
     <div className={`flex h-full ${vertical ? "flex-col" : "flex-row items-start"}`}>
       {count > 0 && (
-        <div className={`flex shrink-0 gap-1 ${vertical ? "flex-col px-2 pb-1" : "w-44 flex-col px-1"}`}>
+        <div className={`flex shrink-0 gap-1 ${vertical ? "flex-col px-2 pb-3" : "w-44 flex-col px-1"}`}>
           <DocumentSwitcher />
           <button
             type="button"

@@ -16,6 +16,7 @@ import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 import { AiSortSection } from "./AiSortSection";
+import { DetectControls } from "./DetectControls";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
@@ -123,6 +124,7 @@ export function PropertiesSidebar() {
               <Button onClick={() => L.setSkipped(currentPage, true)}>{t("source.skipPage")}</Button>
               <TurnIntoPiecesButton />
             </div>
+            <DetectControls />
           </CollapsibleSection>
 
           <CollapsibleSection id="cards.spacing" title={t("source.sections.gap")} info={t("source.gapNote")}>

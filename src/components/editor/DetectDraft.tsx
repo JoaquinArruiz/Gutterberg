@@ -1,14 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { orientedToScreen, rectToScreen, type ViewportState } from "../../lib/coordinates";
 import { confidenceBand, gridsFromProposal, pieceCount, piecesFromProposal } from "../../lib/detect";
 import { applyDraft, discardDraft } from "../../lib/detect-actions";
 import type { Proposal } from "../../lib/detect-api";
+import { MAX_GRIDS } from "../../lib/document-layout";
 import { cardRects } from "../../lib/grid";
 import type { PageSize } from "../../lib/tauri";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import { useActiveGrid, useCurrentGridGroup, useLayoutStore } from "../../stores/layout-store";
 import { Button } from "../ui/Button";
 
 const DRAFT = "#f59e0b";
@@ -90,6 +91,18 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
   const nextProposal = useEditorStore((s) => s.nextProposal);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const existing = useLayoutStore((s) => s.freeform[currentPage]?.length ?? 0);
+  const group = useCurrentGridGroup();
+  const active = useActiveGrid();
+  // A grid proposal on a page whose grids are drawn asks whether to add it or replace them; Enter takes the first.
+  const isGrid = proposal !== null && proposal.kind !== "rects";
+  const drawn =
+    proposal?.kind === "grid"
+      ? (group?.grids[active]?.selection ?? null) !== null
+      : (group?.grids.some((r) => r.selection !== null) ?? false);
+  const choose = isGrid && drawn;
+  const room = group ? MAX_GRIDS - group.grids.length : 0;
+  const enterAdds = useRef(false);
+  enterAdds.current = choose && room > 0;
 
   useEffect(() => {
     if (!proposal) return;
@@ -97,7 +110,7 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
       if (typingInto(e.target) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "Enter") {
         e.preventDefault();
-        applyDraft();
+        applyDraft(enterAdds.current);
       } else if (e.key === "Escape") {
         e.preventDefault();
         discardDraft();
@@ -150,9 +163,30 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
         </p>
       ))}
       <div className="flex flex-wrap gap-1.5">
-        <Button size="md" variant="primary" onClick={applyDraft}>
-          {replaces ? t("detect.replace", { count: existing }) : t("detect.apply")}
-        </Button>
+        {choose ? (
+          <>
+            <Button
+              size="md"
+              variant="primary"
+              disabled={room === 0}
+              title={room === 0 ? t("source.grids.full", { count: MAX_GRIDS }) : undefined}
+              onClick={() => applyDraft(true)}
+            >
+              {t(proposal.kind === "grid" ? "detect.addGrid" : "detect.addGrids")}
+            </Button>
+            <Button size="md" onClick={() => applyDraft()}>
+              {proposal.kind === "grid"
+                ? t("detect.replaceGrid", {
+                    name: group?.grids[active]?.name ?? t("source.grids.item", { n: active + 1 }),
+                  })
+                : t("detect.replaceGrids")}
+            </Button>
+          </>
+        ) : (
+          <Button size="md" variant="primary" onClick={() => applyDraft()}>
+            {replaces ? t("detect.replace", { count: existing }) : t("detect.apply")}
+          </Button>
+        )}
         {total > 1 && (
           <Button size="md" onClick={nextProposal}>
             {t("detect.next")}

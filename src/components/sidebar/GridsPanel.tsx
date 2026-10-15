@@ -10,7 +10,7 @@ import {
   Trash2,
   Ungroup,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
 import type { OrientedRect } from "../../lib/card";
@@ -23,15 +23,17 @@ import {
   type ListRef,
   MAX_GRID_NAME,
   MAX_GRIDS,
+  moveInGridList,
   newFolderName,
 } from "../../lib/document-layout";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useActiveGrid, useCurrentGroup, useLayoutStore, usePickedFolder } from "../../stores/layout-store";
+import { usePreferencesStore } from "../../stores/preferences-store";
 import { Button } from "../ui/Button";
+import { type MenuEntry, openContextMenu } from "../ui/ContextMenu";
 import { InfoTip } from "../ui/InfoTip";
 import { Select } from "../ui/Select";
-import { DetectControls } from "./DetectControls";
 import { type ListDrag, listItemKey, useGridListDrag } from "./use-grid-list-drag";
 
 const NO_FOLDER = "";
@@ -88,44 +90,155 @@ const LEAD = "flex h-5 w-5 shrink-0 items-center justify-center";
 /** A grid in a folder is moved right by one slot. */
 const INDENT = "pl-6";
 
-/** The swatches for a grid's colour; the first is the accent colour (no colour of its own), the last any colour. */
-function Swatches({ value, onPick }: { value: string | undefined; onPick: (hex: string | undefined) => void }) {
-  const { t } = useTranslation();
-  const custom = value !== undefined && !GRID_COLORS.some((c) => c.hex === value);
+/** One round swatch of the colour picker. */
+function Swatch({
+  hex,
+  label,
+  on,
+  onPick,
+  onContextMenu,
+}: {
+  hex: string | undefined;
+  label: string;
+  on: boolean;
+  onPick: () => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
+}) {
   return (
-    <fieldset className="m-0 flex flex-wrap gap-1 border-0 p-0">
-      <legend className="sr-only">{t("source.grids.color")}</legend>
-      {[{ id: "default" as const, hex: undefined }, ...GRID_COLORS].map((c) => (
-        <button
-          key={c.id}
-          type="button"
-          aria-pressed={value === c.hex}
-          aria-label={t(`source.grids.colors.${c.id}`)}
-          title={t(`source.grids.colors.${c.id}`)}
-          onClick={() => onPick(c.hex)}
-          className={`h-5 w-5 rounded-full border-2 ${value === c.hex ? "border-[var(--fg)]" : "border-transparent"}`}
-          style={{ background: c.hex ?? "var(--accent)" }}
-        />
-      ))}
-      {/* Any other colour, from the system's colour picker. */}
-      <label
-        title={t("source.grids.customColor")}
-        className={`relative h-5 w-5 cursor-pointer overflow-hidden rounded-full border-2 ${
-          custom ? "border-[var(--fg)]" : "border-transparent"
-        }`}
-        style={{
-          background: custom ? value : "conic-gradient(#ef4444, #f59e0b, #22c55e, #14b8a6, #3b82f6, #ec4899, #ef4444)",
+    <button
+      type="button"
+      aria-pressed={on}
+      aria-label={label}
+      title={label}
+      onClick={onPick}
+      onContextMenu={onContextMenu}
+      className={`h-5 w-5 rounded-full border-2 ${on ? "border-[var(--fg)]" : "border-transparent"}`}
+      style={{ background: hex ?? "var(--accent)" }}
+    />
+  );
+}
+
+/**
+ * A grid's colours: the suggested ones (the first is the accent colour, no colour of its own), then the user's own,
+ * kept in preferences for every project. The + adds one from the system's colour picker and gives it to the grid; a
+ * right-click on one of the user's own colours deletes it (the suggested ones stay).
+ */
+function ColorChoices({ value, onPick }: { value: string | undefined; onPick: (hex: string | undefined) => void }) {
+  const { t } = useTranslation();
+  const own = usePreferencesStore((s) => s.prefs.gridColors);
+  const addColor = usePreferencesStore((s) => s.addGridColor);
+  const deleteColor = usePreferencesStore((s) => s.deleteGridColor);
+  const input = useRef<HTMLInputElement>(null);
+  const latest = useRef(onPick);
+  latest.current = onPick;
+  // The system picker reports every move; the colour is added once, when it is closed on one ("change").
+  useEffect(() => {
+    const el = input.current;
+    if (!el) return;
+    const done = () => {
+      const hex = el.value.toLowerCase();
+      addColor(hex);
+      latest.current(hex);
+    };
+    el.addEventListener("change", done);
+    return () => el.removeEventListener("change", done);
+  }, [addColor]);
+  const heading = "text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]";
+  return (
+    <div className="flex flex-col gap-1.5">
+      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+        <legend className={heading}>{t("source.grids.suggestedColors")}</legend>
+        <div className="flex flex-wrap gap-1">
+          {[{ id: "default" as const, hex: undefined }, ...GRID_COLORS].map((c) => (
+            <Swatch
+              key={c.id}
+              hex={c.hex}
+              label={t(`source.grids.colors.${c.id}`)}
+              on={value === c.hex}
+              onPick={() => onPick(c.hex)}
+            />
+          ))}
+        </div>
+      </fieldset>
+      <fieldset className="m-0 flex flex-col gap-1 border-0 p-0">
+        <legend className={heading}>{t("source.grids.ownColors")}</legend>
+        <div className="flex flex-wrap items-center gap-1">
+          {own.map((hex) => (
+            <Swatch
+              key={hex}
+              hex={hex}
+              label={hex}
+              on={value === hex}
+              onPick={() => onPick(hex)}
+              onContextMenu={(e) =>
+                openContextMenu(e, [
+                  { label: t("source.grids.deleteColor"), danger: true, onSelect: () => deleteColor(hex) },
+                ])
+              }
+            />
+          ))}
+          <label
+            title={t("source.grids.addColor")}
+            className="relative flex h-5 w-5 cursor-pointer items-center justify-center rounded-full border border-dashed border-[var(--border)] text-[var(--muted)] hover:text-[var(--fg)]"
+          >
+            <Plus size={11} />
+            <input
+              ref={input}
+              type="color"
+              aria-label={t("source.grids.addColor")}
+              defaultValue={value ?? "#3b82f6"}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            />
+          </label>
+        </div>
+      </fieldset>
+    </div>
+  );
+}
+
+/** The colour picker that opens under a grid's dot: closes on a choice, a press outside it or Esc. */
+function ColorPopover({
+  value,
+  onPick,
+  onClose,
+}: {
+  value: string | undefined;
+  onPick: (hex: string | undefined) => void;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const ref = useRef<HTMLDivElement>(null);
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    // The right-click menu on a colour is outside the popover but belongs to it.
+    const down = (e: PointerEvent) => {
+      const el = e.target as Element;
+      if (!ref.current?.contains(el) && !el.closest?.("[data-testid=context-menu]")) close.current();
+    };
+    const key = (e: KeyboardEvent) => e.key === "Escape" && close.current();
+    window.addEventListener("pointerdown", down, true);
+    window.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("pointerdown", down, true);
+      window.removeEventListener("keydown", key);
+    };
+  }, []);
+  return (
+    <div
+      ref={ref}
+      role="dialog"
+      aria-label={t("source.grids.color")}
+      className="absolute left-0 top-6 z-20 w-56 rounded border border-[var(--border)] bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
+    >
+      <ColorChoices
+        value={value}
+        onPick={(hex) => {
+          onPick(hex);
+          onClose();
         }}
-      >
-        <input
-          type="color"
-          aria-label={t("source.grids.customColor")}
-          value={value ?? "#3b82f6"}
-          onChange={(e) => onPick(e.target.value.toLowerCase())}
-          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-        />
-      </label>
-    </fieldset>
+      />
+    </div>
   );
 }
 
@@ -189,18 +302,101 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
       pressed ? "bg-[var(--accent)] text-[var(--accent-fg)]" : "hover:bg-[var(--hover)]"
     }`;
 
+  /** Move up and Move down: past the row's neighbour in the list or in its folder, off at either end. */
+  const moveEntries = (ref: ListRef, folder: string | undefined): MenuEntry[] => {
+    const items = gridList(group);
+    const rows: ListRef[] =
+      folder === undefined
+        ? items.map((it) => (it.kind === "grid" ? { kind: "grid", n: it.n } : { kind: "folder", name: it.name }))
+        : (items.find((it) => it.kind === "folder" && it.name === folder) as { grids: number[] }).grids.map((n) => ({
+            kind: "grid",
+            n,
+          }));
+    const i = rows.findIndex((r) => listItemKey(r) === listItemKey(ref));
+    const step = (place: "before" | "after", to: ListRef | undefined): MenuEntry => ({
+      label: t(place === "before" ? "source.grids.menu.moveUp" : "source.grids.menu.moveDown"),
+      disabled: !to || moveInGridList(group, ref, { place, item: to }) === null,
+      onSelect: () => to && moveInList(page, ref, { place, item: to }),
+    });
+    return [step("before", rows[i - 1]), step("after", rows[i + 1])];
+  };
+
+  const takeOut = (ref: ListRef, folder: string): MenuEntry => ({
+    label: t("source.grids.menu.takeOut", { folder }),
+    onSelect: () => moveInList(page, ref, { place: "after", item: { kind: "folder", name: folder } }),
+  });
+
+  const gridMenu = (n: number): MenuEntry[] => {
+    const r = group.grids[n];
+    const ref: ListRef = { kind: "grid", n };
+    return [
+      { label: t("source.grids.menu.rename"), onSelect: () => setRenaming(ref) },
+      { label: t("source.grids.menu.color"), onSelect: () => setColoring(n) },
+      {
+        label: t(r.hidden ? "source.grids.menu.show" : "source.grids.menu.hide"),
+        onSelect: () => setLook(page, n, { hidden: !r.hidden }),
+      },
+      "separator",
+      ...moveEntries(ref, r.folder),
+      ...folders
+        .filter((f) => f !== r.folder)
+        .map(
+          (f): MenuEntry => ({
+            label: t("source.grids.menu.moveTo", { folder: f }),
+            onSelect: () => moveInList(page, ref, { place: "into", folder: f }),
+          }),
+        ),
+      {
+        label: t("source.grids.menu.moveToNew"),
+        onSelect: () => moveInList(page, ref, { place: "into", folder: newFolder() }),
+      },
+      // Out of its folder, a grid goes just after it, as with the pencil's Folder field.
+      ...(r.folder !== undefined ? [takeOut(ref, r.folder)] : []),
+      "separator",
+      {
+        label: t(several ? "source.grids.menu.delete" : "source.grids.menu.clear"),
+        danger: true,
+        onSelect: () => {
+          setEditing(null);
+          setColoring(null);
+          remove(page, n);
+        },
+      },
+    ];
+  };
+
+  const folderMenu = (name: string, grids: number[], allHidden: boolean): MenuEntry[] => {
+    const ref: ListRef = { kind: "folder", name };
+    return [
+      { label: t("source.grids.menu.rename"), onSelect: () => setRenaming(ref) },
+      {
+        label: t(allHidden ? "source.grids.menu.show" : "source.grids.menu.hide"),
+        disabled: grids.length === 0,
+        onSelect: () => setFolderHidden(page, name, !allHidden),
+      },
+      "separator",
+      ...moveEntries(ref, undefined),
+      "separator",
+      grids.length > 0
+        ? { label: t("source.grids.menu.ungroup"), onSelect: () => renameFolder(page, name, undefined) }
+        : { label: t("source.grids.menu.delete"), danger: true, onSelect: () => renameFolder(page, name, undefined) },
+    ];
+  };
+
   const gridRow = (n: number, folder: string | undefined) => {
     const r = group.grids[n];
     const ref: ListRef = { kind: "grid", n };
     const name = nameOf(n);
     const pressed = n === active && pickedFolder === null;
     return (
-      <li key={`g${n}`} className={`flex flex-col gap-1 ${folder !== undefined ? INDENT : ""}`}>
+      <li key={`g${n}`} className={`relative flex flex-col gap-1 ${folder !== undefined ? INDENT : ""}`}>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: the right-click menu repeats the row's buttons, so it needs no role of its own */}
         <div
           data-list-item={listItemKey(ref)}
           data-list-folder={folder}
           className={`flex items-center gap-1 rounded ${drag?.item.kind === "grid" && drag.item.n === n ? "opacity-50" : ""} ${dropClass(drag, ref)}`}
           onPointerDown={(e) => onPointerDown(ref, e)}
+          onContextMenu={(e) => openContextMenu(e, gridMenu(n))}
         >
           <span className={LEAD}>
             <button
@@ -272,15 +468,11 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
           </Button>
         </div>
         {coloring === n && editing !== n && (
-          <div className="ml-5">
-            <Swatches
-              value={r.color}
-              onPick={(color) => {
-                setLook(page, n, { color });
-                setColoring(null);
-              }}
-            />
-          </div>
+          <ColorPopover
+            value={r.color}
+            onPick={(color) => setLook(page, n, { color })}
+            onClose={() => setColoring(null)}
+          />
         )}
         {editing === n && (
           <div className="ml-5 flex flex-col gap-1.5 rounded border border-[var(--border)] p-2">
@@ -290,7 +482,7 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
               placeholder={t("source.grids.item", { n: n + 1 })}
               onCommit={(v) => setLook(page, n, { name: cleanGridName(v) })}
             />
-            <Swatches value={r.color} onPick={(color) => setLook(page, n, { color })} />
+            <ColorChoices value={r.color} onPick={(color) => setLook(page, n, { color })} />
             <Select
               label={t("source.grids.folder")}
               fill
@@ -336,10 +528,12 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
           const allHidden = item.grids.length > 0 && item.grids.every((n) => group.grids[n].hidden);
           return (
             <li key={`f${name}`} className="flex flex-col gap-1">
+              {/* biome-ignore lint/a11y/noStaticElementInteractions: the right-click menu repeats the row's buttons, so it needs no role of its own */}
               <div
                 data-list-item={listItemKey(ref)}
                 className={`flex items-center gap-1 rounded ${drag?.item.kind === "folder" && drag.item.name === name ? "opacity-50" : ""} ${dropClass(drag, ref)}`}
                 onPointerDown={(e) => onPointerDown(ref, e)}
+                onContextMenu={(e) => openContextMenu(e, folderMenu(name, item.grids, allHidden))}
               >
                 <button
                   type="button"
@@ -467,6 +661,11 @@ function PiecesList({ page }: { page: number }) {
                 type="button"
                 aria-pressed={pressed}
                 title={t("source.grids.pickPiece", { name })}
+                onContextMenu={(e) =>
+                  openContextMenu(e, [
+                    { label: t("source.grids.menu.delete"), danger: true, onSelect: () => remove(page, i) },
+                  ])
+                }
                 onClick={() => {
                   const ed = useEditorStore.getState();
                   ed.setTool("card");
@@ -541,7 +740,7 @@ export function NewFolderButton() {
 }
 
 /**
- * The Grids and pieces panel of the Source tab: Detect pieces, then the grids, folders and freeform pieces of the
+ * The Grids and pieces panel of the Source tab: the grids, folders and freeform pieces of the
  * viewed page, on its own beside Properties so the list is always in view.
  */
 export function GridsPanel() {
@@ -551,7 +750,6 @@ export function GridsPanel() {
   const group = useCurrentGroup();
   return (
     <div className="flex h-full flex-col gap-2 overflow-y-auto p-3">
-      {hasPage && group?.kind !== "skip" && <DetectControls />}
       {!hasPage ? (
         <p className="text-[var(--muted)]">{t("source.noDocument")}</p>
       ) : group?.kind === "grid" ? (

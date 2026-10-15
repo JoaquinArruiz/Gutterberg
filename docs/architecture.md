@@ -189,7 +189,7 @@ an error in the interface and not a crash at startup.
 
 ### Detection (`detect`)
 
-**Detect pieces** (at the top of the Grids and pieces panel, whose list it fills) proposes where the pieces are on the
+**Detect pieces** ("Detect on this page", at the bottom of the Layout section, whose grid it fills) proposes where the pieces are on the
 viewed page, locally. It returns proposals, best first, each
 a grid or a list of rectangles with a confidence, the engine that found it and notes (missing cells, crop marks,
 uneven sizes...). Three engines run in order, and the search stops at a confidence of 0.85:
@@ -206,7 +206,9 @@ different sizes, it also offers them together as one `Grids` proposal (up to 9, 
 their confidences), ahead of the grids one by one. Applied, they become the page group's grids.
 
 A proposal is never applied by itself. It is a draft drawn on the page (dashed outlines, its confidence and engine in
-words) that the user applies in one undo step, steps through ("Next proposal") or discards. The weights were tuned
+words) that the user applies in one undo step, steps through ("Next proposal") or discards. Once the page's grid is
+drawn, a grid proposal is either added as new grids (`addDetectedGrids`, the first one picked) or replaces the grid
+being edited, or all of them for several grids; nothing is replaced without that choice. The weights were tuned
 on generated fixtures; they are constants at the top of each engine.
 
 **Page edges** (`detect::page_edges`, for sticky edges) reads the same `PageData` for a different answer: the strong
@@ -319,7 +321,10 @@ size with its margins dashed. Orientation, margins and gap are always the user's
 ChainToggle, ...). Pairs of values that can follow each other (the horizontal and vertical gaps, a piece's width and
 height) have a chain icon beside them (`ChainToggle`, `ChainedFields`), pressed while linked;
 no native checkboxes or radios are left. Long explanations sit behind info tips; warnings and the reasons a control
-is off stay visible. AI actions are their own buttons, with a spark in the AI colour.
+is off stay visible. AI actions are their own buttons, with a spark in the AI colour. Right-click menus go through
+`ContextMenu`: `openContextMenu(event, entries)` from any element, drawn once by `ContextMenuHost` in `App.tsx`, one
+menu at a time; the entries are built where the right-click lands (the page, a row of the Grids list, a colour), so a
+menu only ever repeats actions that have a button or a key of their own.
 
 **Previews and caching.** The main view is tiled (one request in flight at a time) and the magnifier is debounced
 and renders at quarter-octave scale steps so small zoom changes reuse an image. Piece thumbnails are `render_region`
@@ -421,7 +426,8 @@ bug report under GitHub's 65,536-character limit. Only the Rust side logs; the w
 
 One versioned model (`src/lib/preferences.ts`), kept in the webview's storage. `normalizePreferences` is the only way
 raw data becomes preferences: it merges onto the defaults, drops invalid values and repairs invariants, so the rest
-of the app never sees an invalid state. A newer version's added setting appears with its default for existing users,
+of the app never sees an invalid state. The user's own grid colours (`gridColors`, version 16) are preferences, not
+project data, so they are offered in every project; a grid keeps the hex it was given even when that colour is deleted. A newer version's added setting appears with its default for existing users,
 and a migration only exists where meaning changed. Document settings (gaps, page, margins) are never preferences.
 The key is `gutterberg:preferences`; the old `pdf-card-editor:preferences` is read once and removed. On Windows and
 Linux the webview keeps its storage in a folder named `Gutterberg` (`app.appDirectoriesOverride` in `tauri.conf.json`;

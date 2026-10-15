@@ -9,6 +9,7 @@ import { StartScreen } from "./components/start/StartScreen";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
+import { ContextMenuHost } from "./components/ui/ContextMenu";
 import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
 import { Toast } from "./components/ui/Toast";
 import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
@@ -205,6 +206,7 @@ export default function App() {
       <ImageSizeDialog />
       <WelcomeDialog />
       <Toast />
+      <ContextMenuHost />
     </div>
   );
 }

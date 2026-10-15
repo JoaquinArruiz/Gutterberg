@@ -153,9 +153,27 @@ describe("the draft on the page", () => {
     expect(screen.queryByTestId("detect-bar")).toBeNull();
     expect(screen.queryByTestId("detect-overlay")?.children.length ?? 0).toBe(0);
 
+    // With the grid drawn, Enter adds the next proposal as a new grid and leaves the first one as it is.
     await detectWith({ proposals: [grid({ rows: 1, columns: 2 })], reasons: [] });
     fireEvent.keyDown(window, { key: "Enter" });
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].grid).toMatchObject({ rows: 1, columns: 2 });
+    const grids = gridGroupAt(useLayoutStore.getState().groups, 0)?.grids ?? [];
+    expect(grids.map((r) => [r.grid.rows, r.grid.columns])).toEqual([
+      [2, 4],
+      [1, 2],
+    ]);
+    expect(useLayoutStore.getState().activeGrid).toBe(1);
+  });
+
+  it("asks whether to add a grid proposal or replace the grid being edited, once that grid is drawn", async () => {
+    render(all());
+    await detectWith({ proposals: [grid({ rows: 2, columns: 4 })], reasons: [] });
+    expect(screen.queryByRole("button", { name: "Add as new grid" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await detectWith({ proposals: [grid({ rows: 3, columns: 3 })], reasons: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Replace Grid 1" }));
+    const grids = gridGroupAt(useLayoutStore.getState().groups, 0)?.grids ?? [];
+    expect(grids).toHaveLength(1);
+    expect(grids[0].grid).toMatchObject({ rows: 3, columns: 3 });
   });
 
   it("is discarded on the button and on Esc, changing nothing", async () => {

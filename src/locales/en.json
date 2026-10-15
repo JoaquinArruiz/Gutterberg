@@ -104,7 +104,14 @@
     "pageSkipped": "This page is skipped: it is left out of the export.",
     "guidesMenu": "Guides",
     "clearGuides": "Clear guides",
-    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it."
+    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it.",
+    "menu": {
+      "hideGrid": "Hide {{name}}",
+      "deleteGrid": "Delete {{name}}",
+      "clearGrid": "Clear the region of {{name}}",
+      "deletePieces_one": "Delete piece",
+      "deletePieces_other": "Delete {{count}} pieces"
+    }
   },
   "preview": {
     "title": "Preview",
@@ -249,8 +256,25 @@
       "piece": "Piece {{n}}",
       "pickPiece": "Pick {{name}} with the Piece tool",
       "skipped": "This page is skipped: it has no grids.",
-      "customColor": "Another color…",
-      "deleteLast": "Clear {{name}}: the last grid loses its region, so it can be drawn again"
+      "deleteLast": "Clear {{name}}: the last grid loses its region, so it can be drawn again",
+      "suggestedColors": "Suggested",
+      "ownColors": "Your colors",
+      "addColor": "Add a color of your own",
+      "deleteColor": "Delete color",
+      "menu": {
+        "rename": "Rename",
+        "color": "Change color",
+        "hide": "Hide",
+        "show": "Show",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "moveTo": "Move to {{folder}}",
+        "moveToNew": "Move to a new folder",
+        "takeOut": "Take out of {{folder}}",
+        "ungroup": "Ungroup",
+        "delete": "Delete",
+        "clear": "Clear region"
+      }
     }
   },
   "freeform": {
@@ -981,6 +1005,10 @@
     "apply": "Apply",
     "replace_one": "Replace {{count}} piece",
     "replace_other": "Replace {{count}} pieces",
+    "addGrid": "Add as new grid",
+    "addGrids": "Add as new grids",
+    "replaceGrid": "Replace {{name}}",
+    "replaceGrids": "Replace grids",
     "next": "Next proposal",
     "discard": "Discard",
     "notes": {

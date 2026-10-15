@@ -220,6 +220,11 @@ type LayoutState = OutputSettings & {
    * pieces keep their keys) and the rest are added. One undo step.
    */
   applyDetectedGrids: (page: number, grids: DetectedGrid[]) => void;
+  /**
+   * Adds detected grids to `page`'s group after the ones it has (as many as fit), leaving those as they are; the first
+   * new one becomes the one being edited. One undo step.
+   */
+  addDetectedGrids: (page: number, grids: DetectedGrid[]) => void;
   /** Replaces the freeform pieces of `page` with detected ones: one undo step. */
   applyDetectedPieces: (page: number, cards: OrientedRect[]) => void;
   /**
@@ -501,6 +506,19 @@ export const useLayoutStore = create<LayoutState>()(
           activeGrid: 0,
         }));
         if (created) emitHintEvent("selection-created");
+      },
+      addDetectedGrids: (page, detected) => {
+        const group = gridGroupAt(get().groups, page);
+        if (!group) return;
+        const added = detected.slice(0, MAX_GRIDS - group.grids.length).map(({ selection, ...fields }): GridRegion => {
+          const own = newGridRegion();
+          return { ...own, selection, grid: patchGrid(own.grid, fields) };
+        });
+        if (added.length === 0) return;
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grids: [...g.grids, ...added] })),
+          activeGrid: group.grids.length,
+        }));
       },
       applyDetectedPieces: (page, cards) => {
         const old = get().freeform[page]?.length ?? 0;

@@ -10,6 +10,7 @@ import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { EditorViewport } from "../editor/EditorViewport";
+import { ContextMenuHost } from "../ui/ContextMenu";
 import { GridsPanel, NewFolderButton } from "./GridsPanel";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
@@ -298,8 +299,10 @@ describe("the Grids and pieces panel", () => {
   it("gives a grid any color, and keeps the bin on the last grid, which then only loses its region", () => {
     render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Color of Grid 1" }));
-    fireEvent.change(screen.getByLabelText("Another color…"), { target: { value: "#AB12CD" } });
+    fireEvent.change(screen.getByLabelText("Add a color of your own"), { target: { value: "#AB12CD" } });
     expect(group().grids[0].color).toBe("#ab12cd");
+    // The colour is kept with the user's own ones, for every project.
+    expect(usePreferencesStore.getState().prefs.gridColors).toEqual(["#ab12cd"]);
     fireEvent.click(screen.getByRole("button", { name: "Delete Grid 1" }));
     expect(group().grids).toHaveLength(1);
     expect(group().grids[0].selection).toBeNull();
@@ -309,5 +312,118 @@ describe("the Grids and pieces panel", () => {
     store().setSkipped(0, true);
     render(<GridsPanel />);
     expect(screen.getByText("This page is skipped: it has no grids.")).toBeTruthy();
+  });
+});
+
+describe("right-click menus", () => {
+  const menu = () => screen.getByTestId("context-menu");
+  const pick = (name: string) => fireEvent.click(screen.getByRole("menuitem", { name }));
+
+  it("moves a grid up, into a new folder and out of it again, from its row", () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    const { rerender } = render(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Grid 1/ }));
+    expect(screen.getByRole("menuitem", { name: "Move up" }).hasAttribute("disabled")).toBe(true);
+    pick("Move down");
+    expect(group().grids.map((r) => r.selection)).toEqual([BOTTOM, TOP]);
+    expect(screen.queryByTestId("context-menu")).toBeNull();
+    rerender(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Grid 2/ }));
+    pick("Move to a new folder");
+    expect(group().grids.map((r) => r.folder)).toEqual(["Folder 1", undefined]);
+    rerender(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Grid 1/ }));
+    pick("Take out of Folder 1");
+    expect(group().grids[0].folder).toBeUndefined();
+  });
+
+  it("hides, ungroups and deletes from the rows' menus, and Esc closes a menu", () => {
+    store().addGrid(0);
+    store().setGridLook(0, 0, { folder: "Cards" });
+    const { rerender } = render(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Cards/ }));
+    expect(menu()).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByTestId("context-menu")).toBeNull();
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Cards/ }));
+    pick("Hide");
+    expect(group().grids[0].hidden).toBe(true);
+    rerender(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Cards/ }));
+    pick("Ungroup");
+    expect(group().grids[0].folder).toBeUndefined();
+    rerender(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.contextMenu(screen.getByRole("button", { name: /^Grid 2/ }));
+    pick("Delete");
+    expect(group().grids).toHaveLength(1);
+  });
+
+  it("keeps the user's own colors, and deletes one with a right-click; a press outside closes the colors", () => {
+    usePreferencesStore.getState().addGridColor("#123456");
+    render(
+      <>
+        <GridsPanel />
+        <ContextMenuHost />
+      </>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Color of Grid 1" }));
+    fireEvent.contextMenu(screen.getByRole("button", { name: "#123456" }));
+    pick("Delete color");
+    expect(usePreferencesStore.getState().prefs.gridColors).toEqual([]);
+    // The menu belongs to the colors: they are still open after using it.
+    expect(screen.getByRole("dialog", { name: "Grid color" })).toBeTruthy();
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("dialog", { name: "Grid color" })).toBeNull();
+  });
+
+  it("hides or deletes a grid from the page", async () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    render(
+      <>
+        <EditorViewport />
+        <ContextMenuHost />
+      </>,
+    );
+    await act(async () => {});
+    const other = screen.getByTestId("other-grids").querySelector<SVGRectElement>("[data-hit='other-grid']");
+    fireEvent.contextMenu(other as SVGRectElement, at({ x: 0.3, y: 0.2 }));
+    pick("Hide Grid 1");
+    expect(group().grids[0].hidden).toBe(true);
+    const body = screen.getByRole("img", { name: "Page canvas" }).querySelector<SVGRectElement>("[data-hit='body']");
+    fireEvent.contextMenu(body as SVGRectElement, at({ x: 0.3, y: 0.7 }));
+    pick("Delete Grid 2");
+    expect(group().grids.map((r) => r.selection)).toEqual([TOP]);
   });
 });

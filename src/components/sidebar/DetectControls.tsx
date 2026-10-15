@@ -12,7 +12,7 @@ import { Button } from "../ui/Button";
 import { InfoTip } from "../ui/InfoTip";
 
 /**
- * "Detect pieces", at the top of the Grids and pieces panel whose list it fills: proposes where the pieces are on
+ * "Detect on this page", at the bottom of the Layout section whose grid it fills: proposes where the pieces are on
  * the viewed page, found locally. The proposal is a draft on the page (see `DetectDraftBar`); nothing changes until
  * the user applies it. With AI Mode on there is a second button, Detect with AI, next to the local one; the local one
  * never touches the network.
@@ -35,7 +35,7 @@ export function DetectControls() {
   const none = here !== null && here.detection.proposals.length === 0;
   const busy = detecting || aiBusy;
   return (
-    <div className="flex flex-col gap-1.5 border-b border-[var(--border)] pb-2" data-testid="detect-controls">
+    <div className="flex flex-col gap-1.5 border-t border-[var(--border)] pt-2" data-testid="detect-controls">
       <div className="flex flex-wrap items-center gap-1.5">
         <Button disabled={busy || skipped} onClick={() => void runDetect()}>
           {detecting ? t("detect.running") : t("detect.button")}

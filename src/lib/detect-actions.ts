@@ -36,10 +36,11 @@ export function shownProposal() {
 }
 
 /**
- * Applies the proposal on show to its page: a grid sets the region and grid of the grid being edited, several grids
- * become the page's grids, and rectangles become freeform pieces.
+ * Applies the proposal on show to its page. A grid proposal either replaces (a grid: the region and grid of the grid
+ * being edited; several: the page's grids) or, with `add`, is added as new grids after the ones the page has.
+ * Rectangles become freeform pieces either way.
  */
-export function applyDraft(): void {
+export function applyDraft(add = false): void {
   const editor = useEditorStore.getState();
   const { draft } = editor;
   const proposal = shownProposal();
@@ -50,7 +51,8 @@ export function applyDraft(): void {
   const layout = useLayoutStore.getState();
   const grids = gridsFromProposal(proposal, page);
   const pieces = piecesFromProposal(proposal, page);
-  if (grids?.length === 1 && proposal.kind === "grid") layout.applyDetectedGrid(draft.page, grids[0]);
+  if (grids && add) layout.addDetectedGrids(draft.page, grids);
+  else if (grids?.length === 1 && proposal.kind === "grid") layout.applyDetectedGrid(draft.page, grids[0]);
   else if (grids) layout.applyDetectedGrids(draft.page, grids);
   else if (pieces) {
     layout.applyDetectedPieces(draft.page, pieces);

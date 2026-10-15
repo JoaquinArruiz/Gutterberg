@@ -14,7 +14,7 @@ import {
   screenToDocument,
 } from "../../lib/coordinates";
 import { pageEdges } from "../../lib/edges-api";
-import { copyPieces, moveGridsBy, movePieces, pickedOnPage } from "../../lib/editor-actions";
+import { copyPieces, deletePicked, moveGridsBy, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import {
   dropGuide,
@@ -64,6 +64,7 @@ import {
   usePickedFolder,
 } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { openContextMenu } from "../ui/ContextMenu";
 import { HintToast } from "../ui/HintToast";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
@@ -426,6 +427,38 @@ export function EditorViewport() {
     }
   };
 
+  /** Right-click on the page: Hide and Delete for a grid (the picked one or another), Delete for a piece. */
+  const onContextMenu = (e: React.MouseEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    if (output || !page || drag.current) return;
+    const data = (e.target as SVGElement).dataset;
+    const hit = data.hit;
+    if (cardTool && data.card !== undefined) {
+      const index = Number(data.card);
+      const ed = useEditorStore.getState();
+      // A piece among several picked ones deletes them all, as the Delete key does; another one on its own.
+      if (!pickedOnPage().includes(index)) ed.setSelectedCard({ page: currentPage, index });
+      const count = pickedOnPage().length;
+      openContextMenu(e, [
+        { label: t("viewport.menu.deletePieces", { count }), danger: true, onSelect: () => deletePicked() },
+      ]);
+      return;
+    }
+    if (!group || cardTool) return;
+    const n = hit === "other-grid" ? Number(data.grid) : hit === "body" || isHandle(hit) ? activeGrid : null;
+    if (n === null || !group.grids[n]) return;
+    const name = group.grids[n].name ?? t("source.grids.item", { n: n + 1 });
+    const L = useLayoutStore.getState();
+    openContextMenu(e, [
+      { label: t("viewport.menu.hideGrid", { name }), onSelect: () => L.setGridLook(currentPage, n, { hidden: true }) },
+      {
+        label: t(group.grids.length > 1 ? "viewport.menu.deleteGrid" : "viewport.menu.clearGrid", { name }),
+        danger: true,
+        onSelect: () => L.deleteGrid(currentPage, n),
+      },
+    ]);
+  };
+
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const d = drag.current;
     if (rulers) {
@@ -664,6 +697,7 @@ export function EditorViewport() {
                   className="absolute inset-0 h-full w-full select-none"
                   style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
                   onPointerDown={onPointerDown}
+                  onContextMenu={onContextMenu}
                   onPointerMove={onPointerMove}
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerUp}

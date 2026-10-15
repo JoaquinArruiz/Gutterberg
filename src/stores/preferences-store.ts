@@ -13,6 +13,7 @@ import {
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
+  normalizeGridColors,
   normalizePreferences,
   type ThemePreference,
   toggleMode,
@@ -164,6 +165,9 @@ type PreferencesState = {
   saveSizePreset: (preset: UserSizePreset) => void;
   renameSizePreset: (name: string, to: string) => void;
   deleteSizePreset: (name: string) => void;
+  /** Adds a colour to the grid colour picker's own colours (moved to the end if it was there). */
+  addGridColor: (hex: string) => void;
+  deleteGridColor: (hex: string) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
   /** The preset applies to one tab's layout. */
@@ -321,6 +325,13 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           };
         }),
       deleteSizePreset: (name) => edit((p) => ({ ...p, sizePresets: p.sizePresets.filter((x) => x.name !== name) })),
+      addGridColor: (hex) =>
+        edit((p) => {
+          const c = hex.toLowerCase();
+          return { ...p, gridColors: normalizeGridColors([...p.gridColors.filter((x) => x !== c), c]) };
+        }),
+      deleteGridColor: (hex) =>
+        edit((p) => ({ ...p, gridColors: p.gridColors.filter((x) => x !== hex.toLowerCase()) })),
       deletePreset: (name) => edit((p) => ({ ...p, presets: p.presets.filter((x) => x.name !== name) })),
       setPanelPosition: (id, position) => editLayout(layoutOfPanel(id), (l) => setPanelPosition(l, id, position)),
       setPanelCollapsed: (id, collapsed) => editLayout(layoutOfPanel(id), (l) => setPanelCollapsed(l, id, collapsed)),

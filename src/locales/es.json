@@ -104,7 +104,14 @@
     "pageSkipped": "Esta página está omitida: no se incluye en la exportación.",
     "guidesMenu": "Guías",
     "clearGuides": "Borrar las guías",
-    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla."
+    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla.",
+    "menu": {
+      "hideGrid": "Ocultar {{name}}",
+      "deleteGrid": "Eliminar {{name}}",
+      "clearGrid": "Vaciar la región de {{name}}",
+      "deletePieces_one": "Eliminar pieza",
+      "deletePieces_other": "Eliminar {{count}} piezas"
+    }
   },
   "preview": {
     "title": "Vista previa",
@@ -249,8 +256,25 @@
       "piece": "Pieza {{n}}",
       "pickPiece": "Elegir {{name}} con la Herramienta Pieza",
       "skipped": "Esta página se omite: no tiene cuadrículas.",
-      "customColor": "Otro color…",
-      "deleteLast": "Vaciar {{name}}: la última cuadrícula pierde su región, para volver a dibujarla"
+      "deleteLast": "Vaciar {{name}}: la última cuadrícula pierde su región, para volver a dibujarla",
+      "suggestedColors": "Sugeridos",
+      "ownColors": "Tus colores",
+      "addColor": "Agregar un color propio",
+      "deleteColor": "Eliminar color",
+      "menu": {
+        "rename": "Cambiar nombre",
+        "color": "Cambiar color",
+        "hide": "Ocultar",
+        "show": "Mostrar",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "moveTo": "Mover a {{folder}}",
+        "moveToNew": "Mover a una carpeta nueva",
+        "takeOut": "Sacar de {{folder}}",
+        "ungroup": "Desagrupar",
+        "delete": "Eliminar",
+        "clear": "Borrar región"
+      }
     }
   },
   "freeform": {
@@ -981,6 +1005,10 @@
     "apply": "Aplicar",
     "replace_one": "Reemplazar {{count}} pieza",
     "replace_other": "Reemplazar {{count}} piezas",
+    "addGrid": "Agregar como cuadrícula nueva",
+    "addGrids": "Agregar como cuadrículas nuevas",
+    "replaceGrid": "Reemplazar {{name}}",
+    "replaceGrids": "Reemplazar cuadrículas",
     "next": "Siguiente propuesta",
     "discard": "Descartar",
     "notes": {
