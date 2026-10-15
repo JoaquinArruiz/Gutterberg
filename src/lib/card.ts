@@ -12,6 +12,8 @@ const GridCardIdSchema = z.object({
   kind: z.literal("grid"),
   document_id: z.number().int(),
   page_index: z.number().int(),
+  /** The grid's place among the page's grids (0 = the first). Rust leaves it out when it is 0. */
+  grid: z.number().int().optional(),
   row: z.number().int(),
   column: z.number().int(),
 });
@@ -26,13 +28,23 @@ export const CardIdSchema = z.discriminatedUnion("kind", [GridCardIdSchema, Free
 /** `grid`: a card cut from a grid group. `freeform`: a card drawn one by one (M18; nothing creates it yet). */
 export type CardId = z.infer<typeof CardIdSchema>;
 
-export const gridCardId = (documentId: DocumentId, pageIndex: number, row: number, column: number): CardId => ({
+export const gridCardId = (
+  documentId: DocumentId,
+  pageIndex: number,
+  row: number,
+  column: number,
+  grid = 0,
+): CardId => ({
   kind: "grid",
   document_id: documentId,
   page_index: pageIndex,
+  ...(grid > 0 ? { grid } : {}),
   row,
   column,
 });
+
+/** The number of the grid a piece comes from (0 for the first, and for freeform pieces). */
+export const gridNumber = (id: CardId): number => (id.kind === "grid" ? (id.grid ?? 0) : 0);
 
 export const freeformCardId = (documentId: DocumentId, pageIndex: number, index: number): CardId => ({
   kind: "freeform",
@@ -41,11 +53,18 @@ export const freeformCardId = (documentId: DocumentId, pageIndex: number, index:
   index,
 });
 
-/** A stable string for `id`, usable as a Map key or React key. */
+/**
+ * A stable string for `id`, usable as a Map key or React key. A piece of a page's second or later grid has the grid's
+ * number at the end (`g:0:2:1:0:1`); the first grid's pieces have none, so their keys are the ones they had before a
+ * page could hold several grids.
+ */
 export const cardIdKey = (id: CardId): string =>
   id.kind === "grid"
-    ? `g:${id.document_id}:${id.page_index}:${id.row}:${id.column}`
+    ? `g:${id.document_id}:${id.page_index}:${id.row}:${id.column}${id.grid ? `:${id.grid}` : ""}`
     : `f:${id.document_id}:${id.page_index}:${id.index}`;
+
+/** What a piece key (`cardIdKey`) looks like: a document, a page and a place (and a grid number past the first). */
+export const CARD_KEY = /^(?:g:\d+:\d+:\d+:\d+(?::[1-9]\d*)?|f:\d+:\d+:\d+)$/;
 
 const PointSchema = z.object({ x: z.number(), y: z.number() });
 
@@ -94,21 +113,33 @@ export function documentLetter(documentIds: DocumentId[], documentId: DocumentId
   return i < 26 ? String.fromCharCode(65 + i) : `#${i + 1}`;
 }
 
+/** The number (1-based) a grid piece's reference shows for its grid, or null when it shows none. */
+const namedGrid = (id: CardId, severalGrids: boolean): number | null =>
+  id.kind === "grid" && (severalGrids || gridNumber(id) > 0) ? gridNumber(id) + 1 : null;
+
+/** Where a piece is on its page, as the library says it: `r1 c2`, `g2 · r1 c2` or `#2`. */
+export function piecePosition(id: CardId, severalGrids = false): string {
+  if (id.kind !== "grid") return t("library.thumb.freeformPosition", { n: id.index + 1 });
+  const cell = t("library.thumb.gridPosition", { row: id.row + 1, column: id.column + 1 });
+  const grid = namedGrid(id, severalGrids);
+  return grid === null ? cell : `${t("library.thumb.gridNumber", { n: grid })} · ${cell}`;
+}
+
 /**
  * A piece's reference in the words of the piece library: `p3 · r1 c2` (grid) or `p4 · #2` (freeform), with the
- * document's letter in front when there is one: `A · p3 · r1 c2`. `short` is the position alone (`r1c2`, `#2`), for a
- * place too small for the whole reference.
+ * document's letter in front when there is one: `A · p3 · r1 c2`. A piece of a page with several grids names its
+ * grid: `p3 · g2 · r1 c2`. `severalGrids` says whether its page has several (the first grid's pieces carry no number
+ * of their own). `short` is the position alone (`r1c2`, `g2 r1c2`, `#2`), for a place too small for the whole
+ * reference.
  */
-export function pieceReference(id: CardId, letter: string | null = null, short = false): string {
+export function pieceReference(id: CardId, letter: string | null = null, short = false, severalGrids = false): string {
   if (short) {
-    return id.kind === "grid"
-      ? t("library.thumb.gridShort", { row: id.row + 1, column: id.column + 1 })
-      : t("library.thumb.freeformPosition", { n: id.index + 1 });
+    if (id.kind !== "grid") return t("library.thumb.freeformPosition", { n: id.index + 1 });
+    const cell = t("library.thumb.gridShort", { row: id.row + 1, column: id.column + 1 });
+    const grid = namedGrid(id, severalGrids);
+    return grid === null ? cell : `${t("library.thumb.gridNumber", { n: grid })} ${cell}`;
   }
-  const position =
-    id.kind === "grid"
-      ? t("library.thumb.gridPosition", { row: id.row + 1, column: id.column + 1 })
-      : t("library.thumb.freeformPosition", { n: id.index + 1 });
+  const position = piecePosition(id, severalGrids);
   const label = t("library.thumb.label", { page: id.page_index + 1, position });
   return letter ? `${letter} · ${label}` : label;
 }

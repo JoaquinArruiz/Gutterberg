@@ -172,7 +172,8 @@
       "layout": "Source layout",
       "gap": "Source gap",
       "output": "Output",
-      "selection": "Selection position"
+      "selection": "Selection position",
+      "grids": "Grids"
     },
     "size": "Size",
     "total": "Total",
@@ -202,6 +203,16 @@
       "everyPage_one": "This page",
       "everyPage_other": "Every page of the group ({{count}})",
       "everyPageHint": "All of them become pieces, and their grid region is cleared."
+    },
+    "grids": {
+      "item": "Grid {{n}}",
+      "noRegion": "no region",
+      "pick": "Edit grid {{n}}",
+      "add": "Add grid",
+      "addTitle": "Add another grid to this page, for pieces of another size, then draw its region on the page",
+      "full": "A page can hold up to {{count}} grids.",
+      "delete": "Delete grid {{n}}",
+      "note": "Each grid has its own region, rows, columns and gap. The settings below are the picked grid's, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it."
     }
   },
   "freeform": {
@@ -249,14 +260,18 @@
     "toPage": "To page",
     "to": "to",
     "sameSize": "All pages of the same size (skipped pages stay skipped)",
-    "skippedNoGrid": "This page is skipped, so it has no grid to copy."
+    "skippedNoGrid": "This page is skipped, so it has no grid to copy.",
+    "which": "What to copy",
+    "thisGrid": "Grid {{n}} ({{rows}}×{{columns}})",
+    "allGrids": "All {{count}} grids ({{grids}})",
+    "descriptionSeveral": "Copies grids and their piece regions from page {{page}}. Each target becomes its own group, so you can edit it separately afterwards."
   },
   "library": {
     "openPdf": "Open a PDF to see its pieces.",
     "show": "Show",
     "filterLabel": "Filter pieces by group",
     "all": "All pieces",
-    "group": "{{range}} ({{rows}}×{{columns}})",
+    "group": "{{range}} ({{grids}})",
     "page": "Page",
     "showOnlyPage": "Show only page",
     "selectAll": "Select all",
@@ -283,6 +298,7 @@
     "thumb": {
       "gridPosition": "r{{row}} c{{column}}",
       "freeformPosition": "#{{n}}",
+      "gridNumber": "g{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Page {{page}}, {{position}} · {{size}}",
       "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°",
@@ -293,7 +309,7 @@
       "gridShort": "r{{row}}c{{column}}"
     },
     "allOfDocument": "All pieces of {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "groupIn": "{{name}}: {{range}} ({{grids}})",
     "pickingBack": "Click the piece to use as the back of the selection. Esc cancels."
   },
   "print": {
@@ -782,8 +798,8 @@
     },
     "grid-and-pieces": {
       "one": {
-        "title": "A grid and pieces on one page",
-        "text": "A page can have one grid and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Turn into pieces, then draw the next grid."
+        "title": "Grids and pieces on one page",
+        "text": "A page can have several grids and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Add grid under Grids, draw the next one, and so on."
       }
     },
     "move-region": {
@@ -907,6 +923,8 @@
     "draft": "Proposal",
     "gridSize_one": "{{rows}} × {{columns}} = {{count}} piece",
     "gridSize_other": "{{rows}} × {{columns}} = {{count}} pieces",
+    "gridsSize_one": "{{grids}} = {{count}} piece",
+    "gridsSize_other": "{{grids}} = {{count}} pieces",
     "pieceCount_one": "{{count}} piece",
     "pieceCount_other": "{{count}} pieces",
     "engines": {

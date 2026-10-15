@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { orientedToScreen, rectToScreen, type ViewportState } from "../../lib/coordinates";
-import { confidenceBand, gridFromProposal, pieceCount, piecesFromProposal } from "../../lib/detect";
+import { confidenceBand, gridsFromProposal, pieceCount, piecesFromProposal } from "../../lib/detect";
 import { applyDraft, discardDraft } from "../../lib/detect-actions";
 import type { Proposal } from "../../lib/detect-api";
 import { cardRects } from "../../lib/grid";
@@ -30,18 +30,18 @@ export function DetectOverlay({ viewport, page }: { viewport: ViewportState; pag
   const proposal = useShownProposal();
   if (!proposal) return null;
   const common = { fill: DRAFT, fillOpacity: 0.1, stroke: DRAFT, strokeWidth: 1.5, strokeDasharray: "6 3" };
-  const grid = gridFromProposal(proposal, page);
+  const grids = gridsFromProposal(proposal, page) ?? [];
   const pieces = piecesFromProposal(proposal, page);
   return (
     <g pointerEvents="none" data-testid="detect-overlay">
-      {grid &&
+      {grids.flatMap((grid, n) =>
         cardRects(grid.selection, { ...grid, gapXMm: grid.sourceGapXMm, gapYMm: grid.sourceGapYMm }, page).map(
           (r, i) => {
             const s = rectToScreen(r, viewport, page);
             return (
               <rect
                 // biome-ignore lint/suspicious/noArrayIndexKey: the cells of a grid have no id; their place is their identity
-                key={i}
+                key={`${n}:${i}`}
                 data-testid="detect-piece"
                 x={s.x}
                 y={s.y}
@@ -51,7 +51,8 @@ export function DetectOverlay({ viewport, page }: { viewport: ViewportState; pag
               />
             );
           },
-        )}
+        ),
+      )}
       {pieces?.map((r, i) => {
         const s = orientedToScreen(r, viewport, page);
         return (
@@ -112,7 +113,9 @@ export function DetectDraftBar({ className = "" }: { className?: string }) {
   const size =
     proposal.kind === "grid"
       ? t("detect.gridSize", { rows: proposal.rows, columns: proposal.columns, count })
-      : t("detect.pieceCount", { count });
+      : proposal.kind === "grids"
+        ? t("detect.gridsSize", { grids: proposal.grids.map((g) => `${g.rows} × ${g.columns}`).join(", "), count })
+        : t("detect.pieceCount", { count });
   const replaces = proposal.kind === "rects" && existing > 0;
   return (
     <div

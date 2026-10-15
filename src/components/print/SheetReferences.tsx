@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { cardIdKey, documentLetter, pieceReference } from "../../lib/card";
 import type { OutputSheet } from "../../lib/sheet-api";
 import { useDocumentStore } from "../../stores/document-store";
+import { useSeveralGrids } from "../../stores/layout-store";
 import { usePrintStore } from "../../stores/print-store";
 
 const MIN_FONT = 7;
@@ -25,6 +26,7 @@ export function SheetReferences({ sheet, k }: { sheet: OutputSheet; k: number })
   const documentIds = useDocumentStore((s) => s.documents.map((d) => d.id).join(","));
   const commonBack = usePrintStore((s) => s.finish.duplex.commonBack);
   const ids = documentIds === "" ? [] : documentIds.split(",").map(Number);
+  const severalGrids = useSeveralGrids();
   const onBack = sheet.side === "back";
   return (
     <div className="pointer-events-none absolute inset-0" data-testid="sheet-references" aria-hidden>
@@ -34,10 +36,10 @@ export function SheetReferences({ sheet, k }: { sheet: OutputSheet; k: number })
         const font = Math.max(MIN_FONT, Math.min(MAX_FONT, h * 0.12));
         const letter = documentLetter(ids, p.card_id.document_id);
         const common = onBack && commonBack === cardIdKey(p.card_id);
-        const whole = pieceReference(p.card_id, letter);
-        const candidates = common
-          ? [`${whole} · ${t("library.thumb.commonBadge")}`, whole, pieceReference(p.card_id, null, true)]
-          : [whole, pieceReference(p.card_id, null, true)];
+        const several = severalGrids(p.card_id.document_id, p.card_id.page_index);
+        const whole = pieceReference(p.card_id, letter, false, several);
+        const short = pieceReference(p.card_id, null, true, several);
+        const candidates = common ? [`${whole} · ${t("library.thumb.commonBadge")}`, whole, short] : [whole, short];
         const text = candidates.find((c) => widthOf(c, font) <= w - 4 && font + PAD_Y * 2 <= h - 4);
         if (!text) return null;
         return (

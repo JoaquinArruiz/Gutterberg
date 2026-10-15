@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.16.0 | `0.16-several-grids.md` | Several grids on one page | 7 | unchanged |
 | 0.17.0 | `0.17-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
 

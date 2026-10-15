@@ -24,18 +24,20 @@ export type Note = z.infer<typeof NoteSchema>;
 
 const Common = { confidence: z.number(), engine: z.string(), notes: z.array(NoteSchema).default([]) };
 
+const GridFields = {
+  /** The outer box of all the pieces, gaps included, in points. */
+  bounds: RectSchema,
+  rows: z.number().int().min(1),
+  columns: z.number().int().min(1),
+  source_gap_x_mm: z.number(),
+  source_gap_y_mm: z.number(),
+};
+
 export const ProposalSchema = z.discriminatedUnion("kind", [
-  z.object({
-    kind: z.literal("grid"),
-    /** The outer box of all the pieces, gaps included, in points. */
-    bounds: RectSchema,
-    rows: z.number().int().min(1),
-    columns: z.number().int().min(1),
-    source_gap_x_mm: z.number(),
-    source_gap_y_mm: z.number(),
-    ...Common,
-  }),
+  z.object({ kind: z.literal("grid"), ...GridFields, ...Common }),
   z.object({ kind: z.literal("rects"), rects: z.array(OrientedRectSchema), ...Common }),
+  /** Several grids side by side, one per size of piece, in reading order. */
+  z.object({ kind: z.literal("grids"), grids: z.array(z.object(GridFields)).min(1), ...Common }),
 ]);
 export type Proposal = z.infer<typeof ProposalSchema>;
 

@@ -35,8 +35,41 @@ export const DEFAULT_GROUP_GRID: GroupGrid = {
   sourceGapLinked: true,
 };
 
-/** Pages cut into cards with one grid inside one region (normalized to the page; null = not drawn yet). */
-export type GridGroup = { kind: "grid"; pages: PageRange; grid: GroupGrid; selection: NormalizedRect | null };
+/** One grid of a group: how it divides its region, and the region (normalized to the page; null = not drawn yet). */
+export type GridRegion = { grid: GroupGrid; selection: NormalizedRect | null };
+
+/**
+ * Pages cut into pieces with one or more grids, each inside its own region. There is always at least one; a grid's
+ * place in the list is its number in its pieces' ids (`CardId.grid`), so the first grid's pieces keep the ids they had
+ * before a page could hold several.
+ */
+export type GridGroup = { kind: "grid"; pages: PageRange; grids: GridRegion[] };
+
+/** How many grids a page can hold. */
+export const MAX_GRIDS = 9;
+
+/** A new grid with the default settings and no region. */
+export const newGridRegion = (): GridRegion => ({ grid: { ...DEFAULT_GROUP_GRID }, selection: null });
+
+/** A grid group with one grid, as every group had before a page could hold several. */
+export const singleGridGroup = (pages: PageRange, grid: GroupGrid, selection: NormalizedRect | null): GridGroup => ({
+  kind: "grid",
+  pages,
+  grids: [{ grid, selection }],
+});
+
+/** `active` (the grid being edited) brought into the group's list. */
+export const activeIndex = (g: GridGroup, active: number): number => Math.min(Math.max(active, 0), g.grids.length - 1);
+
+/** The grid of `g` being edited. */
+export const activeRegion = (g: GridGroup, active: number): GridRegion => g.grids[activeIndex(g, active)];
+
+/** The grids of `g` whose region is drawn, with their numbers. */
+export const drawnGrids = (g: GridGroup): { n: number; region: GridRegion & { selection: NormalizedRect } }[] =>
+  g.grids.flatMap((region, n) => (region.selection ? [{ n, region: { ...region, selection: region.selection } }] : []));
+
+/** Whether any grid of `g` has a region drawn. */
+export const hasRegion = (g: GridGroup): boolean => g.grids.some((r) => r.selection !== null);
 /** Pages left out of the export. */
 export type SkipGroup = { kind: "skip"; pages: PageRange };
 export type PageGroup = GridGroup | SkipGroup;
@@ -59,9 +92,7 @@ export const rangeLabel = (r: PageRange) =>
 /** One grid group over all pages: the starting point for a new document. */
 export function defaultGroups(totalPages: number): PageGroup[] {
   if (totalPages <= 0) return [];
-  return [
-    { kind: "grid", pages: { first: 0, last: totalPages - 1 }, grid: { ...DEFAULT_GROUP_GRID }, selection: null },
-  ];
+  return [singleGridGroup({ first: 0, last: totalPages - 1 }, { ...DEFAULT_GROUP_GRID }, null)];
 }
 
 export const groupIndexAt = (groups: PageGroup[], page: number) =>
@@ -150,7 +181,7 @@ export function setSkipped(groups: PageGroup[], page: number, skip: boolean): Pa
     out[i] = { ...next, pages: { first: page, last: next.pages.last } };
     return out;
   }
-  out[i] = { kind: "grid", pages: range, grid: { ...DEFAULT_GROUP_GRID }, selection: null };
+  out[i] = singleGridGroup(range, { ...DEFAULT_GROUP_GRID }, null);
   return out;
 }
 
@@ -163,31 +194,79 @@ export function updateGridGroup(groups: PageGroup[], page: number, edit: (g: Gri
   return next === g ? groups : groups.map((x, j) => (j === i ? next : x));
 }
 
-/**
- * Clears the piece region of `page`'s grid group (the grid keeps its rows, columns and gaps, and finds no pieces until
- * a region is drawn again). With `onlyPage` the page leaves its group first, as in "Apply this grid to…", so the
- * other pages of the group keep their region.
- */
-export function clearGridRegion(groups: PageGroup[], page: number, onlyPage: boolean): PageGroup[] {
-  const g = gridGroupAt(groups, page);
-  if (!g || g.selection === null) return groups;
-  if (!onlyPage) return updateGridGroup(groups, page, (x) => ({ ...x, selection: null }));
-  const range = { first: page, last: page };
-  return replaceRange(groups, range, { ...g, pages: range, selection: null });
+/** Applies `edit` to grid number `n` of the grid group `page` belongs to (every page of the group). */
+export function updateGrid(
+  groups: PageGroup[],
+  page: number,
+  n: number,
+  edit: (r: GridRegion) => GridRegion,
+): PageGroup[] {
+  return updateGridGroup(groups, page, (g) => {
+    const region = g.grids[n];
+    if (!region) return g;
+    const next = edit(region);
+    return next === region ? g : { ...g, grids: g.grids.map((r, i) => (i === n ? next : r)) };
+  });
 }
 
-/** Copies the grid and region of the grid group at `source` onto `pages`, as separate groups from the one they came from. */
-export function applyGridTo(groups: PageGroup[], source: number, pages: number[]): PageGroup[] {
+/** Adds a grid with no region to the grid group `page` belongs to, up to `MAX_GRIDS`. */
+export function addGrid(groups: PageGroup[], page: number): PageGroup[] {
+  return updateGridGroup(groups, page, (g) =>
+    g.grids.length >= MAX_GRIDS ? g : { ...g, grids: [...g.grids, newGridRegion()] },
+  );
+}
+
+/**
+ * Deletes grid number `n` of the grid group `page` belongs to; the grids after it move up a place. The last grid of a
+ * group is not deleted but loses its region, so a grid group always has one.
+ */
+export function deleteGrid(groups: PageGroup[], page: number, n: number): PageGroup[] {
+  return updateGridGroup(groups, page, (g) => {
+    if (!g.grids[n]) return g;
+    if (g.grids.length === 1) return { ...g, grids: [{ ...g.grids[0], selection: null }] };
+    return { ...g, grids: g.grids.filter((_, i) => i !== n) };
+  });
+}
+
+/**
+ * Clears the piece region of grid number `n` of `page`'s grid group (the grid keeps its rows, columns and gaps, and
+ * finds no pieces until a region is drawn again). With `onlyPage` the page leaves its group first, as in "Apply this
+ * grid to…", so the other pages of the group keep their region.
+ */
+export function clearGridRegion(groups: PageGroup[], page: number, onlyPage: boolean, n = 0): PageGroup[] {
+  const g = gridGroupAt(groups, page);
+  if (!g?.grids[n] || g.grids[n].selection === null) return groups;
+  const clear = (x: GridGroup): GridGroup => ({
+    ...x,
+    grids: x.grids.map((r, i) => (i === n ? { ...r, selection: null } : r)),
+  });
+  if (!onlyPage) return updateGridGroup(groups, page, clear);
+  const range = { first: page, last: page };
+  return replaceRange(groups, range, clear({ ...g, pages: range }));
+}
+
+const copyRegion = (r: GridRegion): GridRegion => ({
+  grid: { ...r.grid },
+  selection: r.selection ? { ...r.selection } : null,
+});
+
+/**
+ * Copies grids of the grid group at `source` onto `pages`, as separate groups from the one they came from: grid
+ * number `which` (the page then has that grid alone), or every grid with `"all"`.
+ */
+export function applyGridTo(
+  groups: PageGroup[],
+  source: number,
+  pages: number[],
+  which: number | "all" = 0,
+): PageGroup[] {
   const from = gridGroupAt(groups, source);
   if (!from) return groups;
+  const grids = which === "all" ? from.grids : from.grids[which] ? [from.grids[which]] : [];
+  if (grids.length === 0) return groups;
   let out = groups;
   for (const run of runsOf(pages)) {
-    out = replaceRange(out, run, {
-      kind: "grid",
-      pages: run,
-      grid: { ...from.grid },
-      selection: from.selection ? { ...from.selection } : null,
-    });
+    out = replaceRange(out, run, { kind: "grid", pages: run, grids: grids.map(copyRegion) });
   }
   return out;
 }
@@ -219,9 +298,15 @@ export function clampRange(first: number, last: number, totalPages: number): Pag
   return { first: clamp(a, 0, totalPages - 1), last: clamp(b, 0, totalPages - 1) };
 }
 
+/** The drawn grids of `g` as rows × columns, in order: "3×3", "3×3, 2×4". */
+export const gridsLabel = (g: GridGroup): string =>
+  drawnGrids(g)
+    .map(({ region }) => `${region.grid.rows}×${region.grid.columns}`)
+    .join(", ");
+
 /**
  * Short label for a thumbnail whose page belongs to a different group than the viewed one:
- * the grid ("3×3"), "No region" until one is drawn, or "Skipped", plus the freeform pieces the page
+ * the grids ("3×3", "3×3, 2×2"), "No region" until one is drawn, or "Skipped", plus the freeform pieces the page
  * has ("3×3 + 2", "2 pieces"). Null for the viewed group.
  */
 export function pageBadge(
@@ -234,8 +319,8 @@ export function pageBadge(
   if (!g || g === groupAt(groups, viewed)) return null;
   if (g.kind === "skip") return t("pages.badge.skipped");
   const own = freeform[page]?.length ?? 0;
-  if (!g.selection) return own > 0 ? t("pages.badge.pieces", { count: own }) : t("pages.badge.noRegion");
-  return `${g.grid.rows}×${g.grid.columns}${own > 0 ? ` + ${own}` : ""}`;
+  if (!hasRegion(g)) return own > 0 ? t("pages.badge.pieces", { count: own }) : t("pages.badge.noRegion");
+  return `${gridsLabel(g)}${own > 0 ? ` + ${own}` : ""}`;
 }
 
 export type GridPatch = Partial<GroupGrid>;

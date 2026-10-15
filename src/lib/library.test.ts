@@ -28,9 +28,12 @@ const visible = cards.map((c) => cardIdKey(c.id));
 
 describe("filterCards", () => {
   const sel = { x: 0, y: 0, width: 1, height: 1 };
-  let groups = updateGridGroup(defaultGroups(2), 0, (g) => ({ ...g, selection: sel }));
+  let groups = updateGridGroup(defaultGroups(2), 0, (g) => ({ ...g, grids: [{ ...g.grids[0], selection: sel }] }));
   groups = applyGridTo(groups, 0, [1]);
-  groups = updateGridGroup(groups, 1, (g) => ({ ...g, grid: patchGrid(g.grid, { rows: 2 }) }));
+  groups = updateGridGroup(groups, 1, (g) => ({
+    ...g,
+    grids: [{ ...g.grids[0], grid: patchGrid(g.grids[0].grid, { rows: 2 }) }],
+  }));
   const docs = [{ id: 0, groups }];
 
   it("shows everything, one group or one page", () => {

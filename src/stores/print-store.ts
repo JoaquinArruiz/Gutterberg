@@ -2,7 +2,7 @@ import { temporal } from "zundo";
 import { create } from "zustand";
 import { shallow } from "zustand/shallow";
 import { cardIdKey } from "../lib/card";
-import { isCardOfDocument, keyAfterDelete, rekeyRecord, remapRecord } from "../lib/card-edits";
+import { isCardOfDocument, keyAfterDelete, rekeyRecord, remapKeys, remapRecord } from "../lib/card-edits";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { cleanFinish, type Finish } from "../lib/finish";
 import { emitHintEvent } from "../lib/hint-events";
@@ -25,7 +25,7 @@ import {
   type SheetGridMode,
 } from "../lib/print-request";
 import type { Card, OutputSheet } from "../lib/sheet-api";
-import { HISTORY_LIMIT, onCardKeysMoved, onFreeformCardDeleted } from "./layout-store";
+import { HISTORY_LIMIT, onCardKeysMoved, onFreeformCardDeleted, onGridDeleted } from "./layout-store";
 
 const grid = (n: number) => Math.min(Math.max(Math.round(Number.isFinite(n) ? n : 1), 1), MAX_SHEET_GRID);
 
@@ -194,6 +194,22 @@ onFreeformCardDeleted((documentId, page, index) => {
       quantities: remapRecord(s.quantities, documentId, page, index),
       selection: { selected: kept, anchor },
       finish: common === null ? s.finish : withCommonBack(s.finish, keyAfterDelete(common, documentId, page, index)),
+    };
+  });
+  usePrintStore.temporal.getState().clear();
+});
+
+// A grid was deleted: its pieces' copies and selection go, and the grids after it have new keys.
+onGridDeleted((to) => {
+  usePrintStore.setState((s) => {
+    const common = s.finish.duplex.commonBack;
+    return {
+      quantities: remapKeys(s.quantities, to),
+      selection: {
+        selected: s.selection.selected.flatMap((k) => to(k) ?? []),
+        anchor: s.selection.anchor === null ? null : to(s.selection.anchor),
+      },
+      finish: common === null ? s.finish : withCommonBack(s.finish, to(common)),
     };
   });
   usePrintStore.temporal.getState().clear();

@@ -267,9 +267,7 @@ fn copies_of_a_card_share_one_card_form_and_the_page_is_stored_once() {
     let size = page_size(&doc, 0).unwrap();
     let groups = [PageGroup {
         pages: PageRange { first: 0, last: 0 },
-        kind: PageGroupKind::Grid {
-            grid: sample_grid(3.0),
-        },
+        kind: PageGroupKind::grid(sample_grid(3.0)),
     }];
     let first = extract_cards(0, &[size], &groups).unwrap().remove(0);
     let spec = SheetSpec {

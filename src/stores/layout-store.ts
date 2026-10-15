@@ -7,25 +7,35 @@ import {
   type CardEdits,
   editsAfterDelete,
   editsAfterRekey,
+  editsAfterRemap,
   editsWithoutFreeform,
   isCardOfDocument,
+  keyAfterGridDelete,
   NO_EDITS,
 } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
 import type { DetectedGrid } from "../lib/detect";
 import {
+  activeIndex,
+  activeRegion,
+  addGrid,
   applyGridTo,
   clearGridRegion,
   defaultGroups,
+  deleteGrid,
   type FreeformCards,
   type GridPatch,
+  type GridRegion,
   gridGroupAt,
   groupAt,
   isSkipped,
   MAX_GAP_MM,
+  MAX_GRIDS,
+  newGridRegion,
   type PageGroup,
   patchGrid,
   setSkipped,
+  updateGrid,
   updateGridGroup,
 } from "../lib/document-layout";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
@@ -110,7 +120,7 @@ export const outputSettings = (s: OutputSettings): OutputSettings => ({
  * `live` are not part of history.
  *
  * Edits to a grid or its region take the page being viewed: they apply to the whole group
- * that page belongs to.
+ * that page belongs to, and to the grid being edited there (`activeGrid`) unless they name one.
  */
 type LayoutState = OutputSettings & {
   /** Page groups covering every page, in order. See `lib/document-layout.ts`. */
@@ -124,6 +134,13 @@ type LayoutState = OutputSettings & {
   parked: Record<DocumentId, DocLayout>;
   /** Turn, scale and order the user gave the library's cards. */
   cardEdits: CardEdits;
+  /**
+   * The grid being edited on the viewed page, when its group has several (its place in the group's list). Session
+   * state, outside undo; it goes back to the first grid when the page moves to another group, and is read through
+   * `activeIndex`, so a number past the end means the last grid.
+   */
+  activeGrid: number;
+  setActiveGrid: (n: number) => void;
   /** Live output preview for this session (initial value = Live Preview preference). */
   live: boolean;
   /** Result frozen by "Update preview" (manual mode). */
@@ -150,19 +167,31 @@ type LayoutState = OutputSettings & {
   removeDocument: (id: DocumentId, next: DocumentId | null) => void;
   /** Edit the PDF `to` instead of `from`: `from`'s layout is parked and `to`'s is taken up. No history. */
   switchDocument: (from: DocumentId, to: DocumentId) => void;
-  setSelection: (page: number, r: NormalizedRect | null) => void;
+  setSelection: (page: number, r: NormalizedRect | null, grid?: number) => void;
+  /** Adds a grid with no region to `page`'s group and makes it the one being edited, so the next drag draws it. */
+  addGrid: (page: number) => void;
+  /**
+   * Deletes grid `n` of `page`'s group: its pieces leave the library, with their turn, size, order, backs and copies,
+   * and the grids after it move up a place (their pieces' keys follow). The last grid only loses its region.
+   */
+  deleteGrid: (page: number, n: number) => void;
   /** Adds a freeform card to `page`; returns its index there (its identity in the library). */
   addFreeformCard: (page: number, card: OrientedRect) => number;
   updateFreeformCard: (page: number, index: number, card: OrientedRect) => void;
   /** Removes a freeform card; later cards move up, and their turn, scale and place in the order with them. */
   deleteFreeformCard: (page: number, index: number) => void;
   setCardEdits: (edits: CardEdits) => void;
-  /** Sets the region and grid of `page`'s group from a detected grid: one undo step. */
+  /** Sets the region and grid of the grid being edited in `page`'s group from a detected grid: one undo step. */
   applyDetectedGrid: (page: number, grid: DetectedGrid) => void;
+  /**
+   * Puts several detected grids in `page`'s group, one per grid: the ones the group has are replaced in order (their
+   * pieces keep their keys) and the rest are added. One undo step.
+   */
+  applyDetectedGrids: (page: number, grids: DetectedGrid[]) => void;
   /** Replaces the freeform pieces of `page` with detected ones: one undo step. */
   applyDetectedPieces: (page: number, cards: OrientedRect[]) => void;
   /**
-   * Turns the grid of `page`'s group into freeform pieces, on this page only or on every page of the group: the cells
+   * Turns the grid being edited in `page`'s group into freeform pieces, on this page only or on every page of the group: the cells
    * (`cards` are the engine's) become pieces at the same place and size, the region is cleared and the pieces' turn,
    * size, place in the order and backs follow. One undo step. Returns how many pieces were made.
    */
@@ -171,8 +200,8 @@ type LayoutState = OutputSettings & {
   setSkipped: (page: number, skip: boolean) => void;
   /** Sets the skip state of several pages at once (page index to skipped): one undo step. */
   applySkips: (skips: Record<number, boolean>) => void;
-  /** Copy the grid and region of `page`'s group onto `pages`. */
-  applyGrid: (page: number, pages: number[]) => void;
+  /** Copy the grid being edited (and its region) of `page`'s group onto `pages`, or every grid with `"all"`. */
+  applyGrid: (page: number, pages: number[], which?: number | "all") => void;
   setGapX: (mm: number) => void;
   setGapY: (mm: number) => void;
   setGapLinked: (linked: boolean) => void;
@@ -216,6 +245,20 @@ export function onFreeformCardDeleted(fn: (documentId: DocumentId, page: number,
   };
 }
 
+// Deleting a grid renumbers the grids after it on the pages of its group: `to` says what became of each key (null:
+// the piece is gone). The Print stage's copies, selection and common back follow.
+const gridDeletedListeners = new Set<(to: (key: string) => string | null) => void>();
+export function onGridDeleted(fn: (to: (key: string) => string | null) => void): () => void {
+  gridDeletedListeners.add(fn);
+  return () => {
+    gridDeletedListeners.delete(fn);
+  };
+}
+
+/** The region of grid `n` of `page`'s group. */
+const regionOf = (groups: PageGroup[], page: number, n: number): GridRegion | undefined =>
+  gridGroupAt(groups, page)?.grids[n];
+
 // A grid turned into freeform pieces: the pieces have new keys. Copies and selection in the Print stage follow.
 const movedListeners = new Set<(moves: Record<string, string>) => void>();
 export function onCardKeysMoved(fn: (moves: Record<string, string>) => void): () => void {
@@ -233,17 +276,19 @@ export const useLayoutStore = create<LayoutState>()(
       parked: {},
       cardEdits: NO_EDITS,
       ...DEFAULT_OUTPUT,
+      activeGrid: 0,
+      setActiveGrid: (activeGrid) => set({ activeGrid: Math.max(0, activeGrid) }),
       // Session state: starts from the Live Preview preference, toggling it does not change the preference.
       live: sessionDefaults(usePreferencesStore.getState().prefs).live,
       snapshot: null,
       result: null,
       layoutError: null,
       resetDocument: (pageCount) => {
-        set({ groups: defaultGroups(pageCount), freeform: {}, parked: {}, cardEdits: NO_EDITS });
+        set({ groups: defaultGroups(pageCount), freeform: {}, parked: {}, cardEdits: NO_EDITS, activeGrid: 0 });
         useLayoutStore.temporal.getState().clear();
       },
       loadProject: ({ active, parked, output, edits }) => {
-        set({ ...output, groups: active.groups, freeform: active.freeform, parked, cardEdits: edits });
+        set({ ...output, groups: active.groups, freeform: active.freeform, parked, cardEdits: edits, activeGrid: 0 });
         useLayoutStore.temporal.getState().clear();
       },
       parkDocument: (id, layout) => set((s) => ({ parked: { ...s.parked, [id]: layout } })),
@@ -275,13 +320,39 @@ export const useLayoutStore = create<LayoutState>()(
         const target = parked[to];
         if (!target) return;
         const { [to]: _taken, ...rest } = parked;
-        set({ parked: { ...rest, [from]: { groups, freeform } }, groups: target.groups, freeform: target.freeform });
+        set({
+          parked: { ...rest, [from]: { groups, freeform } },
+          groups: target.groups,
+          freeform: target.freeform,
+          activeGrid: 0,
+        });
         useLayoutStore.temporal.getState().clear();
       },
-      setSelection: (page, selection) => {
-        const created = selection !== null && (gridGroupAt(get().groups, page)?.selection ?? null) === null;
-        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection })) }));
+      setSelection: (page, selection, grid) => {
+        const n = grid ?? activeGridAt(get(), page);
+        const created = selection !== null && (regionOf(get().groups, page, n)?.selection ?? null) === null;
+        set((s) => ({ groups: updateGrid(s.groups, page, n, (r) => ({ ...r, selection })) }));
         if (created) emitHintEvent("selection-created");
+      },
+      addGrid: (page) => {
+        const before = gridGroupAt(get().groups, page);
+        if (!before || before.grids.length >= MAX_GRIDS) return;
+        set((s) => ({ groups: addGrid(s.groups, page), activeGrid: before.grids.length }));
+      },
+      deleteGrid: (page, n) => {
+        const group = gridGroupAt(get().groups, page);
+        if (!group?.grids[n]) return;
+        const documentId = useDocumentStore.getState().activeId;
+        const to = (k: string) => keyAfterGridDelete(k, documentId, group.pages, n);
+        // The last grid stays, without its region: its pieces go but nothing is renumbered.
+        const last = group.grids.length === 1;
+        const active = activeIndex(group, get().activeGrid);
+        set((s) => ({
+          groups: deleteGrid(s.groups, page, n),
+          cardEdits: editsAfterRemap(s.cardEdits, to),
+          activeGrid: last ? 0 : active > n ? active - 1 : Math.min(active, group.grids.length - 2),
+        }));
+        for (const fn of gridDeletedListeners) fn(to);
       },
       addFreeformCard: (page, card) => {
         const index = get().freeform[page]?.length ?? 0;
@@ -309,10 +380,27 @@ export const useLayoutStore = create<LayoutState>()(
       },
       setCardEdits: (cardEdits) => set({ cardEdits }),
       applyDetectedGrid: (page, grid) => {
-        const created = (gridGroupAt(get().groups, page)?.selection ?? null) === null;
+        const n = activeGridAt(get(), page);
+        const created = (regionOf(get().groups, page, n)?.selection ?? null) === null;
         const { selection, ...fields } = grid;
         set((s) => ({
-          groups: updateGridGroup(s.groups, page, (g) => ({ ...g, selection, grid: patchGrid(g.grid, fields) })),
+          groups: updateGrid(s.groups, page, n, (r) => ({ selection, grid: patchGrid(r.grid, fields) })),
+        }));
+        if (created) emitHintEvent("selection-created");
+      },
+      applyDetectedGrids: (page, detected) => {
+        const group = gridGroupAt(get().groups, page);
+        if (!group || detected.length === 0) return;
+        const created = !group.grids.some((r) => r.selection !== null);
+        const grids = detected.slice(0, MAX_GRIDS).map(({ selection, ...fields }, i): GridRegion => {
+          const own = group.grids[i] ?? newGridRegion();
+          return { selection, grid: patchGrid(own.grid, fields) };
+        });
+        // Grids past the detected ones keep their settings but lose their region: the page has what was found.
+        const rest = group.grids.slice(grids.length).map((r) => ({ ...r, selection: null }));
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grids: [...grids, ...rest] })),
+          activeGrid: 0,
         }));
         if (created) emitHintEvent("selection-created");
       },
@@ -334,18 +422,20 @@ export const useLayoutStore = create<LayoutState>()(
         const doc = useDocumentStore.getState();
         const documentId = doc.activeId;
         const sizes = doc.pages;
-        if (!group || group.selection === null) return 0;
+        if (!group) return 0;
+        const n = activeIndex(group, get().activeGrid);
+        if (group.grids[n].selection === null) return 0;
         const pages = onlyPage
           ? [page]
           : Array.from({ length: group.pages.last - group.pages.first + 1 }, (_, i) => group.pages.first + i);
-        const made = gridToPieces(cards, documentId, pages, sizes, freeform);
+        const made = gridToPieces(cards, documentId, pages, sizes, freeform, n);
         const count = Object.values(made.pieces).reduce((n, list) => n + list.length, 0);
         if (count === 0) return 0;
         set((s) => {
           const next = { ...s.freeform };
           for (const [p, list] of Object.entries(made.pieces)) next[Number(p)] = [...(next[Number(p)] ?? []), ...list];
           return {
-            groups: clearGridRegion(s.groups, page, onlyPage),
+            groups: clearGridRegion(s.groups, page, onlyPage, n),
             freeform: next,
             cardEdits: editsAfterRekey(s.cardEdits, made.moves),
           };
@@ -354,7 +444,8 @@ export const useLayoutStore = create<LayoutState>()(
         return count;
       },
       setGrid: (page, patch) => {
-        set((s) => ({ groups: updateGridGroup(s.groups, page, (g) => ({ ...g, grid: patchGrid(g.grid, patch) })) }));
+        const n = activeGridAt(get(), page);
+        set((s) => ({ groups: updateGrid(s.groups, page, n, (r) => ({ ...r, grid: patchGrid(r.grid, patch) })) }));
         emitHintEvent("grid-changed");
       },
       setSkipped: (page, skip) => set((s) => ({ groups: setSkipped(s.groups, page, skip) })),
@@ -366,7 +457,8 @@ export const useLayoutStore = create<LayoutState>()(
           }
           return groups === s.groups ? s : { groups };
         }),
-      applyGrid: (page, pages) => set((s) => ({ groups: applyGridTo(s.groups, page, pages) })),
+      applyGrid: (page, pages, which) =>
+        set((s) => ({ groups: applyGridTo(s.groups, page, pages, which ?? activeGridAt(s, page)) })),
       setGapX: (mm) => set((s) => (s.gapLinked ? { gapXMm: gap(mm), gapYMm: gap(mm) } : { gapXMm: gap(mm) })),
       setGapY: (mm) => set({ gapYMm: gap(mm) }),
       // Linking snaps the vertical value to the horizontal one.
@@ -428,6 +520,20 @@ export function redo() {
   useLayoutStore.temporal.getState().redo();
 }
 
+/** The number of the grid being edited in `page`'s group (0 when the page has no grid group). */
+function activeGridAt(s: Pick<LayoutState, "groups" | "activeGrid">, page: number): number {
+  const g = gridGroupAt(s.groups, page);
+  return g ? activeIndex(g, s.activeGrid) : 0;
+}
+
+// The grid being edited goes back to the first when the viewed page moves to another group.
+useDocumentStore.subscribe((s, prev) => {
+  if (s.currentPage === prev.currentPage) return;
+  const { groups, activeGrid } = useLayoutStore.getState();
+  if (activeGrid !== 0 && groupAt(groups, s.currentPage) !== groupAt(groups, prev.currentPage))
+    useLayoutStore.setState({ activeGrid: 0 });
+});
+
 /** The group the viewed page belongs to. */
 export function useCurrentGroup(): PageGroup | undefined {
   const page = useDocumentStore((s) => s.currentPage);
@@ -438,6 +544,21 @@ export function useCurrentGroup(): PageGroup | undefined {
 export function useCurrentGridGroup() {
   const page = useDocumentStore((s) => s.currentPage);
   return useLayoutStore((s) => gridGroupAt(s.groups, page));
+}
+
+/** The number of the grid being edited on the viewed page. */
+export function useActiveGrid(): number {
+  const page = useDocumentStore((s) => s.currentPage);
+  return useLayoutStore((s) => activeGridAt(s, page));
+}
+
+/** The grid being edited on the viewed page (its settings and region); undefined when the page is skipped. */
+export function useCurrentGrid(): GridRegion | undefined {
+  const page = useDocumentStore((s) => s.currentPage);
+  return useLayoutStore((s) => {
+    const g = gridGroupAt(s.groups, page);
+    return g ? activeRegion(g, s.activeGrid) : undefined;
+  });
 }
 
 type GridSettings = Pick<
@@ -478,12 +599,47 @@ export function gridPayload(
   };
 }
 
-/** Region of the viewed page's grid group, read outside React (pointer handlers). */
+/** Region of the grid being edited on the viewed page, read outside React (pointer handlers). */
 export function getCurrentSelection(): NormalizedRect | null {
-  return gridGroupAt(useLayoutStore.getState().groups, useDocumentStore.getState().currentPage)?.selection ?? null;
+  const s = useLayoutStore.getState();
+  const g = gridGroupAt(s.groups, useDocumentStore.getState().currentPage);
+  return g ? activeRegion(g, s.activeGrid).selection : null;
 }
 
-/** Sets the region of the viewed page's group (every page of the group). */
+/** The regions of the other grids of the viewed page (not the one being edited), with their numbers. */
+export function getOtherSelections(): { n: number; selection: NormalizedRect }[] {
+  const s = useLayoutStore.getState();
+  const g = gridGroupAt(s.groups, useDocumentStore.getState().currentPage);
+  if (!g) return [];
+  const active = activeIndex(g, s.activeGrid);
+  return g.grids.flatMap((r, n) => (n !== active && r.selection ? [{ n, selection: r.selection }] : []));
+}
+
+/** Sets the region of the grid being edited on the viewed page (every page of the group). */
 export function setCurrentSelection(r: NormalizedRect | null) {
   useLayoutStore.getState().setSelection(useDocumentStore.getState().currentPage, r);
+}
+
+/** The page ranges of every PDF whose grid group has more than one grid drawn, as "document:first:last" joined by commas. */
+function severalGridRanges(s: Pick<LayoutState, "groups" | "parked">, activeId: DocumentId): string {
+  const out: string[] = [];
+  const add = (id: DocumentId, groups: PageGroup[]) => {
+    for (const g of groups)
+      if (g.kind === "grid" && g.grids.filter((r) => r.selection).length > 1)
+        out.push(`${id}:${g.pages.first}:${g.pages.last}`);
+  };
+  add(activeId, s.groups);
+  for (const [id, layout] of Object.entries(s.parked)) add(Number(id), layout.groups);
+  return out.join(",");
+}
+
+/**
+ * Whether a page has several grids drawn, for the piece references that then name the grid (`p3 · g1 · r1 c2`). The
+ * answer is a function of the document and the page, which changes only when a grid group gains or loses grids.
+ */
+export function useSeveralGrids(): (documentId: DocumentId, page: number) => boolean {
+  const activeId = useDocumentStore((s) => s.activeId);
+  const ranges = useLayoutStore((s) => severalGridRanges(s, activeId));
+  const list = ranges === "" ? [] : ranges.split(",").map((r) => r.split(":").map(Number));
+  return (documentId, page) => list.some(([d, first, last]) => d === documentId && page >= first && page <= last);
 }

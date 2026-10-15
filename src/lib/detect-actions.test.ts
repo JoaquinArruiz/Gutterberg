@@ -139,13 +139,19 @@ describe("applying a grid", () => {
     await runDetect();
     applyDraft();
     const group = gridGroupAt(layout().groups, 0);
-    expect(group?.selection?.x).toBeCloseTo(0.1, 4);
-    expect(group?.selection?.width).toBeCloseTo(0.8, 4);
-    expect(group?.grid).toMatchObject({ rows: 3, columns: 2, sourceGapXMm: 3, sourceGapYMm: 3, sourceGapLinked: true });
+    expect(group?.grids[0].selection?.x).toBeCloseTo(0.1, 4);
+    expect(group?.grids[0].selection?.width).toBeCloseTo(0.8, 4);
+    expect(group?.grids[0].grid).toMatchObject({
+      rows: 3,
+      columns: 2,
+      sourceGapXMm: 3,
+      sourceGapYMm: 3,
+      sourceGapLinked: true,
+    });
     expect(editor().draft).toBeNull();
 
     undo();
-    expect(gridGroupAt(layout().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(layout().groups, 0)?.grids[0].selection).toBeNull();
     expect(layout().groups).toEqual(defaultGroups(3));
   });
 
@@ -155,7 +161,7 @@ describe("applying a grid", () => {
     // The draft is dropped by moving, so a stray apply finds nothing to apply.
     useDocumentStore.getState().setCurrentPage(1);
     applyDraft();
-    expect(gridGroupAt(layout().groups, 1)?.selection).toBeNull();
+    expect(gridGroupAt(layout().groups, 1)?.grids[0].selection).toBeNull();
   });
 });
 
@@ -191,5 +197,35 @@ describe("applying rectangles", () => {
     expect(usePrintStore.getState().quantities).toEqual({ "g:0:1:0:0": 3 });
     // Other pages' pieces are not touched.
     expect(gridCardId(0, 1, 0, 0).kind).toBe("grid");
+  });
+});
+
+describe("applying several grids", () => {
+  it("makes them the page's grids, in order, in one undo step", async () => {
+    const block = (y: number, rows: number, columns: number) => ({
+      bounds: { x: 59.5276, y, width: 476.2205, height: 200 },
+      rows,
+      columns,
+      source_gap_x_mm: 0,
+      source_gap_y_mm: 2,
+    });
+    const grids: Proposal = {
+      kind: "grids",
+      grids: [block(84.189, 2, 3), block(500, 1, 4)],
+      confidence: 0.95,
+      engine: "pdf-objects",
+      notes: [],
+    };
+    detect.mockResolvedValue(answer(grids));
+    await runDetect();
+    applyDraft();
+    const group = gridGroupAt(layout().groups, 0);
+    expect(group?.grids.map((r) => [r.grid.rows, r.grid.columns, r.grid.sourceGapLinked])).toEqual([
+      [2, 3, false],
+      [1, 4, false],
+    ]);
+    expect(group?.grids[1].selection?.y).toBeCloseTo(500 / A4.height_pt, 6);
+    undo();
+    expect(layout().groups).toEqual(defaultGroups(3));
   });
 });

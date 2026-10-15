@@ -19,7 +19,7 @@ use card_core::Error;
 fn grid_group(grid: GridLayout) -> PageGroup {
     PageGroup {
         pages: PageRange { first: 0, last: 0 },
-        kind: PageGroupKind::Grid { grid },
+        kind: PageGroupKind::grid(grid),
     }
 }
 
@@ -89,6 +89,7 @@ fn card(row: usize, column: usize) -> CardId {
     CardId::Grid {
         document_id: 0,
         page_index: 0,
+        grid: 0,
         row,
         column,
     }
@@ -588,6 +589,7 @@ fn a_back_of_another_size_is_reported_and_an_unknown_back_is_refused() {
     let other = CardId::Grid {
         document_id: 1,
         page_index: 0,
+        grid: 0,
         row: 0,
         column: 0,
     };
@@ -612,6 +614,7 @@ fn a_back_of_another_size_is_reported_and_an_unknown_back_is_refused() {
     let missing = CardId::Grid {
         document_id: 0,
         page_index: 5,
+        grid: 0,
         row: 0,
         column: 0,
     };

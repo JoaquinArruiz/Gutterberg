@@ -18,10 +18,13 @@ pub const DEFAULT_DOCUMENT_ID: DocumentId = 0;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum CardId {
-    /// A card cut from a grid group.
+    /// A card cut from a grid group. `grid` is the grid's place among the page's grids (0 for the first); it is
+    /// left out of the JSON when 0, so the ids of a page with one grid read and write as they always did.
     Grid {
         document_id: DocumentId,
         page_index: usize,
+        #[serde(default, skip_serializing_if = "is_zero")]
+        grid: usize,
         row: usize,
         column: usize,
     },
@@ -31,6 +34,10 @@ pub enum CardId {
         page_index: usize,
         index: usize,
     },
+}
+
+fn is_zero(n: &usize) -> bool {
+    *n == 0
 }
 
 impl CardId {
@@ -113,14 +120,29 @@ impl PageRange {
     }
 }
 
-/// What a group of pages holds. `Grid` and `Skip` exist in the UI today; `Freeform`
-/// is reserved for the card tool (M18) and nothing creates it yet.
+/// What a group of pages holds. `Grid` is one or more grids on each page, each with its own region; a
+/// grid's place in the list is the `grid` number in its pieces' ids, and `None` is a grid whose region is
+/// not drawn yet (it has no pieces, and the grids after it keep their numbers). `Freeform` is the pieces
+/// drawn one by one on a page.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum PageGroupKind {
-    Grid { grid: crate::layout::GridLayout },
+    Grid {
+        grids: Vec<Option<crate::layout::GridLayout>>,
+    },
     Skip,
-    Freeform { cards: Vec<OrientedRect> },
+    Freeform {
+        cards: Vec<OrientedRect>,
+    },
+}
+
+impl PageGroupKind {
+    /// Pages with one grid.
+    pub fn grid(grid: crate::layout::GridLayout) -> Self {
+        PageGroupKind::Grid {
+            grids: vec![Some(grid)],
+        }
+    }
 }
 
 /// A run of pages that share one treatment.
@@ -144,6 +166,7 @@ mod tests {
         let grid = CardId::Grid {
             document_id: 0,
             page_index: 2,
+            grid: 0,
             row: 1,
             column: 0,
         };
@@ -170,10 +193,37 @@ mod tests {
         let id = |document_id| CardId::Grid {
             document_id,
             page_index: 0,
+            grid: 0,
             row: 0,
             column: 0,
         };
         assert_ne!(id(0), id(1));
+    }
+
+    #[test]
+    fn the_grid_number_is_written_only_when_it_is_not_the_first() {
+        let second = CardId::Grid {
+            document_id: 0,
+            page_index: 1,
+            grid: 2,
+            row: 0,
+            column: 3,
+        };
+        let json = serde_json::to_value(second).unwrap();
+        assert_eq!(json["grid"], 2);
+        assert_eq!(serde_json::from_value::<CardId>(json).unwrap(), second);
+        // An id written before there were several grids is the first grid's.
+        let old = serde_json::json!({"kind": "grid", "document_id": 0, "page_index": 1, "row": 0, "column": 3});
+        assert_eq!(
+            serde_json::from_value::<CardId>(old).unwrap(),
+            CardId::Grid {
+                document_id: 0,
+                page_index: 1,
+                grid: 0,
+                row: 0,
+                column: 3,
+            }
+        );
     }
 
     #[test]

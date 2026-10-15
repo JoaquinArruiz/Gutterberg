@@ -925,9 +925,11 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
             .ok_or(Error::PageOutOfRange(pj.page_index, source_pages.len()))?;
         let frame = PageFrame::read(doc, src_id, pj.page_index)?;
         let layout = fitting_layout(&frame, &pj.grid)?;
+        // Ids do not reach the file: every job is numbered as a page's first grid.
         sheets.push(sheet_from_layout(
             DEFAULT_DOCUMENT_ID,
             pj.page_index,
+            0,
             pj.grid.columns,
             &layout,
         ));

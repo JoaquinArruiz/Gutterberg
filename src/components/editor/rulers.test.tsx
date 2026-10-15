@@ -155,7 +155,7 @@ describe("guides", () => {
     fireEvent.pointerMove(svg(), at({ x: 0.403, y: 0.4 }));
     fireEvent.pointerUp(svg(), at({ x: 0.403, y: 0.4 }));
     const g = useLayoutStore.getState().groups[0];
-    expect(g.kind === "grid" ? g.selection?.x : null).toBeCloseTo(0.3, 9);
+    expect(g.kind === "grid" ? g.grids[0].selection?.x : null).toBeCloseTo(0.3, 9);
   });
 
   it("are all cleared from the corner where the rulers meet", () => {

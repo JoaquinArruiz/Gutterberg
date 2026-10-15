@@ -257,7 +257,10 @@ describe("Card library", () => {
 
   it("filters to a group", () => {
     useLayoutStore.setState({
-      groups: updateGridGroup(defaultGroups(2), 0, (g) => ({ ...g, selection: { x: 0, y: 0, width: 1, height: 1 } })),
+      groups: updateGridGroup(defaultGroups(2), 0, (g) => ({
+        ...g,
+        grids: [{ ...g.grids[0], selection: { x: 0, y: 0, width: 1, height: 1 } }],
+      })),
     });
     print().setFilter({ kind: "group", document: 0, index: 0 });
     render(<CardLibrary />);

@@ -1,15 +1,18 @@
 import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useDocumentStore } from "../stores/document-store";
-import { gridPayload, useCurrentGridGroup, useLayoutStore } from "../stores/layout-store";
+import { gridPayload, useCurrentGrid, useLayoutStore } from "../stores/layout-store";
 import { computeLayout } from "./layout-api";
 
-/** Keeps the layout store's placements in sync with the viewed page's group, gap and output page. */
+/**
+ * Keeps the layout store's placements in sync with the grid being edited on the viewed page, the gap and the output
+ * page: the Preview view shows that grid re-spaced (each grid of a page is its own sheet).
+ */
 export function useLayoutSync() {
   const page = useDocumentStore((s) => s.pages[s.currentPage]);
-  const group = useCurrentGridGroup();
-  const selection = group?.selection;
-  const grid = group?.grid;
+  const current = useCurrentGrid();
+  const selection = current?.selection;
+  const grid = current?.grid;
   const settings = useLayoutStore(
     useShallow((s) => ({
       gapXMm: s.gapXMm,

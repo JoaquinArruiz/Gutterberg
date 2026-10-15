@@ -9,9 +9,16 @@
 import { z } from "zod";
 import type { OutputSettings } from "../stores/layout-store";
 import { MAX_MARGIN_MM } from "../stores/layout-store";
-import { type DocumentId, OrientedRectSchema } from "./card";
+import { CARD_KEY, type DocumentId, OrientedRectSchema } from "./card";
 import { type CardEdits, clampScale } from "./card-edits";
-import { type FreeformCards, type GridGroup, MAX_GAP_MM, type PageGroup, patchGrid } from "./document-layout";
+import {
+  type FreeformCards,
+  type GridRegion,
+  MAX_GAP_MM,
+  MAX_GRIDS,
+  type PageGroup,
+  patchGrid,
+} from "./document-layout";
 import { cleanFinish, FinishSchema } from "./finish";
 import { ImagePlacementSchema } from "./images";
 import { clampQuantity } from "./library";
@@ -21,7 +28,7 @@ import { TurnSchema } from "./sheet-api";
 /** Value of the `format` key: the file's signature. Kept in step with `card_core::project::FORMAT`. */
 export const PROJECT_FORMAT = "gutterberg-project";
 /** The version this build writes. Older ones are migrated in Rust before they get here. */
-export const PROJECT_VERSION = 6;
+export const PROJECT_VERSION = 7;
 export const PROJECT_EXTENSION = "gtr";
 
 const finite = z.number();
@@ -37,12 +44,13 @@ const GroupGridSchema = z.object({
   sourceGapLinked: z.boolean(),
 });
 
+const GridRegionSchema = z.object({ grid: GroupGridSchema, selection: NormalizedRectSchema.nullable() });
+
 const PageGroupSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("grid"),
     pages: PageRangeSchema,
-    grid: GroupGridSchema,
-    selection: NormalizedRectSchema.nullable(),
+    grids: z.array(GridRegionSchema).min(1).max(MAX_GRIDS),
   }),
   z.object({ kind: z.literal("skip"), pages: PageRangeSchema }),
 ]);
@@ -198,16 +206,20 @@ export function groupsCoverPages(groups: PageGroup[], pageCount: number): boolea
 
 const clampTo = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
+function cleanRegion(r: z.infer<typeof GridRegionSchema>): GridRegion {
+  const grid = patchGrid(r.grid, {
+    rows: r.grid.rows,
+    columns: r.grid.columns,
+    sourceGapXMm: r.grid.sourceGapXMm,
+    sourceGapYMm: r.grid.sourceGapYMm,
+    sourceGapLinked: r.grid.sourceGapLinked,
+  });
+  return { ...r, grid };
+}
+
 function cleanGroup(g: z.infer<typeof PageGroupSchema>): PageGroup {
   if (g.kind === "skip") return g;
-  const grid: GridGroup["grid"] = patchGrid(g.grid, {
-    rows: g.grid.rows,
-    columns: g.grid.columns,
-    sourceGapXMm: g.grid.sourceGapXMm,
-    sourceGapYMm: g.grid.sourceGapYMm,
-    sourceGapLinked: g.grid.sourceGapLinked,
-  });
-  return { ...g, grid };
+  return { ...g, grids: g.grids.map(cleanRegion) };
 }
 
 /** An image's placement pulled back to sizes the dialog allows. */
@@ -260,7 +272,7 @@ function cleanPlan(p: z.infer<typeof PlanSchema>): PrintPlan {
 }
 
 /** Piece keys name a document, a page and a place; only keys of this shape are kept. */
-const KEY = /^(?:g:\d+:\d+:\d+:\d+|f:\d+:\d+:\d+)$/;
+const KEY = CARD_KEY;
 
 function cleanEdits(e: z.infer<typeof EditsSchema>): CardEdits {
   const keep = <T>(rec: Record<string, T>) => Object.fromEntries(Object.entries(rec).filter(([k]) => KEY.test(k)));

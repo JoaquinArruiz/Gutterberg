@@ -53,7 +53,10 @@ import {
   beginEdit,
   endEdit,
   getCurrentSelection,
+  getOtherSelections,
   setCurrentSelection,
+  useActiveGrid,
+  useCurrentGrid,
   useCurrentGridGroup,
   useCurrentGroup,
   useLayoutStore,
@@ -65,6 +68,7 @@ import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
 import { type GuideDrag, GuideLines } from "./GuideLines";
 import { MAG, Magnifier } from "./Magnifier";
+import { OtherGrids } from "./OtherGrids";
 import { OutputNotice } from "./OutputNotice";
 import { OutputPane } from "./OutputPane";
 import { OutputPreview } from "./OutputPreview";
@@ -122,19 +126,22 @@ export function EditorViewport() {
   const pickedCards = useEditorStore((s) => s.pickedCards);
   const pickedRegion = useEditorStore((s) => s.pickedRegion);
   const freeform = useLayoutStore((s) => s.freeform[currentPage]) ?? NO_CARDS;
+  // The grid being edited; the page's other grids are drawn dimmer, and pressing one picks it.
   const group = useCurrentGridGroup();
+  const current = useCurrentGrid();
+  const activeGrid = useActiveGrid();
   const skipped = useCurrentGroup()?.kind === "skip";
-  const selection = group?.selection ?? null;
+  const selection = current?.selection ?? null;
   // A grid and freeform pieces on one page: the tip says that is allowed and how to get several sizes.
   const hasGridAndPieces = selection !== null && freeform.length > 0;
   const fitMode = useEditorStore((s) => s.fitMode);
   const viewMode = useEditorStore((s) => s.viewMode);
   const previewResult = usePreviewResult();
-  const gridSpec = group && {
-    rows: group.grid.rows,
-    columns: group.grid.columns,
-    gapXMm: group.grid.sourceGapXMm,
-    gapYMm: group.grid.sourceGapYMm,
+  const gridSpec = current && {
+    rows: current.grid.rows,
+    columns: current.grid.columns,
+    gapXMm: current.grid.sourceGapXMm,
+    gapYMm: current.grid.sourceGapYMm,
   };
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -386,10 +393,18 @@ export function EditorViewport() {
       return;
     }
     if (!group) return; // a skipped page has no region to edit
-    const current = getCurrentSelection();
     // Pressing on the region, or drawing a new one, picks it: the arrow keys then move it.
     ed.setPickedRegion(currentPage);
     beginEdit(); // the whole drag is one undo step
+    if (hit === "other-grid") {
+      // Pressing another grid makes it the one being edited, and drags it.
+      const n = Number((e.target as SVGElement).dataset.grid);
+      useLayoutStore.getState().setActiveGrid(n);
+      const rect = getCurrentSelection();
+      if (rect) drag.current = { kind: "move", start: doc, rect };
+      return;
+    }
+    const current = getCurrentSelection();
     if (hit && current) {
       drag.current =
         hit === "body"
@@ -452,6 +467,8 @@ export function EditorViewport() {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
       if (withRegion && region) others.push(region);
+      // The page's other grids, so grids side by side line up.
+      for (const o of getOtherSelections()) others.push(o.selection);
       // Guides show, and are snapped to, while the rulers are on.
       const ownGuides = useEditorStore.getState().guides[activeId];
       const lines = magnet
@@ -643,6 +660,15 @@ export function EditorViewport() {
                       box={box}
                       grabbable={!panMode}
                       unit={unit}
+                    />
+                  )}
+                  {!output && group && group.grids.length > 1 && (
+                    <OtherGrids
+                      group={group}
+                      active={activeGrid}
+                      viewport={viewport}
+                      page={page}
+                      pickable={tool === "select" && !panMode}
                     />
                   )}
                   {!output && selection && gridSpec && (

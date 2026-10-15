@@ -15,8 +15,12 @@ describe("the IPC contract with the Rust planner: freeform and edited cards", ()
     {
       kind: "grid",
       pages: { first: 0, last: 0 },
-      grid: { rows: 1, columns: 2, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
-      selection: { x: 0.1, y: 0.1, width: 0.6, height: 0.2 },
+      grids: [
+        {
+          grid: { rows: 1, columns: 2, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
+          selection: { x: 0.1, y: 0.1, width: 0.6, height: 0.2 },
+        },
+      ],
     },
   ];
   const freeform = {

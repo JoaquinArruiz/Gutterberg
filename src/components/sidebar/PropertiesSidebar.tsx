@@ -7,7 +7,7 @@ import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../..
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useDocumentStore } from "../../stores/document-store";
-import { useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGrid, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
@@ -18,6 +18,7 @@ import { NumberField } from "../ui/NumberField";
 import { AiSortSection } from "./AiSortSection";
 import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
+import { GridsSection } from "./GridsSection";
 import { PresetsSection } from "./PresetsSection";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
@@ -36,8 +37,10 @@ export function PropertiesSidebar() {
     })),
   );
   const setStage = useUiStore((s) => s.setStage);
-  const grid = group?.kind === "grid" ? group.grid : null;
-  const selection = group?.kind === "grid" ? group.selection : null;
+  // The grid being edited, when the page has several.
+  const current = useCurrentGrid();
+  const grid = current?.grid ?? null;
+  const selection = current?.selection ?? null;
   const setSelection = (r: NormalizedRect | null) => L.setSelection(currentPage, r);
   const unit = useUnit();
   const fmt = (mm: number, decimals?: number) => formatMeasurement(mm, unit, decimals);
@@ -83,6 +86,7 @@ export function PropertiesSidebar() {
 
       {group?.kind === "grid" && grid && spec && (
         <>
+          <GridsSection group={group} page={currentPage} />
           <CollapsibleSection id="cards.layout" title={t("source.sections.layout")}>
             <p className="text-[var(--muted)]">
               {t("source.sharedGrid", { range: rangeLabel(group.pages), count: pageCount(group.pages) })}

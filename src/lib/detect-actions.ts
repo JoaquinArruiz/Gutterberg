@@ -5,7 +5,7 @@
 import { useDocumentStore } from "../stores/document-store";
 import { useEditorStore } from "../stores/editor-store";
 import { useLayoutStore } from "../stores/layout-store";
-import { gridFromProposal, piecesFromProposal } from "./detect";
+import { gridsFromProposal, piecesFromProposal } from "./detect";
 import { detectPieces } from "./detect-api";
 import { toAppError } from "./errors";
 
@@ -35,7 +35,10 @@ export function shownProposal() {
   return draft ? (draft.detection.proposals[draft.index] ?? null) : null;
 }
 
-/** Applies the proposal on show to its page (a grid sets the region and grid; rectangles become freeform pieces). */
+/**
+ * Applies the proposal on show to its page: a grid sets the region and grid of the grid being edited, several grids
+ * become the page's grids, and rectangles become freeform pieces.
+ */
 export function applyDraft(): void {
   const editor = useEditorStore.getState();
   const { draft } = editor;
@@ -45,9 +48,10 @@ export function applyDraft(): void {
   const page = pages[draft.page];
   if (draft.documentId !== activeId || !page) return;
   const layout = useLayoutStore.getState();
-  const grid = gridFromProposal(proposal, page);
+  const grids = gridsFromProposal(proposal, page);
   const pieces = piecesFromProposal(proposal, page);
-  if (grid) layout.applyDetectedGrid(draft.page, grid);
+  if (grids?.length === 1 && proposal.kind === "grid") layout.applyDetectedGrid(draft.page, grids[0]);
+  else if (grids) layout.applyDetectedGrids(draft.page, grids);
   else if (pieces) {
     layout.applyDetectedPieces(draft.page, pieces);
     editor.setSelectedCard(null);

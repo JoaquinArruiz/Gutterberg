@@ -32,7 +32,7 @@ const at = (p: Point, extra: Record<string, unknown> = {}) => {
 };
 const region = (): NormalizedRect | null => {
   const g = useLayoutStore.getState().groups[0];
-  return g.kind === "grid" ? g.selection : null;
+  return g.kind === "grid" ? g.grids[0].selection : null;
 };
 /** Screen pixels as a fraction of the page's width, at the fitted zoom. */
 const pxX = (px: number) => px / pageScreenRect(editor().viewport, A4).width;

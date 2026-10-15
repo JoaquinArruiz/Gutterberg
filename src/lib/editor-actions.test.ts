@@ -83,7 +83,7 @@ describe("the arrow keys", () => {
     editor().setPickedRegion(0);
     expect(nudgePicked(1, 0, false)).toBe(true);
     const group = layout().groups[0];
-    const region = group.kind === "grid" ? group.selection : null;
+    const region = group.kind === "grid" ? group.grids[0].selection : null;
     expect(region?.x).toBeCloseTo(0.1 + mmX(1), 9);
     // A region picked on another page does not move this one.
     editor().setPickedRegion(1);

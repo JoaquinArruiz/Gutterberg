@@ -76,7 +76,7 @@ describe("drawing cards", () => {
     expect(cards()[0].width).toBeCloseTo(0.3, 2);
     expect(cards()[0].angle_deg).toBe(0);
     expect(editor().selectedCard).toEqual({ page: 0, index: 0 });
-    expect(layout().groups[0]).toMatchObject({ kind: "grid", selection: null });
+    expect(layout().groups[0]).toMatchObject({ kind: "grid", grids: [{ selection: null }] });
   });
 
   it("draws several cards, each its own, one undo step per card", () => {
@@ -115,7 +115,7 @@ describe("drawing cards", () => {
     expect(cards()).toHaveLength(0);
     expect(layout().groups[0]).toMatchObject({
       kind: "grid",
-      selection: expect.objectContaining({ width: expect.any(Number) }),
+      grids: [{ selection: expect.objectContaining({ width: expect.any(Number) }) }],
     });
   });
 
@@ -366,7 +366,7 @@ describe("several pieces, copies and snapping", () => {
     drag(body, { x: 0.4, y: 0.4 }, { x: 0.203, y: 0.45 });
     expect(editor().pickedRegion).toBe(0);
     const group = layout().groups[0];
-    const region = group.kind === "grid" ? group.selection : null;
+    const region = group.kind === "grid" ? group.grids[0].selection : null;
     expect(region?.x).toBeCloseTo(0, 6);
     expect(document.querySelector('[data-hit="body"]')?.getAttribute("data-picked")).toBe("true");
   });

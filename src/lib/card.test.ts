@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CARD_KEY,
   CardIdSchema,
   cardIdKey,
   cropWidthPx,
@@ -124,5 +125,28 @@ describe("piece references", () => {
         27,
       ),
     ).toBe("#28");
+  });
+});
+
+describe("pieces of a page's second and later grids", () => {
+  it("carry the grid's number in their key, and the first grid's keep the key they always had", () => {
+    expect(cardIdKey(gridCardId(0, 2, 1, 0))).toBe("g:0:2:1:0");
+    expect(cardIdKey(gridCardId(0, 2, 1, 0, 0))).toBe("g:0:2:1:0");
+    expect(cardIdKey(gridCardId(0, 2, 1, 0, 2))).toBe("g:0:2:1:0:2");
+    // Rust leaves the number out for the first grid, and writes it for the others.
+    expect(gridCardId(0, 2, 1, 0)).not.toHaveProperty("grid");
+    expect(CardIdSchema.parse({ kind: "grid", document_id: 0, page_index: 2, grid: 2, row: 1, column: 0 })).toEqual(
+      gridCardId(0, 2, 1, 0, 2),
+    );
+    expect(CARD_KEY.test("g:0:2:1:0:2")).toBe(true);
+    expect(CARD_KEY.test("g:0:2:1:0:0")).toBe(false);
+  });
+
+  it("are referenced with their grid when the page has several", () => {
+    expect(pieceReference(gridCardId(0, 2, 0, 1, 1))).toBe("p3 · g2 · r1 c2");
+    expect(pieceReference(gridCardId(0, 2, 0, 1), null, false, true)).toBe("p3 · g1 · r1 c2");
+    expect(pieceReference(gridCardId(0, 2, 0, 1), null, false, false)).toBe("p3 · r1 c2");
+    expect(pieceReference(gridCardId(0, 2, 0, 1, 1), "B", true)).toBe("g2 r1c2");
+    expect(pieceReference(freeformCardId(0, 2, 0), null, false, true)).toBe("p3 · #1");
   });
 });

@@ -7,7 +7,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
 import { t } from "../i18n";
 import type { NormalizedRect } from "./coordinates";
-import type { GridGroup, PageGroup } from "./document-layout";
+import { type PageGroup, singleGridGroup } from "./document-layout";
 import type { BuiltInSizeId } from "./size-presets";
 
 /** The formats an import accepts; anything else is refused with a message naming the file. */
@@ -133,13 +133,8 @@ export function imagesDocumentName(names: string[]): string {
  */
 export function imageGroups(pageCount: number, piece: NormalizedRect): PageGroup[] {
   if (pageCount <= 0) return [];
-  const group: GridGroup = {
-    kind: "grid",
-    pages: { first: 0, last: pageCount - 1 },
-    grid: { rows: 1, columns: 1, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
-    selection: piece,
-  };
-  return [group];
+  const grid = { rows: 1, columns: 1, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true };
+  return [singleGridGroup({ first: 0, last: pageCount - 1 }, grid, piece)];
 }
 
 /** Whether an image prints worse than it should at its size: a note under 300 dpi, a warning under 150. */

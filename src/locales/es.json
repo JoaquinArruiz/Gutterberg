@@ -172,7 +172,8 @@
       "layout": "Disposición de origen",
       "gap": "Separación de origen",
       "output": "Salida",
-      "selection": "Posición de la selección"
+      "selection": "Posición de la selección",
+      "grids": "Cuadrículas"
     },
     "size": "Tamaño",
     "total": "Total",
@@ -202,6 +203,16 @@
       "everyPage_one": "Esta página",
       "everyPage_other": "Todas las páginas del grupo ({{count}})",
       "everyPageHint": "Todas se convierten en piezas y se borra la región de su cuadrícula."
+    },
+    "grids": {
+      "item": "Cuadrícula {{n}}",
+      "noRegion": "sin región",
+      "pick": "Editar la cuadrícula {{n}}",
+      "add": "Agregar cuadrícula",
+      "addTitle": "Agrega otra cuadrícula a esta página, para piezas de otro tamaño, y luego dibuja su región en la página",
+      "full": "Una página puede tener hasta {{count}} cuadrículas.",
+      "delete": "Eliminar la cuadrícula {{n}}",
+      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación. Los ajustes de abajo son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges."
     }
   },
   "freeform": {
@@ -249,14 +260,18 @@
     "toPage": "Hasta la página",
     "to": "a",
     "sameSize": "Todas las páginas del mismo tamaño (las páginas omitidas siguen omitidas)",
-    "skippedNoGrid": "Esta página está omitida, así que no tiene cuadrícula que copiar."
+    "skippedNoGrid": "Esta página está omitida, así que no tiene cuadrícula que copiar.",
+    "which": "Qué copiar",
+    "thisGrid": "Cuadrícula {{n}} ({{rows}}×{{columns}})",
+    "allGrids": "Las {{count}} cuadrículas ({{grids}})",
+    "descriptionSeveral": "Copia cuadrículas y sus regiones de piezas de la página {{page}}. Cada destino se convierte en su propio grupo, así que después puedes editarlo por separado."
   },
   "library": {
     "openPdf": "Abre un PDF para ver sus piezas.",
     "show": "Mostrar",
     "filterLabel": "Filtrar piezas por grupo",
     "all": "Todas las piezas",
-    "group": "{{range}} ({{rows}}×{{columns}})",
+    "group": "{{range}} ({{grids}})",
     "page": "Pág.",
     "showOnlyPage": "Mostrar solo la página",
     "selectAll": "Seleccionar todas",
@@ -283,6 +298,7 @@
     "thumb": {
       "gridPosition": "f{{row}} c{{column}}",
       "freeformPosition": "#{{n}}",
+      "gridNumber": "cu{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Página {{page}}, {{position}} · {{size}}",
       "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°",
@@ -293,7 +309,7 @@
       "gridShort": "f{{row}}c{{column}}"
     },
     "allOfDocument": "Todas las piezas de {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "groupIn": "{{name}}: {{range}} ({{grids}})",
     "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela."
   },
   "print": {
@@ -782,8 +798,8 @@
     },
     "grid-and-pieces": {
       "one": {
-        "title": "Una cuadrícula y piezas en una página",
-        "text": "Una página puede tener una cuadrícula y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Convertir en piezas y dibuja la siguiente."
+        "title": "Cuadrículas y piezas en una página",
+        "text": "Una página puede tener varias cuadrículas y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Agregar cuadrícula en Cuadrículas, dibuja la siguiente, y así sucesivamente."
       }
     },
     "move-region": {
@@ -907,6 +923,8 @@
     "draft": "Propuesta",
     "gridSize_one": "{{rows}} × {{columns}} = {{count}} pieza",
     "gridSize_other": "{{rows}} × {{columns}} = {{count}} piezas",
+    "gridsSize_one": "{{grids}} = {{count}} pieza",
+    "gridsSize_other": "{{grids}} = {{count}} piezas",
     "pieceCount_one": "{{count}} pieza",
     "pieceCount_other": "{{count}} piezas",
     "engines": {

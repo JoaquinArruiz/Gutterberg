@@ -3,7 +3,7 @@ import fixtureText from "../../crates/card-core/tests/data/print_request.json?ra
 import type { OutputSettings } from "../stores/layout-store";
 import { cardIdKey, freeformCardId, gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
-import { defaultGroups, type PageGroup, setSkipped, updateGridGroup } from "./document-layout";
+import { addGrid, defaultGroups, type PageGroup, setSkipped, updateGrid, updateGridGroup } from "./document-layout";
 import { DEFAULT_FINISH } from "./finish";
 import {
   buildPrintRequest,
@@ -42,7 +42,7 @@ const card = (page: number, column: number): Card => ({
 const cards = [card(1, 0), card(1, 1), card(1, 2)];
 const card1 = { center: { x: 0.5, y: 0.5 }, width: 0.1, height: 0.2, angle_deg: 5 };
 const groups = setSkipped(
-  updateGridGroup(defaultGroups(3), 0, (g) => ({ ...g, selection: sel })),
+  updateGridGroup(defaultGroups(3), 0, (g) => ({ ...g, grids: [{ ...g.grids[0], selection: sel }] })),
   0,
   true,
 );
@@ -56,8 +56,8 @@ describe("toRustGroups", () => {
     const grid = out[1];
     if (grid.kind !== "grid") throw new Error("not a grid");
     expect(grid.pages).toEqual({ first: 1, last: 2 });
-    expect(grid.grid.bounds).toEqual(sel);
-    expect(grid.grid.gap_y_mm).toBe(4);
+    expect(grid.grids[0]?.bounds).toEqual(sel);
+    expect(grid.grids[0]?.gap_y_mm).toBe(4);
     expect(toRustGroups(defaultGroups(3), pages, output)).toEqual([]);
   });
 
@@ -220,8 +220,12 @@ describe("the IPC contract with the Rust planner", () => {
       {
         kind: "grid",
         pages: { first: 1, last: 1 },
-        grid: { rows: 1, columns: 3, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
-        selection: { x: 0.1, y: 0.2, width: 0.8, height: 0.3 },
+        grids: [
+          {
+            grid: { rows: 1, columns: 3, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
+            selection: { x: 0.1, y: 0.2, width: 0.8, height: 0.3 },
+          },
+        ],
       },
       { kind: "skip", pages: { first: 2, last: 2 } },
     ];
@@ -265,5 +269,17 @@ describe("the IPC contract with the Rust planner", () => {
     const backs = { ...NO_EDITS, backs: { [cardIdKey(three[1].id)]: cardIdKey(three[2].id) } };
     const req = buildPrintRequest(p, three, [{ id: 0, pages: [a4, a4, a4], groups, freeform: {} }], settings, backs);
     expect(JSON.parse(JSON.stringify(req))).toEqual(fixture);
+  });
+});
+
+describe("several grids on a page", () => {
+  it("sends every grid, a grid with no region as null so the later ones keep their numbers", () => {
+    let g = addGrid(addGrid(defaultGroups(3), 0), 0);
+    g = updateGrid(g, 0, 2, (r) => ({ ...r, selection: sel }));
+    const [only] = toRustGroups(g, pages, output);
+    if (only.kind !== "grid") throw new Error("not a grid");
+    expect(only.grids.map((x) => x?.bounds ?? null)).toEqual([null, null, sel]);
+    // No grid drawn at all: no group.
+    expect(toRustGroups(addGrid(defaultGroups(3), 0), pages, output)).toEqual([]);
   });
 });

@@ -54,8 +54,9 @@ function twoDocuments() {
       {
         kind: "grid",
         pages: { first: 0, last: 0 },
-        grid: { rows: 2, columns: 2, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true },
-        selection: sel,
+        grids: [
+          { grid: { rows: 2, columns: 2, sourceGapXMm: 0, sourceGapYMm: 0, sourceGapLinked: true }, selection: sel },
+        ],
       },
     ],
     freeform: {},
@@ -300,9 +301,9 @@ describe("grid presets", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Apply to this page group" }));
     const second = useLayoutStore.getState().groups[1];
-    expect(second.kind === "grid" && second.grid).toMatchObject({ rows: 2, columns: 4, sourceGapXMm: 1.5 });
+    expect(second.kind === "grid" && second.grids[0].grid).toMatchObject({ rows: 2, columns: 4, sourceGapXMm: 1.5 });
     const first = useLayoutStore.getState().groups[0];
-    expect(first.kind === "grid" && first.grid).toMatchObject({ rows: 2, columns: 4 });
+    expect(first.kind === "grid" && first.grids[0].grid).toMatchObject({ rows: 2, columns: 4 });
   });
 
   it("offers a name made from the grid when none is typed, and deletes a preset", () => {
@@ -320,11 +321,11 @@ describe("grid presets", () => {
     render(<PropertiesSidebar />);
     openSection();
     const before = useLayoutStore.getState().groups[0];
-    expect(before.kind === "grid" && before.grid.rows).toBe(3);
+    expect(before.kind === "grid" && before.grids[0].grid.rows).toBe(3);
     act(() => useLayoutStore.getState().setGrid(0, { rows: 5, columns: 6, sourceGapXMm: 4 }));
     fireEvent.click(screen.getByRole("button", { name: "Apply to this page group" }));
     const after = useLayoutStore.getState().groups[0];
-    expect(after.kind === "grid" && after.grid).toMatchObject({
+    expect(after.kind === "grid" && after.grids[0].grid).toMatchObject({
       rows: 3,
       columns: 3,
       sourceGapXMm: 0,

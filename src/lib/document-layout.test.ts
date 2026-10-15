@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
+  activeRegion,
+  addGrid,
   applyGridTo,
   clampRange,
+  clearGridRegion,
   DEFAULT_GROUP_GRID,
   defaultGroups,
+  deleteGrid,
+  drawnGrids,
   type GridGroup,
   groupAt,
+  hasRegion,
   includedPages,
   isSkipped,
+  MAX_GRIDS,
   type PageGroup,
   pageBadge,
   pagesOfSameSize,
@@ -15,6 +22,7 @@ import {
   rangeLabel,
   runsOf,
   setSkipped,
+  updateGrid,
   updateGridGroup,
 } from "./document-layout";
 
@@ -36,7 +44,7 @@ describe("defaultGroups", () => {
   it("is one grid group over all pages", () => {
     const g = defaultGroups(5);
     expect(shape(g)).toEqual(["grid:0-4"]);
-    expect((g[0] as GridGroup).selection).toBeNull();
+    expect((g[0] as GridGroup).grids[0].selection).toBeNull();
   });
 
   it("has no groups for an empty document", () => {
@@ -45,7 +53,7 @@ describe("defaultGroups", () => {
 
   it("does not share the grid object between documents", () => {
     const a = defaultGroups(2)[0] as GridGroup;
-    a.grid.rows = 9;
+    a.grids[0].grid.rows = 9;
     expect(DEFAULT_GROUP_GRID.rows).toBe(3);
   });
 });
@@ -91,7 +99,10 @@ describe("setSkipped", () => {
 
   it("does not rejoin sections that have different grids", () => {
     let g = setSkipped(defaultGroups(6), 3, true);
-    g = updateGridGroup(g, 4, (x) => ({ ...x, grid: patchGrid(x.grid, { rows: 2, columns: 2 }) }));
+    g = updateGridGroup(g, 4, (x) => ({
+      ...x,
+      grids: [{ ...x.grids[0], grid: patchGrid(x.grids[0].grid, { rows: 2, columns: 2 }) }],
+    }));
     g = setSkipped(g, 3, false);
     expect(shape(g)).toEqual(["grid:0-3", "grid:4-5"]);
   });
@@ -101,7 +112,7 @@ describe("setSkipped", () => {
     expect(shape(g)).toEqual(["skip:0-0"]);
     g = setSkipped(g, 0, false);
     expect(shape(g)).toEqual(["grid:0-0"]);
-    expect((g[0] as GridGroup).grid).toEqual(DEFAULT_GROUP_GRID);
+    expect((g[0] as GridGroup).grids[0].grid).toEqual(DEFAULT_GROUP_GRID);
   });
 
   it("includes one page out of a run of skipped pages", () => {
@@ -122,20 +133,20 @@ describe("setSkipped", () => {
 describe("updateGridGroup", () => {
   it("edits the whole group the page belongs to", () => {
     let g = setSkipped(defaultGroups(5), 0, true);
-    g = updateGridGroup(g, 2, (x) => ({ ...x, selection: sel }));
-    expect((groupAt(g, 1) as GridGroup).selection).toEqual(sel);
-    expect((groupAt(g, 4) as GridGroup).selection).toEqual(sel);
+    g = updateGridGroup(g, 2, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
+    expect((groupAt(g, 1) as GridGroup).grids[0].selection).toEqual(sel);
+    expect((groupAt(g, 4) as GridGroup).grids[0].selection).toEqual(sel);
   });
 
   it("leaves skipped pages alone", () => {
     const g = setSkipped(defaultGroups(3), 0, true);
-    expect(updateGridGroup(g, 0, (x) => ({ ...x, selection: sel }))).toBe(g);
+    expect(updateGridGroup(g, 0, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }))).toBe(g);
   });
 });
 
 describe("applyGridTo", () => {
   const withSection = () => {
-    const g = updateGridGroup(defaultGroups(8), 0, (x) => ({ ...x, selection: sel }));
+    const g = updateGridGroup(defaultGroups(8), 0, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     return g;
   };
 
@@ -143,10 +154,13 @@ describe("applyGridTo", () => {
     const g = applyGridTo(withSection(), 0, [4]);
     expect(shape(g)).toEqual(["grid:0-3", "grid:4-4", "grid:5-7"]);
     // Separate groups: editing one leaves the others alone.
-    const edited = updateGridGroup(g, 4, (x) => ({ ...x, grid: patchGrid(x.grid, { rows: 2 }) }));
-    expect((groupAt(edited, 0) as GridGroup).grid.rows).toBe(3);
-    expect((groupAt(edited, 4) as GridGroup).grid.rows).toBe(2);
-    expect((groupAt(edited, 4) as GridGroup).selection).toEqual(sel);
+    const edited = updateGridGroup(g, 4, (x) => ({
+      ...x,
+      grids: [{ ...x.grids[0], grid: patchGrid(x.grids[0].grid, { rows: 2 }) }],
+    }));
+    expect((groupAt(edited, 0) as GridGroup).grids[0].grid.rows).toBe(3);
+    expect((groupAt(edited, 4) as GridGroup).grids[0].grid.rows).toBe(2);
+    expect((groupAt(edited, 4) as GridGroup).grids[0].selection).toEqual(sel);
   });
 
   it("copies the grid to a range of pages as one group", () => {
@@ -172,8 +186,8 @@ describe("applyGridTo", () => {
     const g = applyGridTo(withSection(), 0, [5]);
     const a = groupAt(g, 0) as GridGroup;
     const b = groupAt(g, 5) as GridGroup;
-    expect(b.grid).not.toBe(a.grid);
-    expect(b.selection).not.toBe(a.selection);
+    expect(b.grids[0].grid).not.toBe(a.grids[0].grid);
+    expect(b.grids[0].selection).not.toBe(a.grids[0].selection);
   });
 
   it("needs a grid group as the source", () => {
@@ -227,9 +241,12 @@ describe("pageBadge", () => {
 
   it("names the grid or the skip of another group", () => {
     let g = setSkipped(defaultGroups(5), 0, true);
-    g = updateGridGroup(g, 1, (x) => ({ ...x, selection: sel }));
+    g = updateGridGroup(g, 1, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     g = applyGridTo(g, 1, [4]);
-    g = updateGridGroup(g, 4, (x) => ({ ...x, grid: patchGrid(x.grid, { rows: 2, columns: 4 }) }));
+    g = updateGridGroup(g, 4, (x) => ({
+      ...x,
+      grids: [{ ...x.grids[0], grid: patchGrid(x.grids[0].grid, { rows: 2, columns: 4 }) }],
+    }));
     expect(pageBadge(g, 0, 1)).toBe("Skipped");
     expect(pageBadge(g, 4, 1)).toBe("2×4");
     expect(pageBadge(g, 2, 1)).toBeNull();
@@ -266,5 +283,55 @@ describe("patchGrid", () => {
     let g = patchGrid(DEFAULT_GROUP_GRID, { sourceGapLinked: false, sourceGapXMm: 2, sourceGapYMm: 5 });
     g = patchGrid(g, { sourceGapLinked: true });
     expect(g.sourceGapYMm).toBe(2);
+  });
+});
+
+describe("several grids in a group", () => {
+  const sel = { x: 0.1, y: 0.1, width: 0.4, height: 0.3 };
+  const other = { x: 0.1, y: 0.6, width: 0.6, height: 0.2 };
+  const twoGrids = () => {
+    let g = updateGrid(defaultGroups(4), 0, 0, (r) => ({ ...r, selection: sel }));
+    g = addGrid(g, 0);
+    return updateGrid(g, 0, 1, (r) => ({ grid: patchGrid(r.grid, { rows: 1, columns: 4 }), selection: other }));
+  };
+
+  it("adds a grid with the default settings and no region, up to the limit", () => {
+    let g = defaultGroups(2);
+    for (let i = 0; i < MAX_GRIDS + 2; i++) g = addGrid(g, 1);
+    const group = g[0] as GridGroup;
+    expect(group.grids).toHaveLength(MAX_GRIDS);
+    expect(group.grids[1]).toEqual({ grid: DEFAULT_GROUP_GRID, selection: null });
+  });
+
+  it("deletes a grid and moves the later ones up, but always keeps one", () => {
+    const g = deleteGrid(twoGrids(), 3, 0);
+    expect((g[0] as GridGroup).grids.map((r) => r.selection)).toEqual([other]);
+    const last = deleteGrid(g, 0, 0);
+    expect((last[0] as GridGroup).grids).toEqual([{ grid: expect.objectContaining({ rows: 1 }), selection: null }]);
+  });
+
+  it("names every drawn grid of another group in its badge", () => {
+    let g = applyGridTo(twoGrids(), 0, [3], "all");
+    g = setSkipped(g, 2, true);
+    expect(pageBadge(g, 3, 0)).toBe("3×3, 1×4");
+    expect(pageBadge(g, 3, 0, { 3: [{ center: { x: 0.5, y: 0.5 }, width: 0.1, height: 0.1, angle_deg: 0 }] })).toBe(
+      "3×3, 1×4 + 1",
+    );
+    const one = applyGridTo(twoGrids(), 0, [3], 1);
+    expect(pageBadge(one, 3, 0)).toBe("1×4");
+  });
+
+  it("lists the drawn grids with their numbers, skipping the ones with no region", () => {
+    const g = updateGrid(twoGrids(), 0, 0, (r) => ({ ...r, selection: null }));
+    const group = g[0] as GridGroup;
+    expect(drawnGrids(group).map((d) => d.n)).toEqual([1]);
+    expect(hasRegion(group)).toBe(true);
+    expect(activeRegion(group, 7).selection).toEqual(other);
+  });
+
+  it("clears the region of one grid only, on one page", () => {
+    const g = clearGridRegion(twoGrids(), 2, true, 1);
+    expect((groupAt(g, 2) as GridGroup).grids.map((r) => r.selection)).toEqual([sel, null]);
+    expect((groupAt(g, 1) as GridGroup).grids.map((r) => r.selection)).toEqual([sel, other]);
   });
 });

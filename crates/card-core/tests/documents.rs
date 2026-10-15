@@ -17,7 +17,7 @@ use lopdf::Document;
 fn grid_group(first: usize, last: usize, grid: GridLayout) -> PageGroup {
     PageGroup {
         pages: PageRange { first, last },
-        kind: PageGroupKind::Grid { grid },
+        kind: PageGroupKind::grid(grid),
     }
 }
 
@@ -72,6 +72,7 @@ fn the_user_order_can_interleave_documents() {
     let id = |document_id, column| CardId::Grid {
         document_id,
         page_index: 0,
+        grid: 0,
         row: 0,
         column,
     };

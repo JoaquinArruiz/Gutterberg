@@ -44,9 +44,7 @@ fn the_bleed_is_the_edge_of_the_piece_mirrored_and_the_back_sits_in_the_mirrored
         pages: vec![page],
         groups: vec![PageGroup {
             pages: PageRange { first: 0, last: 0 },
-            kind: PageGroupKind::Grid {
-                grid: sample_grid(0.0),
-            },
+            kind: PageGroupKind::grid(sample_grid(0.0)),
         }],
     }];
     let spec = SheetSpec {
@@ -67,6 +65,7 @@ fn the_bleed_is_the_edge_of_the_piece_mirrored_and_the_back_sits_in_the_mirrored
     let back_card = CardId::Grid {
         document_id: 0,
         page_index: 0,
+        grid: 0,
         row: 2,
         column: 2,
     };

@@ -173,8 +173,8 @@ describe("adding images", () => {
     const groups = useLayoutStore.getState().groups;
     expect(groups).toHaveLength(1);
     const g = groups[0];
-    expect(g.kind === "grid" && [g.grid.rows, g.grid.columns]).toEqual([1, 1]);
-    expect(g.kind === "grid" && g.selection).toEqual({ x: 0, y: 0, width: 1, height: 1 });
+    expect(g.kind === "grid" && [g.grids[0].grid.rows, g.grids[0].grid.columns]).toEqual([1, 1]);
+    expect(g.kind === "grid" && g.grids[0].selection).toEqual({ x: 0, y: 0, width: 1, height: 1 });
     // A new project has nothing to save yet, and is not marked as modified.
     expect(project().dirty).toBe(false);
     expect(currentSignature()).toBe(project().signature);
@@ -201,8 +201,8 @@ describe("adding images", () => {
   it("puts bleed around the piece: the piece is the middle of the page", async () => {
     await importImages(["/art/dragon.png"], [{ ...standard, bleedMm: 3 }]);
     const g = useLayoutStore.getState().groups[0];
-    expect(g.kind === "grid" && g.selection?.x).toBeCloseTo(3 / 69);
-    expect(g.kind === "grid" && g.selection?.width).toBeCloseTo(63 / 69);
+    expect(g.kind === "grid" && g.grids[0].selection?.x).toBeCloseTo(3 / 69);
+    expect(g.kind === "grid" && g.grids[0].selection?.width).toBeCloseTo(63 / 69);
   });
 
   it("names a single image after its file", async () => {

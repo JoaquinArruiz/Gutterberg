@@ -147,15 +147,15 @@ describe("the draft on the page", () => {
   it("applies on the button and on Enter, and leaves nothing behind", async () => {
     render(all());
     await detectWith({ proposals: [grid({ rows: 2, columns: 4 })], reasons: [] });
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grid).toMatchObject({ rows: 2, columns: 4 });
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].grid).toMatchObject({ rows: 2, columns: 4 });
     expect(screen.queryByTestId("detect-bar")).toBeNull();
     expect(screen.queryByTestId("detect-overlay")?.children.length ?? 0).toBe(0);
 
     await detectWith({ proposals: [grid({ rows: 1, columns: 2 })], reasons: [] });
     fireEvent.keyDown(window, { key: "Enter" });
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grid).toMatchObject({ rows: 1, columns: 2 });
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].grid).toMatchObject({ rows: 1, columns: 2 });
   });
 
   it("is discarded on the button and on Esc, changing nothing", async () => {
@@ -166,7 +166,7 @@ describe("the draft on the page", () => {
     await detectWith({ proposals: [grid()], reasons: [] });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("detect-bar")).toBeNull();
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
   });
 
   it("leaves Enter and Esc to a field being typed in", async () => {
@@ -180,7 +180,7 @@ describe("the draft on the page", () => {
     fireEvent.keyDown(screen.getByLabelText("field"), { key: "Enter" });
     fireEvent.keyDown(screen.getByLabelText("field"), { key: "Escape" });
     expect(screen.getByTestId("detect-bar")).toBeTruthy();
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
   });
 
   it("offers the other proposals one after another", async () => {

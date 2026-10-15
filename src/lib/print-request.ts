@@ -5,7 +5,7 @@ import { gridPayload, type OutputSettings, outputPage } from "../stores/layout-s
 import { cardIdKey, type DocumentId } from "./card";
 import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
 import { orientedToPoints } from "./coordinates";
-import type { FreeformCards, PageGroup } from "./document-layout";
+import { type FreeformCards, hasRegion, type PageGroup } from "./document-layout";
 import { DEFAULT_FINISH, type Finish, finishingPayload, gutterfoldOn } from "./finish";
 import type {
   Card,
@@ -67,9 +67,9 @@ export type LayoutDocument = {
 };
 
 /**
- * Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out.
- * A page's freeform cards become a one-page freeform group right after that page's grid cards, so
- * the cards come out in page order.
+ * Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out; in the others a
+ * grid with no region is null, so the grids after it keep their numbers. A page's freeform cards become a one-page
+ * freeform group right after that page's grid cards, so the cards come out in page order.
  */
 export function toRustGroups(
   groups: PageGroup[],
@@ -83,10 +83,12 @@ export function toRustGroups(
       out.push({ pages: g.pages, kind: "skip" });
       continue;
     }
-    const grid = g.selection ? gridPayload(g.selection, g.grid, output) : null;
+    const grids = hasRegion(g)
+      ? g.grids.map((r) => (r.selection ? gridPayload(r.selection, r.grid, output) : null))
+      : null;
     let start = g.pages.first;
     const flush = (end: number) => {
-      if (grid && end >= start) out.push({ pages: { first: start, last: end }, kind: "grid", grid });
+      if (grids && end >= start) out.push({ pages: { first: start, last: end }, kind: "grid", grids });
     };
     for (let p = g.pages.first; p <= g.pages.last; p++) {
       const own = freeform[p];

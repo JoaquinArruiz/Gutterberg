@@ -175,6 +175,42 @@ fn objects_of_several_sizes_give_one_proposal_each_best_first() {
 }
 
 #[test]
+fn blocks_of_pieces_of_different_sizes_are_also_offered_as_several_grids_first() {
+    // Cards 2 x 2 at the top, a row of four tokens below them.
+    let mut objects = grid_objects(2, 2, 63.0, 88.0, 2.0, 15.0, 15.0);
+    objects.extend(grid_objects(4, 1, 40.0, 40.0, 3.0, 15.0, 210.0));
+    let detection = detect_page(&data(objects), &[Box::new(ObjectsEngine)]);
+    assert_eq!(detection.proposals.len(), 3);
+    let ProposalKind::Grids { grids } = &detection.proposals[0].kind else {
+        panic!("not several grids: {:?}", detection.proposals[0].kind);
+    };
+    assert_eq!(grids.len(), 2);
+    // In reading order: the cards, then the tokens, each with its own gap.
+    assert_eq!((grids[0].rows, grids[0].columns), (2, 2));
+    assert_eq!((grids[1].rows, grids[1].columns), (1, 4));
+    assert!(near(grids[0].source_gap_x_mm, 2.0, 0.01));
+    assert!(near(grids[1].source_gap_x_mm, 3.0, 0.01));
+    assert!(near(pt_to_mm(grids[1].bounds.y), 210.0, 0.01));
+    assert_eq!(detection.proposals[0].engine, "pdf-objects");
+    // The grids one by one are still there.
+    assert!(detection.proposals[1..]
+        .iter()
+        .all(|p| matches!(p.kind, ProposalKind::Grid { .. })));
+}
+
+#[test]
+fn grids_that_overlap_or_are_unsure_are_not_put_together() {
+    // A row of three is only a hint (low confidence), so there is nothing to put together.
+    let mut objects = grid_objects(2, 2, 63.0, 88.0, 2.0, 15.0, 15.0);
+    objects.extend(grid_objects(3, 1, 40.0, 40.0, 3.0, 15.0, 210.0));
+    let detection = detect_page(&data(objects), &[Box::new(ObjectsEngine)]);
+    assert!(detection
+        .proposals
+        .iter()
+        .all(|p| !matches!(p.kind, ProposalKind::Grids { .. })));
+}
+
+#[test]
 fn crop_marks_that_line_up_confirm_the_grid() {
     let mut objects = grid_objects(2, 2, 63.5, 88.0, 0.0, 30.0, 40.0);
     let (x0, y0, x1, y1) = (30.0, 40.0, 30.0 + 127.0, 40.0 + 176.0);
@@ -302,6 +338,30 @@ fn a_detection_round_trips_through_serde() {
     assert_eq!(json["proposals"][1]["kind"], "rects");
     assert_eq!(json["proposals"][1]["rects"][0]["angle_deg"], -9.0);
     let back: Detection = serde_json::from_value(json).unwrap();
+    assert_eq!(back, d);
+
+    let grids = Detection {
+        proposals: vec![Proposal {
+            kind: ProposalKind::Grids {
+                grids: vec![card_core::detect::GridProposal {
+                    bounds: Rect::new(1.0, 2.0, 3.0, 4.0),
+                    rows: 1,
+                    columns: 2,
+                    source_gap_x_mm: 0.0,
+                    source_gap_y_mm: 1.0,
+                }],
+            },
+            confidence: 0.9,
+            engine: "pdf-objects".into(),
+            notes: vec![],
+        }],
+        reasons: vec![],
+    };
+    let json = serde_json::to_value(&grids).unwrap();
+    assert_eq!(json["proposals"][0]["kind"], "grids");
+    assert_eq!(json["proposals"][0]["grids"][0]["columns"], 2);
+    let back: Detection = serde_json::from_value(json).unwrap();
+    let d = grids;
     assert_eq!(back, d);
 }
 
