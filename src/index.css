@@ -89,3 +89,26 @@ body {
     display: none;
   }
 }
+
+/* A Preferences setting a link pointed at: a thin border in the accent colour, a little away from it, pulses twice. */
+@keyframes prefs-pulse {
+  0%,
+  100% {
+    outline-color: transparent;
+  }
+  50% {
+    outline-color: var(--accent);
+  }
+}
+.prefs-pulse {
+  outline: 1.5px solid transparent;
+  outline-offset: 8px;
+  animation: prefs-pulse 0.7s ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No movement: the border shows steady until Preferences closes. */
+  .prefs-pulse {
+    animation: none;
+    outline-color: var(--accent);
+  }
+}

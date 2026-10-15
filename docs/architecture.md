@@ -181,6 +181,16 @@ A proposal is never applied by itself. It is a draft drawn on the page (dashed o
 words) that the user applies in one undo step, steps through ("Next proposal") or discards. The weights were tuned
 on generated fixtures; they are constants at the top of each engine.
 
+**Page edges** (`detect::page_edges`, for sticky edges) reads the same `PageData` for a different answer: the strong
+straight edges of the page, vertical and horizontal segments in points with a strength 0..1. The sides of the page's
+drawn rectangles, images and cut lines come first, exact, joined where they touch on one line. The grey render adds
+runs of strong, same-sign contrast down every pixel column (and along every row), found with a central difference so
+an edge between two pixels gives its whole step, merged across columns no more than two pixels apart (so a diagonal in
+the art cannot chain into a long edge), placed at the contrast-weighted mean and kept from 5 mm long (`MIN_EDGE_MM`).
+A render edge an object already explains is dropped, and each axis keeps its strongest 300. The `page_edges` command
+runs it on the render worker; the UI asks once per page and keeps the answer for the session (`lib/edges-api.ts`,
+forgotten when a PDF is opened or closed under that id).
+
 ### Errors
 
 `Error` serialises to `ErrorInfo { code, message, ...values }`: a stable code, the values the message needs (page
@@ -245,6 +255,19 @@ maths in `lib/snap.ts`: the moving thing's upright box gives its edges and middl
 to the other pieces and the region within a few screen pixels (`snapTolerance`), and the viewport draws the guides.
 The switch is `editor.snap` in preferences; `Ctrl/Cmd` held turns it off for a drag, which is why only `Shift`-click
 adds a piece to the picked ones.
+
+**Precision aids** (0.15.0) build on that. Sticky edges (`editor.snapEdges`) add the page's edges as targets, normalized
+by `edgesToNormalized`; `edgeTargets` keeps only those running along at least half of the moving box's side, so art
+inside a piece never pulls a border. Every snap is sticky: `stickyOffset` is the same search with hysteresis, as a
+pure function of the previous move's state, holding a line on its target until the pointer has moved `RELEASE_PX` from
+where it snapped, then refusing that target until the lines are clear of it. The magnet decides the page, the pieces
+and the guides; sticky edges decide the artwork's edges. The rulers (`editor.rulers`, `Ctrl/Cmd+R`) sit outside the
+canvas element, so turning them on shrinks the canvas instead of covering the page, and their tick maths is pure
+(`lib/rulers.ts`); the pointer mark is moved by the canvas through a handle, without a render. Guides live in the
+editor store, by document id, in points from the page's corner (`lib/guides.ts`), so they stay at the same distance
+on pages of different sizes; which ruler gives which guide is `guideFrom`/`rulerOf`, swapped by `editor.invertRulers`; they are session state, outside undo and the project file. They show, take presses and
+are snapped to only while the rulers are on, and are drawn under the region and the pieces so a guide along a side
+never takes their handles.
 
 **Stores** (Zustand, read with per-field selectors, never the whole store): documents, the layout of the PDF being
 edited (the others are parked and swapped in), the print plan, editor session state, preferences, project state, the
@@ -362,7 +385,7 @@ on macOS and in the `logs` folder of the `Gutterberg` data folder elsewhere. It 
 cleared, so the record of a run that crashed is there at the next start. It is bounded: a run writes at most 64 KB, a
 file over 256 KB is moved to `gutterberg.old.log` at the next start (replacing the previous one), so the folder holds
 about half a megabyte at most. Every write failure is ignored; logging never stops or slows the app. "Copy log" in
-Preferences › Help (the `read_log` command) hands over the last 24,000 characters, from a whole line, which keeps a
+Preferences › About (the `read_log` command) hands over the last 24,000 characters, from a whole line, which keeps a
 bug report under GitHub's 65,536-character limit. Only the Rust side logs; the web view's own errors are not in it.
 
 ## Preferences
@@ -378,6 +401,13 @@ folder there once, before the webview opens, and never overwrites or merges into
 macOS keeps its storage under the bundle identifier whatever the override says, so nothing moves there. The identifier
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
+The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
+Layout (the panels of each tab), Display (theme, Live preview, rulers), AI Mode, Help (tour, tips, shortcuts),
+Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
+goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
+names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into
+view and pulses twice, then clears `prefsPulse`.
+
 ## Decisions
 
 Decisions that shaped the product, so they are not re-argued by accident.
@@ -392,7 +422,7 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Shapes | Rectangles, optionally rotated. Round or custom shapes are not supported (a round token is marked and printed with its rectangle). |
 | Messy scans | Supported: freeform rectangles with rotation, a per-piece turn so all face one way, drag to sort. Perspective correction is out of scope. |
 | Words | Source / Print tabs; Original / Preview / Split views; the generic noun is **piece**. The glossary is in `AGENTS.md`. |
-| Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. |
+| Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. Number fields also take arithmetic (`src/lib/arithmetic.ts`: a small parser for `+ - * /` and parentheses, never `eval`). |
 | Project file | `.gtr`, JSON with a `gutterberg-project` signature and a version, checked on open: not a project / older, migrate / newer, refuse. |
 | Locked PDFs | Locked against printing or modifying: refused. Other restrictions: kept on the output. Never stripped. |
 | AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; every action asks first. |

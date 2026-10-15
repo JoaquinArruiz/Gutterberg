@@ -24,7 +24,8 @@ describe("HintToast", () => {
     expect(screen.queryByRole("button", { name: "Next tip" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Open Preferences" }));
     expect(useUiStore.getState().prefsOpen).toBe(true);
-    expect(useUiStore.getState().prefsSection).toBe("Preview");
+    expect(useUiStore.getState().prefsSection).toBe("Display");
+    expect(useUiStore.getState().prefsPulse).toBe("livePreview");
   });
 
   it("steps forwards and back with the buttons, ending in Done", () => {
@@ -134,6 +135,7 @@ describe("HintToast", () => {
     expect(toast.text).toContain("Preferences › Help");
     toast.actions?.[0].onClick();
     expect(useUiStore.getState().prefsSection).toBe("Help");
+    expect(useUiStore.getState().prefsPulse).toBe("helpTips");
   });
 
   it("shows again when its catalog version is newer than the dismissal", () => {

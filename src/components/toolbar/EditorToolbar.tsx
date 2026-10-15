@@ -6,7 +6,9 @@ import {
   MousePointer2,
   RectangleVertical,
   Redo2,
+  Ruler,
   Settings,
+  Tangent,
   Undo2,
   X,
   ZoomIn,
@@ -207,6 +209,10 @@ export function EditorToolbar() {
   const visibleModes = usePreferencesStore((s) => s.prefs.workspace.visibleModes);
   const snap = usePreferencesStore((s) => s.prefs.editor.snap);
   const setSnap = usePreferencesStore((s) => s.setSnap);
+  const snapEdges = usePreferencesStore((s) => s.prefs.editor.snapEdges);
+  const setSnapEdges = usePreferencesStore((s) => s.setSnapEdges);
+  const rulers = usePreferencesStore((s) => s.prefs.editor.rulers);
+  const setRulers = usePreferencesStore((s) => s.setRulers);
   const setPrefsOpen = useUiStore((s) => s.setPrefsOpen);
   const { zoomIn, zoomOut, fitPage } = zoomActions;
   const empty = pages.length === 0;
@@ -249,17 +255,41 @@ export function EditorToolbar() {
               </button>
             ))}
           {stage === "cards" && <div className="mx-0.5 h-4 w-px bg-[var(--border)]" />}
+          {/* The precision aids: switches for how editing on the page behaves, not tools to pick. */}
           {stage === "cards" && (
-            <button
-              type="button"
-              title={t("toolbar.snap")}
-              aria-label={t("toolbar.snap")}
-              aria-pressed={snap}
-              onClick={() => setSnap(!snap)}
-              className={`${iconBtn} ${snap ? "bg-[var(--active)]" : ""}`}
-            >
-              <Magnet size={14} />
-            </button>
+            <fieldset aria-label={t("toolbar.precisionAids")} className="flex items-center gap-1">
+              <button
+                type="button"
+                title={t("toolbar.snap")}
+                aria-label={t("toolbar.snap")}
+                aria-pressed={snap}
+                onClick={() => setSnap(!snap)}
+                className={`${iconBtn} ${snap ? "bg-[var(--active)]" : ""}`}
+              >
+                <Magnet size={14} />
+              </button>
+              <button
+                type="button"
+                title={t("toolbar.snapEdges")}
+                aria-label={t("toolbar.snapEdges")}
+                aria-pressed={snapEdges}
+                data-hint-target="sticky-edges-button"
+                onClick={() => setSnapEdges(!snapEdges)}
+                className={`${iconBtn} ${snapEdges ? "bg-[var(--active)]" : ""}`}
+              >
+                <Tangent size={14} />
+              </button>
+              <button
+                type="button"
+                title={t("toolbar.rulers")}
+                aria-label={t("toolbar.rulers")}
+                aria-pressed={rulers}
+                onClick={() => setRulers(!rulers)}
+                className={`${iconBtn} ${rulers ? "bg-[var(--active)]" : ""}`}
+              >
+                <Ruler size={14} />
+              </button>
+            </fieldset>
           )}
           <div className="mx-1 h-4 w-px bg-[var(--border)]" />
           <button type="button" title={t("toolbar.undo")} onClick={undo} disabled={!canUndo} className={iconBtn}>

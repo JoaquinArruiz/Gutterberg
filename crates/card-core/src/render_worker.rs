@@ -12,7 +12,7 @@
 
 use crate::card::DocumentId;
 use crate::detect::read::{read_objects, read_page_data, read_summary, PageSummary};
-use crate::detect::{default_engines, detect_page, Detection, PageObject};
+use crate::detect::{default_engines, detect_page, page_edges, Detection, PageEdges, PageObject};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::render::{
@@ -59,6 +59,7 @@ enum Work {
     Page(DocumentId, usize, u32, Reply<Vec<u8>>),
     Region(DocumentId, usize, Rect, u32, Reply<Vec<u8>>),
     Detect(DocumentId, usize, Reply<Detection>),
+    Edges(DocumentId, usize, Reply<PageEdges>),
     /// Objects of one page, for describing it as text.
     Objects(DocumentId, usize, Reply<(PageSize, Vec<PageObject>)>),
     Summaries(DocumentId, Vec<usize>, Reply<Vec<PageSummary>>),
@@ -150,6 +151,13 @@ impl RenderWorker {
     pub fn detect(&self, document_id: DocumentId, page_index: usize) -> Result<Detection> {
         self.send(RenderKind::Page, |r| {
             Work::Detect(document_id, page_index, r)
+        })
+    }
+
+    /// The strong straight edges of a page, for sticky edges (see [`page_edges`]). Blocks until done.
+    pub fn page_edges(&self, document_id: DocumentId, page_index: usize) -> Result<PageEdges> {
+        self.send(RenderKind::Page, |r| {
+            Work::Edges(document_id, page_index, r)
         })
     }
 
@@ -259,6 +267,14 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                         .ok_or(Error::NoDocument)
                         .and_then(|d| read_page_data(d, index))
                         .map(|data| detect_page(&data, &default_engines())),
+                );
+            }
+            Work::Edges(id, index, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| read_page_data(d, index))
+                        .map(|data| page_edges(&data)),
                 );
             }
             Work::Objects(id, index, reply) => {

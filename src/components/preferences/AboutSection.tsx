@@ -7,6 +7,7 @@ import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
 import { type LicenseTexts, licenseTexts } from "../../lib/licenses";
 import { GitHubIcon, LinkedInIcon, RefractionHubIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
+import { BugReportField } from "./BugReportField";
 import { Field } from "./Field";
 
 // The author's own pages.
@@ -17,7 +18,7 @@ const LINKS = [
 // A link to an organization the author shares with friends, not a page of his own: shown apart, after a divider.
 const ORG_LINK = { id: "refractionHub", url: EXTERNAL_LINKS.refractionHub, Icon: RefractionHubIcon } as const;
 
-/** The app's name and version, who made it, and its links (his own, and one to an organization): each asks before it opens the web browser. */
+/** The app's name and version, who made it, its links (his own, and one to an organization, each asking before it opens the web browser), how to report a bug, and the license. */
 export function AboutSection() {
   const { t } = useTranslation();
   const name = useAppName();
@@ -100,6 +101,7 @@ export function AboutSection() {
           </p>
         )}
       </Field>
+      <BugReportField />
       <Field label={t("preferences.about.license")}>
         <p className="text-[var(--muted)]">{t("preferences.about.licenseNote")}</p>
         <div className="flex flex-wrap gap-2">

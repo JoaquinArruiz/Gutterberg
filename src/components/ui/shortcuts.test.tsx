@@ -195,6 +195,7 @@ describe("the shortcuts sheet", () => {
       "nextPage",
       "previousPage",
       "pickAll",
+      "makeGuide",
     ]);
     expect(screen.getByRole("searchbox").closest("div")?.className).toContain("sticky");
   });

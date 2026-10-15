@@ -43,7 +43,7 @@ beforeEach(() => {
     third_party: "Third-party licenses\n\nreact 19: MIT License",
   });
   usePreferencesStore.getState().resetToDefaults();
-  useUiStore.setState({ prefsOpen: false, prefsSection: null });
+  useUiStore.setState({ prefsOpen: false, prefsSection: null, prefsPulse: null });
 });
 afterEach(() => cleanup());
 
@@ -55,8 +55,8 @@ describe("the Preferences sections", () => {
     expect(buttons.map((b) => b.textContent)).toEqual([
       "General",
       "Workspace",
-      "Preview",
-      "Appearance",
+      "Layout",
+      "Display",
       "AI Mode (experimental)",
       "Help",
       "Updates",
@@ -84,19 +84,90 @@ describe("the Preferences sections", () => {
     render(<PreferencesDialog />);
     await openPreferences();
     expect(screen.getByRole("button", { name: "General" }).getAttribute("aria-current")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Appearance" }));
-    expect(screen.getByRole("button", { name: "Appearance" }).getAttribute("aria-current")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    expect(screen.getByRole("button", { name: "Display" }).getAttribute("aria-current")).toBe("true");
     expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
   });
 
-  it("shows the Workspace layout of both tabs", async () => {
+  it("keeps only the views in Workspace", async () => {
     render(<PreferencesDialog />);
     await openPreferences();
     fireEvent.click(screen.getByRole("button", { name: "Workspace" }));
+    expect(screen.getByText("Visible views")).toBeTruthy();
+    expect(screen.getByText("Default view")).toBeTruthy();
+    expect(screen.queryByText("Layout of the Source tab")).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Invert rulers" })).toBeNull();
+  });
+
+  it("shows the layout of both tabs, the panel memory and the reset under Layout", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences();
+    fireEvent.click(screen.getByRole("button", { name: "Layout" }));
     expect(screen.getByText("Layout of the Source tab")).toBeTruthy();
     expect(screen.getByText("Layout of the Print tab")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Piece library panel position" })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Print settings panel position" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Remember panel sizes" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Reset workspace layout" })).toBeTruthy();
+  });
+
+  it("puts the theme, Live preview and the rulers under Display", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences();
+    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    expect(screen.getByRole("radiogroup", { name: "Theme" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Live preview" })).toBeTruthy();
+    expect(screen.getByRole("switch", { name: "Invert rulers" })).toBeTruthy();
+  });
+
+  it("keeps the longer explanations behind an info tip", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences();
+    // The note is the info button's description, not a paragraph on the page.
+    const note = screen.getByText(/Only changes how lengths are shown and typed/);
+    expect(note.className).toContain("sr-only");
+  });
+
+  it("has Invert rulers, off by default", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences();
+    fireEvent.click(screen.getByRole("button", { name: "Display" }));
+    const invert = screen.getByRole("switch", { name: "Invert rulers" });
+    expect(invert.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(invert);
+    expect(usePreferencesStore.getState().prefs.editor.invertRulers).toBe(true);
+  });
+});
+
+describe("a link to a setting", () => {
+  it("opens its section with the setting pulsing, and stops when the pulse ends", async () => {
+    render(<PreferencesDialog />);
+    await act(async () => useUiStore.getState().setPrefsOpen(true, "Display", "livePreview"));
+    expect(screen.getByRole("button", { name: "Display" }).getAttribute("aria-current")).toBe("true");
+    const field = screen.getByRole("radiogroup", { name: "Live preview" }).closest("[data-pulse]") as HTMLElement;
+    expect(field.className).toContain("prefs-pulse");
+    // Only the setting the link named.
+    expect(document.querySelectorAll("[data-pulse]").length).toBe(1);
+    // jsdom has no AnimationEvent, so React listens for the prefixed name.
+    fireEvent(field, new Event("webkitAnimationEnd", { bubbles: true }));
+    expect(useUiStore.getState().prefsPulse).toBeNull();
+    expect(field.className).not.toContain("prefs-pulse");
+  });
+
+  it("pulses the help tips switch when a tip's link points there", async () => {
+    render(<PreferencesDialog />);
+    await act(async () => useUiStore.getState().setPrefsOpen(true, "Help", "helpTips"));
+    const field = screen.getByRole("switch", { name: "Show help tips" }).closest("[data-pulse]");
+    expect(field?.className).toContain("prefs-pulse");
+  });
+
+  it("pulses nothing when Preferences opens without a link, or closes", async () => {
+    render(<PreferencesDialog />);
+    await act(async () => useUiStore.getState().setPrefsOpen(true, "Display"));
+    expect(document.querySelector("[data-pulse]")).toBeNull();
+    await act(async () => useUiStore.getState().setPrefsOpen(true, "Display", "livePreview"));
+    await act(async () => useUiStore.getState().setPrefsOpen(false));
+    expect(useUiStore.getState().prefsPulse).toBeNull();
   });
 });
 

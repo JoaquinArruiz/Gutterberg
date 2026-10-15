@@ -95,7 +95,7 @@ open, or shows an error, the log is the best thing to send with your report. It 
 | Windows | `%LOCALAPPDATA%\Gutterberg\logs` | Press **Win+R**, paste the folder and press Enter |
 | Linux | `~/.local/share/Gutterberg/logs` | Run `xdg-open ~/.local/share/Gutterberg/logs`, or show hidden files in your file manager |
 
-If the app does open, **Preferences › Help › Copy log** copies the end of the log for you. The log is added to each
+If the app does open, **Preferences › About › Copy log** copies the end of the log for you. The log is added to each
 time the app starts, so the run that closed by itself is still in it when you open the app again; the end of the
 file is the part that matters. It stays small by itself (about half a megabyte at most, with one older copy kept),
 and you can delete the folder whenever you like. It has no PDFs, but an error can mention a file or folder name, so
@@ -110,9 +110,9 @@ Versions up to 0.10.0 do not keep a log. On a Mac, send what Terminal prints whe
 You need a free [GitHub account](https://github.com/signup). Then:
 
 1. Open the [issues page](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose) and press **Get started**
-   next to **Bug report**. (In the app, **Preferences › Help › Report on GitHub** opens the same form with your
+   next to **Bug report**. (In the app, **Preferences › About › Report on GitHub** opens the same form with your
    version and system already filled in.)
-2. Fill in the form: the version (**Preferences › About**, or **Copy app info** in **Preferences › Help**), your
+2. Fill in the form: the version (**Preferences › About**, which also has **Copy app info**), your
    system, what happened, the steps to make it happen again and what you expected. A PDF that does not work is the
    best test case, if you are allowed to share it. If you cannot share yours, say whether
    [`examples/09-bad-scan.pdf`](examples/09-bad-scan.pdf) (a crooked, mixed-size scan) does the same, which is
@@ -132,6 +132,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
   Piece tool (movable, resizable and rotatable). Sizes are exact, in mm, cm or inches.
 - **Detect pieces** proposes the grid or the rectangles of a page from the PDF's own objects, from repeating
   edges, or from the shapes in a scan. It is a draft until you apply it.
+- Snapping to the page and the other pieces, sticky edges that hold a side on the borders and cut lines of the
+  artwork, and rulers with guides in your unit.
 - Source gap, output gap, margins and page size; **Original**, **Preview** and **Split** views; skip pages;
   give page ranges their own grid; save grids as presets.
 - A pre-flight check lists the pages that cannot be exported before anything is written.
@@ -221,7 +223,7 @@ Nothing in mind currently, just bug fixes / small features
 ## Contributing
 
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a bug? Use the
-[issue form](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose), or Preferences › Help › Report on
+[issue form](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose), or Preferences › About › Report on
 GitHub in the app, which fills in your version and system.
 
 ## License

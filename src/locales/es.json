@@ -27,6 +27,9 @@
       "pan": "Desplazar"
     },
     "snap": "Ajustar a la página y a otras piezas al arrastrar (mantén Ctrl/Cmd para arrastrar sin ajuste)",
+    "precisionAids": "Ayudas de precisión",
+    "snapEdges": "Pegar a los bordes del arte al arrastrar (mantén Ctrl/Cmd para arrastrar sin pegar)",
+    "rulers": "Reglas y guías (Ctrl/Cmd+R)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Deshacer (Ctrl+Z)",
     "redo": "Rehacer (Mayús+Ctrl+Z)",
@@ -98,7 +101,10 @@
     "opening": "Abriendo…",
     "openHint": "Abre un PDF para empezar (Ctrl/Cmd+O)",
     "pageCanvas": "Lienzo de la página",
-    "pageSkipped": "Esta página está omitida: no se incluye en la exportación."
+    "pageSkipped": "Esta página está omitida: no se incluye en la exportación.",
+    "guidesMenu": "Guías",
+    "clearGuides": "Borrar las guías",
+    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla."
   },
   "preview": {
     "title": "Vista previa",
@@ -546,8 +552,8 @@
     "sections": {
       "General": "General",
       "Workspace": "Espacio de trabajo",
-      "Preview": "Vista previa",
-      "Appearance": "Apariencia",
+      "Layout": "Disposición",
+      "Display": "Visualización",
       "About": "Acerca de",
       "AI": "Modo IA (experimental)",
       "Help": "Ayuda",
@@ -569,7 +575,7 @@
       "decimalAuto": "Automático (según el idioma)",
       "decimalDot": "Punto (63.5)",
       "decimalComma": "Coma (63,5)",
-      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción."
+      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción, y también cuentas como 12/3."
     },
     "workspace": {
       "visibleViews": "Vistas visibles",
@@ -592,7 +598,10 @@
       "resetLayout": "Restablecer la disposición del espacio de trabajo",
       "resetNote": "Restaura la posición y el tamaño de los paneles, las vistas visibles y la vista predeterminada. Se conservan las unidades, el idioma, el tema y la vista previa en vivo.",
       "layoutCards": "Disposición de la pestaña Origen",
-      "layoutPrint": "Disposición de la pestaña Imprimir"
+      "layoutPrint": "Disposición de la pestaña Imprimir",
+      "rulers": "Reglas",
+      "invertRulers": "Invertir las reglas",
+      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella."
     },
     "livePreview": {
       "title": "Vista previa en vivo",
@@ -743,13 +752,13 @@
     },
     "live-preview-output": {
       "main": {
-        "text": "La vista previa en vivo está desactivada, así que esta vista previa no se genera automáticamente. Pulsa el botón de actualizar (abajo a la derecha) para generarla. Puedes cambiar esto en Preferencias > Vista previa.",
+        "text": "La vista previa en vivo está desactivada, así que esta vista previa no se genera automáticamente. Pulsa el botón de actualizar (abajo a la derecha) para generarla. Puedes cambiar esto en Preferencias › Visualización.",
         "action": "Abrir preferencias"
       }
     },
     "live-preview-sheets": {
       "main": {
-        "text": "La vista previa en vivo está desactivada, así que la fila de vistas previas de las hojas de arriba no se redibuja cuando cambias el plan. Pulsa el botón de actualizar (arriba a la derecha) para actualizarla. La hoja grande siempre sigue el plan. Puedes cambiar esto en Preferencias > Vista previa.",
+        "text": "La vista previa en vivo está desactivada, así que la fila de vistas previas de las hojas de arriba no se redibuja cuando cambias el plan. Pulsa el botón de actualizar (arriba a la derecha) para actualizarla. La hoja grande siempre sigue el plan. Puedes cambiar esto en Preferencias › Visualización.",
         "action": "Abrir preferencias"
       }
     },
@@ -781,6 +790,12 @@
       "one": {
         "title": "Mover la región",
         "text": "Arrastra la región para moverla, o sus tiradores para cambiar su tamaño. Después de hacer clic en ella, las flechas la mueven de a 1 mm (Mayús: 10 mm). Sus bordes se ajustan a la página y a las piezas; el imán de la barra de herramientas lo desactiva."
+      }
+    },
+    "sticky-edges": {
+      "one": {
+        "title": "Bordes adhesivos",
+        "text": "Ese lado se pegó a un borde del arte. Se queda ahí unos píxeles y se suelta si sigues arrastrando. Mantén Ctrl/Cmd para arrastrar libremente, o desactiva los bordes adhesivos con este botón."
       }
     }
   },
@@ -1077,7 +1092,10 @@
       "pickNone": "No elegir nada (ni las piezas ni la región)",
       "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
       "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
-      "dragFree": "Arrastrar una región o piezas sin que se ajusten"
+      "dragFree": "Arrastrar una región o piezas sin que se ajusten ni se peguen a los bordes",
+      "toggleRulers": "Mostrar u ocultar las reglas",
+      "makeGuide": "Crear una guía: arrastra desde una regla hasta la página (con las reglas visibles)",
+      "deleteGuide": "Mover una guía, o borrarla al soltarla sobre su regla"
     },
     "search": "Buscar atajos",
     "noMatch": "Ningún atajo coincide."

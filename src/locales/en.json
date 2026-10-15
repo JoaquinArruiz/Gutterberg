@@ -27,6 +27,9 @@
       "pan": "Pan"
     },
     "snap": "Snap to the page and to other pieces while dragging (hold Ctrl/Cmd to drag without it)",
+    "precisionAids": "Precision aids",
+    "snapEdges": "Stick to edges in the artwork while dragging (hold Ctrl/Cmd to drag without it)",
+    "rulers": "Rulers and guides (Ctrl/Cmd+R)",
     "toolTitle": "{{label}} ({{key}})",
     "undo": "Undo (Ctrl+Z)",
     "redo": "Redo (Shift+Ctrl+Z)",
@@ -98,7 +101,10 @@
     "opening": "Opening…",
     "openHint": "Open a PDF to get started (Ctrl/Cmd+O)",
     "pageCanvas": "Page canvas",
-    "pageSkipped": "This page is skipped: it is left out of the export."
+    "pageSkipped": "This page is skipped: it is left out of the export.",
+    "guidesMenu": "Guides",
+    "clearGuides": "Clear guides",
+    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it."
   },
   "preview": {
     "title": "Preview",
@@ -546,8 +552,8 @@
     "sections": {
       "General": "General",
       "Workspace": "Workspace",
-      "Preview": "Preview",
-      "Appearance": "Appearance",
+      "Layout": "Layout",
+      "Display": "Display",
       "About": "About",
       "AI": "AI Mode (experimental)",
       "Help": "Help",
@@ -569,7 +575,7 @@
       "decimalAuto": "Automatic (from the language)",
       "decimalDot": "Dot (63.5)",
       "decimalComma": "Comma (63,5)",
-      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to."
+      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to, and sums such as 12/3."
     },
     "workspace": {
       "visibleViews": "Visible views",
@@ -592,7 +598,10 @@
       "resetLayout": "Reset workspace layout",
       "resetNote": "Restores panel positions and sizes, the visible views and the default view. Units, language, theme and Live Preview are kept.",
       "layoutCards": "Layout of the Source tab",
-      "layoutPrint": "Layout of the Print tab"
+      "layoutPrint": "Layout of the Print tab",
+      "rulers": "Rulers",
+      "invertRulers": "Invert rulers",
+      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it."
     },
     "livePreview": {
       "title": "Live preview",
@@ -743,13 +752,13 @@
     },
     "live-preview-output": {
       "main": {
-        "text": "Live preview is off, so this preview isn't generated automatically. Press the refresh button (bottom right) to generate it. You can change this in Preferences > Preview.",
+        "text": "Live preview is off, so this preview isn't generated automatically. Press the refresh button (bottom right) to generate it. You can change this in Preferences › Display.",
         "action": "Open Preferences"
       }
     },
     "live-preview-sheets": {
       "main": {
-        "text": "Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the refresh button (top right) to update it. The large sheet always follows the plan. You can change this in Preferences > Preview.",
+        "text": "Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the refresh button (top right) to update it. The large sheet always follows the plan. You can change this in Preferences › Display.",
         "action": "Open Preferences"
       }
     },
@@ -781,6 +790,12 @@
       "one": {
         "title": "Move the region",
         "text": "Drag the region to move it, or its handles to resize it. Once you have clicked it, the arrow keys move it 1 mm at a time (Shift: 10 mm). Its edges snap to the page and to the pieces; the magnet in the toolbar turns that off."
+      }
+    },
+    "sticky-edges": {
+      "one": {
+        "title": "Sticky edges",
+        "text": "That side stuck to an edge in the artwork. It stays there for a few pixels, then lets go if you keep dragging. Hold Ctrl/Cmd to drag freely, or turn sticky edges off with this button."
       }
     }
   },
@@ -1077,7 +1092,10 @@
       "pickNone": "Pick nothing (the pieces and the region)",
       "duplicatePieces": "Duplicate the picked pieces (Piece tool)",
       "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Piece tool)",
-      "dragFree": "Drag a region or pieces without snapping"
+      "dragFree": "Drag a region or pieces without snapping or sticking to edges",
+      "toggleRulers": "Show or hide the rulers",
+      "makeGuide": "Make a guide: drag from a ruler onto the page (rulers on)",
+      "deleteGuide": "Move a guide, or delete it by dragging it back onto its ruler"
     },
     "search": "Search shortcuts",
     "noMatch": "No shortcut matches that."

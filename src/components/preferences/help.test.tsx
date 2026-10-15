@@ -28,6 +28,9 @@ const INFO = { name: "Gutterberg", version: "1.0.0", os: "Windows 11 (x86_64)", 
 async function openHelp() {
   await act(async () => useUiStore.getState().setPrefsOpen(true, "Help"));
 }
+async function openAbout() {
+  await act(async () => useUiStore.getState().setPrefsOpen(true, "About"));
+}
 const section = (name: string) => screen.getByText(name).closest("div")?.parentElement as HTMLElement;
 
 beforeEach(() => {
@@ -56,13 +59,13 @@ describe("Preferences › Help", () => {
     await act(async () => useUiStore.getState().setPrefsOpen(true));
     fireEvent.click(screen.getByRole("button", { name: "Help" }));
     expect(screen.getByText("Welcome tour")).toBeTruthy();
-    expect(screen.getByText("Found a bug?")).toBeTruthy();
   });
 
-  it("has the four groups, in order", async () => {
+  it("has the three groups, in order, and no longer the bug report (it is in About)", async () => {
     render(<PreferencesDialog />);
     await openHelp();
-    const titles = ["Welcome tour", "Help tips", "Keyboard shortcuts", "Found a bug?"].map((t) => screen.getByText(t));
+    expect(screen.queryByText("Found a bug?")).toBeNull();
+    const titles = ["Welcome tour", "Help tips", "Keyboard shortcuts"].map((t) => screen.getByText(t));
     for (let i = 1; i < titles.length; i++)
       expect(titles[i - 1].compareDocumentPosition(titles[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -145,9 +148,27 @@ describe("Preferences › Help", () => {
     expect(screen.getByText("Press ? at any time to open this list.")).toBeTruthy();
   });
 
-  it("says what to put in a bug report", async () => {
+  it("is in Spanish when the language is", async () => {
+    applyLocale({ language: "es", decimal: "auto" });
     render(<PreferencesDialog />);
     await openHelp();
+    expect(section("Recorrido de bienvenida")).toBeTruthy();
+    expect(section("Consejos")).toBeTruthy();
+  });
+});
+
+describe("Preferences › About › Found a bug?", () => {
+  it("sits between the links and the license", async () => {
+    render(<PreferencesDialog />);
+    await openAbout();
+    const titles = ["Links", "Found a bug?", "License"].map((t) => screen.getByText(t));
+    for (let i = 1; i < titles.length; i++)
+      expect(titles[i - 1].compareDocumentPosition(titles[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("says what to put in a bug report", async () => {
+    render(<PreferencesDialog />);
+    await openAbout();
     const text = screen.getByText("Found a bug?").closest("div")?.parentElement?.textContent ?? "";
     for (const part of [
       "which version you use and on which system",
@@ -163,7 +184,7 @@ describe("Preferences › Help", () => {
 
   it("copies the app info, and says so", async () => {
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     const line = "Gutterberg 1.0.0 · Windows 11 (x86_64) · Language: en · pdfium 8086";
     expect((await screen.findByTestId("app-info")).textContent).toBe(line);
     fireEvent.click(screen.getByRole("button", { name: "Copy app info" }));
@@ -174,7 +195,7 @@ describe("Preferences › Help", () => {
 
   it("copies the log, and says so", async () => {
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
     await act(async () => {});
     expect(writeText).toHaveBeenCalledWith("2026-10-12 14:03:09Z  start  Gutterberg 0.10.0 on macos aarch64\n");
@@ -186,7 +207,7 @@ describe("Preferences › Help", () => {
   it("says there is no log yet instead of copying nothing", async () => {
     loadLog.mockResolvedValue("  \n");
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
     expect(await screen.findByText("There is no log yet.")).toBeTruthy();
     expect(writeText).not.toHaveBeenCalled();
@@ -195,7 +216,7 @@ describe("Preferences › Help", () => {
   it("says when the log could not be read or copied", async () => {
     loadLog.mockRejectedValue(new Error("no app"));
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     fireEvent.click(await screen.findByRole("button", { name: "Copy log" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Couldn't read or copy the log");
     loadLog.mockResolvedValue("x\n");
@@ -207,7 +228,7 @@ describe("Preferences › Help", () => {
 
   it("explains what the log holds and to look it over before sending it", async () => {
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     const note = await screen.findByText(/plain text about what the app did/);
     expect(note.textContent).toContain("does not include your PDFs");
     expect(note.textContent).toContain("look it over");
@@ -216,7 +237,7 @@ describe("Preferences › Help", () => {
   it("says when it could not copy", async () => {
     writeText.mockRejectedValue(new Error("denied"));
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     await screen.findByTestId("app-info");
     fireEvent.click(screen.getByRole("button", { name: "Copy app info" }));
     expect((await screen.findByRole("alert")).textContent).toContain("Couldn't copy");
@@ -224,7 +245,7 @@ describe("Preferences › Help", () => {
 
   it("reports on GitHub through the link that asks first, with the version and system in the address", async () => {
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     await screen.findByTestId("app-info");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Report on GitHub" }));
@@ -240,7 +261,7 @@ describe("Preferences › Help", () => {
   it("warns when the browser could not be opened", async () => {
     openExternalLink.mockRejectedValue(new Error("no browser"));
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     await screen.findByTestId("app-info");
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Report on GitHub" }));
@@ -251,7 +272,7 @@ describe("Preferences › Help", () => {
   it("can neither copy nor report while the app info is not known (outside the app window)", async () => {
     loadAppInfo.mockRejectedValue(new Error("no app"));
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     expect(screen.getByRole("button", { name: "Copy app info" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByRole("button", { name: "Report on GitHub" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByTestId("app-info").textContent).toContain("only available in the app window");
@@ -259,7 +280,7 @@ describe("Preferences › Help", () => {
 
   it("shows a Discord button with its logo, switched off, saying it is coming soon", async () => {
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     const discord = screen.getByRole("button", { name: /Discord/ });
     expect(discord.hasAttribute("disabled")).toBe(true);
     expect(discord.textContent).toContain("Coming soon");
@@ -272,10 +293,9 @@ describe("Preferences › Help", () => {
     applyLocale({ language: "es", decimal: "auto" });
     loadAppInfo.mockResolvedValue({ ...INFO, language: "es" });
     render(<PreferencesDialog />);
-    await openHelp();
+    await openAbout();
     expect(screen.getByText("¿Encontraste un error?")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copiar datos de la aplicación" })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Discord/ }).textContent).toContain("Próximamente");
-    expect(section("Recorrido de bienvenida")).toBeTruthy();
   });
 });

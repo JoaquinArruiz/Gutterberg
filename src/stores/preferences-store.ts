@@ -130,6 +130,12 @@ type PreferencesState = {
   setShowReferences: (show: boolean) => void;
   /** Snapping while dragging on the page, on or off. */
   setSnap: (snap: boolean) => void;
+  /** Sticky edges: the sides of what is dragged stick to the edges in the artwork, on or off. */
+  setSnapEdges: (snapEdges: boolean) => void;
+  /** Rulers along the page, shown or hidden. */
+  setRulers: (rulers: boolean) => void;
+  /** Which guide each ruler gives: the one parallel to it, or (inverted) the one perpendicular to it. */
+  setInvertRulers: (invertRulers: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -255,6 +261,16 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       },
       setSnap: (snap) => {
         if (get().prefs.editor.snap !== snap) edit((p) => ({ ...p, editor: { ...p.editor, snap } }));
+      },
+      setSnapEdges: (snapEdges) => {
+        if (get().prefs.editor.snapEdges !== snapEdges) edit((p) => ({ ...p, editor: { ...p.editor, snapEdges } }));
+      },
+      setRulers: (rulers) => {
+        if (get().prefs.editor.rulers !== rulers) edit((p) => ({ ...p, editor: { ...p.editor, rulers } }));
+      },
+      setInvertRulers: (invertRulers) => {
+        if (get().prefs.editor.invertRulers !== invertRulers)
+          edit((p) => ({ ...p, editor: { ...p.editor, invertRulers } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),

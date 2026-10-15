@@ -3,27 +3,49 @@ import { useTranslation } from "react-i18next";
 import type { OrientedRect } from "../../lib/card";
 import {
   documentToScreen,
+  edgesToNormalized,
+  guidesToNormalized,
   type NormalizedRect,
+  normalizedToGuide,
   type Point,
   pageScreenRect,
   pxPerPoint,
   rectToScreen,
   screenToDocument,
 } from "../../lib/coordinates";
+import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
+import {
+  dropGuide,
+  type GuideAxis,
+  guideFrom,
+  NO_GUIDE_SET,
+  overRuler,
+  type RulerSide,
+  rulerOf,
+} from "../../lib/guides";
+import { emitHintEvent } from "../../lib/hint-events";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import {
   cardBox,
+  type EdgeLines,
+  edgeTargets,
+  FREE,
   type Guides,
+  joinLines,
+  NO_EDGES,
   NO_GUIDES,
+  RELEASE_PX,
   rectLines,
   type SnapLines,
-  snapOffset,
+  type Stick,
   snapTargets,
   snapTolerance,
+  stickyOffset,
 } from "../../lib/snap";
 import type { PageSize } from "../../lib/tauri";
+import { mmToPt } from "../../lib/units";
 import { usePreviewResult } from "../../lib/view-page";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
@@ -41,12 +63,15 @@ import { HintToast } from "../ui/HintToast";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
+import { type GuideDrag, GuideLines } from "./GuideLines";
 import { MAG, Magnifier } from "./Magnifier";
 import { OutputNotice } from "./OutputNotice";
 import { OutputPane } from "./OutputPane";
 import { OutputPreview } from "./OutputPreview";
 import { PagePreview } from "./PagePreview";
+import { Ruler, RulerCorner, type RulerHandle } from "./Rulers";
 import { SelectionRect } from "./SelectionRect";
+import { StickyEdgesTip } from "./StickyEdgesTip";
 
 type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
@@ -58,7 +83,9 @@ type Drag =
   // Moving one piece or several picked together; `rects` are where they were when the drag started.
   | { kind: "card-move"; indices: number[]; start: Point; rects: OrientedRect[] }
   | { kind: "card-resize"; index: number; handle: Handle; start: Point; rect: OrientedRect; fine?: boolean }
-  | { kind: "card-rotate"; index: number; rect: OrientedRect };
+  | { kind: "card-rotate"; index: number; rect: OrientedRect }
+  // A guide dragged out of a ruler (`index` null) or grabbed on the page.
+  | { kind: "guide"; axis: GuideAxis; index: number | null };
 
 const NO_CARDS: OrientedRect[] = [];
 const isHandle = (hit: string | undefined): hit is Handle => HANDLES.includes(hit as Handle);
@@ -118,6 +145,16 @@ export function EditorViewport() {
   const [loupe, setLoupe] = useState<{ handle: Handle; active: boolean } | null>(null);
   // The lines a drag snapped to, shown while it holds.
   const [guides, setGuides] = useState<Guides>(NO_GUIDES);
+  // What the drag's snapping holds on to between two moves (sticky snapping).
+  const stick = useRef<Stick>(FREE);
+  // The straight edges in this page's artwork, normalized, while sticky edges are on.
+  const edges = useRef<EdgeLines>(NO_EDGES);
+  // The rulers' pointer marks, moved on every pointer move without a render.
+  const rulerX = useRef<RulerHandle>(null);
+  const rulerY = useRef<RulerHandle>(null);
+  // The guide being dragged, drawn where the pointer is; the ref is what the release reads.
+  const [guideDrag, setGuideDrag] = useState<GuideDrag | null>(null);
+  const guideDragRef = useRef<GuideDrag | null>(null);
   const hold = useRef<{ timer: number; origin: Point } | null>(null);
   const lastPointer = useRef<Point>({ x: 0, y: 0 });
   const endHold = () => {
@@ -129,6 +166,7 @@ export function EditorViewport() {
 
   const page = pages[currentPage];
   const output = viewMode === "output";
+  const rulers = usePreferencesStore((s) => s.prefs.editor.rulers) && !!page && !output;
   // The page the viewport pans/zooms: the (possibly differently sized) output page in Output view.
   const viewPage = output ? (previewResult?.output_page ?? page) : page;
   // Output view has no refresh button: showing it (re)generates the manual preview. Split keeps its button.
@@ -144,6 +182,24 @@ export function EditorViewport() {
   }, [output, live, result, snapshot]);
   const viewPageRef = useRef(viewPage);
   viewPageRef.current = viewPage;
+
+  // The page's edges, asked for once per page (the answer is kept for the session) while sticky edges are on.
+  const activeId = useDocumentStore((s) => s.activeId);
+  const snapEdges = usePreferencesStore((s) => s.prefs.editor.snapEdges);
+  const rulerGuides = useEditorStore((s) => s.guides[activeId]) ?? NO_GUIDE_SET;
+  useEffect(() => {
+    edges.current = NO_EDGES;
+    if (!snapEdges || !page) return;
+    let current = true;
+    pageEdges(activeId, currentPage)
+      .then((e) => {
+        if (current) edges.current = edgesToNormalized(e, page);
+      })
+      .catch(() => {}); // no edges: the rest of snapping still works
+    return () => {
+      current = false;
+    };
+  }, [activeId, currentPage, page, snapEdges]);
 
   useEffect(() => {
     const el = ref.current;
@@ -238,6 +294,34 @@ export function EditorViewport() {
     };
   };
 
+  /** Follows a guide drag to `p` (canvas px). */
+  const trackGuide = (axis: GuideAxis, index: number | null, p: Point) => {
+    if (!page) return;
+    const doc = screenToDocument(p, useEditorStore.getState().viewport, page);
+    const g: GuideDrag = {
+      axis,
+      index,
+      pt: normalizedToGuide(axis === "x" ? doc.x : doc.y, axis, page),
+      // Dropped back on the ruler it comes from, it is deleted.
+      onRuler: overRuler(rulerOf(axis, usePreferencesStore.getState().prefs.editor.invertRulers), p),
+    };
+    guideDragRef.current = g;
+    setGuideDrag(g);
+  };
+
+  /**
+   * Pressing on a ruler drags out a new guide: a horizontal one from the top ruler and a vertical one from the left,
+   * or the other way round with "Invert rulers".
+   */
+  const onRulerDown = (ruler: RulerSide) => (e: React.PointerEvent<SVGSVGElement>) => {
+    if (!page || e.button !== 0) return;
+    const axis = guideFrom(ruler, usePreferencesStore.getState().prefs.editor.invertRulers);
+    e.preventDefault();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    drag.current = { kind: "guide", axis, index: null };
+    trackGuide(axis, null, local(e));
+  };
+
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page) return;
     // Stop the webview from starting a native text/image selection (WebKit paints it
@@ -248,6 +332,7 @@ export function EditorViewport() {
     const p = local(e);
     const ed = useEditorStore.getState();
     e.currentTarget.setPointerCapture(e.pointerId);
+    stick.current = FREE;
     if (panMode || e.button === 1) {
       drag.current = { kind: "pan", start: p, panX: ed.viewport.panX, panY: ed.viewport.panY };
       setPanning(true);
@@ -256,6 +341,14 @@ export function EditorViewport() {
     if (e.button !== 0) return;
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
+    if (hit === "guide") {
+      // A guide is grabbed with the Grid region or Piece tool: drag it, or back onto its ruler to delete it.
+      const data = (e.target as SVGElement).dataset;
+      const axis = data.axis === "x" ? "x" : "y";
+      drag.current = { kind: "guide", axis, index: Number(data.index) };
+      trackGuide(axis, Number(data.index), p);
+      return;
+    }
     if (cardTool) {
       const L = useLayoutStore.getState();
       const own = L.freeform[currentPage] ?? NO_CARDS;
@@ -312,6 +405,11 @@ export function EditorViewport() {
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     const d = drag.current;
+    if (rulers) {
+      const at = local(e);
+      rulerX.current?.mark(at.x);
+      rulerY.current?.mark(at.y);
+    }
     if (!d && page && !panMode) {
       // Hovering a handle starts rendering the magnifier crop, so it is ready when the hold fires.
       const hit = (e.target as SVGElement).dataset.hit;
@@ -330,26 +428,50 @@ export function EditorViewport() {
       ed.setPan(d.panX + p.x - d.start.x, d.panY + p.y - d.start.y);
       return;
     }
+    if (d.kind === "guide") {
+      trackGuide(d.axis, d.index, p);
+      return;
+    }
     const doc = screenToDocument(p, ed.viewport, page);
-    // Snapping, unless it is off in the toolbar or Ctrl/Cmd is held; never in the magnifier's slow resize.
-    const snapping = usePreferencesStore.getState().prefs.editor.snap && !(e.ctrlKey || e.metaKey);
-    const tol = snapTolerance(page, pxPerPoint(ed.viewport.zoom));
+    // Snapping, unless Ctrl/Cmd is held; never in the magnifier's slow resize. The magnet decides the page and the
+    // pieces, sticky edges the edges in the artwork; either way a line that snapped sticks for RELEASE_PX.
+    const { snap: magnet, snapEdges: sticky } = usePreferencesStore.getState().prefs.editor;
+    const free = e.ctrlKey || e.metaKey;
+    const k = pxPerPoint(ed.viewport.zoom);
+    const tol = snapTolerance(page, k);
+    const release = snapTolerance(page, k, RELEASE_PX);
     const L0 = useLayoutStore.getState();
     const own0 = L0.freeform[currentPage] ?? NO_CARDS;
-    /** The page, the region and the pieces not in `skip`, as lines to snap to. */
-    const targets = (skip: number[], withRegion: boolean) => {
+    /**
+     * What to snap to: with the magnet, the page, the region and the pieces not in `skip`; with sticky edges, the
+     * edges in the artwork that run along `box`'s sides (none when there is no upright box).
+     */
+    // The edges in the artwork among the targets, to tell when one of them holds a side.
+    let fromEdges: SnapLines = NO_GUIDES;
+    const targets = (skip: number[], withRegion: boolean, box: NormalizedRect | null) => {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
       if (withRegion && region) others.push(region);
-      return snapTargets(others);
+      // Guides show, and are snapped to, while the rulers are on.
+      const ownGuides = useEditorStore.getState().guides[activeId];
+      const lines = magnet
+        ? joinLines(snapTargets(others), rulers && ownGuides ? guidesToNormalized(ownGuides, page) : NO_GUIDES)
+        : NO_GUIDES;
+      if (!sticky || !box) return lines;
+      fromEdges = edgeTargets(box, edges.current);
+      return joinLines(lines, fromEdges);
     };
     const snap = (moving: SnapLines, to: SnapLines) => {
-      if (!snapping) {
+      if (free) {
+        stick.current = FREE;
         setGuides(NO_GUIDES);
         return { dx: 0, dy: 0 };
       }
-      const s = snapOffset(moving, to, tol);
+      const s = stickyOffset(moving, to, tol, release, doc, stick.current);
+      stick.current = s.state;
       setGuides(s.guides);
+      if (s.guides.xs.some((x) => fromEdges.xs.includes(x)) || s.guides.ys.some((y) => fromEdges.ys.includes(y)))
+        emitHintEvent("edge-stuck");
       return s;
     };
     if (d.kind === "card-create") {
@@ -369,7 +491,9 @@ export function EditorViewport() {
         const box = union(
           d.rects.map((r) => cardBox({ ...r, center: { x: r.center.x + dx, y: r.center.y + dy } }, page)),
         );
-        const s = snap(rectLines(box), targets(d.indices, true));
+        // Turned pieces are not along the page's axes: they snap by their box, but not to edges.
+        const upright = d.rects.every((r) => r.angle_deg === 0);
+        const s = snap(rectLines(box), targets(d.indices, true, upright ? box : null));
         movePieces(currentPage, d.indices, d.rects, dx + s.dx, dy + s.dy);
       } else if (d.kind === "card-rotate")
         L.updateFreeformCard(currentPage, d.index, rotateCardTo(d.rect, doc, page, e.shiftKey));
@@ -381,22 +505,25 @@ export function EditorViewport() {
         const s =
           d.fine || d.rect.angle_deg !== 0
             ? { dx: 0, dy: 0 }
-            : snap(movedEdges(cardBox(raw, page), d.handle), targets([d.index], true));
+            : snap(movedEdges(cardBox(raw, page), d.handle), targets([d.index], true, cardBox(raw, page)));
         L.updateFreeformCard(currentPage, d.index, resizeCard(d.rect, d.handle, dx + s.dx, dy + s.dy, page));
       }
       return;
     }
-    if (d.kind === "create") setCurrentSelection(rectFromPoints(d.anchor, doc));
-    else if (d.kind === "move") {
+    if (d.kind === "create") {
+      // The corner being drawn snaps.
+      const s = snap({ xs: [doc.x], ys: [doc.y] }, targets([], false, rectFromPoints(d.anchor, doc)));
+      setCurrentSelection(rectFromPoints(d.anchor, { x: doc.x + s.dx, y: doc.y + s.dy }));
+    } else if (d.kind === "move") {
       const [dx, dy] = [doc.x - d.start.x, doc.y - d.start.y];
-      const s = snap(rectLines(moveRect(d.rect, dx, dy)), targets([], false));
+      const moved = moveRect(d.rect, dx, dy);
+      const s = snap(rectLines(moved), targets([], false, moved));
       setCurrentSelection(moveRect(d.rect, dx + s.dx, dy + s.dy));
     } else {
       const k = d.fine ? 1 / MAG : 1;
       const [dx, dy] = [(doc.x - d.start.x) * k, (doc.y - d.start.y) * k];
-      const s = d.fine
-        ? { dx: 0, dy: 0 }
-        : snap(movedEdges(resizeRect(d.rect, d.handle, dx, dy), d.handle), targets([], false));
+      const raw = resizeRect(d.rect, d.handle, dx, dy);
+      const s = d.fine ? { dx: 0, dy: 0 } : snap(movedEdges(raw, d.handle), targets([], false, raw));
       setCurrentSelection(resizeRect(d.rect, d.handle, dx + s.dx, dy + s.dy));
     }
   };
@@ -404,10 +531,18 @@ export function EditorViewport() {
   const onPointerUp = () => {
     const d = drag.current;
     drag.current = null;
+    stick.current = FREE;
     setPanning(false);
     setGuides(NO_GUIDES);
     endHold();
     setLoupe(null);
+    if (d?.kind === "guide") {
+      const g = guideDragRef.current;
+      guideDragRef.current = null;
+      setGuideDrag(null);
+      const ed = useEditorStore.getState();
+      if (g) ed.setGuides(activeId, dropGuide(ed.guides[activeId] ?? NO_GUIDE_SET, g.axis, g.index, g.pt, g.onRuler));
+    }
     if (d?.kind === "card-create" && d.index !== null && page) {
       // Shrunk back to nothing before letting go: not a card after all.
       const card = useLayoutStore.getState().freeform[currentPage]?.[d.index];
@@ -432,135 +567,188 @@ export function EditorViewport() {
   const cursor = panMode ? (panning ? "grabbing" : "grab") : "crosshair";
 
   const split = viewMode === "split" && !!page;
+  const unit = usePreferencesStore((s) => s.prefs.measurement.unit);
+  const invertRulers = usePreferencesStore((s) => s.prefs.editor.invertRulers);
+  // The rulers measure the source page: the Original view and the Original side of Split.
+  const pxPerMm = pxPerPoint(viewport.zoom) * mmToPt(1);
+  const ruler = (axis: "x" | "y") => (
+    <Ruler
+      axis={axis}
+      ref={axis === "x" ? rulerX : rulerY}
+      lengthPx={axis === "x" ? box.width : box.height}
+      originPx={axis === "x" ? viewport.panX : viewport.panY}
+      pxPerMm={pxPerMm}
+      unit={unit}
+      guide={guideFrom(axis === "x" ? "top" : "left", invertRulers)}
+      onPointerDown={onRulerDown(axis === "x" ? "top" : "left")}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+    />
+  );
   return (
     <div className="flex h-full w-full">
-      <div
-        ref={ref}
-        data-viewport
-        data-hint-target="page-canvas"
-        className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]"
-      >
-        {/* Where tour tips sit when they point at the whole canvas: inside it, above this spot. */}
-        <span
-          aria-hidden
-          data-hint-target="page-canvas-tip"
-          className="pointer-events-none absolute bottom-6 left-1/2 size-px"
-        />
-        {page && pageRect ? (
-          <>
-            {output ? (
-              <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
-            ) : (
-              <PagePreview screen={pageRect} box={box} />
-            )}
-            <svg
-              role="img"
-              aria-label={t("viewport.pageCanvas")}
-              className="absolute inset-0 h-full w-full select-none"
-              style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
-              onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              onPointerLeave={() => !drag.current && setLoupe(null)}
-            >
-              {!output && selection && gridSpec && (
-                <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
-              )}
-              {!output && selScreen && (
-                // In the card tool the grid region is only a backdrop: it must not catch the pointer.
-                <g pointerEvents={tool === "card" ? "none" : undefined}>
-                  <SelectionRect
-                    screen={selScreen}
-                    movable={!panMode && tool !== "card"}
-                    picked={tool === "select" && pickedRegion === currentPage}
+      <div className="flex h-full min-w-0 flex-1 flex-col">
+        {rulers && (
+          <div className="flex shrink-0">
+            <RulerCorner
+              hasGuides={rulerGuides.xs.length + rulerGuides.ys.length > 0}
+              onClear={() => useEditorStore.getState().setGuides(activeId, NO_GUIDE_SET)}
+            />
+            {ruler("x")}
+          </div>
+        )}
+        <div className="flex min-h-0 flex-1">
+          {rulers && ruler("y")}
+          <div
+            ref={ref}
+            data-viewport
+            data-hint-target="page-canvas"
+            className="relative h-full min-w-0 flex-1 overflow-hidden bg-[var(--canvas)]"
+          >
+            {/* Where tour tips sit when they point at the whole canvas: inside it, above this spot. */}
+            <span
+              aria-hidden
+              data-hint-target="page-canvas-tip"
+              className="pointer-events-none absolute bottom-6 left-1/2 size-px"
+            />
+            {page && pageRect ? (
+              <>
+                {output ? (
+                  <OutputPreview screen={pageRect} k={pxPerPoint(viewport.zoom)} result={previewResult} />
+                ) : (
+                  <PagePreview screen={pageRect} box={box} />
+                )}
+                <svg
+                  role="img"
+                  aria-label={t("viewport.pageCanvas")}
+                  className="absolute inset-0 h-full w-full select-none"
+                  style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
+                  onPointerDown={onPointerDown}
+                  onPointerMove={onPointerMove}
+                  onPointerUp={onPointerUp}
+                  onPointerCancel={onPointerUp}
+                  onPointerLeave={() => {
+                    rulerX.current?.mark(null);
+                    rulerY.current?.mark(null);
+                    if (!drag.current) setLoupe(null);
+                  }}
+                >
+                  {rulers && (
+                    // Under the region and the pieces, so a guide along a side never takes their handles.
+                    <GuideLines
+                      guides={rulerGuides}
+                      dragging={guideDrag}
+                      viewport={viewport}
+                      page={page}
+                      box={box}
+                      grabbable={!panMode}
+                      unit={unit}
+                    />
+                  )}
+                  {!output && selection && gridSpec && (
+                    <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
+                  )}
+                  {!output && selScreen && (
+                    // In the card tool the grid region is only a backdrop: it must not catch the pointer.
+                    <g pointerEvents={tool === "card" ? "none" : undefined}>
+                      <SelectionRect
+                        screen={selScreen}
+                        movable={!panMode && tool !== "card"}
+                        picked={tool === "select" && pickedRegion === currentPage}
+                      />
+                    </g>
+                  )}
+                  {!output && freeform.length > 0 && (
+                    <FreeformOverlay
+                      cards={freeform}
+                      selected={single ? picked : null}
+                      picked={pickedHere}
+                      viewport={viewport}
+                      page={page}
+                      interactive={cardTool}
+                    />
+                  )}
+                  {!output && <DetectOverlay viewport={viewport} page={page} />}
+                  {!output && (guides.xs.length > 0 || guides.ys.length > 0) && (
+                    <g pointerEvents="none" data-testid="snap-guides">
+                      {guides.xs.map((x) => {
+                        const [a, b] = [
+                          documentToScreen({ x, y: 0 }, viewport, page),
+                          documentToScreen({ x, y: 1 }, viewport, page),
+                        ];
+                        return (
+                          <line key={`x${x}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />
+                        );
+                      })}
+                      {guides.ys.map((y) => {
+                        const [a, b] = [
+                          documentToScreen({ x: 0, y }, viewport, page),
+                          documentToScreen({ x: 1, y }, viewport, page),
+                        ];
+                        return (
+                          <line key={`y${y}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />
+                        );
+                      })}
+                    </g>
+                  )}
+                </svg>
+                {!output && loupe && !cardTool && selection && gridSpec && (
+                  <Magnifier
+                    handle={loupe.handle}
+                    active={loupe.active}
+                    selection={selection}
+                    page={page}
+                    pageRect={pageRect}
+                    box={box}
+                    grid={gridSpec}
                   />
-                </g>
-              )}
-              {!output && freeform.length > 0 && (
-                <FreeformOverlay
-                  cards={freeform}
-                  selected={single ? picked : null}
-                  picked={pickedHere}
-                  viewport={viewport}
-                  page={page}
-                  interactive={cardTool}
-                />
-              )}
-              {!output && <DetectOverlay viewport={viewport} page={page} />}
-              {!output && (guides.xs.length > 0 || guides.ys.length > 0) && (
-                <g pointerEvents="none" data-testid="snap-guides">
-                  {guides.xs.map((x) => {
-                    const [a, b] = [
-                      documentToScreen({ x, y: 0 }, viewport, page),
-                      documentToScreen({ x, y: 1 }, viewport, page),
-                    ];
-                    return <line key={`x${x}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
-                  })}
-                  {guides.ys.map((y) => {
-                    const [a, b] = [
-                      documentToScreen({ x: 0, y }, viewport, page),
-                      documentToScreen({ x: 1, y }, viewport, page),
-                    ];
-                    return <line key={`y${y}`} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#f43f5e" strokeWidth={1} />;
-                  })}
-                </g>
-              )}
-            </svg>
-            {!output && loupe && !cardTool && selection && gridSpec && (
-              <Magnifier
-                handle={loupe.handle}
-                active={loupe.active}
-                selection={selection}
-                page={page}
-                pageRect={pageRect}
-                box={box}
-                grid={gridSpec}
-              />
-            )}
-            {!output && loupe && cardTool && pickedCard && (
-              <Magnifier
-                handle={loupe.handle}
-                active={loupe.active}
-                card={pickedCard}
-                page={page}
-                pageRect={pageRect}
-                box={box}
-              />
-            )}
-            {!output && (
-              <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
-            )}
-            {!output && !cardTool && hasGridAndPieces && (
-              <HintToast
-                hint="grid-and-pieces"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
-              <HintToast
-                hint="move-region"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {cardTool && (
-              <HintToast
-                hint="freeform-tool"
-                className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
-              />
-            )}
-            {!output && skipped && (
-              <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
-                {t("viewport.pageSkipped")}
+                )}
+                {!output && loupe && cardTool && pickedCard && (
+                  <Magnifier
+                    handle={loupe.handle}
+                    active={loupe.active}
+                    card={pickedCard}
+                    page={page}
+                    pageRect={pageRect}
+                    box={box}
+                  />
+                )}
+                {!output && (
+                  <DetectDraftBar className="absolute bottom-3 left-1/2 z-20 w-[26rem] max-w-[90%] -translate-x-1/2" />
+                )}
+                {!output && !cardTool && hasGridAndPieces && (
+                  <HintToast
+                    hint="grid-and-pieces"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
+                  <HintToast
+                    hint="move-region"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {!output && <StickyEdgesTip />}
+                {cardTool && (
+                  <HintToast
+                    hint="freeform-tool"
+                    className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
+                  />
+                )}
+                {!output && skipped && (
+                  <p className="pointer-events-none absolute inset-x-0 top-3 z-10 mx-auto w-fit rounded bg-black/75 px-3 py-1.5 text-center text-[var(--muted)]">
+                    {t("viewport.pageSkipped")}
+                  </p>
+                )}
+                {output && <OutputNotice />}
+              </>
+            ) : (
+              <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
+                {loading ? t("viewport.opening") : t("viewport.openHint")}
               </p>
             )}
-            {output && <OutputNotice />}
-          </>
-        ) : (
-          <p className="absolute inset-0 flex items-center justify-center text-[var(--muted)]">
-            {loading ? t("viewport.opening") : t("viewport.openHint")}
-          </p>
-        )}
+          </div>
+        </div>
       </div>
       {split && <div className="w-px shrink-0 bg-[var(--border)]" />}
       {split && <OutputPane />}

@@ -34,6 +34,9 @@ export type ShortcutId =
   | "duplicatePieces"
   | "dragCopy"
   | "dragFree"
+  | "toggleRulers"
+  | "makeGuide"
+  | "deleteGuide"
   | "deletePiece"
   | "snapRotation"
   | "applyProposal"
@@ -94,6 +97,9 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
     { id: "duplicatePieces", keys: [["Mod", "D"]] },
     { id: "dragCopy", keys: [["Alt", "Drag"]] },
     { id: "dragFree", keys: [["Mod", "Drag"]] },
+    { id: "toggleRulers", keys: [["Mod", "R"]] },
+    { id: "makeGuide", keys: [["Drag"]] },
+    { id: "deleteGuide", keys: [["Drag"]] },
     { id: "deletePiece", keys: [["Delete"], ["Backspace"]] },
     { id: "snapRotation", keys: [["Shift"]] },
     { id: "applyProposal", keys: [["Enter"]] },

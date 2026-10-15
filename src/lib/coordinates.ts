@@ -8,6 +8,9 @@
 // Millimetres <-> points live in lib/units.ts.
 
 import type { OrientedRect } from "./card";
+import type { PageEdges } from "./edges-api";
+import type { GuideAxis, GuideSet } from "./guides";
+import type { EdgeLines, SnapLines } from "./snap";
 import type { PageSize } from "./tauri";
 
 export type Point = { x: number; y: number };
@@ -119,3 +122,22 @@ export function orientedFromPoints(r: OrientedRect, page: PageSize): OrientedRec
     angle_deg: r.angle_deg,
   };
 }
+
+/** A page's straight edges as card-core finds them (points, TOP-left origin, the page as displayed) -> normalized. */
+export function edgesToNormalized(e: PageEdges, page: PageSize): EdgeLines {
+  const [w, h] = [page.width_pt, page.height_pt];
+  return {
+    xs: e.vertical.map((v) => ({ at: v.x / w, from: v.y0 / h, to: v.y1 / h })),
+    ys: e.horizontal.map((l) => ({ at: l.y / h, from: l.x0 / w, to: l.x1 / w })),
+  };
+}
+
+/** Guides (points from the page's top-left corner) -> normalized positions to snap to on `page`. */
+export const guidesToNormalized = (g: GuideSet, page: PageSize): SnapLines => ({
+  xs: g.xs.map((x) => x / page.width_pt),
+  ys: g.ys.map((y) => y / page.height_pt),
+});
+
+/** A normalized position across `axis` -> points from the page's top-left corner, as guides keep it. */
+export const normalizedToGuide = (n: number, axis: GuideAxis, page: PageSize) =>
+  n * (axis === "x" ? page.width_pt : page.height_pt);

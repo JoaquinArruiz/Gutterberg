@@ -4,6 +4,7 @@ import { z } from "zod";
 import { t } from "../i18n";
 import type { DocumentId } from "./card";
 import type { NormalizedRect } from "./coordinates";
+import { forgetPageEdges } from "./edges-api";
 import { isSupersededError } from "./errors";
 
 // Mirrors card_core::render::DocumentInfo (serde, snake_case).
@@ -25,11 +26,13 @@ export async function pickPdf(): Promise<string | null> {
 
 /** Opens the PDF at `path` as document `documentId`; a project keeps several open, each under its own id. */
 export async function openPdf(documentId: DocumentId, path: string): Promise<DocumentInfo> {
+  forgetPageEdges(documentId);
   return DocumentInfoSchema.parse(await invoke("open_pdf", { documentId, path }));
 }
 
 /** Forgets one open document, or all of them when `documentId` is omitted. */
 export async function closePdf(documentId?: DocumentId): Promise<void> {
+  forgetPageEdges(documentId);
   await invoke("close_pdf", { documentId: documentId ?? null });
 }
 

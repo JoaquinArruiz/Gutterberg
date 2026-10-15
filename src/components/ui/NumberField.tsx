@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { evaluateArithmetic } from "../../lib/arithmetic";
 import { formatDecimal, parseDecimal } from "../../lib/measurement";
 import { useDecimalSeparator } from "../../stores/preferences-store";
 import { FieldRow, useFieldLayout } from "./FieldRow";
@@ -8,7 +9,9 @@ import { InfoTip } from "./InfoTip";
 /**
  * Numeric input that commits on Enter/blur and reverts on Escape, so typing
  * "6", "63", "63.5" doesn't fire an update (and a clamp) per keystroke. It shows numbers with the
- * decimal separator from Preferences and accepts both "63.5" and "63,5" whatever that is.
+ * decimal separator from Preferences and accepts both "63.5" and "63,5" whatever that is. It also
+ * takes arithmetic ("12/3", "63,5 * 2 + 3"), worked out when the value is committed and rounded to
+ * the decimals the field shows.
  */
 export function NumberField({
   value,
@@ -77,8 +80,17 @@ export function NumberField({
     onCommit(clampV(Number((value + dir * amount).toFixed(Math.max(decimals, 3)))));
   };
 
+  // A plain number goes in as typed; a sum is rounded to what the field shows, so "10/3" in a
+  // whole-number field is 3, not 3.333….
+  const read = (t: string) => {
+    const plain = parseDecimal(t);
+    if (plain !== null) return plain;
+    const sum = evaluateArithmetic(t);
+    return sum === null ? null : Number(sum.toFixed(decimals));
+  };
+
   const commit = () => {
-    const n = parseDecimal(text);
+    const n = read(text);
     // Only commit a real edit. The shown text is rounded, so committing it
     // unchanged would overwrite the exact value (3 mm -> "0.118 in" -> 2.997 mm).
     if (n !== null && n !== parseDecimal(fmt(value))) {

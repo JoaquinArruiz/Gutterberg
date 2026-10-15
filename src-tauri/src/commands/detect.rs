@@ -1,6 +1,6 @@
 use crate::state::{internal, AppState};
 use card_core::card::DocumentId;
-use card_core::detect::Detection;
+use card_core::detect::{Detection, PageEdges};
 use card_core::ErrorInfo;
 use tauri::{AppHandle, State};
 
@@ -16,6 +16,22 @@ pub async fn detect_pieces(
 ) -> Result<Detection, ErrorInfo> {
     let worker = state.worker(&app)?;
     tauri::async_runtime::spawn_blocking(move || worker.detect(document_id, page_index))
+        .await
+        .map_err(internal)?
+        .map_err(ErrorInfo::from)
+}
+
+/// The strong straight edges of a page (0-based) of an open document, in points of the page as
+/// displayed: what a region's or a piece's sides stick to while they are edited.
+#[tauri::command]
+pub async fn page_edges(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    document_id: DocumentId,
+    page_index: usize,
+) -> Result<PageEdges, ErrorInfo> {
+    let worker = state.worker(&app)?;
+    tauri::async_runtime::spawn_blocking(move || worker.page_edges(document_id, page_index))
         .await
         .map_err(internal)?
         .map_err(ErrorInfo::from)
