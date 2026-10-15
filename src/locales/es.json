@@ -951,7 +951,6 @@
     }
   },
   "detect": {
-    "title": "Detectar piezas",
     "note": "Propone dónde están las piezas de esta página, calculado en tu computadora. No cambia nada hasta que lo apliques.",
     "button": "Detectar en esta página",
     "running": "Detectando…",

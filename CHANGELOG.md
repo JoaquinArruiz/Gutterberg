@@ -18,6 +18,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Detect pieces is at the top of the Grids and pieces panel, the list it fills, instead of a section of its own in Properties; Output is now the last section of Properties.
 - Folding a panel or opening it again slides its contents up or down instead of jumping (no movement with reduced motion).
 - Projects are saved as version 7 (for several grids); older projects open as before with their edits intact, and an older Gutterberg asks to be updated.
 - With "Same as source", and in the Source tab's export, each grid of a page gives its own sheet.

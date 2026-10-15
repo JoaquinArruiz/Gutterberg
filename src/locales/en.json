@@ -951,7 +951,6 @@
     }
   },
   "detect": {
-    "title": "Detect pieces",
     "note": "Proposes where the pieces are on this page, found on your computer. Nothing changes until you apply it.",
     "button": "Detect on this page",
     "running": "Detecting…",

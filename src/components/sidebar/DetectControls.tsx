@@ -9,14 +9,15 @@ import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { Button } from "../ui/Button";
-import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { InfoTip } from "../ui/InfoTip";
 
 /**
- * "Detect pieces": proposes where the pieces are on the viewed page, found locally. The proposal is a
- * draft on the page (see `DetectDraftBar`); nothing changes until the user applies it. With AI Mode on there
- * is a second button, Detect with AI, next to the local one; the local one never touches the network.
+ * "Detect pieces", at the top of the Grids and pieces panel whose list it fills: proposes where the pieces are on
+ * the viewed page, found locally. The proposal is a draft on the page (see `DetectDraftBar`); nothing changes until
+ * the user applies it. With AI Mode on there is a second button, Detect with AI, next to the local one; the local one
+ * never touches the network.
  */
-export function DetectSection() {
+export function DetectControls() {
   const { t } = useTranslation();
   const currentPage = useDocumentStore((s) => s.currentPage);
   const activeId = useDocumentStore((s) => s.activeId);
@@ -34,20 +35,7 @@ export function DetectSection() {
   const none = here !== null && here.detection.proposals.length === 0;
   const busy = detecting || aiBusy;
   return (
-    <CollapsibleSection
-      id="cards.detect"
-      title={t("detect.title")}
-      info={
-        aiOn ? (
-          <>
-            <span className="block">{t("detect.note")}</span>
-            <span className="mt-1 block">{t("ai.detect.note")}</span>
-          </>
-        ) : (
-          t("detect.note")
-        )
-      }
-    >
+    <div className="flex flex-col gap-1.5 border-b border-[var(--border)] pb-2" data-testid="detect-controls">
       <div className="flex flex-wrap items-center gap-1.5">
         <Button disabled={busy || skipped} onClick={() => void runDetect()}>
           {detecting ? t("detect.running") : t("detect.button")}
@@ -63,6 +51,18 @@ export function DetectSection() {
             {t("ai.detect.buttonAi")}
           </Button>
         )}
+        <InfoTip
+          text={
+            aiOn ? (
+              <>
+                <span className="block">{t("detect.note")}</span>
+                <span className="mt-1 block">{t("ai.detect.note")}</span>
+              </>
+            ) : (
+              t("detect.note")
+            )
+          }
+        />
       </div>
       {skipped && <p className="text-[var(--muted)]">{t("detect.skipped")}</p>}
       {[error, aiError].map(
@@ -89,6 +89,6 @@ export function DetectSection() {
           {t("ai.usage", { input: usage.input_tokens, output: usage.output_tokens })}
         </p>
       )}
-    </CollapsibleSection>
+    </div>
   );
 }

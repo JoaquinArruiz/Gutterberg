@@ -189,7 +189,8 @@ an error in the interface and not a crash at startup.
 
 ### Detection (`detect`)
 
-**Detect pieces** proposes where the pieces are on the viewed page, locally. It returns proposals, best first, each
+**Detect pieces** (at the top of the Grids and pieces panel, whose list it fills) proposes where the pieces are on the
+viewed page, locally. It returns proposals, best first, each
 a grid or a list of rectangles with a confidence, the engine that found it and notes (missing cells, crop marks,
 uneven sizes...). Three engines run in order, and the search stops at a confidence of 0.85:
 

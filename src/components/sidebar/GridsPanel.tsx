@@ -31,6 +31,7 @@ import { useActiveGrid, useCurrentGroup, useLayoutStore, usePickedFolder } from 
 import { Button } from "../ui/Button";
 import { InfoTip } from "../ui/InfoTip";
 import { Select } from "../ui/Select";
+import { DetectControls } from "./DetectControls";
 import { type ListDrag, listItemKey, useGridListDrag } from "./use-grid-list-drag";
 
 const NO_FOLDER = "";
@@ -540,8 +541,8 @@ export function NewFolderButton() {
 }
 
 /**
- * The Grids panel of the Source tab: the grids, folders and freeform pieces of the viewed page, on its own beside
- * Properties so the list is always in view.
+ * The Grids and pieces panel of the Source tab: Detect pieces, then the grids, folders and freeform pieces of the
+ * viewed page, on its own beside Properties so the list is always in view.
  */
 export function GridsPanel() {
   const { t } = useTranslation();
@@ -549,7 +550,8 @@ export function GridsPanel() {
   const hasPage = useDocumentStore((s) => s.pages.length > 0);
   const group = useCurrentGroup();
   return (
-    <div className="h-full overflow-y-auto p-3">
+    <div className="flex h-full flex-col gap-2 overflow-y-auto p-3">
+      {hasPage && group?.kind !== "skip" && <DetectControls />}
       {!hasPage ? (
         <p className="text-[var(--muted)]">{t("source.noDocument")}</p>
       ) : group?.kind === "grid" ? (

@@ -19,8 +19,17 @@ import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { DetectDraftBar } from "../editor/DetectDraft";
 import { AiSettings } from "../preferences/AiSettings";
+import { GridsPanel } from "../sidebar/GridsPanel";
 import { PropertiesSidebar } from "../sidebar/PropertiesSidebar";
 import { AiConfirmDialog, pageRanges } from "./AiConfirmDialog";
+
+/** The Source tab's two panels with AI buttons: Properties (Sort pages) and Grids and pieces (Detect pieces). */
+const SourcePanels = () => (
+  <>
+    <PropertiesSidebar />
+    <GridsPanel />
+  </>
+);
 
 vi.mock("../../lib/ai-api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/ai-api")>()),
@@ -133,7 +142,7 @@ describe("with AI Mode off", () => {
   it("leaves no trace of it in the page editor's sidebar or anywhere it could pop up", () => {
     const { container } = render(
       <>
-        <PropertiesSidebar />
+        <SourcePanels />
         <AiConfirmDialog />
         <DetectDraftBar />
       </>,
@@ -163,19 +172,22 @@ describe("with AI Mode on", () => {
   beforeEach(() => prefs().setAiEnabled(true));
 
   it("adds Sort pages and a Detect with AI button next to the local one, each with its spark", () => {
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     const local = screen.getByRole("button", { name: "Detect on this page" });
     const detectAi = screen.getByRole("button", { name: "Detect with AI" });
     expect(local.querySelector("[data-ai=spark]")).toBeNull();
     expect(detectAi.firstElementChild?.getAttribute("data-ai")).toBe("spark");
-    expect(detectAi.nextElementSibling).toBeNull();
+    // Only the ⓘ follows it: no engine picker.
+    const after = detectAi.nextElementSibling;
+    expect(after?.querySelector("button")?.getAttribute("aria-label")).toBe("More information");
+    expect(after?.nextElementSibling).toBeNull();
     expect(local.parentElement).toBe(detectAi.parentElement);
     expect(screen.getByRole("button", { name: "Sort pages with AI" }).querySelector("[data-ai=spark]")).toBeTruthy();
     expect(screen.queryByRole("radio", { name: "Local" })).toBeNull();
   });
 
   it("names the provider in the tooltip of every AI button", () => {
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     expect(screen.getByRole("button", { name: "Detect with AI" }).getAttribute("title")).toBe(
       "Sends this page to Anthropic (Claude)",
     );
@@ -185,7 +197,7 @@ describe("with AI Mode on", () => {
   });
 
   it("goes back to nothing when it is switched off again", () => {
-    const { container } = render(<PropertiesSidebar />);
+    const { container } = render(<SourcePanels />);
     expect(container.querySelectorAll("[data-ai]").length).toBeGreaterThan(0);
     act(() => prefs().setAiEnabled(false));
     expect(container.querySelectorAll("[data-ai]")).toHaveLength(0);
@@ -402,7 +414,7 @@ describe("the sort proposal", () => {
   beforeEach(() => prefs().setAiEnabled(true));
 
   it("lists every page with its label and skip choice, which the user can change before applying", () => {
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     act(() => ai().setSort({ documentId: 0, rows }));
     expect(screen.getAllByTestId("ai-sort-row")).toHaveLength(3);
     expect(screen.getByTestId("ai-sort-changes").textContent).toBe("2 pages will change.");
@@ -416,7 +428,7 @@ describe("the sort proposal", () => {
   });
 
   it("applies the skip states and nothing else", () => {
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     act(() => ai().setSort({ documentId: 0, rows }));
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
     const groups = useLayoutStore.getState().groups;
@@ -426,7 +438,7 @@ describe("the sort proposal", () => {
   });
 
   it("Cancel changes nothing, and an unchanged list cannot be applied", () => {
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     act(() => ai().setSort({ documentId: 0, rows: rows.map((r) => ({ ...r, skip: false })) }));
     expect(screen.getByTestId("ai-sort-changes").textContent).toBe("No page would change.");
     expect(screen.getByRole("button", { name: "Apply" }).hasAttribute("disabled")).toBe(true);
@@ -447,7 +459,7 @@ describe("the sort proposal", () => {
     });
     render(
       <>
-        <PropertiesSidebar />
+        <SourcePanels />
         <AiConfirmDialog />
       </>,
     );
@@ -489,7 +501,7 @@ describe("detecting with the AI engine", () => {
     });
     render(
       <>
-        <PropertiesSidebar />
+        <SourcePanels />
         <AiConfirmDialog />
         <DetectDraftBar />
       </>,
@@ -508,7 +520,7 @@ describe("detecting with the AI engine", () => {
   it("shows the provider's error under the button and leaves the page alone", async () => {
     prefs().setAiEnabled(true);
     vi.mocked(aiEstimate).mockRejectedValue({ code: "ai_no_key", message: "no key" });
-    render(<PropertiesSidebar />);
+    render(<SourcePanels />);
     fireEvent.click(screen.getByRole("button", { name: "Detect with AI" }));
     await act(async () => {});
     expect(screen.getByRole("alert").textContent).toContain("No API key is saved for this provider");

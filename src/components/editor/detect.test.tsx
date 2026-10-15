@@ -7,7 +7,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
-import { DetectSection } from "../sidebar/DetectSection";
+import { DetectControls } from "../sidebar/DetectControls";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 
 vi.mock("../../lib/detect-api", async (importOriginal) => ({
@@ -54,7 +54,7 @@ async function detectWith(d: Detection) {
 
 const all = () => (
   <>
-    <DetectSection />
+    <DetectControls />
     <svg role="img" aria-label="page">
       <DetectOverlay viewport={viewport} page={A4} />
     </svg>
@@ -75,7 +75,7 @@ afterEach(cleanup);
 
 describe("Detect pieces section", () => {
   it("says what it does and waits to be asked", () => {
-    render(<DetectSection />);
+    render(<DetectControls />);
     expect(screen.getByText(/Nothing changes until you apply it/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Detect on this page" }).hasAttribute("disabled")).toBe(false);
     expect(detect).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe("Detect pieces section", () => {
 
   it("is off on a skipped page", () => {
     useLayoutStore.getState().setSkipped(0, true);
-    render(<DetectSection />);
+    render(<DetectControls />);
     expect(screen.getByRole("button", { name: "Detect on this page" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("This page is skipped.")).toBeTruthy();
   });
@@ -91,7 +91,7 @@ describe("Detect pieces section", () => {
   it("shows that it is working", async () => {
     let resolve: (d: Detection) => void = () => {};
     detect.mockReturnValue(new Promise((r) => (resolve = r)));
-    render(<DetectSection />);
+    render(<DetectControls />);
     fireEvent.click(screen.getByRole("button", { name: "Detect on this page" }));
     expect(screen.getByRole("button", { name: "Detecting…" }).hasAttribute("disabled")).toBe(true);
     await act(async () => resolve({ proposals: [], reasons: [] }));
@@ -99,7 +99,7 @@ describe("Detect pieces section", () => {
   });
 
   it("says when nothing was found, and why", async () => {
-    render(<DetectSection />);
+    render(<DetectControls />);
     await detectWith({ proposals: [], reasons: ["merged_pieces"] });
     expect(screen.getByTestId("detect-none").textContent).toContain("No pieces found on this page");
     expect(screen.getByTestId("detect-none").textContent).toContain("pieces that touch cannot be told apart");
@@ -107,7 +107,7 @@ describe("Detect pieces section", () => {
 
   it("shows an error from the engine", async () => {
     detect.mockRejectedValue({ code: "page_out_of_range", message: "x", page: 4, count: 2 });
-    render(<DetectSection />);
+    render(<DetectControls />);
     fireEvent.click(screen.getByRole("button", { name: "Detect on this page" }));
     await act(async () => {});
     expect(screen.getByRole("alert").textContent).toContain("Page 4 does not exist");

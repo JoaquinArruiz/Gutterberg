@@ -16,7 +16,6 @@ import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 import { AiSortSection } from "./AiSortSection";
-import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
@@ -78,8 +77,6 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
-
-      {group?.kind !== "skip" && <DetectSection />}
 
       <AiSortSection />
 
@@ -145,13 +142,6 @@ export function PropertiesSidebar() {
 
       {group?.kind !== "skip" && <FreeformSection />}
 
-      <CollapsibleSection id="cards.output" title={t("source.sections.output")} info={t("source.outputNote")}>
-        <div>
-          <Button onClick={() => setStage("print")}>{t("source.openPrint")}</Button>
-        </div>
-        {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
-      </CollapsibleSection>
-
       {selection && (
         <CollapsibleSection id="cards.selection" title={t("source.sections.selection")}>
           <MeasurementInput
@@ -174,6 +164,13 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
+
+      <CollapsibleSection id="cards.output" title={t("source.sections.output")} info={t("source.outputNote")}>
+        <div>
+          <Button onClick={() => setStage("print")}>{t("source.openPrint")}</Button>
+        </div>
+        {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
+      </CollapsibleSection>
     </div>
   );
 }
