@@ -692,7 +692,10 @@
       "layoutPrint": "Layout of the Print tab",
       "rulers": "Rulers",
       "invertRulers": "Invert rulers",
-      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it."
+      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it.",
+      "tools": "Tools",
+      "selectAfterGrid": "Select tool after drawing a grid",
+      "selectAfterGridHint": "Switches to the Select tool once a grid is drawn, so it can be moved or adjusted right away."
     },
     "livePreview": {
       "title": "Live preview",

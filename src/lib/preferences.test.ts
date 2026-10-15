@@ -458,6 +458,7 @@ describe("the sticky edges preference", () => {
       snapEdges: true,
       rulers: false,
       invertRulers: false,
+      selectAfterGrid: true,
     });
   });
 

@@ -442,7 +442,7 @@ macOS keeps its storage under the bundle identifier whatever the override says, 
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
 The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
-Layout (the panels of each tab), Display (theme, Live preview, rulers), AI Mode, Help (tour, tips, shortcuts),
+Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tips, shortcuts),
 Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
 goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
 names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into

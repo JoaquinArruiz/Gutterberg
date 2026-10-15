@@ -137,6 +137,7 @@ type PreferencesState = {
   setRulers: (rulers: boolean) => void;
   /** Which guide each ruler gives: the one parallel to it, or (inverted) the one perpendicular to it. */
   setInvertRulers: (invertRulers: boolean) => void;
+  setSelectAfterGrid: (on: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -275,6 +276,10 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setInvertRulers: (invertRulers) => {
         if (get().prefs.editor.invertRulers !== invertRulers)
           edit((p) => ({ ...p, editor: { ...p.editor, invertRulers } }));
+      },
+      setSelectAfterGrid: (on) => {
+        if (get().prefs.editor.selectAfterGrid !== on)
+          edit((p) => ({ ...p, editor: { ...p.editor, selectAfterGrid: on } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),

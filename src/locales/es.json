@@ -692,7 +692,10 @@
       "layoutPrint": "Disposición de la pestaña Imprimir",
       "rulers": "Reglas",
       "invertRulers": "Invertir las reglas",
-      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella."
+      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella.",
+      "tools": "Herramientas",
+      "selectAfterGrid": "Herramienta Seleccionar después de dibujar una cuadrícula",
+      "selectAfterGridHint": "Cambia a la Herramienta Seleccionar al terminar de dibujar una cuadrícula, para moverla o ajustarla enseguida."
     },
     "livePreview": {
       "title": "Vista previa en vivo",

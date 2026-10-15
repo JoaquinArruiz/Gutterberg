@@ -2,7 +2,7 @@
 
 | Action | Input |
 | --- | --- |
-| Select / Grid / Piece / Pan tool | `V` / `G` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag). A PDF opens with the Grid tool |
+| Select / Grid / Piece / Pan tool | `V` / `G` / `C` / `H` (or hold `Space` to pan temporarily, or middle-mouse drag). A PDF opens with the Grid tool, and drawing a grid switches to the Select tool with the grid picked (Preferences › Display › Tools turns that off) |
 | Select tool | Press any grid or piece on the page to pick it and drag it; the picked one's handles resize it (and turn a piece). Pieces come first where they lie over a grid. `Shift`-click adds a piece to the picked ones, `Alt`-drag drags copies, and the arrow keys, `Delete` and `Ctrl/Cmd+D` act on the picked pieces, or on the picked grid when no piece is picked. A press on the empty page picks nothing and draws nothing: the Grid and Piece tools draw |
 | Draw selection | drag on the page; drag the body to move, the handles to resize; click empty page to clear. With several grids on the page this is the active grid; the others are drawn dimmer. Pressing the region picks it: the arrow keys then move it 1 mm (0.05 in with inches), `Shift`+arrows 10 mm (0.5 in), a burst of presses being one undo step; `Esc` unpicks it |
 | Turn a grid into pieces (Source tab) | Source sidebar › Layout › Turn into pieces: every cell of the viewed page's active grid becomes a freeform piece at the same place and size, and that grid's region is cleared. For several sizes on a page that stay grids, use Add grid instead. If the grid is shared by several pages it asks: this page only, or every page of the group. Copies, turn, size, back and place in the order of each piece are kept. One undo step |

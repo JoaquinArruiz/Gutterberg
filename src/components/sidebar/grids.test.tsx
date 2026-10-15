@@ -500,3 +500,29 @@ describe("the Select tool", () => {
     expect(useEditorStore.getState().tool).toBe("pick");
   });
 });
+
+describe("the Select tool after drawing a grid", () => {
+  const draw = async () => {
+    store().resetDocument(1);
+    useEditorStore.setState({ tool: "grid" });
+    render(<EditorViewport />);
+    await act(async () => {});
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    fireEvent.pointerDown(svg, at({ x: 0.1, y: 0.1 }));
+    fireEvent.pointerMove(svg, at({ x: 0.5, y: 0.5 }));
+    fireEvent.pointerUp(svg, at({ x: 0.5, y: 0.5 }));
+  };
+
+  it("switches to it once a grid is drawn, with the grid picked", async () => {
+    await draw();
+    expect(group().grids[0].selection).not.toBeNull();
+    expect(useEditorStore.getState().tool).toBe("pick");
+    expect(useEditorStore.getState().pickedRegion).toBe(0);
+  });
+
+  it("stays on the Grid tool when Preferences turn that off", async () => {
+    usePreferencesStore.getState().setSelectAfterGrid(false);
+    await draw();
+    expect(useEditorStore.getState().tool).toBe("grid");
+  });
+});

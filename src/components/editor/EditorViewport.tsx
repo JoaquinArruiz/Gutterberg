@@ -652,6 +652,9 @@ export function EditorViewport() {
       if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) {
         setCurrentSelection(null);
         useEditorStore.getState().setPickedRegion(null);
+      } else if (s && usePreferencesStore.getState().prefs.editor.selectAfterGrid) {
+        // A grid just drawn is usually moved or adjusted next: the Select tool, with the grid still picked.
+        useEditorStore.getState().setTool("pick");
       }
     }
     endEdit();
