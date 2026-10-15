@@ -8,8 +8,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Several grids on one page (Source tab): the new Grids section of the sidebar lists the viewed page group's grids, each with its own region, rows, columns and gaps, with Add grid (up to 9) and a delete button. The picked grid is edited on the page as before and the others are drawn dimmer; with the Grid region tool, pressing a dimmer grid picks it and moves it. Layout, presets and "Apply this grid to…" act on the picked grid, and "Apply this grid to…" can also copy all of them. A page with cards of three sizes can be marked with three grids that stay grids, instead of turning each into freeform pieces. The Grids section is the last one in the sidebar.
-- Grids can have a name and a color: the pencil next to a grid opens its name, its color and its folder. The name shows in the list and above the grid on the page, and the grid's lines are drawn in its color.
-- Folders of grids: put grids in a folder to move them together. Pressing the folder in the list picks its grids, and dragging one of them on the page, or the arrow keys, moves them all as one. Pressing one grid picks it alone, even inside a folder. Folders can be renamed, folded away in the list and ungrouped.
+- Grids can have a name and a color: double-click a name to change it, and click the dot at its left for the colors; the pencil has the name, the color and the folder together. The name shows in the list and above the grid on the page, and the grid's lines are drawn in its color.
+- Folders of grids: the folder-and-plus button in the Grids header adds a folder, and grids dragged onto it go in. Pressing the folder in the list picks its grids, and dragging one of them on the page, or the arrow keys, moves them all as one. Pressing one grid picks it alone, even inside a folder. Folders can be renamed with a double-click, folded away in the list and ungrouped.
+- Grids and folders are put in another order by dragging them in the list; the order of the list is the order the pieces come out.
+- The eye next to a grid or a folder hides it on the page; it still exists and prints.
 - Detect pieces offers several grids at once when it finds blocks of pieces of different sizes on a page, as one proposal ahead of the grids one by one. Applying it makes them the page's grids, in one undo step.
 - With several grids on a page, piece references name the grid (`p3 · g2 · r1 c2`) in the piece library, Selected pieces and on the sheet preview.
 

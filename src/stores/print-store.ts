@@ -25,7 +25,7 @@ import {
   type SheetGridMode,
 } from "../lib/print-request";
 import type { Card, OutputSheet } from "../lib/sheet-api";
-import { HISTORY_LIMIT, onCardKeysMoved, onFreeformCardDeleted, onGridDeleted } from "./layout-store";
+import { HISTORY_LIMIT, onCardKeysMoved, onFreeformCardDeleted, onGridsRenumbered } from "./layout-store";
 
 const grid = (n: number) => Math.min(Math.max(Math.round(Number.isFinite(n) ? n : 1), 1), MAX_SHEET_GRID);
 
@@ -199,8 +199,8 @@ onFreeformCardDeleted((documentId, page, index) => {
   usePrintStore.temporal.getState().clear();
 });
 
-// A grid was deleted: its pieces' copies and selection go, and the grids after it have new keys.
-onGridDeleted((to) => {
+// Grids were deleted or moved: a deleted grid's copies and selection go, and grids with a new number have new keys.
+onGridsRenumbered((to) => {
   usePrintStore.setState((s) => {
     const common = s.finish.duplex.commonBack;
     return {

@@ -11,7 +11,8 @@ const MIN_LABEL_WIDTH_PX = 40;
  * The grids of the page that are not being edited: their cells drawn dimmer, under the one being edited, each in its
  * colour; the grids of a picked folder (`folder`) are drawn at full strength, since they move with it. With the Grid
  * region tool, pressing one (`data-hit="other-grid"`, `data-grid` its number) picks it; otherwise they let the pointer
- * through. Every drawn grid, the one being edited too, carries its name above its top-left corner.
+ * through. Every drawn grid, the one being edited too, carries its name above its top-left corner. Hidden grids are
+not drawn.
  */
 export function OtherGrids({
   group,
@@ -33,7 +34,7 @@ export function OtherGrids({
     <g data-testid="other-grids">
       <g pointerEvents={pickable ? undefined : "none"}>
         {group.grids.map((r, n) => {
-          if (n === active || !r.selection) return null;
+          if (n === active || !r.selection || r.hidden) return null;
           const s = rectToScreen(r.selection, viewport, page);
           const color = r.color ?? "var(--accent)";
           const spec = {
@@ -66,7 +67,7 @@ export function OtherGrids({
       </g>
       <g pointerEvents="none">
         {group.grids.map((r, n) => {
-          if (!r.selection) return null;
+          if (!r.selection || r.hidden) return null;
           const s = rectToScreen(r.selection, viewport, page);
           if (s.width < MIN_LABEL_WIDTH_PX) return null;
           return (

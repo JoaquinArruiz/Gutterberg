@@ -47,17 +47,25 @@ export type GridRegion = {
   name?: string;
   color?: string;
   folder?: string;
+  /** Not drawn on the page (the eye in the Grids list), and not edited there; it still has its pieces and prints. */
+  hidden?: boolean;
 };
 
 /** What the user can set on a grid besides its layout: a key given as undefined clears it. */
-export type GridLook = { name?: string; color?: string; folder?: string };
+export type GridLook = { name?: string; color?: string; folder?: string; hidden?: boolean };
 
 /**
  * Pages cut into pieces with one or more grids, each inside its own region. There is always at least one; a grid's
  * place in the list is its number in its pieces' ids (`CardId.grid`), so the first grid's pieces keep the ids they had
  * before a page could hold several.
  */
-export type GridGroup = { kind: "grid"; pages: PageRange; grids: GridRegion[] };
+export type GridGroup = {
+  kind: "grid";
+  pages: PageRange;
+  grids: GridRegion[];
+  /** The group's folders, empty ones included, in list order; a folder a grid names is a folder even when missing. */
+  folders?: string[];
+};
 
 /** How many grids a page can hold. */
 export const MAX_GRIDS = 9;
@@ -87,13 +95,15 @@ export function withLook(r: GridRegion, look: GridLook): GridRegion {
   if (next.name === undefined) delete next.name;
   if (next.color === undefined) delete next.color;
   if (next.folder === undefined) delete next.folder;
+  if (!next.hidden) delete next.hidden;
   return next;
 }
 
-/** The folders of `g`, in the order their first grid comes. */
-export const folderNames = (g: GridGroup): string[] => [
-  ...new Set(g.grids.flatMap((r) => (r.folder === undefined ? [] : [r.folder]))),
-];
+/** The folders of `g`: the ones with no grid yet (`folders`), then the others in the order their first grid comes. */
+export function folderNames(g: GridGroup): string[] {
+  const used = g.grids.flatMap((r) => (r.folder === undefined ? [] : [r.folder]));
+  return [...new Set([...(g.folders ?? []).filter((f) => !used.includes(f)), ...used])];
+}
 
 /** The numbers of the grids of `g` in `folder`. */
 export const folderGrids = (g: GridGroup, folder: string): number[] =>
@@ -107,16 +117,144 @@ export function newFolderName(g: GridGroup, base: string): string {
   return `${base} ${k}`;
 }
 
+/** `g` with `folders` set to `names`, or without the key when there are none. */
+function withFolders(g: GridGroup, names: string[]): GridGroup {
+  const { folders: _old, ...rest } = g;
+  return names.length > 0 ? { ...rest, folders: names } : rest;
+}
+
+/** Adds an empty folder called `name` to the grid group `page` belongs to; it is listed first until a grid is in it. */
+export function addFolder(groups: PageGroup[], page: number, name: string): PageGroup[] {
+  return updateGridGroup(groups, page, (g) =>
+    folderNames(g).includes(name) ? g : withFolders(g, [name, ...folderNames(g)]),
+  );
+}
+
 /**
- * Renames `folder` in the grid group `page` belongs to (every grid in it), or ungroups it with `to` undefined. A name
- * another folder has merges the two.
+ * Renames `folder` in the grid group `page` belongs to (every grid in it), or ungroups it with `to` undefined (an
+ * empty folder is then gone). A name another folder has merges the two.
  */
 export function renameFolder(groups: PageGroup[], page: number, folder: string, to: string | undefined): PageGroup[] {
-  return updateGridGroup(groups, page, (g) =>
-    g.grids.some((r) => r.folder === folder)
-      ? { ...g, grids: g.grids.map((r) => (r.folder === folder ? withLook(r, { folder: to }) : r)) }
-      : g,
-  );
+  return updateGridGroup(groups, page, (g) => {
+    if (!folderNames(g).includes(folder)) return g;
+    const grids = g.grids.map((r) => (r.folder === folder ? withLook(r, { folder: to }) : r));
+    const names = folderNames(g).flatMap((f) => (f !== folder ? [f] : to === undefined ? [] : [to]));
+    return withFolders({ ...g, grids }, [...new Set(names)]);
+  });
+}
+
+/**
+ * The Grids list as it is shown: empty folders first, then the grids in order, a folder standing where its first grid
+ * is and holding its grids.
+ */
+export type GridListItem = { kind: "grid"; n: number } | { kind: "folder"; name: string; grids: number[] };
+
+export function gridList(g: GridGroup): GridListItem[] {
+  const items: GridListItem[] = [];
+  const seen = new Set<string>();
+  for (const name of folderNames(g))
+    if (!g.grids.some((r) => r.folder === name)) {
+      seen.add(name);
+      items.push({ kind: "folder", name, grids: [] });
+    }
+  g.grids.forEach((r, n) => {
+    if (r.folder === undefined) items.push({ kind: "grid", n });
+    else if (!seen.has(r.folder)) {
+      seen.add(r.folder);
+      items.push({ kind: "folder", name: r.folder, grids: folderGrids(g, r.folder) });
+    }
+  });
+  return items;
+}
+
+/** What is dragged in the Grids list. */
+export type ListRef = { kind: "grid"; n: number } | { kind: "folder"; name: string };
+/** Where it is dropped: before or after a grid or a folder, or into a folder (at its end). */
+export type ListDrop = { place: "before" | "after"; item: ListRef } | { place: "into"; folder: string };
+
+const sameRef = (a: ListRef, b: ListRef) =>
+  a.kind === "grid" ? b.kind === "grid" && a.n === b.n : b.kind === "folder" && a.name === b.name;
+
+/**
+ * `g` with `drag` moved to `drop` in its list: the grids in their new order (a grid's number is its place, so the
+ * pieces of the grids that moved get new numbers) and each grid in the folder it landed in. A grid dropped next to a
+ * grid in a folder joins that folder; a folder dropped there goes next to that folder. `order` is the old number of
+ * each grid in its new place; null when nothing changes.
+ */
+export function moveInGridList(
+  g: GridGroup,
+  drag: ListRef,
+  drop: ListDrop,
+): { group: GridGroup; order: number[] } | null {
+  if (drop.place !== "into" && sameRef(drag, drop.item)) return null;
+  if (drop.place === "into" && drag.kind === "folder") {
+    if (drag.name === drop.folder) return null;
+    return moveInGridList(g, drag, { place: "after", item: { kind: "folder", name: drop.folder } });
+  }
+  const items = gridList(g).map((it) => (it.kind === "folder" ? { ...it, grids: [...it.grids] } : it));
+  // Take the dragged one out.
+  let moving: GridListItem;
+  if (drag.kind === "folder") {
+    const i = items.findIndex((it) => it.kind === "folder" && it.name === drag.name);
+    if (i < 0) return null;
+    moving = items.splice(i, 1)[0];
+  } else {
+    moving = { kind: "grid", n: drag.n };
+    const top = items.findIndex((it) => it.kind === "grid" && it.n === drag.n);
+    if (top >= 0) items.splice(top, 1);
+    else
+      for (const it of items)
+        if (it.kind === "folder" && it.grids.includes(drag.n)) it.grids = it.grids.filter((n) => n !== drag.n);
+  }
+  // Put it where it was dropped.
+  const topIndex = (ref: ListRef) =>
+    items.findIndex((it) =>
+      ref.kind === "folder" ? it.kind === "folder" && it.name === ref.name : it.kind === "grid" && it.n === ref.n,
+    );
+  if (drop.place === "into") {
+    const f = items.find((it) => it.kind === "folder" && it.name === drop.folder);
+    if (f?.kind !== "folder" || moving.kind !== "grid") return null;
+    f.grids.push(moving.n);
+  } else {
+    const at = topIndex(drop.item);
+    const holder =
+      drop.item.kind === "grid"
+        ? items.find((it) => it.kind === "folder" && it.grids.includes((drop.item as { n: number }).n))
+        : undefined;
+    if (holder && holder.kind === "folder") {
+      if (moving.kind === "grid") {
+        const j = holder.grids.indexOf((drop.item as { n: number }).n);
+        holder.grids.splice(drop.place === "before" ? j : j + 1, 0, moving.n);
+      } else {
+        const h = items.indexOf(holder);
+        items.splice(drop.place === "before" ? h : h + 1, 0, moving);
+      }
+    } else {
+      if (at < 0) return null;
+      items.splice(drop.place === "before" ? at : at + 1, 0, moving);
+    }
+  }
+  // Read the grids back in list order, each with the folder it is in.
+  const order: number[] = [];
+  const folderOf = new Map<number, string | undefined>();
+  for (const it of items)
+    if (it.kind === "grid") {
+      order.push(it.n);
+      folderOf.set(it.n, undefined);
+    } else
+      for (const n of it.grids) {
+        order.push(n);
+        folderOf.set(n, it.name);
+      }
+  const names = items.flatMap((it) => (it.kind === "folder" ? [it.name] : []));
+  const grids = order.map((n) => withLook(g.grids[n], { folder: folderOf.get(n) }));
+  const unchanged =
+    order.every((n, i) => n === i) &&
+    grids.every((r, i) => r.folder === g.grids[i].folder) &&
+    names.join("\n") === folderNames(g).join("\n");
+  if (unchanged) return null;
+  // Folders that hold grids are found from them; only the empty ones need the list, kept in list order.
+  return { group: withFolders({ ...g, grids }, names), order };
 }
 
 /** A new grid with the default settings and no region. */
@@ -338,7 +476,8 @@ export function applyGridTo(
   if (grids.length === 0) return groups;
   let out = groups;
   for (const run of runsOf(pages)) {
-    out = replaceRange(out, run, { kind: "grid", pages: run, grids: grids.map(copyRegion) });
+    const folders = which === "all" && from.folders ? { folders: [...from.folders] } : {};
+    out = replaceRange(out, run, { kind: "grid", pages: run, grids: grids.map(copyRegion), ...folders });
   }
   return out;
 }

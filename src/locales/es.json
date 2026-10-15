@@ -212,7 +212,7 @@
       "addTitle": "Agrega otra cuadrícula a esta página, para piezas de otro tamaño, y luego dibuja su región en la página",
       "full": "Una página puede tener hasta {{count}} cuadrículas.",
       "delete": "Eliminar {{name}}",
-      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. Los ajustes de arriba son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Pon cuadrículas en una carpeta para moverlas juntas: elige la carpeta y arrastra una de sus cuadrículas o usa las flechas. Al elegir una cuadrícula, se mueve sola.",
+      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. Los ajustes de arriba son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Arrastra cuadrículas y carpetas en la lista para cambiar su orden, o suelta una cuadrícula en una carpeta. Elige una carpeta para mover sus cuadrículas juntas en la página; al elegir una cuadrícula, se mueve sola. Haz doble clic en un nombre para cambiarlo, y clic en el punto para el color.",
       "edit": "Nombre, color y carpeta de {{name}}",
       "name": "Nombre de la cuadrícula",
       "color": "Color de la cuadrícula",
@@ -236,7 +236,13 @@
       "renameFolder": "Cambiar el nombre de {{name}}",
       "ungroup": "Sacar las cuadrículas de {{name}}",
       "fold": "Plegar {{name}}",
-      "unfold": "Desplegar {{name}}"
+      "unfold": "Desplegar {{name}}",
+      "pickColor": "Color de {{name}}",
+      "newFolderTitle": "Carpeta nueva: arrastra cuadrículas a ella para moverlas juntas",
+      "emptyFolder": "{{name}} está vacía: arrastra cuadrículas a ella",
+      "deleteFolder": "Eliminar {{name}}",
+      "hide": "Ocultar {{name}} en la página (se sigue imprimiendo)",
+      "show": "Mostrar {{name}} en la página"
     }
   },
   "freeform": {

@@ -9,6 +9,7 @@ import {
   endEdit,
   getCurrentSelection,
   getPickedFolderGrids,
+  isCurrentGridHidden,
   setCurrentSelection,
   useLayoutStore,
 } from "../stores/layout-store";
@@ -98,7 +99,7 @@ export function nudgePicked(dirX: number, dirY: number, big: boolean): boolean {
       return true;
     }
     const region = getCurrentSelection();
-    if (!region) return false;
+    if (!region || isCurrentGridHidden()) return false;
     inBurst();
     setCurrentSelection(moveRect(region, dx, dy));
     return true;

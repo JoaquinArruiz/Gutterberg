@@ -51,6 +51,7 @@ const GridRegionSchema = z.object({
   selection: NormalizedRectSchema.nullable(),
   name: z.string().optional(),
   folder: z.string().optional(),
+  hidden: z.boolean().optional(),
   color: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
@@ -63,6 +64,7 @@ const PageGroupSchema = z.discriminatedUnion("kind", [
     kind: z.literal("grid"),
     pages: PageRangeSchema,
     grids: z.array(GridRegionSchema).min(1).max(MAX_GRIDS),
+    folders: z.array(z.string()).max(50).optional(),
   }),
   z.object({ kind: z.literal("skip"), pages: PageRangeSchema }),
 ]);
@@ -232,13 +234,16 @@ function cleanRegion(r: z.infer<typeof GridRegionSchema>): GridRegion {
       name: cleanGridName(r.name ?? ""),
       color: r.color,
       folder: cleanGridName(r.folder ?? ""),
+      hidden: r.hidden,
     },
   );
 }
 
 function cleanGroup(g: z.infer<typeof PageGroupSchema>): PageGroup {
   if (g.kind === "skip") return g;
-  return { ...g, grids: g.grids.map(cleanRegion) };
+  const folders = [...new Set((g.folders ?? []).flatMap((f) => cleanGridName(f) ?? []))];
+  const { folders: _raw, ...rest } = g;
+  return { ...rest, grids: g.grids.map(cleanRegion), ...(folders.length > 0 ? { folders } : {}) };
 }
 
 /** An image's placement pulled back to sizes the dialog allows. */

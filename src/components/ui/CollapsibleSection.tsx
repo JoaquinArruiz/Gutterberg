@@ -11,6 +11,7 @@ export function CollapsibleSection({
   title,
   defaultOpen = true,
   info,
+  actions,
   children,
 }: {
   id: string;
@@ -18,6 +19,8 @@ export function CollapsibleSection({
   defaultOpen?: boolean;
   /** One-line explanation of the section, behind an InfoTip after the title. */
   info?: React.ReactNode;
+  /** Small buttons in the header, before the InfoTip (a section's "add" button). */
+  actions?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const stored = usePreferencesStore((s) => s.prefs.inspector.sections[id]);
@@ -36,6 +39,7 @@ export function CollapsibleSection({
           {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           {title}
         </button>
+        {actions}
         {info && <InfoTip text={info} />}
       </div>
       {open && (

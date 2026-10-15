@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   activeRegion,
+  addFolder,
   addGrid,
   applyGridTo,
   clampRange,
@@ -14,12 +15,14 @@ import {
   folderNames,
   type GridGroup,
   gridGroupAt,
+  gridList,
   groupAt,
   hasRegion,
   includedPages,
   isSkipped,
   MAX_GRID_NAME,
   MAX_GRIDS,
+  moveInGridList,
   newFolderName,
   newGridRegion,
   type PageGroup,
@@ -382,5 +385,60 @@ describe("names, colors and folders of grids", () => {
       [undefined, undefined],
       ["Tokens", "Folder 1"],
     ]);
+  });
+});
+
+describe("moving grids and folders in the list", () => {
+  /** Four grids: 0 and 2 in folder "A", 1 and 3 on their own. */
+  const make = (): GridGroup => {
+    let groups = addGrid(addGrid(addGrid(defaultGroups(1), 0), 0), 0);
+    groups = updateGrid(groups, 0, 0, (r) => withLook(r, { name: "g0", folder: "A" }));
+    groups = updateGrid(groups, 0, 1, (r) => withLook(r, { name: "g1" }));
+    groups = updateGrid(groups, 0, 2, (r) => withLook(r, { name: "g2", folder: "A" }));
+    groups = updateGrid(groups, 0, 3, (r) => withLook(r, { name: "g3" }));
+    return gridGroupAt(groups, 0) as GridGroup;
+  };
+  const names = (g: GridGroup) => g.grids.map((r) => `${r.name}${r.folder ? `/${r.folder}` : ""}`);
+  const grid = (n: number) => ({ kind: "grid" as const, n });
+  const folder = (name: string) => ({ kind: "folder" as const, name });
+
+  it("lists a folder where its first grid is, with its grids", () => {
+    expect(gridList(make())).toEqual([{ kind: "folder", name: "A", grids: [0, 2] }, grid(1), grid(3)]);
+  });
+
+  it("moves a grid before another, renumbering the grids", () => {
+    const out = moveInGridList(make(), grid(3), { place: "before", item: grid(1) });
+    // The folder's grids are read together, where the folder is.
+    expect(out?.order).toEqual([0, 2, 3, 1]);
+    expect(names(out?.group as GridGroup)).toEqual(["g0/A", "g2/A", "g3", "g1"]);
+  });
+
+  it("puts a grid into a folder, or next to a grid of the folder, and takes it out again", () => {
+    const into = moveInGridList(make(), grid(3), { place: "into", folder: "A" })?.group as GridGroup;
+    expect(names(into)).toEqual(["g0/A", "g2/A", "g3/A", "g1"]);
+    const beside = moveInGridList(make(), grid(1), { place: "before", item: grid(2) })?.group as GridGroup;
+    expect(names(beside)).toEqual(["g0/A", "g1/A", "g2/A", "g3"]);
+    const out = moveInGridList(make(), grid(0), { place: "after", item: grid(3) })?.group as GridGroup;
+    expect(names(out)).toEqual(["g2/A", "g1", "g3", "g0"]);
+  });
+
+  it("moves a folder with its grids, never into itself", () => {
+    const out = moveInGridList(make(), folder("A"), { place: "after", item: grid(3) });
+    expect(out?.order).toEqual([1, 3, 0, 2]);
+    expect(moveInGridList(make(), folder("A"), { place: "into", folder: "A" })).toBeNull();
+    expect(moveInGridList(make(), grid(1), { place: "before", item: grid(1) })).toBeNull();
+    // The first move puts a folder's grids together; once they are, a grid dropped where it is changes nothing.
+    const once = moveInGridList(make(), grid(1), { place: "after", item: folder("A") });
+    expect(once?.order).toEqual([0, 2, 1, 3]);
+    expect(moveInGridList(once?.group as GridGroup, grid(2), { place: "after", item: folder("A") })).toBeNull();
+  });
+
+  it("keeps an empty folder first until a grid is dropped in it, and forgets it when it is deleted", () => {
+    const groups = addFolder([make()], 0, "B");
+    const g = gridGroupAt(groups, 0) as GridGroup;
+    expect(gridList(g)[0]).toEqual({ kind: "folder", name: "B", grids: [] });
+    const filled = moveInGridList(g, grid(3), { place: "into", folder: "B" })?.group as GridGroup;
+    expect(names(filled)).toEqual(["g3/B", "g0/A", "g2/A", "g1"]);
+    expect(folderNames(gridGroupAt(renameFolder(groups, 0, "B", undefined), 0) as GridGroup)).toEqual(["A"]);
   });
 });

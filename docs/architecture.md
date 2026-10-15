@@ -58,10 +58,14 @@ it: `keyAfterGridDelete` re-keys the edits, and `onGridDeleted` the Print stage'
 Pieces come out page by page, grid by grid (each row by row), then the page's freeform pieces; pairing backs
 matches pieces grid by grid.
 
-**Names, colours and folders.** A grid can carry a `name`, a `color` (one of `GRID_COLORS`) and a `folder`, saved in
-the project and copied by "Apply this grid to…"; none of them reaches the engine or a piece's id, so they change no
-key. A folder is only a name its grids share: it exists while one grid has it, and renaming or ungrouping it rewrites
-that name on its grids (`renameFolder`). `pickedFolder` in the layout store, session state beside `activeGrid`, is the
+**Names, colours, folders and hiding.** A grid can carry a `name`, a `color` (one of `GRID_COLORS`), a `folder` and
+`hidden`, saved in the project and copied by "Apply this grid to…"; none of them reaches the engine or a piece's id,
+so they change no key, and a hidden grid still prints. A folder is a name its grids share; the group's `folders` list
+also keeps empty ones, which the list shows first. Renaming or ungrouping a folder rewrites that name on its grids
+(`renameFolder`). The Grids list (`gridList`) shows a folder where its first grid is, so moving rows
+(`moveInGridList`, dragged with pointer events like the piece library) puts a folder's grids together and renumbers
+the grids in list order; the pieces' keys follow through `keyAfterGridRenumber` and the `onGridsRenumbered` listener,
+as when a grid is deleted. `pickedFolder` in the layout store, session state beside `activeGrid`, is the
 folder picked in the list: a drag on one of its grids (the `grids-move` drag) and the arrow keys move its regions
 together through `moveRectsTogether`, which stops them as one at the page's edge. Picking a single grid
 (`setActiveGrid`) drops the folder. A page can

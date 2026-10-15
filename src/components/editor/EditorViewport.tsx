@@ -128,7 +128,9 @@ export function EditorViewport() {
   const activeGrid = useActiveGrid();
   const pickedFolder = usePickedFolder();
   const skipped = useCurrentGroup()?.kind === "skip";
-  const selection = current?.selection ?? null;
+  // A hidden grid is not drawn, and the page does not edit it.
+  const hiddenGrid = current?.hidden === true;
+  const selection = hiddenGrid ? null : (current?.selection ?? null);
   // A grid and freeform pieces on one page: the tip says that is allowed and how to get several sizes.
   const hasGridAndPieces = selection !== null && freeform.length > 0;
   const fitMode = useEditorStore((s) => s.fitMode);
@@ -390,6 +392,8 @@ export function EditorViewport() {
       return;
     }
     if (!group) return; // a skipped page has no region to edit
+    // A hidden grid is out of reach; another grid pressed on the page is still picked.
+    if (hiddenGrid && hit !== "other-grid") return;
     // Pressing on the region, or drawing a new one, picks it: the arrow keys then move it.
     ed.setPickedRegion(currentPage);
     beginEdit(); // the whole drag is one undo step

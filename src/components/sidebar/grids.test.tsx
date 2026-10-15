@@ -138,6 +138,81 @@ describe("naming, coloring and folding grids", () => {
   });
 });
 
+describe("the Grids list, rearranged and hidden", () => {
+  it("renames a grid or a folder with a double-click, and colors a grid from its dot", () => {
+    store().setGridLook(0, 0, { folder: "Cards" });
+    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    fireEvent.doubleClick(screen.getByRole("button", { name: /^Grid 1/ }));
+    const field = screen.getByRole("textbox", { name: "Grid name" });
+    fireEvent.change(field, { target: { value: "Poker" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    expect(group().grids[0].name).toBe("Poker");
+    rerender(<GridsSection group={group()} page={0} />);
+    fireEvent.doubleClick(screen.getByRole("button", { name: /^Cards/ }));
+    const folderField = screen.getByRole("textbox", { name: "Folder name" });
+    fireEvent.change(folderField, { target: { value: "Big" } });
+    fireEvent.blur(folderField);
+    expect(group().grids[0].folder).toBe("Big");
+    rerender(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Color of Poker" }));
+    fireEvent.click(screen.getByRole("button", { name: "Teal" }));
+    expect(group().grids[0].color).toBe("#14b8a6");
+    rerender(<GridsSection group={group()} page={0} />);
+    expect(screen.queryByRole("button", { name: "Teal" })).toBeNull();
+  });
+
+  it("adds an empty folder from the header, ready to be named, and deletes it", () => {
+    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "New folder" }));
+    expect(group().folders).toEqual(["Folder 1"]);
+    rerender(<GridsSection group={group()} page={0} />);
+    const field = screen.getByRole("textbox", { name: "Folder name" });
+    fireEvent.change(field, { target: { value: "Tokens" } });
+    fireEvent.blur(field);
+    expect(group().folders).toEqual(["Tokens"]);
+    rerender(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Delete Tokens" }));
+    expect(group().folders).toBeUndefined();
+  });
+
+  it("drags a grid into a folder, which then comes first like the folder did", () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    store().addFolder(0, "Cards");
+    render(<GridsSection group={group()} page={0} />);
+    const row = (key: string) => document.querySelector<HTMLElement>(`[data-list-item="${key}"]`) as HTMLElement;
+    const dragOnto = (from: string, onto: string, share: number) => {
+      const target = row(onto);
+      target.getBoundingClientRect = () => ({ top: 0, height: 20, left: 0, width: 200 }) as DOMRect;
+      document.elementFromPoint = () => target;
+      fireEvent.pointerDown(row(from), { button: 0, clientX: 0, clientY: 100 });
+      fireEvent.pointerMove(window, { clientX: 0, clientY: share * 20 });
+      fireEvent.pointerUp(window, { clientX: 0, clientY: share * 20 });
+    };
+    act(() => dragOnto("g:1", "f:Cards", 0.8));
+    expect(group().grids.map((r) => r.folder)).toEqual(["Cards", undefined]);
+    expect(group().grids.map((r) => r.selection)).toEqual([BOTTOM, TOP]);
+  });
+
+  it("hides a grid on the page with the eye, and the page leaves it alone", async () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    const { unmount } = render(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Hide Grid 2 on the page (it still prints)" }));
+    expect(group().grids[1].hidden).toBe(true);
+    unmount();
+    render(<EditorViewport />);
+    await act(async () => {});
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    expect(svg.querySelector("[data-hit='body']")).toBeNull();
+    // A press on the empty page draws nothing over the hidden grid.
+    fireEvent.pointerDown(svg, at({ x: 0.8, y: 0.9 }));
+    fireEvent.pointerMove(svg, at({ x: 0.9, y: 0.95 }));
+    fireEvent.pointerUp(svg, at({ x: 0.9, y: 0.95 }));
+    expect(group().grids[1].selection).toEqual(BOTTOM);
+  });
+});
+
 describe("several grids on the page", () => {
   it("drags every grid of a picked folder together, and one grid alone once it is picked", async () => {
     store().addGrid(0);

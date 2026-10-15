@@ -212,7 +212,7 @@
       "addTitle": "Add another grid to this page, for pieces of another size, then draw its region on the page",
       "full": "A page can hold up to {{count}} grids.",
       "delete": "Delete {{name}}",
-      "note": "Each grid has its own region, rows, columns and gap, and can have a name and a color. The settings above are the picked grid's, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it. Put grids in a folder to move them together: pick the folder, then drag one of its grids or use the arrow keys. Picking a grid moves it on its own.",
+      "note": "Each grid has its own region, rows, columns and gap, and can have a name and a color. The settings above are the picked grid's, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it. Drag grids and folders in the list to change their order, or drop a grid into a folder. Pick a folder to move its grids together on the page; picking a grid moves it on its own. Double-click a name to change it, and click the dot for the color.",
       "edit": "Name, color and folder of {{name}}",
       "name": "Grid name",
       "color": "Grid color",
@@ -236,7 +236,13 @@
       "renameFolder": "Rename {{name}}",
       "ungroup": "Take the grids out of {{name}}",
       "fold": "Fold {{name}}",
-      "unfold": "Unfold {{name}}"
+      "unfold": "Unfold {{name}}",
+      "pickColor": "Color of {{name}}",
+      "newFolderTitle": "New folder: drag grids into it to move them together",
+      "emptyFolder": "{{name}} is empty: drag grids into it",
+      "deleteFolder": "Delete {{name}}",
+      "hide": "Hide {{name}} on the page (it still prints)",
+      "show": "Show {{name}} on the page"
     }
   },
   "freeform": {

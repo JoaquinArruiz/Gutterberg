@@ -286,14 +286,26 @@ export function keyAfterGridDelete(
   pages: { first: number; last: number },
   grid: number,
 ): string | null {
+  return keyAfterGridRenumber(k, documentId, pages, (n) => (n === grid ? null : n < grid ? n : n - 1));
+}
+
+/**
+ * A key after the grids of the pages `first`..`last` of document `documentId` were renumbered: grid n's pieces take
+ * the number `to(n)`, or go when it is null. Other keys stay as they are.
+ */
+export function keyAfterGridRenumber(
+  k: string,
+  documentId: number,
+  pages: { first: number; last: number },
+  to: (n: number) => number | null,
+): string | null {
   const m = GRID.exec(k);
   if (!m || Number(m[1]) !== documentId) return k;
   const page = Number(m[2]);
   if (page < pages.first || page > pages.last) return k;
-  const n = Number(m[5] ?? 0);
-  if (n === grid) return null;
-  if (n < grid) return k;
-  return `g:${m[1]}:${m[2]}:${m[3]}:${m[4]}${n - 1 > 0 ? `:${n - 1}` : ""}`;
+  const n = to(Number(m[5] ?? 0));
+  if (n === null) return null;
+  return `g:${m[1]}:${m[2]}:${m[3]}:${m[4]}${n > 0 ? `:${n}` : ""}`;
 }
 
 /** `rec` with each key passed through `to`; entries whose key goes (null) are dropped. */

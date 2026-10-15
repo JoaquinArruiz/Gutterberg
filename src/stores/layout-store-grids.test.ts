@@ -152,3 +152,31 @@ describe("names, colors and folders of grids", () => {
     expect(store().pickedFolder).toBeNull();
   });
 });
+
+describe("moving grids in the list", () => {
+  it("renumbers the grids, and their pieces' edits and copies follow, in one undo step", () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    store().setCardEdits({ turns: { "g:0:0:0:0": 90, "g:0:0:0:0:1": 180 }, scales: {}, order: [], backs: {} });
+    usePrintStore.getState().setQuantity(["g:0:0:0:0:1"], 4);
+    expect(store().activeGrid).toBe(1);
+    store().moveInGridList(0, { kind: "grid", n: 1 }, { place: "before", item: { kind: "grid", n: 0 } });
+    expect(grids().map((r) => r.selection)).toEqual([BOTTOM, TOP]);
+    expect(store().cardEdits.turns).toEqual({ "g:0:0:0:0:1": 90, "g:0:0:0:0": 180 });
+    expect(usePrintStore.getState().quantities).toEqual({ "g:0:0:0:0": 4 });
+    // The grid being edited is still the same grid.
+    expect(store().activeGrid).toBe(0);
+    undo();
+    expect(grids().map((r) => r.selection)).toEqual([TOP, BOTTOM]);
+  });
+
+  it("hides and shows the grids of a folder together", () => {
+    store().addGrid(0);
+    store().setGridLook(0, 0, { folder: "A" });
+    store().setGridLook(0, 1, { folder: "A" });
+    store().setFolderHidden(0, "A", true);
+    expect(grids().map((r) => r.hidden)).toEqual([true, true]);
+    store().setFolderHidden(0, "A", false);
+    expect(grids().map((r) => "hidden" in r)).toEqual([false, false]);
+  });
+});

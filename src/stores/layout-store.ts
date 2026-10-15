@@ -11,6 +11,7 @@ import {
   editsWithoutFreeform,
   isCardOfDocument,
   keyAfterGridDelete,
+  keyAfterGridRenumber,
   NO_EDITS,
 } from "../lib/card-edits";
 import type { NormalizedRect } from "../lib/coordinates";
@@ -18,6 +19,7 @@ import type { DetectedGrid } from "../lib/detect";
 import {
   activeIndex,
   activeRegion,
+  addFolder,
   addGrid,
   applyGridTo,
   clearGridRegion,
@@ -31,8 +33,11 @@ import {
   gridGroupAt,
   groupAt,
   isSkipped,
+  type ListDrop,
+  type ListRef,
   MAX_GAP_MM,
   MAX_GRIDS,
+  moveInGridList,
   newGridRegion,
   type PageGroup,
   patchGrid,
@@ -155,6 +160,15 @@ type LayoutState = OutputSettings & {
   pickFolder: (page: number, folder: string | null) => void;
   /** Sets or clears (a key given as undefined) grid `n`'s name, colour or folder. One undo step. */
   setGridLook: (page: number, n: number, look: GridLook) => void;
+  /** Adds an empty folder to `page`'s group, listed first until a grid is dropped in it. */
+  addFolder: (page: number, name: string) => void;
+  /**
+   * Moves a grid or a folder in the Grids list of `page`'s group (see `moveInGridList`): grids that change place get
+   * new numbers, and their pieces' edits and copies follow. One undo step.
+   */
+  moveInGridList: (page: number, drag: ListRef, drop: ListDrop) => void;
+  /** Shows or hides on the page every grid of `page`'s group in `folder`. One undo step. */
+  setFolderHidden: (page: number, folder: string, hidden: boolean) => void;
   /** Renames a folder of `page`'s group, or ungroups its grids with `to` undefined. */
   renameFolder: (page: number, folder: string, to: string | undefined) => void;
   /** Moves the regions of several grids of `page`'s group at once (a folder dragged on the page). */
@@ -263,13 +277,13 @@ export function onFreeformCardDeleted(fn: (documentId: DocumentId, page: number,
   };
 }
 
-// Deleting a grid renumbers the grids after it on the pages of its group: `to` says what became of each key (null:
+// Deleting or moving a grid renumbers grids on the pages of its group: `to` says what became of each key (null:
 // the piece is gone). The Print stage's copies, selection and common back follow.
-const gridDeletedListeners = new Set<(to: (key: string) => string | null) => void>();
-export function onGridDeleted(fn: (to: (key: string) => string | null) => void): () => void {
-  gridDeletedListeners.add(fn);
+const gridsRenumberedListeners = new Set<(to: (key: string) => string | null) => void>();
+export function onGridsRenumbered(fn: (to: (key: string) => string | null) => void): () => void {
+  gridsRenumberedListeners.add(fn);
   return () => {
-    gridDeletedListeners.delete(fn);
+    gridsRenumberedListeners.delete(fn);
   };
 }
 
@@ -304,6 +318,33 @@ export const useLayoutStore = create<LayoutState>()(
         else set({ pickedFolder: folder, activeGrid: first });
       },
       setGridLook: (page, n, look) => set((s) => ({ groups: updateGrid(s.groups, page, n, (r) => withLook(r, look)) })),
+      addFolder: (page, name) => set((s) => ({ groups: addFolder(s.groups, page, name) })),
+      moveInGridList: (page, drag, drop) => {
+        const group = gridGroupAt(get().groups, page);
+        const moved = group && moveInGridList(group, drag, drop);
+        if (!group || !moved) return;
+        const { order } = moved;
+        const documentId = useDocumentStore.getState().activeId;
+        const to = (k: string) =>
+          keyAfterGridRenumber(k, documentId, group.pages, (n) => {
+            const i = order.indexOf(n);
+            return i < 0 ? null : i;
+          });
+        const active = activeIndex(group, get().activeGrid);
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, () => moved.group),
+          cardEdits: editsAfterRemap(s.cardEdits, to),
+          activeGrid: Math.max(0, order.indexOf(active)),
+        }));
+        for (const fn of gridsRenumberedListeners) fn(to);
+      },
+      setFolderHidden: (page, folder, hidden) =>
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, (g) => ({
+            ...g,
+            grids: g.grids.map((r) => (r.folder === folder ? withLook(r, { hidden }) : r)),
+          })),
+        })),
       renameFolder: (page, folder, to) =>
         set((s) => ({
           groups: renameFolder(s.groups, page, folder, to),
@@ -409,7 +450,7 @@ export const useLayoutStore = create<LayoutState>()(
           cardEdits: editsAfterRemap(s.cardEdits, to),
           activeGrid: last ? 0 : active > n ? active - 1 : Math.min(active, group.grids.length - 2),
         }));
-        for (const fn of gridDeletedListeners) fn(to);
+        for (const fn of gridsRenumberedListeners) fn(to);
       },
       addFreeformCard: (page, card) => {
         const index = get().freeform[page]?.length ?? 0;
@@ -672,7 +713,7 @@ export function getOtherSelections(): { n: number; selection: NormalizedRect }[]
   const g = gridGroupAt(s.groups, useDocumentStore.getState().currentPage);
   if (!g) return [];
   const active = activeIndex(g, s.activeGrid);
-  return g.grids.flatMap((r, n) => (n !== active && r.selection ? [{ n, selection: r.selection }] : []));
+  return g.grids.flatMap((r, n) => (n !== active && r.selection && !r.hidden ? [{ n, selection: r.selection }] : []));
 }
 
 /**
@@ -697,6 +738,13 @@ export function usePickedFolder(): string | null {
     const g = gridGroupAt(s.groups, page);
     return g && s.pickedFolder !== null && g.grids.some((r) => r.folder === s.pickedFolder) ? s.pickedFolder : null;
   });
+}
+
+/** Whether the grid being edited on the viewed page is hidden (not drawn, and not edited on the page). */
+export function isCurrentGridHidden(): boolean {
+  const s = useLayoutStore.getState();
+  const g = gridGroupAt(s.groups, useDocumentStore.getState().currentPage);
+  return g ? activeRegion(g, s.activeGrid).hidden === true : false;
 }
 
 /** Sets the region of the grid being edited on the viewed page (every page of the group). */
