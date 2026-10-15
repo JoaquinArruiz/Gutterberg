@@ -9,8 +9,10 @@ import {
   Plus,
   Trash2,
   Ungroup,
+  X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { create } from "zustand";
 import type { OrientedRect } from "../../lib/card";
@@ -164,18 +166,29 @@ function ColorChoices({ value, onPick }: { value: string | undefined; onPick: (h
         <legend className={heading}>{t("source.grids.ownColors")}</legend>
         <div className="flex flex-wrap items-center gap-1">
           {own.map((hex) => (
-            <Swatch
-              key={hex}
-              hex={hex}
-              label={hex}
-              on={value === hex}
-              onPick={() => onPick(hex)}
-              onContextMenu={(e) =>
-                openContextMenu(e, [
-                  { label: t("source.grids.deleteColor"), danger: true, onSelect: () => deleteColor(hex) },
-                ])
-              }
-            />
+            <span key={hex} className="group relative">
+              <Swatch
+                hex={hex}
+                label={hex}
+                on={value === hex}
+                onPick={() => onPick(hex)}
+                onContextMenu={(e) =>
+                  openContextMenu(e, [
+                    { label: t("source.grids.deleteColor"), danger: true, onSelect: () => deleteColor(hex) },
+                  ])
+                }
+              />
+              {/* The × on hover deletes it too, for whoever does not think of the right-click. */}
+              <button
+                type="button"
+                aria-label={t("source.grids.deleteColorNamed", { hex })}
+                title={t("source.grids.deleteColor")}
+                onClick={() => deleteColor(hex)}
+                className="absolute -right-1 -top-1 hidden h-3 w-3 items-center justify-center rounded-full bg-[var(--fg)] text-[var(--bg)] group-focus-within:flex group-hover:flex"
+              >
+                <X size={8} strokeWidth={3} />
+              </button>
+            </span>
           ))}
           <label
             title={t("source.grids.addColor")}
@@ -196,12 +209,18 @@ function ColorChoices({ value, onPick }: { value: string | undefined; onPick: (h
   );
 }
 
-/** The colour picker that opens under a grid's dot: closes on a choice, a press outside it or Esc. */
+/**
+ * The colour picker that opens under a grid's row (`anchor`, a `data-list-item` key): closes on a choice, a press
+ * outside it or Esc. It is drawn over the whole window, so the panel's width and scrolling never cut it; it follows
+ * the row when the panel scrolls, and opens upwards when there is no room below.
+ */
 function ColorPopover({
+  anchor,
   value,
   onPick,
   onClose,
 }: {
+  anchor: string;
   value: string | undefined;
   onPick: (hex: string | undefined) => void;
   onClose: () => void;
@@ -210,6 +229,26 @@ function ColorPopover({
   const ref = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
+  const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
+  useLayoutEffect(() => {
+    const place = () => {
+      const row = document.querySelector(`[data-list-item="${anchor}"]`)?.getBoundingClientRect();
+      const box = ref.current?.getBoundingClientRect();
+      if (!row || !box) return;
+      const below = row.bottom + 2;
+      setPos({
+        left: Math.max(4, Math.min(row.left, window.innerWidth - box.width - 4)),
+        top: below + box.height > window.innerHeight ? Math.max(4, row.top - box.height - 2) : below,
+      });
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [anchor]);
   useEffect(() => {
     // The right-click menu on a colour is outside the popover but belongs to it.
     const down = (e: PointerEvent) => {
@@ -224,12 +263,13 @@ function ColorPopover({
       window.removeEventListener("keydown", key);
     };
   }, []);
-  return (
+  return createPortal(
     <div
       ref={ref}
       role="dialog"
       aria-label={t("source.grids.color")}
-      className="absolute left-0 top-6 z-20 w-56 rounded border border-[var(--border)] bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
+      style={{ position: "fixed", left: pos?.left ?? 0, top: pos?.top ?? 0, visibility: pos ? undefined : "hidden" }}
+      className="z-50 w-56 rounded border border-[var(--border)] bg-[var(--panel)] p-2 shadow-xl shadow-black/40"
     >
       <ColorChoices
         value={value}
@@ -238,7 +278,8 @@ function ColorPopover({
           onClose();
         }}
       />
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -471,6 +512,7 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
         </div>
         {coloring === n && editing !== n && (
           <ColorPopover
+            anchor={listItemKey(ref)}
             value={r.color}
             onPick={(color) => setLook(page, n, { color })}
             onClose={() => setColoring(null)}

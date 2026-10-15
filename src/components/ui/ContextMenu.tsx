@@ -20,7 +20,8 @@ export function openContextMenu(
 ) {
   e.preventDefault();
   if (entries.length === 0) return;
-  useMenuStore.setState({ at: { x: e.clientX, y: e.clientY }, entries });
+  // Just off the pointer, so it reads as a layer of its own over a panel or a popover the same colour.
+  useMenuStore.setState({ at: { x: e.clientX + 2, y: e.clientY + 2 }, entries });
 }
 
 export function closeContextMenu() {
@@ -75,7 +76,7 @@ export function ContextMenuHost() {
       role="menu"
       data-testid="context-menu"
       style={{ position: "fixed", left: pos?.left ?? at.x, top: pos?.top ?? at.y }}
-      className="z-[60] min-w-44 rounded border border-[var(--border)] bg-[var(--panel)] p-1 shadow-xl shadow-black/40"
+      className="z-[60] min-w-40 rounded border border-[var(--border)] bg-[var(--bg)] p-1 shadow-xl shadow-black/50 ring-1 ring-black/20"
       onContextMenu={(e) => e.preventDefault()}
     >
       {entries.map((entry, i) =>

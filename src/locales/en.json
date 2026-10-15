@@ -262,6 +262,7 @@
       "ownColors": "Your colors",
       "addColor": "Add a color of your own",
       "deleteColor": "Delete color",
+      "deleteColorNamed": "Delete {{hex}}",
       "menu": {
         "rename": "Rename",
         "color": "Change color",
