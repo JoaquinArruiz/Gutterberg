@@ -16,7 +16,15 @@ import {
 import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
 import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
-import { dropGuide, type GuideAxis, NO_GUIDE_SET, overRuler } from "../../lib/guides";
+import {
+  dropGuide,
+  type GuideAxis,
+  guideFrom,
+  NO_GUIDE_SET,
+  overRuler,
+  type RulerSide,
+  rulerOf,
+} from "../../lib/guides";
 import { emitHintEvent } from "../../lib/hint-events";
 import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
 import {
@@ -294,15 +302,20 @@ export function EditorViewport() {
       axis,
       index,
       pt: normalizedToGuide(axis === "x" ? doc.x : doc.y, axis, page),
-      onRuler: overRuler(axis, p),
+      // Dropped back on the ruler it comes from, it is deleted.
+      onRuler: overRuler(rulerOf(axis, usePreferencesStore.getState().prefs.editor.invertRulers), p),
     };
     guideDragRef.current = g;
     setGuideDrag(g);
   };
 
-  /** Pressing on a ruler drags out a new guide: a horizontal one from the top ruler, a vertical one from the left. */
-  const onRulerDown = (axis: GuideAxis) => (e: React.PointerEvent<SVGSVGElement>) => {
+  /**
+   * Pressing on a ruler drags out a new guide: a horizontal one from the top ruler and a vertical one from the left,
+   * or the other way round with "Invert rulers".
+   */
+  const onRulerDown = (ruler: RulerSide) => (e: React.PointerEvent<SVGSVGElement>) => {
     if (!page || e.button !== 0) return;
+    const axis = guideFrom(ruler, usePreferencesStore.getState().prefs.editor.invertRulers);
     e.preventDefault();
     e.currentTarget.setPointerCapture(e.pointerId);
     drag.current = { kind: "guide", axis, index: null };
@@ -565,8 +578,7 @@ export function EditorViewport() {
       originPx={axis === "x" ? viewport.panX : viewport.panY}
       pxPerMm={pxPerMm}
       unit={unit}
-      // The top ruler gives horizontal guides (at a y), the left one vertical guides (at an x).
-      onPointerDown={onRulerDown(axis === "x" ? "y" : "x")}
+      onPointerDown={onRulerDown(axis === "x" ? "top" : "left")}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
     />

@@ -98,6 +98,16 @@ describe("the Preferences sections", () => {
     expect(screen.getByRole("combobox", { name: "Piece library panel position" })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Print settings panel position" })).toBeTruthy();
   });
+
+  it("has Invert rulers, off by default", async () => {
+    render(<PreferencesDialog />);
+    await openPreferences();
+    fireEvent.click(screen.getByRole("button", { name: "Workspace" }));
+    const invert = screen.getByRole("switch", { name: "Invert rulers" });
+    expect(invert.getAttribute("aria-checked")).toBe("false");
+    fireEvent.click(invert);
+    expect(usePreferencesStore.getState().prefs.editor.invertRulers).toBe(true);
+  });
 });
 
 describe("About", () => {

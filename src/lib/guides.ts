@@ -29,11 +29,23 @@ export const removeGuide = (set: GuideSet, axis: GuideAxis, index: number): Guid
   [key(axis)]: set[key(axis)].filter((_, i) => i !== index),
 });
 
+/** Where a ruler is: along the top of the canvas or down its left side. */
+export type RulerSide = "top" | "left";
+
 /**
- * Whether a guide dragged to `p` (canvas px, the canvas's top-left at 0) is back over its ruler: a horizontal guide
- * above the canvas (the top ruler), a vertical one left of it.
+ * The ruler a guide comes from and goes back to. Normally the top ruler gives horizontal guides and the left one
+ * vertical guides, each parallel to its ruler; "Invert rulers" (a preference) swaps them, so each ruler gives the
+ * guide perpendicular to it.
  */
-export const overRuler = (axis: GuideAxis, p: { x: number; y: number }) => (axis === "y" ? p.y < 0 : p.x < 0);
+export const rulerOf = (axis: GuideAxis, inverted: boolean): RulerSide =>
+  (axis === "y") !== inverted ? "top" : "left";
+
+/** The guide a ruler gives: the other way round from [`rulerOf`]. */
+export const guideFrom = (ruler: RulerSide, inverted: boolean): GuideAxis =>
+  (ruler === "top") !== inverted ? "y" : "x";
+
+/** Whether `p` (canvas px, the canvas's top-left at 0) is over `ruler`: above the canvas, or left of it. */
+export const overRuler = (ruler: RulerSide, p: { x: number; y: number }) => (ruler === "top" ? p.y < 0 : p.x < 0);
 
 /** What a guide drag leaves: the guide made, moved or deleted. `index` is null for a new guide. */
 export function dropGuide(

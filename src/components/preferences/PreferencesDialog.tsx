@@ -336,6 +336,15 @@ export function PreferencesDialog() {
                 </div>
                 <p className="text-[var(--muted)]">{t("preferences.workspace.resetNote")}</p>
               </Field>
+
+              <Field label={t("preferences.workspace.rulers")}>
+                <Switch
+                  checked={prefs.editor.invertRulers}
+                  onChange={store.setInvertRulers}
+                  label={t("preferences.workspace.invertRulers")}
+                  hint={t("preferences.workspace.invertRulersHint")}
+                />
+              </Field>
             </>
           )}
 

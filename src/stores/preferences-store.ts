@@ -134,6 +134,8 @@ type PreferencesState = {
   setSnapEdges: (snapEdges: boolean) => void;
   /** Rulers along the page, shown or hidden. */
   setRulers: (rulers: boolean) => void;
+  /** Which guide each ruler gives: the one parallel to it, or (inverted) the one perpendicular to it. */
+  setInvertRulers: (invertRulers: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -265,6 +267,10 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       },
       setRulers: (rulers) => {
         if (get().prefs.editor.rulers !== rulers) edit((p) => ({ ...p, editor: { ...p.editor, rulers } }));
+      },
+      setInvertRulers: (invertRulers) => {
+        if (get().prefs.editor.invertRulers !== invertRulers)
+          edit((p) => ({ ...p, editor: { ...p.editor, invertRulers } }));
       },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),

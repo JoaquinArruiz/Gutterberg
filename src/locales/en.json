@@ -598,7 +598,10 @@
       "resetLayout": "Reset workspace layout",
       "resetNote": "Restores panel positions and sizes, the visible views and the default view. Units, language, theme and Live Preview are kept.",
       "layoutCards": "Layout of the Source tab",
-      "layoutPrint": "Layout of the Print tab"
+      "layoutPrint": "Layout of the Print tab",
+      "rulers": "Rulers",
+      "invertRulers": "Invert rulers",
+      "invertRulersHint": "Each ruler gives the guide across it: drag from the top ruler for a vertical guide and from the left ruler for a horizontal one. Off: each ruler gives the guide along it."
     },
     "livePreview": {
       "title": "Live preview",

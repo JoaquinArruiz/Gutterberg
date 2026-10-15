@@ -78,7 +78,7 @@ describe("the precision aids", () => {
     expect(edges.getAttribute("data-hint-target")).toBe("sticky-edges-button");
     fireEvent.click(edges);
     fireEvent.click(rulers);
-    expect(usePreferencesStore.getState().prefs.editor).toEqual({ snap: true, snapEdges: false, rulers: true });
+    expect(usePreferencesStore.getState().prefs.editor).toMatchObject({ snap: true, snapEdges: false, rulers: true });
     expect(edges.getAttribute("aria-pressed")).toBe("false");
     expect(rulers.getAttribute("aria-pressed")).toBe("true");
   });

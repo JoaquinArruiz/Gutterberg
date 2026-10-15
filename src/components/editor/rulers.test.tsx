@@ -168,3 +168,41 @@ describe("guides", () => {
     expect((screen.getByRole("menuitem", { name: "Clear guides" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
+
+describe("inverted rulers", () => {
+  beforeEach(() => {
+    usePreferencesStore.getState().setRulers(true);
+    usePreferencesStore.getState().setInvertRulers(true);
+  });
+
+  it("make a vertical guide from the top ruler and a horizontal one from the left", () => {
+    render(<EditorViewport />);
+    const top = screen.getByTestId("ruler-x");
+    fireEvent.pointerDown(top, { clientX: 200, clientY: -8, button: 0, pointerId: 1 });
+    fireEvent.pointerMove(top, at({ x: 0.3, y: 0.5 }));
+    fireEvent.pointerUp(top, at({ x: 0.3, y: 0.5 }));
+    expect(guides().xs[0]).toBeCloseTo(0.3 * A4.width_pt, 6);
+    expect(guides().ys).toEqual([]);
+
+    const left = screen.getByTestId("ruler-y");
+    fireEvent.pointerDown(left, { clientX: -8, clientY: 300, button: 0, pointerId: 1 });
+    fireEvent.pointerMove(left, at({ x: 0.5, y: 0.6 }));
+    fireEvent.pointerUp(left, at({ x: 0.5, y: 0.6 }));
+    expect(guides().ys[0]).toBeCloseTo(0.6 * A4.height_pt, 6);
+  });
+
+  it("delete a guide dropped back on the ruler it comes from", () => {
+    editor().setGuides(0, { xs: [0.3 * A4.width_pt], ys: [] });
+    render(<EditorViewport />);
+    const grab = () => document.querySelector('[data-hit="guide"]') as Element;
+    // Over the left ruler: a vertical guide comes from the top one, so it stays.
+    fireEvent.pointerDown(grab(), at({ x: 0.3, y: 0.5 }));
+    fireEvent.pointerMove(svg(), { clientX: -4, clientY: 300, pointerId: 1 });
+    fireEvent.pointerUp(svg(), { clientX: -4, clientY: 300, pointerId: 1 });
+    expect(guides().xs).toHaveLength(1);
+    fireEvent.pointerDown(grab(), at({ x: 0.3, y: 0.5 }));
+    fireEvent.pointerMove(svg(), { clientX: 200, clientY: -4, pointerId: 1 });
+    fireEvent.pointerUp(svg(), { clientX: 200, clientY: -4, pointerId: 1 });
+    expect(guides().xs).toEqual([]);
+  });
+});

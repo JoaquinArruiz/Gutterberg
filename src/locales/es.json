@@ -598,7 +598,10 @@
       "resetLayout": "Restablecer la disposición del espacio de trabajo",
       "resetNote": "Restaura la posición y el tamaño de los paneles, las vistas visibles y la vista predeterminada. Se conservan las unidades, el idioma, el tema y la vista previa en vivo.",
       "layoutCards": "Disposición de la pestaña Origen",
-      "layoutPrint": "Disposición de la pestaña Imprimir"
+      "layoutPrint": "Disposición de la pestaña Imprimir",
+      "rulers": "Reglas",
+      "invertRulers": "Invertir las reglas",
+      "invertRulersHint": "Cada regla da la guía que la cruza: arrastra desde la regla de arriba para una guía vertical y desde la de la izquierda para una horizontal. Desactivado: cada regla da la guía paralela a ella."
     },
     "livePreview": {
       "title": "Vista previa en vivo",

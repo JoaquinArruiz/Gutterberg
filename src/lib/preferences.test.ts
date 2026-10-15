@@ -457,6 +457,7 @@ describe("the sticky edges preference", () => {
       snap: false,
       snapEdges: true,
       rulers: false,
+      invertRulers: false,
     });
   });
 
@@ -476,5 +477,10 @@ describe("the rulers preference", () => {
     expect(migratePreferences({ version: 14 }).editor.rulers).toBe(false);
     expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { rulers: true } }).editor.rulers).toBe(true);
     expect(migratePreferences({ version: PREFERENCES_VERSION, editor: { rulers: "yes" } }).editor.rulers).toBe(false);
+    expect(DEFAULT_PREFERENCES.editor.invertRulers).toBe(false);
+    expect(migratePreferences({ version: 14 }).editor.invertRulers).toBe(false);
+    expect(
+      migratePreferences({ version: PREFERENCES_VERSION, editor: { invertRulers: true } }).editor.invertRulers,
+    ).toBe(true);
   });
 });

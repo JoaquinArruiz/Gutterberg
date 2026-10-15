@@ -265,7 +265,7 @@ and the guides; sticky edges decide the artwork's edges. The rulers (`editor.rul
 canvas element, so turning them on shrinks the canvas instead of covering the page, and their tick maths is pure
 (`lib/rulers.ts`); the pointer mark is moved by the canvas through a handle, without a render. Guides live in the
 editor store, by document id, in points from the page's corner (`lib/guides.ts`), so they stay at the same distance
-on pages of different sizes; they are session state, outside undo and the project file. They show, take presses and
+on pages of different sizes; which ruler gives which guide is `guideFrom`/`rulerOf`, swapped by `editor.invertRulers`; they are session state, outside undo and the project file. They show, take presses and
 are snapped to only while the rulers are on, and are drawn under the region and the pieces so a guide along a side
 never takes their handles.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addGuide, dropGuide, moveGuide, NO_GUIDE_SET, overRuler, removeGuide } from "./guides";
+import { addGuide, dropGuide, guideFrom, moveGuide, NO_GUIDE_SET, overRuler, removeGuide, rulerOf } from "./guides";
 
 describe("guides", () => {
   it("are made, moved and deleted on their own axis", () => {
@@ -20,10 +20,17 @@ describe("guides", () => {
     expect(dropGuide(g, "x", 0, -2, true)).toEqual({ xs: [], ys: [100] });
   });
 
-  it("are over their ruler above the canvas (horizontal) or left of it (vertical)", () => {
-    expect(overRuler("y", { x: 300, y: -1 })).toBe(true);
-    expect(overRuler("y", { x: -10, y: 5 })).toBe(false);
-    expect(overRuler("x", { x: -1, y: 300 })).toBe(true);
-    expect(overRuler("x", { x: 0, y: -5 })).toBe(false);
+  it("are over the top ruler above the canvas, and over the left one left of it", () => {
+    expect(overRuler("top", { x: 300, y: -1 })).toBe(true);
+    expect(overRuler("top", { x: -10, y: 5 })).toBe(false);
+    expect(overRuler("left", { x: -1, y: 300 })).toBe(true);
+    expect(overRuler("left", { x: 0, y: -5 })).toBe(false);
+  });
+
+  it("come from the ruler parallel to them, or the perpendicular one with the rulers inverted", () => {
+    expect([guideFrom("top", false), guideFrom("left", false)]).toEqual(["y", "x"]);
+    expect([guideFrom("top", true), guideFrom("left", true)]).toEqual(["x", "y"]);
+    for (const inverted of [false, true])
+      for (const ruler of ["top", "left"] as const) expect(rulerOf(guideFrom(ruler, inverted), inverted)).toBe(ruler);
   });
 });
