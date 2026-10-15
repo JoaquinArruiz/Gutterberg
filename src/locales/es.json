@@ -794,8 +794,8 @@
     },
     "sticky-edges": {
       "one": {
-        "title": "Bordes que se pegan",
-        "text": "Ese lado se pegó a un borde del arte. Se queda ahí unos píxeles y se suelta si sigues arrastrando. Mantén Ctrl/Cmd para arrastrar libremente, o desactiva los bordes que se pegan con este botón."
+        "title": "Bordes adhesivos",
+        "text": "Ese lado se pegó a un borde del arte. Se queda ahí unos píxeles y se suelta si sigues arrastrando. Mantén Ctrl/Cmd para arrastrar libremente, o desactiva los bordes adhesivos con este botón."
       }
     }
   },

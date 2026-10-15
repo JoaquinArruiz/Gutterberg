@@ -83,6 +83,7 @@ and type names) stay as they are.
 | **bleed** | **sangrado** | Art that extends past a piece's edge | |
 | **AI Mode** | **Modo IA** | The opt-in setting that adds AI buttons, using the user's own key; off and hidden by default | AI assistant, chat |
 | **proposal** | **propuesta** | What Detect pieces offers: shown as a draft on the page, applied only when the user says so | result, guess |
+| **sticky edges** | **bordes adhesivos** | The Source tab aid that makes a side stick to straight edges in the artwork while dragging | sticky borders |
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add
 every new string to both, never hard-code text in components. Spanish is neutral Latin
