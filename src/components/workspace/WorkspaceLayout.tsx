@@ -19,6 +19,7 @@ import {
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { CardLibrary } from "../print/CardLibrary";
 import { PrintInspector } from "../print/PrintInspector";
+import { GridsPanel } from "../sidebar/GridsPanel";
 import { PagesPanel } from "../sidebar/PagesPanel";
 import { PropertiesSidebar } from "../sidebar/PropertiesSidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../ui/resizable";
@@ -28,6 +29,7 @@ import { PanelFrame } from "./PanelFrame";
 const PANEL_BODY: Record<PanelId, (p: { orientation: "vertical" | "horizontal" }) => ReactNode> = {
   pages: ({ orientation }) => <PagesPanel orientation={orientation} />,
   properties: () => <PropertiesSidebar />,
+  grids: () => <GridsPanel />,
   library: ({ orientation }) => <CardLibrary orientation={orientation} />,
   inspector: () => <PrintInspector />,
 };

@@ -121,7 +121,8 @@
       "pages": "Páginas",
       "properties": "Propiedades",
       "library": "Biblioteca de piezas",
-      "inspector": "Ajustes de impresión"
+      "inspector": "Ajustes de impresión",
+      "grids": "Cuadrículas y piezas"
     },
     "titleHidden": "{{title}} (oculto)",
     "expand": "Expandir {{title}}",
@@ -153,7 +154,8 @@
       "pages": "Págs.",
       "properties": "Prop.",
       "library": "Bibl.",
-      "inspector": "Ajustes"
+      "inspector": "Ajustes",
+      "grids": "Cuadr."
     }
   },
   "gapFields": {
@@ -172,8 +174,7 @@
       "layout": "Disposición de origen",
       "gap": "Separación de origen",
       "output": "Salida",
-      "selection": "Posición de la selección",
-      "grids": "Cuadrículas"
+      "selection": "Posición de la selección"
     },
     "size": "Tamaño",
     "total": "Total",
@@ -212,7 +213,7 @@
       "addTitle": "Agrega otra cuadrícula a esta página, para piezas de otro tamaño, y luego dibuja su región en la página",
       "full": "Una página puede tener hasta {{count}} cuadrículas.",
       "delete": "Eliminar {{name}}",
-      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. Los ajustes de arriba son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Arrastra cuadrículas y carpetas en la lista para cambiar su orden, o suelta una cuadrícula en una carpeta. Elige una carpeta para mover sus cuadrículas juntas en la página; al elegir una cuadrícula, se mueve sola. Haz doble clic en un nombre para cambiarlo, y clic en el punto para el color.",
+      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. El panel Propiedades tiene los ajustes de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Arrastra cuadrículas y carpetas en la lista para cambiar su orden, o suelta una cuadrícula en una carpeta. Elige una carpeta para mover sus cuadrículas juntas en la página; al elegir una cuadrícula, se mueve sola. Las piezas libres de la página aparecen después de las cuadrículas. Haz doble clic en un nombre para cambiarlo, y clic en el punto para el color.",
       "edit": "Nombre, color y carpeta de {{name}}",
       "name": "Nombre de la cuadrícula",
       "color": "Color de la cuadrícula",
@@ -242,7 +243,14 @@
       "emptyFolder": "{{name}} está vacía: arrastra cuadrículas a ella",
       "deleteFolder": "Eliminar {{name}}",
       "hide": "Ocultar {{name}} en la página (se sigue imprimiendo)",
-      "show": "Mostrar {{name}} en la página"
+      "show": "Mostrar {{name}} en la página",
+      "pieces_one": "Piezas libres ({{count}})",
+      "pieces_other": "Piezas libres ({{count}})",
+      "piece": "Pieza {{n}}",
+      "pickPiece": "Elegir {{name}} con la Herramienta Pieza",
+      "skipped": "Esta página se omite: no tiene cuadrículas.",
+      "customColor": "Otro color…",
+      "deleteLast": "Vaciar {{name}}: la última cuadrícula pierde su región, para volver a dibujarla"
     }
   },
   "freeform": {

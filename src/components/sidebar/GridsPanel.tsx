@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import type { OrientedRect } from "../../lib/card";
 import {
   cleanGridName,
   folderNames,
@@ -23,10 +24,11 @@ import {
   MAX_GRIDS,
   newFolderName,
 } from "../../lib/document-layout";
+import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
-import { useActiveGrid, useLayoutStore, usePickedFolder } from "../../stores/layout-store";
+import { useActiveGrid, useCurrentGroup, useLayoutStore, usePickedFolder } from "../../stores/layout-store";
 import { Button } from "../ui/Button";
-import { CollapsibleSection } from "../ui/CollapsibleSection";
+import { InfoTip } from "../ui/InfoTip";
 import { Select } from "../ui/Select";
 import { type ListDrag, listItemKey, useGridListDrag } from "./use-grid-list-drag";
 
@@ -79,9 +81,15 @@ function NameField({
   );
 }
 
-/** The swatches for a grid's colour; the first is the accent colour (no colour of its own). */
+/** Every row starts with this slot (a grid's colour dot, a folder's fold arrow), so the names line up. */
+const LEAD = "flex h-5 w-5 shrink-0 items-center justify-center";
+/** A grid in a folder is moved right by one slot. */
+const INDENT = "pl-6";
+
+/** The swatches for a grid's colour; the first is the accent colour (no colour of its own), the last any colour. */
 function Swatches({ value, onPick }: { value: string | undefined; onPick: (hex: string | undefined) => void }) {
   const { t } = useTranslation();
+  const custom = value !== undefined && !GRID_COLORS.some((c) => c.hex === value);
   return (
     <fieldset className="m-0 flex flex-wrap gap-1 border-0 p-0">
       <legend className="sr-only">{t("source.grids.color")}</legend>
@@ -97,6 +105,24 @@ function Swatches({ value, onPick }: { value: string | undefined; onPick: (hex: 
           style={{ background: c.hex ?? "var(--accent)" }}
         />
       ))}
+      {/* Any other colour, from the system's colour picker. */}
+      <label
+        title={t("source.grids.customColor")}
+        className={`relative h-5 w-5 cursor-pointer overflow-hidden rounded-full border-2 ${
+          custom ? "border-[var(--fg)]" : "border-transparent"
+        }`}
+        style={{
+          background: custom ? value : "conic-gradient(#ef4444, #f59e0b, #22c55e, #14b8a6, #3b82f6, #ec4899, #ef4444)",
+        }}
+      >
+        <input
+          type="color"
+          aria-label={t("source.grids.customColor")}
+          value={value ?? "#3b82f6"}
+          onChange={(e) => onPick(e.target.value.toLowerCase())}
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+        />
+      </label>
     </fieldset>
   );
 }
@@ -120,7 +146,7 @@ function dropClass(drag: ListDrag | null, item: ListRef): string {
  * the colours; the pencil has the name, colour and folder together. "Add grid" adds one with no region, picked, so
  * the next drag on the page draws it; "New folder" in the header adds an empty folder, ready to be named.
  */
-export function GridsSection({ group, page }: { group: GridGroup; page: number }) {
+export function GridsList({ group, page }: { group: GridGroup; page: number }) {
   const { t } = useTranslation();
   const active = useActiveGrid();
   const pickedFolder = usePickedFolder();
@@ -138,6 +164,7 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
   const [renaming, setRenaming] = useState<ListRef | null>(null);
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
   const { drag, onPointerDown, wasDrag } = useGridListDrag((item, drop) => moveInList(page, item, drop));
+  // The last grid is not deleted: it loses its region, so the page can draw it again.
   const several = group.grids.length > 1;
   const full = group.grids.length >= MAX_GRIDS;
   const folders = folderNames(group);
@@ -165,22 +192,24 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
     const name = nameOf(n);
     const pressed = n === active && pickedFolder === null;
     return (
-      <li key={`g${n}`} className={`flex flex-col gap-1 ${folder !== undefined ? "pl-4" : ""}`}>
+      <li key={`g${n}`} className={`flex flex-col gap-1 ${folder !== undefined ? INDENT : ""}`}>
         <div
           data-list-item={listItemKey(ref)}
           data-list-folder={folder}
           className={`flex items-center gap-1 rounded ${drag?.item.kind === "grid" && drag.item.n === n ? "opacity-50" : ""} ${dropClass(drag, ref)}`}
           onPointerDown={(e) => onPointerDown(ref, e)}
         >
-          <button
-            type="button"
-            aria-label={t("source.grids.pickColor", { name })}
-            title={t("source.grids.pickColor", { name })}
-            aria-expanded={coloring === n}
-            onClick={() => setColoring(coloring === n ? null : n)}
-            className="h-3 w-3 shrink-0 rounded-full border border-[var(--border)]"
-            style={{ background: r.color ?? "var(--accent)" }}
-          />
+          <span className={LEAD}>
+            <button
+              type="button"
+              aria-label={t("source.grids.pickColor", { name })}
+              title={t("source.grids.pickColor", { name })}
+              aria-expanded={coloring === n}
+              onClick={() => setColoring(coloring === n ? null : n)}
+              className="h-3 w-3 rounded-full border border-[var(--border)]"
+              style={{ background: r.color ?? "var(--accent)" }}
+            />
+          </span>
           {isRenaming(ref) ? (
             <NameField
               value={r.name ?? ""}
@@ -226,23 +255,21 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
           >
             <Pencil size={12} />
           </Button>
-          {several && (
-            <Button
-              variant="ghost"
-              aria-label={t("source.grids.delete", { name })}
-              title={t("source.grids.delete", { name })}
-              onClick={() => {
-                setEditing(null);
-                setColoring(null);
-                remove(page, n);
-              }}
-            >
-              <Trash2 size={12} />
-            </Button>
-          )}
+          <Button
+            variant="ghost"
+            aria-label={t("source.grids.delete", { name })}
+            title={t(several ? "source.grids.delete" : "source.grids.deleteLast", { name })}
+            onClick={() => {
+              setEditing(null);
+              setColoring(null);
+              remove(page, n);
+            }}
+          >
+            <Trash2 size={12} />
+          </Button>
         </div>
         {coloring === n && editing !== n && (
-          <div className="ml-4">
+          <div className="ml-5">
             <Swatches
               value={r.color}
               onPick={(color) => {
@@ -253,7 +280,7 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
           </div>
         )}
         {editing === n && (
-          <div className="ml-4 flex flex-col gap-1.5 rounded border border-[var(--border)] p-2">
+          <div className="ml-5 flex flex-col gap-1.5 rounded border border-[var(--border)] p-2">
             <NameField
               value={r.name ?? ""}
               label={t("source.grids.name")}
@@ -295,11 +322,8 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
   };
 
   return (
-    <CollapsibleSection
-      id="cards.grids"
-      title={t("source.sections.grids")}
-      info={t("source.grids.note")}
-      actions={
+    <div className="flex flex-col gap-1.5">
+      <div className="flex items-center justify-end gap-1">
         <Button
           variant="ghost"
           aria-label={t("source.grids.newFolder")}
@@ -308,8 +332,8 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
         >
           <FolderPlus size={13} />
         </Button>
-      }
-    >
+        <InfoTip text={t("source.grids.note")} />
+      </div>
       <ul className="flex flex-col gap-1" data-hint-target="grid-list">
         {gridList(group).map((item) => {
           if (item.kind === "grid") return gridRow(item.n, undefined);
@@ -325,14 +349,15 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
                 className={`flex items-center gap-1 rounded ${drag?.item.kind === "folder" && drag.item.name === name ? "opacity-50" : ""} ${dropClass(drag, ref)}`}
                 onPointerDown={(e) => onPointerDown(ref, e)}
               >
-                <Button
-                  variant="ghost"
+                <button
+                  type="button"
                   aria-label={t(isFolded ? "source.grids.unfold" : "source.grids.fold", { name })}
                   aria-expanded={!isFolded}
                   onClick={() => toggleFold(name)}
+                  className={`${LEAD} rounded text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)]`}
                 >
                   {isFolded ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                </Button>
+                </button>
                 {isRenaming(ref) ? (
                   <NameField
                     value={name}
@@ -365,17 +390,16 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
                     </span>
                   </button>
                 )}
-                {item.grids.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    aria-label={t(allHidden ? "source.grids.show" : "source.grids.hide", { name })}
-                    title={t(allHidden ? "source.grids.show" : "source.grids.hide", { name })}
-                    aria-pressed={allHidden}
-                    onClick={() => setFolderHidden(page, name, !allHidden)}
-                  >
-                    {allHidden ? <EyeOff size={12} /> : <Eye size={12} />}
-                  </Button>
-                )}
+                <Button
+                  variant="ghost"
+                  disabled={item.grids.length === 0}
+                  aria-label={t(allHidden ? "source.grids.show" : "source.grids.hide", { name })}
+                  title={t(allHidden ? "source.grids.show" : "source.grids.hide", { name })}
+                  aria-pressed={allHidden}
+                  onClick={() => setFolderHidden(page, name, !allHidden)}
+                >
+                  {allHidden ? <EyeOff size={12} /> : <Eye size={12} />}
+                </Button>
                 <Button
                   variant="ghost"
                   aria-label={t("source.grids.renameFolder", { name })}
@@ -417,6 +441,93 @@ export function GridsSection({ group, page }: { group: GridGroup; page: number }
           {t("source.grids.add")}
         </Button>
       </div>
-    </CollapsibleSection>
+      <PiecesList page={page} />
+    </div>
+  );
+}
+
+/**
+ * The viewed page's freeform pieces, after the grids: one row per piece ("Piece 2"), the picked ones pressed. Pressing
+ * one picks it with the Piece tool, as clicking it on the page does; the bin deletes it. Pieces belong to their page,
+ * not to the group, so they have no folder.
+ */
+function PiecesList({ page }: { page: number }) {
+  const { t } = useTranslation();
+  const pieces = useLayoutStore((s) => s.freeform[page]) ?? NO_PIECES;
+  const remove = useLayoutStore((s) => s.deleteFreeformCard);
+  const tool = useEditorStore((s) => s.tool);
+  const picked = useEditorStore((s) => (s.selectedCard?.page === page ? s.pickedCards : NO_PICKED));
+  if (pieces.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1 border-t border-[var(--border)] pt-1.5">
+      <div className="text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
+        {t("source.grids.pieces", { count: pieces.length })}
+      </div>
+      <ul className="flex flex-col gap-1">
+        {pieces.map((p, i) => {
+          const name = t("source.grids.piece", { n: i + 1 });
+          const pressed = tool === "card" && picked.includes(i);
+          return (
+            // biome-ignore lint/suspicious/noArrayIndexKey: a piece's place on its page is its identity
+            <li key={i} className="flex items-center gap-1">
+              <span className={LEAD} />
+              <button
+                type="button"
+                aria-pressed={pressed}
+                title={t("source.grids.pickPiece", { name })}
+                onClick={() => {
+                  const ed = useEditorStore.getState();
+                  ed.setTool("card");
+                  ed.setSelectedCard({ page, index: i });
+                }}
+                className={`flex min-w-0 flex-1 items-center justify-between gap-2 rounded px-2 py-0.5 text-left ${
+                  pressed ? "bg-[var(--accent)] text-[var(--accent-fg)]" : "hover:bg-[var(--hover)]"
+                }`}
+              >
+                <span className="truncate">{name}</span>
+                {p.angle_deg !== 0 && (
+                  <span className={`shrink-0 tabular-nums ${pressed ? "" : "text-[var(--muted)]"}`}>
+                    {Math.round(p.angle_deg * 10) / 10}°
+                  </span>
+                )}
+              </button>
+              <Button
+                variant="ghost"
+                aria-label={t("source.grids.delete", { name })}
+                title={t("source.grids.delete", { name })}
+                onClick={() => remove(page, i)}
+              >
+                <Trash2 size={12} />
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+const NO_PIECES: OrientedRect[] = [];
+const NO_PICKED: number[] = [];
+
+/**
+ * The Grids panel of the Source tab: the grids, folders and freeform pieces of the viewed page, on its own beside
+ * Properties so the list is always in view.
+ */
+export function GridsPanel() {
+  const { t } = useTranslation();
+  const page = useDocumentStore((s) => s.currentPage);
+  const hasPage = useDocumentStore((s) => s.pages.length > 0);
+  const group = useCurrentGroup();
+  return (
+    <div className="h-full overflow-y-auto p-3">
+      {!hasPage ? (
+        <p className="text-[var(--muted)]">{t("source.noDocument")}</p>
+      ) : group?.kind === "grid" ? (
+        <GridsList group={group} page={page} />
+      ) : (
+        <p className="text-[var(--muted)]">{t("source.grids.skipped")}</p>
+      )}
+    </div>
   );
 }

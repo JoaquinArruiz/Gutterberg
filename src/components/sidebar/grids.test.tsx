@@ -10,7 +10,7 @@ import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { EditorViewport } from "../editor/EditorViewport";
-import { GridsSection } from "./GridsSection";
+import { GridsPanel } from "./GridsPanel";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
 vi.mock("../../lib/tauri", async (importOriginal) => ({
@@ -73,7 +73,7 @@ afterEach(() => {
 describe("the list of grids", () => {
   it("adds a grid, picked and ready to be drawn with the Grid region tool", () => {
     useEditorStore.setState({ tool: "card" });
-    render(<GridsSection group={group()} page={0} />);
+    render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Add grid" }));
     expect(group().grids).toHaveLength(2);
     expect(store().activeGrid).toBe(1);
@@ -83,11 +83,11 @@ describe("the list of grids", () => {
   it("picks a grid and deletes one", () => {
     store().addGrid(0);
     store().setSelection(0, BOTTOM);
-    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    const { rerender } = render(<GridsPanel />);
     const first = screen.getByRole("button", { name: /^Grid 1/ });
     fireEvent.click(first);
     expect(store().activeGrid).toBe(0);
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     expect(screen.getByRole("button", { name: /^Grid 1/ }).getAttribute("aria-pressed")).toBe("true");
     fireEvent.click(screen.getByRole("button", { name: "Delete Grid 1" }));
     expect(group().grids.map((r) => r.selection)).toEqual([BOTTOM]);
@@ -96,19 +96,19 @@ describe("the list of grids", () => {
 
 describe("naming, coloring and folding grids", () => {
   it("renames a grid, gives it a color and puts it in a new folder", () => {
-    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    const { rerender } = render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Name, color and folder of Grid 1" }));
     const name = screen.getByRole("textbox", { name: "Grid name" });
     fireEvent.change(name, { target: { value: "  Poker cards " } });
     fireEvent.blur(name);
     expect(group().grids[0].name).toBe("Poker cards");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Red" }));
     expect(group().grids[0].color).toBe("#ef4444");
     fireEvent.click(screen.getByRole("combobox", { name: "Folder" }));
     fireEvent.click(screen.getByRole("option", { name: "New folder" }));
     expect(group().grids[0].folder).toBe("Folder 1");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     expect(screen.getByRole("button", { name: /^Folder 1/ })).toBeTruthy();
     // Esc leaves a name as it was.
     const again = screen.getByRole("textbox", { name: "Grid name" });
@@ -121,7 +121,7 @@ describe("naming, coloring and folding grids", () => {
     store().addGrid(0);
     store().setGridLook(0, 0, { folder: "Cards" });
     store().setGridLook(0, 1, { folder: "Cards" });
-    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    const { rerender } = render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: /^Cards/ }));
     expect(store().pickedFolder).toBe("Cards");
     expect(useEditorStore.getState().pickedRegion).toBe(0);
@@ -132,7 +132,7 @@ describe("naming, coloring and folding grids", () => {
     fireEvent.blur(field);
     expect(group().grids.map((r) => r.folder)).toEqual(["Big", "Big"]);
     expect(store().pickedFolder).toBe("Big");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Take the grids out of Big" }));
     expect(group().grids.map((r) => r.folder)).toEqual([undefined, undefined]);
   });
@@ -141,36 +141,36 @@ describe("naming, coloring and folding grids", () => {
 describe("the Grids list, rearranged and hidden", () => {
   it("renames a grid or a folder with a double-click, and colors a grid from its dot", () => {
     store().setGridLook(0, 0, { folder: "Cards" });
-    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    const { rerender } = render(<GridsPanel />);
     fireEvent.doubleClick(screen.getByRole("button", { name: /^Grid 1/ }));
     const field = screen.getByRole("textbox", { name: "Grid name" });
     fireEvent.change(field, { target: { value: "Poker" } });
     fireEvent.keyDown(field, { key: "Enter" });
     expect(group().grids[0].name).toBe("Poker");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     fireEvent.doubleClick(screen.getByRole("button", { name: /^Cards/ }));
     const folderField = screen.getByRole("textbox", { name: "Folder name" });
     fireEvent.change(folderField, { target: { value: "Big" } });
     fireEvent.blur(folderField);
     expect(group().grids[0].folder).toBe("Big");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Color of Poker" }));
     fireEvent.click(screen.getByRole("button", { name: "Teal" }));
     expect(group().grids[0].color).toBe("#14b8a6");
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     expect(screen.queryByRole("button", { name: "Teal" })).toBeNull();
   });
 
   it("adds an empty folder from the header, ready to be named, and deletes it", () => {
-    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    const { rerender } = render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "New folder" }));
     expect(group().folders).toEqual(["Folder 1"]);
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     const field = screen.getByRole("textbox", { name: "Folder name" });
     fireEvent.change(field, { target: { value: "Tokens" } });
     fireEvent.blur(field);
     expect(group().folders).toEqual(["Tokens"]);
-    rerender(<GridsSection group={group()} page={0} />);
+    rerender(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Delete Tokens" }));
     expect(group().folders).toBeUndefined();
   });
@@ -179,7 +179,7 @@ describe("the Grids list, rearranged and hidden", () => {
     store().addGrid(0);
     store().setSelection(0, BOTTOM);
     store().addFolder(0, "Cards");
-    render(<GridsSection group={group()} page={0} />);
+    render(<GridsPanel />);
     const row = (key: string) => document.querySelector<HTMLElement>(`[data-list-item="${key}"]`) as HTMLElement;
     const dragOnto = (from: string, onto: string, share: number) => {
       const target = row(onto);
@@ -197,7 +197,7 @@ describe("the Grids list, rearranged and hidden", () => {
   it("hides a grid on the page with the eye, and the page leaves it alone", async () => {
     store().addGrid(0);
     store().setSelection(0, BOTTOM);
-    const { unmount } = render(<GridsSection group={group()} page={0} />);
+    const { unmount } = render(<GridsPanel />);
     fireEvent.click(screen.getByRole("button", { name: "Hide Grid 2 on the page (it still prints)" }));
     expect(group().grids[1].hidden).toBe(true);
     unmount();
@@ -273,5 +273,36 @@ describe("several grids on the page", () => {
     });
     expect(store().freeform[0]).toHaveLength(3);
     expect(group().grids.map((r) => r.selection)).toEqual([TOP, null]);
+  });
+});
+
+describe("the Grids and pieces panel", () => {
+  it("lists the page's freeform pieces after the grids, picks one with the Piece tool and deletes one", () => {
+    store().addFreeformCard(0, { center: { x: 0.8, y: 0.8 }, width: 0.1, height: 0.1, angle_deg: 0 });
+    store().addFreeformCard(0, { center: { x: 0.8, y: 0.6 }, width: 0.1, height: 0.1, angle_deg: 0 });
+    render(<GridsPanel />);
+    expect(screen.getByText("Freeform pieces (2)")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Piece 2" }));
+    expect(useEditorStore.getState().tool).toBe("card");
+    expect(useEditorStore.getState().selectedCard).toEqual({ page: 0, index: 1 });
+    expect(screen.getByRole("button", { name: "Piece 2" }).getAttribute("aria-pressed")).toBe("true");
+    fireEvent.click(screen.getByRole("button", { name: "Delete Piece 1" }));
+    expect(store().freeform[0]).toHaveLength(1);
+  });
+
+  it("gives a grid any color, and keeps the bin on the last grid, which then only loses its region", () => {
+    render(<GridsPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "Color of Grid 1" }));
+    fireEvent.change(screen.getByLabelText("Another color…"), { target: { value: "#AB12CD" } });
+    expect(group().grids[0].color).toBe("#ab12cd");
+    fireEvent.click(screen.getByRole("button", { name: "Delete Grid 1" }));
+    expect(group().grids).toHaveLength(1);
+    expect(group().grids[0].selection).toBeNull();
+  });
+
+  it("says when the page is skipped", () => {
+    store().setSkipped(0, true);
+    render(<GridsPanel />);
+    expect(screen.getByText("This page is skipped: it has no grids.")).toBeTruthy();
   });
 });

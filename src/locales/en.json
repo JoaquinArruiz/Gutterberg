@@ -121,7 +121,8 @@
       "pages": "Pages",
       "properties": "Properties",
       "library": "Piece library",
-      "inspector": "Print settings"
+      "inspector": "Print settings",
+      "grids": "Grids and pieces"
     },
     "titleHidden": "{{title}} (hidden)",
     "expand": "Expand {{title}}",
@@ -153,7 +154,8 @@
       "pages": "Pages",
       "properties": "Props",
       "library": "Library",
-      "inspector": "Print"
+      "inspector": "Print",
+      "grids": "Grids"
     }
   },
   "gapFields": {
@@ -172,8 +174,7 @@
       "layout": "Source layout",
       "gap": "Source gap",
       "output": "Output",
-      "selection": "Selection position",
-      "grids": "Grids"
+      "selection": "Selection position"
     },
     "size": "Size",
     "total": "Total",
@@ -212,7 +213,7 @@
       "addTitle": "Add another grid to this page, for pieces of another size, then draw its region on the page",
       "full": "A page can hold up to {{count}} grids.",
       "delete": "Delete {{name}}",
-      "note": "Each grid has its own region, rows, columns and gap, and can have a name and a color. The settings above are the picked grid's, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it. Drag grids and folders in the list to change their order, or drop a grid into a folder. Pick a folder to move its grids together on the page; picking a grid moves it on its own. Double-click a name to change it, and click the dot for the color.",
+      "note": "Each grid has its own region, rows, columns and gap, and can have a name and a color. The Properties panel has the picked grid's settings, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it. Drag grids and folders in the list to change their order, or drop a grid into a folder. Pick a folder to move its grids together on the page; picking a grid moves it on its own. The page's freeform pieces are listed after the grids. Double-click a name to change it, and click the dot for the color.",
       "edit": "Name, color and folder of {{name}}",
       "name": "Grid name",
       "color": "Grid color",
@@ -242,7 +243,14 @@
       "emptyFolder": "{{name}} is empty: drag grids into it",
       "deleteFolder": "Delete {{name}}",
       "hide": "Hide {{name}} on the page (it still prints)",
-      "show": "Show {{name}} on the page"
+      "show": "Show {{name}} on the page",
+      "pieces_one": "Freeform pieces ({{count}})",
+      "pieces_other": "Freeform pieces ({{count}})",
+      "piece": "Piece {{n}}",
+      "pickPiece": "Pick {{name}} with the Piece tool",
+      "skipped": "This page is skipped: it has no grids.",
+      "customColor": "Another color…",
+      "deleteLast": "Clear {{name}}: the last grid loses its region, so it can be drawn again"
     }
   },
   "freeform": {

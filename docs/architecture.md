@@ -64,7 +64,8 @@ so they change no key, and a hidden grid still prints. A folder is a name its gr
 also keeps empty ones, which the list shows first. Renaming or ungrouping a folder rewrites that name on its grids
 (`renameFolder`). The Grids list (`gridList`) shows a folder where its first grid is, so moving rows
 (`moveInGridList`, dragged with pointer events like the piece library) puts a folder's grids together and renumbers
-the grids in list order; the pieces' keys follow through `keyAfterGridRenumber` and the `onGridsRenumbered` listener,
+the grids in list order; the list is its own panel (`grids` in `PANEL_DEFS`, `GridsPanel`), with the page's freeform
+pieces after the grids. The pieces' keys follow through `keyAfterGridRenumber` and the `onGridsRenumbered` listener,
 as when a grid is deleted. `pickedFolder` in the layout store, session state beside `activeGrid`, is the
 folder picked in the list: a drag on one of its grids (the `grids-move` drag) and the arrow keys move its regions
 together through `moveRectsTogether`, which stops them as one at the page's edge. Picking a single grid

@@ -18,7 +18,6 @@ import { NumberField } from "../ui/NumberField";
 import { AiSortSection } from "./AiSortSection";
 import { DetectSection } from "./DetectSection";
 import { FreeformSection } from "./FreeformSection";
-import { GridsSection } from "./GridsSection";
 import { PresetsSection } from "./PresetsSection";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
@@ -175,9 +174,6 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
-
-      {/* Last, so the list can grow without pushing the picked grid's settings down. */}
-      {group?.kind === "grid" && <GridsSection group={group} page={currentPage} />}
     </div>
   );
 }
