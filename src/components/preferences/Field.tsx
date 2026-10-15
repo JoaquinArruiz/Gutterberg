@@ -29,7 +29,7 @@ export function Field({
       ref={ref}
       data-pulse={pulse || undefined}
       onAnimationEnd={() => pulse && clearPulse()}
-      className={`mb-5 rounded-sm ${pulse ? "prefs-pulse" : ""}`}
+      className={`mb-5 rounded ${pulse ? "prefs-pulse" : ""}`}
     >
       <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
         {label}

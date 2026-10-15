@@ -90,24 +90,25 @@ body {
   }
 }
 
-/* A Preferences setting a link pointed at: a ring in the accent colour pulses twice around it. */
+/* A Preferences setting a link pointed at: a thin border in the accent colour, a little away from it, pulses twice. */
 @keyframes prefs-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 transparent;
+    outline-color: transparent;
   }
   50% {
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
-    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    outline-color: var(--accent);
   }
 }
 .prefs-pulse {
+  outline: 1.5px solid transparent;
+  outline-offset: 8px;
   animation: prefs-pulse 0.7s ease-in-out 2;
 }
 @media (prefers-reduced-motion: reduce) {
-  /* No movement: the ring shows steady until Preferences closes. */
+  /* No movement: the border shows steady until Preferences closes. */
   .prefs-pulse {
     animation: none;
-    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
+    outline-color: var(--accent);
   }
 }
