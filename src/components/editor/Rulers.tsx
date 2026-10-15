@@ -5,6 +5,7 @@
 
 import { type Ref, useImperativeHandle, useRef } from "react";
 import { useTranslation } from "react-i18next";
+import type { GuideAxis } from "../../lib/guides";
 import type { MeasurementUnit } from "../../lib/measurement";
 import { RULER_PX, rulerTicks, type TickSize } from "../../lib/rulers";
 import { menuItem, Popover } from "../workspace/Popover";
@@ -21,6 +22,7 @@ export function Ruler({
   pxPerMm,
   unit,
   ref,
+  guide,
   onPointerDown,
   onPointerMove,
   onPointerUp,
@@ -33,6 +35,8 @@ export function Ruler({
   pxPerMm: number;
   unit: MeasurementUnit;
   ref?: Ref<RulerHandle>;
+  /** The guide dragging from this ruler makes ("y" horizontal, "x" vertical), for the cursor. */
+  guide: GuideAxis;
   onPointerDown?: (e: React.PointerEvent<SVGSVGElement>) => void;
   onPointerMove?: (e: React.PointerEvent<SVGSVGElement>) => void;
   onPointerUp?: (e: React.PointerEvent<SVGSVGElement>) => void;
@@ -60,7 +64,7 @@ export function Ruler({
       className={`shrink-0 select-none bg-[var(--panel)] ${horizontal ? "border-b" : "border-r"} border-[var(--border)]`}
       width={horizontal ? lengthPx : RULER_PX}
       height={horizontal ? RULER_PX : lengthPx}
-      style={{ cursor: horizontal ? "row-resize" : "col-resize", touchAction: "none" }}
+      style={{ cursor: guide === "y" ? "row-resize" : "col-resize", touchAction: "none" }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}

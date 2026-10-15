@@ -169,6 +169,17 @@ describe("guides", () => {
   });
 });
 
+describe("ruler cursors", () => {
+  it("show which way the guide from each ruler runs, inverted or not", () => {
+    usePreferencesStore.getState().setRulers(true);
+    render(<EditorViewport />);
+    const cursor = (axis: string) => (screen.getByTestId(`ruler-${axis}`) as unknown as SVGElement).style.cursor;
+    expect([cursor("x"), cursor("y")]).toEqual(["row-resize", "col-resize"]);
+    act(() => usePreferencesStore.getState().setInvertRulers(true));
+    expect([cursor("x"), cursor("y")]).toEqual(["col-resize", "row-resize"]);
+  });
+});
+
 describe("inverted rulers", () => {
   beforeEach(() => {
     usePreferencesStore.getState().setRulers(true);

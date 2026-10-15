@@ -568,6 +568,7 @@ export function EditorViewport() {
 
   const split = viewMode === "split" && !!page;
   const unit = usePreferencesStore((s) => s.prefs.measurement.unit);
+  const invertRulers = usePreferencesStore((s) => s.prefs.editor.invertRulers);
   // The rulers measure the source page: the Original view and the Original side of Split.
   const pxPerMm = pxPerPoint(viewport.zoom) * mmToPt(1);
   const ruler = (axis: "x" | "y") => (
@@ -578,6 +579,7 @@ export function EditorViewport() {
       originPx={axis === "x" ? viewport.panX : viewport.panY}
       pxPerMm={pxPerMm}
       unit={unit}
+      guide={guideFrom(axis === "x" ? "top" : "left", invertRulers)}
       onPointerDown={onRulerDown(axis === "x" ? "top" : "left")}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
