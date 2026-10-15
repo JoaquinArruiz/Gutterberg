@@ -15,7 +15,7 @@ import {
 } from "../../lib/coordinates";
 import { pageEdges } from "../../lib/edges-api";
 import { copyPieces, deletePicked, moveGridsBy, movePieces, pickedOnPage } from "../../lib/editor-actions";
-import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
+import { cardContains, drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import {
   dropGuide,
   type GuideAxis,
@@ -259,7 +259,7 @@ export function EditorViewport() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  const local = (e: React.PointerEvent): Point => {
+  const local = (e: { clientX: number; clientY: number }): Point => {
     const r = ref.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
@@ -330,7 +330,8 @@ export function EditorViewport() {
   };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!page) return;
+    // The right button opens the menu (`onContextMenu`): no capture, so the menu's event reaches the page as it is.
+    if (!page || e.button === 2) return;
     // Stop the webview from starting a native text/image selection (WebKit paints it
     // blue over the page while dragging). This also skips the focus change, so blur
     // the focused field by hand: sidebar inputs commit on blur.
@@ -427,14 +428,18 @@ export function EditorViewport() {
     }
   };
 
-  /** Right-click on the page: Hide and Delete for a grid (the picked one or another), Delete for a piece. */
+  /**
+   * Right-click on the page: Delete for a piece, Hide and Delete for a grid. What is under the pointer is found from
+   * where it is, whichever tool is on (the tools only decide what a press takes): the pieces first, as they are drawn
+   * on top, then the grid being edited, then the others; hidden grids are out of reach.
+   */
   const onContextMenu = (e: React.MouseEvent<SVGSVGElement>) => {
     e.preventDefault();
     if (output || !page || drag.current) return;
-    const data = (e.target as SVGElement).dataset;
-    const hit = data.hit;
-    if (cardTool && data.card !== undefined) {
-      const index = Number(data.card);
+    const doc = screenToDocument(local(e), useEditorStore.getState().viewport, page);
+    let index = freeform.length - 1;
+    while (index >= 0 && !cardContains(freeform[index], doc, page)) index--;
+    if (index >= 0) {
       const ed = useEditorStore.getState();
       // A piece among several picked ones deletes them all, as the Delete key does; another one on its own.
       if (!pickedOnPage().includes(index)) ed.setSelectedCard({ page: currentPage, index });
@@ -444,9 +449,14 @@ export function EditorViewport() {
       ]);
       return;
     }
-    if (!group || cardTool) return;
-    const n = hit === "other-grid" ? Number(data.grid) : hit === "body" || isHandle(hit) ? activeGrid : null;
-    if (n === null || !group.grids[n]) return;
+    if (!group) return;
+    const inside = (n: number) => {
+      const r = group.grids[n];
+      const sel = r && !r.hidden ? r.selection : null;
+      return !!sel && doc.x >= sel.x && doc.x <= sel.x + sel.width && doc.y >= sel.y && doc.y <= sel.y + sel.height;
+    };
+    const n = inside(activeGrid) ? activeGrid : group.grids.findIndex((_, i) => inside(i));
+    if (n < 0) return;
     const name = group.grids[n].name ?? t("source.grids.item", { n: n + 1 });
     const L = useLayoutStore.getState();
     openContextMenu(e, [

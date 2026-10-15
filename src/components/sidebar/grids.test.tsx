@@ -426,4 +426,27 @@ describe("right-click menus", () => {
     pick("Delete Grid 2");
     expect(group().grids.map((r) => r.selection)).toEqual([TOP]);
   });
+
+  it("finds the piece or grid under the pointer whichever tool is on", async () => {
+    store().addFreeformCard(0, { center: { x: 0.85, y: 0.85 }, width: 0.1, height: 0.1, angle_deg: 0 });
+    render(
+      <>
+        <EditorViewport />
+        <ContextMenuHost />
+      </>,
+    );
+    await act(async () => {});
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    // The Grid region tool, on a piece.
+    fireEvent.contextMenu(svg, at({ x: 0.85, y: 0.85 }));
+    pick("Delete piece");
+    expect(store().freeform[0]).toBeUndefined();
+    // The Piece tool, on a grid; a right-click on the empty page opens nothing.
+    act(() => useEditorStore.setState({ tool: "card" }));
+    fireEvent.contextMenu(svg, at({ x: 0.9, y: 0.6 }));
+    expect(screen.queryByTestId("context-menu")).toBeNull();
+    fireEvent.contextMenu(svg, at({ x: 0.3, y: 0.2 }));
+    pick("Hide Grid 1");
+    expect(group().grids[0].hidden).toBe(true);
+  });
 });
