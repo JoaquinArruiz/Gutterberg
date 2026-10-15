@@ -46,7 +46,9 @@ A piece is identified by a `CardId`: a grid piece (document, page, grid, row, co
 page, index), always carrying its `DocumentId` so several PDFs can share a project. An `OrientedRect` is a piece's
 source area, rotated about its centre; grid pieces have an angle of 0. The pages of a document are covered by
 `PageGroup`s with no gaps: `grid` (pages and a list of 1 to 9 grids, each with rows, columns, gaps and a selection
-that may be empty), `skip`, and `freeform`. Edits apply to the group the viewed page belongs to, and to its active grid
+that may be empty), `skip`, and `freeform`. A page removed from view is a `skip` group marked `removed`, never joined
+with pages that are only skipped: it is left out of the export like them, and also out of the Pages panel and the
+page-by-page keys (`lib/removed-pages.ts`), so restoring it is including it and undo covers both. Edits apply to the group the viewed page belongs to, and to its active grid
 (`activeGrid` in the layout store: session state, not undone, back to 0 when the viewed page moves to another group);
 "Apply this grid to…" copies the active grid, or all of them, onto other pages as separate groups.
 

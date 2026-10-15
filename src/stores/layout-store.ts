@@ -32,6 +32,7 @@ import {
   type GridRegion,
   gridGroupAt,
   groupAt,
+  isRemoved,
   isSkipped,
   type ListDrop,
   type ListRef,
@@ -41,6 +42,7 @@ import {
   newGridRegion,
   type PageGroup,
   patchGrid,
+  removePage,
   renameFolder,
   setSkipped,
   updateGrid,
@@ -235,8 +237,12 @@ type LayoutState = OutputSettings & {
   turnGridIntoPieces: (page: number, onlyPage: boolean, cards: Card[]) => number;
   setGrid: (page: number, patch: GridPatch) => void;
   setSkipped: (page: number, skip: boolean) => void;
-  /** Sets the skip state of several pages at once (page index to skipped): one undo step. */
+  /** Sets the skip state of several pages at once (page index to skipped): one undo step. Removed pages stay so. */
   applySkips: (skips: Record<number, boolean>) => void;
+  /** Removes pages from view (skipped, and out of the Pages panel): one undo step. */
+  removePages: (pages: number[]) => void;
+  /** Brings removed pages back, included: one undo step. */
+  restorePages: (pages: number[]) => void;
   /** Copy the grid being edited (and its region) of `page`'s group onto `pages`, or every grid with `"all"`. */
   applyGrid: (page: number, pages: number[], which?: number | "all") => void;
   setGapX: (mm: number) => void;
@@ -565,11 +571,17 @@ export const useLayoutStore = create<LayoutState>()(
         emitHintEvent("grid-changed");
       },
       setSkipped: (page, skip) => set((s) => ({ groups: setSkipped(s.groups, page, skip) })),
+      removePages: (pages) => set((s) => ({ groups: pages.reduce(removePage, s.groups) })),
+      restorePages: (pages) =>
+        set((s) => ({
+          groups: pages.reduce((g, p) => (isRemoved(g, p) ? setSkipped(g, p, false) : g), s.groups),
+        })),
       applySkips: (skips) =>
         set((s) => {
           let groups = s.groups;
           for (const [page, skip] of Object.entries(skips)) {
-            if (isSkipped(groups, Number(page)) !== skip) groups = setSkipped(groups, Number(page), skip);
+            if (isSkipped(groups, Number(page)) !== skip && !isRemoved(groups, Number(page)))
+              groups = setSkipped(groups, Number(page), skip);
           }
           return groups === s.groups ? s : { groups };
         }),

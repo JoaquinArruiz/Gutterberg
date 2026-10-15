@@ -310,7 +310,18 @@
     "addPdf": "Agregar PDF…",
     "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas.",
     "addImages": "Agregar imágenes…",
-    "addImagesTitle": "Agrega imágenes PNG, JPEG o WebP como piezas, una por página."
+    "addImagesTitle": "Agrega imágenes PNG, JPEG o WebP como piezas, una por página.",
+    "removed_one": "Páginas quitadas ({{count}})",
+    "removed_other": "Páginas quitadas ({{count}})",
+    "restoreTitle": "Recuperar esta página",
+    "menu": {
+      "remove": "Quitar página",
+      "removeOthers": "Quitar las demás páginas",
+      "skip": "Omitir página",
+      "include": "Incluir página",
+      "restore": "Recuperar",
+      "restoreAll": "Recuperar todas"
+    }
   },
   "applyGrid": {
     "dialog": "Aplicar esta cuadrícula a",

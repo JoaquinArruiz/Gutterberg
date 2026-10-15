@@ -18,6 +18,7 @@ import { deletePicked, duplicatePicked, nudgePicked, pickAllPieces } from "./lib
 import { resolveStartMode } from "./lib/preferences";
 import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
 import { useProjectTracking } from "./lib/project-state";
+import { stepPage } from "./lib/removed-pages";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { startUpdateChecks } from "./lib/update-actions";
@@ -71,7 +72,6 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const doc = useDocumentStore.getState();
       const ed = useEditorStore.getState();
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key === ",") {
@@ -173,11 +173,11 @@ export default function App() {
           break;
         case "PageDown":
         case "ArrowRight":
-          doc.setCurrentPage(doc.currentPage + 1);
+          stepPage(1);
           break;
         case "PageUp":
         case "ArrowLeft":
-          doc.setCurrentPage(doc.currentPage - 1);
+          stepPage(-1);
           break;
       }
     };

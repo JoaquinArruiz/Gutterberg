@@ -279,8 +279,11 @@ export const drawnGrids = (g: GridGroup): { n: number; region: GridRegion & { se
 
 /** Whether any grid of `g` has a region drawn. */
 export const hasRegion = (g: GridGroup): boolean => g.grids.some((r) => r.selection !== null);
-/** Pages left out of the export. */
-export type SkipGroup = { kind: "skip"; pages: PageRange };
+/**
+ * Pages left out of the export. `removed` pages are also out of the Pages panel and of page-by-page navigation, so
+ * the pages in use are easier to work with; they are still in the PDF and the project, and can be brought back.
+ */
+export type SkipGroup = { kind: "skip"; pages: PageRange; removed?: true };
 export type PageGroup = GridGroup | SkipGroup;
 
 /**
@@ -317,6 +320,41 @@ export function gridGroupAt(groups: PageGroup[], page: number): GridGroup | unde
 
 export const isSkipped = (groups: PageGroup[], page: number) => groupAt(groups, page)?.kind === "skip";
 
+/** Whether `page` was removed from view (see `SkipGroup`). */
+export function isRemoved(groups: PageGroup[], page: number): boolean {
+  const g = groupAt(groups, page);
+  return g?.kind === "skip" && g.removed === true;
+}
+
+/** The removed pages, in order. */
+export function removedPages(groups: PageGroup[]): number[] {
+  const out: number[] = [];
+  for (const g of groups)
+    if (g.kind === "skip" && g.removed) for (let p = g.pages.first; p <= g.pages.last; p++) out.push(p);
+  return out;
+}
+
+/** Removes `page` from view: it is skipped and leaves the Pages panel. Restoring it is `setSkipped(…, false)`. */
+export function removePage(groups: PageGroup[], page: number): PageGroup[] {
+  if (!groupAt(groups, page) || isRemoved(groups, page)) return groups;
+  const range = { first: page, last: page };
+  return replaceRange(groups, range, { kind: "skip", pages: range, removed: true });
+}
+
+/**
+ * The page shown after `from` going `step` (+1 or -1) past removed pages, or `from` itself when there is none that
+ * way. With `step` 0 it is `from` when shown, else the nearest shown page after it, else before it.
+ */
+export function shownPage(groups: PageGroup[], total: number, from: number, step: 1 | -1 | 0): number {
+  if (step !== 0) {
+    for (let p = from + step; p >= 0 && p < total; p += step) if (!isRemoved(groups, p)) return p;
+    return from;
+  }
+  if (!isRemoved(groups, from)) return from;
+  const after = shownPage(groups, total, from, 1);
+  return after !== from ? after : shownPage(groups, total, from, -1);
+}
+
 /** Pages that are cut into cards (every page not in a skip group), in order. */
 export function includedPages(groups: PageGroup[]): number[] {
   const out: number[] = [];
@@ -335,12 +373,15 @@ function sameTreatment(a: PageGroup, b: PageGroup): boolean {
   return JSON.stringify(ra) === JSON.stringify(rb);
 }
 
-/** Joins neighbouring skip groups: skipping is a property of a page, not of how it was reached. */
+/**
+ * Joins neighbouring skip groups (removed ones with removed ones): skipping is a property of a page, not of how it was
+ * reached.
+ */
 function mergeSkips(groups: PageGroup[]): PageGroup[] {
   const out: PageGroup[] = [];
   for (const g of groups) {
     const last = out[out.length - 1];
-    if (last?.kind === "skip" && g.kind === "skip")
+    if (last?.kind === "skip" && g.kind === "skip" && !!last.removed === !!g.removed)
       out[out.length - 1] = { ...last, pages: { ...last.pages, last: g.pages.last } };
     else out.push(g);
   }
@@ -475,7 +516,8 @@ export function applyGridTo(
   const grids = which === "all" ? from.grids : from.grids[which] ? [from.grids[which]] : [];
   if (grids.length === 0) return groups;
   let out = groups;
-  for (const run of runsOf(pages)) {
+  // Removed pages stay removed: they are brought back only from the Removed pages list.
+  for (const run of runsOf(pages.filter((p) => !isRemoved(groups, p)))) {
     const folders = which === "all" && from.folders ? { folders: [...from.folders] } : {};
     out = replaceRange(out, run, { kind: "grid", pages: run, grids: grids.map(copyRegion), ...folders });
   }

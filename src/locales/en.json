@@ -310,7 +310,18 @@
     "addPdf": "Add PDF…",
     "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library.",
     "addImages": "Add images…",
-    "addImagesTitle": "Adds PNG, JPEG or WebP images as pieces, one per page."
+    "addImagesTitle": "Adds PNG, JPEG or WebP images as pieces, one per page.",
+    "removed_one": "Removed pages ({{count}})",
+    "removed_other": "Removed pages ({{count}})",
+    "restoreTitle": "Bring this page back",
+    "menu": {
+      "remove": "Remove page",
+      "removeOthers": "Remove the other pages",
+      "skip": "Skip page",
+      "include": "Include page",
+      "restore": "Bring back",
+      "restoreAll": "Bring all back"
+    }
   },
   "applyGrid": {
     "dialog": "Apply this grid to",

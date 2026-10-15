@@ -19,6 +19,7 @@ import {
   groupAt,
   hasRegion,
   includedPages,
+  isRemoved,
   isSkipped,
   MAX_GRID_NAME,
   MAX_GRIDS,
@@ -30,9 +31,12 @@ import {
   pagesOfSameSize,
   patchGrid,
   rangeLabel,
+  removedPages,
+  removePage,
   renameFolder,
   runsOf,
   setSkipped,
+  shownPage,
   updateGrid,
   updateGridGroup,
   withLook,
@@ -440,5 +444,35 @@ describe("moving grids and folders in the list", () => {
     const filled = moveInGridList(g, grid(3), { place: "into", folder: "B" })?.group as GridGroup;
     expect(names(filled)).toEqual(["g3/B", "g0/A", "g2/A", "g1"]);
     expect(folderNames(gridGroupAt(renameFolder(groups, 0, "B", undefined), 0) as GridGroup)).toEqual(["A"]);
+  });
+});
+
+describe("removed pages", () => {
+  it("are skipped pages of their own, not joined with pages that are only skipped", () => {
+    let g = setSkipped(defaultGroups(6), 1, true);
+    g = removePage(removePage(g, 2), 3);
+    expect(g.map((x) => [x.kind, x.pages.first, x.pages.last])).toEqual([
+      ["grid", 0, 0],
+      ["skip", 1, 1],
+      ["skip", 2, 3],
+      ["grid", 4, 5],
+    ]);
+    expect(removedPages(g)).toEqual([2, 3]);
+    expect(isRemoved(g, 1)).toBe(false);
+    expect(includedPages(g)).toEqual([0, 4, 5]);
+    // Brought back, a page is included again; applying a grid leaves removed pages alone.
+    const back = setSkipped(g, 3, false);
+    expect(removedPages(back)).toEqual([2]);
+    expect(isSkipped(back, 3)).toBe(false);
+    expect(removedPages(applyGridTo(g, 0, [2, 3, 4]))).toEqual([2, 3]);
+  });
+
+  it("are stepped over, and the nearest page in view stands in for one", () => {
+    const g = removePage(removePage(defaultGroups(5), 1), 4);
+    expect(shownPage(g, 5, 0, 1)).toBe(2);
+    expect(shownPage(g, 5, 2, -1)).toBe(0);
+    expect(shownPage(g, 5, 3, 1)).toBe(3);
+    expect(shownPage(g, 5, 1, 0)).toBe(2);
+    expect(shownPage(g, 5, 4, 0)).toBe(3);
   });
 });

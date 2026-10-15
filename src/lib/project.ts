@@ -66,7 +66,7 @@ const PageGroupSchema = z.discriminatedUnion("kind", [
     grids: z.array(GridRegionSchema).min(1).max(MAX_GRIDS),
     folders: z.array(z.string()).max(50).optional(),
   }),
-  z.object({ kind: z.literal("skip"), pages: PageRangeSchema }),
+  z.object({ kind: z.literal("skip"), pages: PageRangeSchema, removed: z.literal(true).optional() }),
 ]);
 
 /** Keys are page numbers, as JSON object keys always are. */
