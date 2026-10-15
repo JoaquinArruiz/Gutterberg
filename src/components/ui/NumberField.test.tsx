@@ -79,12 +79,46 @@ describe("NumberField decimals", () => {
   });
 });
 
+describe("NumberField arithmetic", () => {
+  it("works out a sum when the value is committed", () => {
+    const onCommit = vi.fn();
+    render(<NumberField label="Columns" value={2} onCommit={onCommit} />);
+    const input = type("Columns", "12/3");
+    expect(onCommit).toHaveBeenCalledWith(4);
+    expect(input.value).toBe("2"); // the store's value comes back through `value`
+  });
+
+  it("rounds the result to the decimals the field shows, and keeps min and max", () => {
+    const onCommit = vi.fn();
+    render(<NumberField label="Width" value={10} decimals={1} min={1} max={100} onCommit={onCommit} />);
+    type("Width", "10/3");
+    type("Width", "63,5 * 2");
+    type("Width", "2 - 5");
+    expect(onCommit.mock.calls.map((c) => c[0])).toEqual([3.3, 100, 1]);
+  });
+
+  it("puts the old number back when the sum does not work out", () => {
+    const onCommit = vi.fn();
+    render(<NumberField label="Width" value={10} decimals={1} onCommit={onCommit} />);
+    for (const bad of ["12/", "(2+3", "1/0"]) expect(type("Width", bad).value).toBe("10.0");
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+});
+
 describe("MeasurementInput", () => {
   it("types a length with a comma in any unit and stores plain millimetres", () => {
     prefs().setUnit("cm");
     const onChange = vi.fn();
     render(<MeasurementInput label="Gap" value={3} onChange={onChange} />);
     type("Gap", "0,5");
+    expect(onChange).toHaveBeenCalledWith(5);
+  });
+
+  it("works out a sum in the unit shown", () => {
+    prefs().setUnit("cm");
+    const onChange = vi.fn();
+    render(<MeasurementInput label="Gap" value={3} onChange={onChange} />);
+    type("Gap", "1/2");
     expect(onChange).toHaveBeenCalledWith(5);
   });
 });

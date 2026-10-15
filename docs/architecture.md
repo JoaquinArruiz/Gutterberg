@@ -415,7 +415,7 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Shapes | Rectangles, optionally rotated. Round or custom shapes are not supported (a round token is marked and printed with its rectangle). |
 | Messy scans | Supported: freeform rectangles with rotation, a per-piece turn so all face one way, drag to sort. Perspective correction is out of scope. |
 | Words | Source / Print tabs; Original / Preview / Split views; the generic noun is **piece**. The glossary is in `AGENTS.md`. |
-| Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. |
+| Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. Number fields also take arithmetic (`src/lib/arithmetic.ts`: a small parser for `+ - * /` and parentheses, never `eval`). |
 | Project file | `.gtr`, JSON with a `gutterberg-project` signature and a version, checked on open: not a project / older, migrate / newer, refuse. |
 | Locked PDFs | Locked against printing or modifying: refused. Other restrictions: kept on the output. Never stripped. |
 | AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; every action asks first. |

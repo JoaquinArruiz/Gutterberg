@@ -575,7 +575,7 @@
       "decimalAuto": "Automático (según el idioma)",
       "decimalDot": "Punto (63.5)",
       "decimalComma": "Coma (63,5)",
-      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción."
+      "decimalNote": "Solo cambia cómo se muestran los números. Los campos numéricos aceptan 63.5 y 63,5 sin importar esta opción, y también cuentas como 12/3."
     },
     "workspace": {
       "visibleViews": "Vistas visibles",

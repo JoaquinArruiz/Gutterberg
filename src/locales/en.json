@@ -575,7 +575,7 @@
       "decimalAuto": "Automatic (from the language)",
       "decimalDot": "Dot (63.5)",
       "decimalComma": "Comma (63,5)",
-      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to."
+      "decimalNote": "Only changes how numbers are shown. Number fields accept both 63.5 and 63,5 whatever this is set to, and sums such as 12/3."
     },
     "workspace": {
       "visibleViews": "Visible views",
