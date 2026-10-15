@@ -62,10 +62,10 @@ describe("removed pages", () => {
     expect(useDocumentStore.getState().currentPage).toBe(2);
     stepPage(1);
     expect(useDocumentStore.getState().currentPage).toBe(2);
-    // The last page in view cannot be removed.
+    // The last page in view cannot be removed: both options are off.
     fireEvent.contextMenu(screen.getByRole("button", { name: "3" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Remove page" }));
-    expect(isRemoved(groups(), 2)).toBe(false);
+    expect(screen.getByRole("menuitem", { name: "Remove page" }).hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("menuitem", { name: "Remove the other pages" }).hasAttribute("disabled")).toBe(true);
   });
 
   it("lists them folded at the bottom, and brings them back, included", () => {

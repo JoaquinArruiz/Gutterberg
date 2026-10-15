@@ -54,10 +54,14 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
         onClick={() => setCurrentPage(index)}
         onContextMenu={(e) => {
           const total = useDocumentStore.getState().pages.length;
+          const { groups } = useLayoutStore.getState();
+          // The last page in view stays: removing it, or the others when there are none, is off.
+          const alone = Array.from({ length: total }, (_, p) => p).every((p) => p === index || isRemoved(groups, p));
           openContextMenu(e, [
-            { label: t("pages.menu.remove"), onSelect: () => removePages([index]) },
+            { label: t("pages.menu.remove"), disabled: alone, onSelect: () => removePages([index]) },
             {
               label: t("pages.menu.removeOthers"),
+              disabled: alone,
               onSelect: () => removePages(Array.from({ length: total }, (_, p) => p).filter((p) => p !== index)),
             },
             "separator",
