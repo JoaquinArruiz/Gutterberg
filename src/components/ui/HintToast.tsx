@@ -175,7 +175,7 @@ export function HintToast({ hint, className = "" }: { hint: HintId; className?: 
     showToast({
       title: t("hintUi.offTitle"),
       text: t("hintUi.offText"),
-      actions: [{ label: t("hintUi.offOpen"), onClick: () => setPrefsOpen(true, "Help") }],
+      actions: [{ label: t("hintUi.offOpen"), onClick: () => setPrefsOpen(true, "Help", "helpTips") }],
       autoCloseMs: 12000,
     });
   };

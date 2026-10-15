@@ -552,8 +552,8 @@
     "sections": {
       "General": "General",
       "Workspace": "Espacio de trabajo",
-      "Preview": "Vista previa",
-      "Appearance": "Apariencia",
+      "Layout": "Disposición",
+      "Display": "Visualización",
       "About": "Acerca de",
       "AI": "Modo IA (experimental)",
       "Help": "Ayuda",
@@ -601,7 +601,7 @@
       "layoutPrint": "Disposición de la pestaña Imprimir",
       "rulers": "Reglas",
       "invertRulers": "Invertir las reglas",
-      "invertRulersHint": "Cada regla da la guía que la cruza: arrastra desde la regla de arriba para una guía vertical y desde la de la izquierda para una horizontal. Desactivado: cada regla da la guía paralela a ella."
+      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella."
     },
     "livePreview": {
       "title": "Vista previa en vivo",
@@ -752,13 +752,13 @@
     },
     "live-preview-output": {
       "main": {
-        "text": "La vista previa en vivo está desactivada, así que esta vista previa no se genera automáticamente. Pulsa el botón de actualizar (abajo a la derecha) para generarla. Puedes cambiar esto en Preferencias > Vista previa.",
+        "text": "La vista previa en vivo está desactivada, así que esta vista previa no se genera automáticamente. Pulsa el botón de actualizar (abajo a la derecha) para generarla. Puedes cambiar esto en Preferencias › Visualización.",
         "action": "Abrir preferencias"
       }
     },
     "live-preview-sheets": {
       "main": {
-        "text": "La vista previa en vivo está desactivada, así que la fila de vistas previas de las hojas de arriba no se redibuja cuando cambias el plan. Pulsa el botón de actualizar (arriba a la derecha) para actualizarla. La hoja grande siempre sigue el plan. Puedes cambiar esto en Preferencias > Vista previa.",
+        "text": "La vista previa en vivo está desactivada, así que la fila de vistas previas de las hojas de arriba no se redibuja cuando cambias el plan. Pulsa el botón de actualizar (arriba a la derecha) para actualizarla. La hoja grande siempre sigue el plan. Puedes cambiar esto en Preferencias › Visualización.",
         "action": "Abrir preferencias"
       }
     },

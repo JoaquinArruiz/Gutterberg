@@ -1,8 +1,8 @@
 import {
+  AppWindow,
   ArrowDown,
   ArrowUp,
   Download,
-  Eye,
   FlaskConical,
   LayoutPanelLeft,
   LifeBuoy,
@@ -66,8 +66,8 @@ const DECIMAL_LABEL = { auto: "decimalAuto", dot: "decimalDot", comma: "decimalC
 const SECTIONS: PrefsSection[] = [
   "General",
   "Workspace",
-  "Preview",
-  "Appearance",
+  "Layout",
+  "Display",
   "AI",
   "Help",
   "Updates",
@@ -76,12 +76,12 @@ const SECTIONS: PrefsSection[] = [
 type Section = PrefsSection;
 
 const ICON_SIZE = 14;
-/** Each section's icon. Workspace has the panels menu's; AI the spark, in the AI colour; Help the life buoy; Updates the download arrow; Experimental the flask; About the app's own icon. */
+/** Each section's icon. Layout has the panels menu's; AI the spark, in the AI colour; Help the life buoy; Updates the download arrow; Experimental the flask; About the app's own icon. */
 const SECTION_ICON: Record<Section, React.ReactNode> = {
   General: <Settings size={ICON_SIZE} />,
-  Workspace: <LayoutPanelLeft size={ICON_SIZE} />,
-  Preview: <Eye size={ICON_SIZE} />,
-  Appearance: <Palette size={ICON_SIZE} />,
+  Workspace: <AppWindow size={ICON_SIZE} />,
+  Layout: <LayoutPanelLeft size={ICON_SIZE} />,
+  Display: <Palette size={ICON_SIZE} />,
   AI: <Sparkles size={ICON_SIZE} className="text-[var(--ai)]" />,
   Help: <LifeBuoy size={ICON_SIZE} />,
   Updates: <Download size={ICON_SIZE} />,
@@ -97,7 +97,10 @@ function LayoutField({ layoutId }: { layoutId: LayoutId }) {
   const setPosition = usePreferencesStore((s) => s.setPanelPosition);
   const preset = detectPreset(layout);
   return (
-    <Field label={t(layoutId === "cards" ? "preferences.workspace.layoutCards" : "preferences.workspace.layoutPrint")}>
+    <Field
+      label={t(layoutId === "cards" ? "preferences.workspace.layoutCards" : "preferences.workspace.layoutPrint")}
+      info={t("preferences.workspace.layoutNote")}
+    >
       <div className="flex gap-4">
         <div className="flex flex-1 flex-col gap-1.5">
           <div className="flex items-center justify-between gap-2">
@@ -138,7 +141,6 @@ function LayoutField({ layoutId }: { layoutId: LayoutId }) {
           center={t(layoutId === "cards" ? "preferences.layoutPreview.editor" : "preferences.layoutPreview.sheets")}
         />
       </div>
-      <p className="text-[var(--muted)]">{t("preferences.workspace.layoutNote")}</p>
     </Field>
   );
 }
@@ -217,19 +219,18 @@ export function PreferencesDialog() {
 
         <div className="min-w-0 flex-1 overflow-y-auto p-4">
           {section === "General" && (
-            <Field label={t("preferences.general.unit")}>
+            <Field label={t("preferences.general.unit")} info={t("preferences.general.unitNote")}>
               <Select<MeasurementUnit>
                 label={t("preferences.general.unit")}
                 value={prefs.measurement.unit}
                 onChange={store.setUnit}
                 options={MEASUREMENT_UNITS.map((u) => ({ value: u, label: t(`preferences.units.${u}`) }))}
               />
-              <p className="text-[var(--muted)]">{t("preferences.general.unitNote")}</p>
             </Field>
           )}
 
           {section === "General" && (
-            <Field label={t("preferences.general.language")}>
+            <Field label={t("preferences.general.language")} info={t("preferences.general.languageNote")}>
               <Select<LanguagePreference>
                 label={t("preferences.general.language")}
                 value={prefs.locale.language}
@@ -239,12 +240,11 @@ export function PreferencesDialog() {
                   ...LANGUAGES.map((l) => ({ value: l as LanguagePreference, label: LANGUAGE_NAME[l] })),
                 ]}
               />
-              <p className="text-[var(--muted)]">{t("preferences.general.languageNote")}</p>
             </Field>
           )}
 
           {section === "General" && (
-            <Field label={t("preferences.general.decimal")}>
+            <Field label={t("preferences.general.decimal")} info={t("preferences.general.decimalNote")}>
               <Select<DecimalPreference>
                 label={t("preferences.general.decimal")}
                 value={prefs.locale.decimal}
@@ -254,7 +254,6 @@ export function PreferencesDialog() {
                   label: t(`preferences.general.${DECIMAL_LABEL[d]}`),
                 }))}
               />
-              <p className="text-[var(--muted)]">{t("preferences.general.decimalNote")}</p>
             </Field>
           )}
 
@@ -301,7 +300,7 @@ export function PreferencesDialog() {
                   );
                 })}
               </Field>
-              <Field label={t("preferences.workspace.defaultView")}>
+              <Field label={t("preferences.workspace.defaultView")} info={t("preferences.workspace.defaultNote")}>
                 <Select<DefaultWorkspace>
                   label={t("preferences.workspace.defaultView")}
                   value={prefs.workspace.defaultMode}
@@ -311,14 +310,17 @@ export function PreferencesDialog() {
                     ...visibleModes.map((m) => ({ value: m as DefaultWorkspace, label: t(`views.${m}`) })),
                   ]}
                 />
-                <p className="text-[var(--muted)]">{t("preferences.workspace.defaultNote")}</p>
               </Field>
+            </>
+          )}
 
+          {section === "Layout" && (
+            <>
               {LAYOUT_IDS.map((id) => (
                 <LayoutField key={id} layoutId={id} />
               ))}
 
-              <Field label={t("preferences.workspace.behavior")}>
+              <Field label={t("preferences.workspace.behavior")} info={t("preferences.workspace.resetNote")}>
                 <Switch
                   checked={layout.rememberSizes}
                   onChange={store.setRememberSizes}
@@ -334,9 +336,42 @@ export function PreferencesDialog() {
                     {t("preferences.workspace.resetLayout")}
                   </Button>
                 </div>
-                <p className="text-[var(--muted)]">{t("preferences.workspace.resetNote")}</p>
               </Field>
+            </>
+          )}
 
+          {section === "Display" && (
+            <>
+              <Field label={t("preferences.appearance.theme")}>
+                <Segmented<ThemePreference>
+                  label={t("preferences.appearance.theme")}
+                  value={prefs.appearance.theme}
+                  onChange={store.setTheme}
+                  options={THEMES.map((theme) => ({ value: theme, label: t(`preferences.appearance.${theme}`) }))}
+                />
+              </Field>
+              <Field
+                label={t("preferences.livePreview.title")}
+                info={t("preferences.livePreview.note")}
+                target="livePreview"
+              >
+                <RadioCardGroup<LivePreviewPreference>
+                  label={t("preferences.livePreview.title")}
+                  value={prefs.preview.livePreview}
+                  onChange={store.setLivePreview}
+                >
+                  <RadioCard
+                    value="always"
+                    title={t("preferences.livePreview.always")}
+                    description={t("preferences.livePreview.alwaysHint")}
+                  />
+                  <RadioCard
+                    value="manual"
+                    title={t("preferences.livePreview.manual")}
+                    description={t("preferences.livePreview.manualHint")}
+                  />
+                </RadioCardGroup>
+              </Field>
               <Field label={t("preferences.workspace.rulers")}>
                 <Switch
                   checked={prefs.editor.invertRulers}
@@ -346,39 +381,6 @@ export function PreferencesDialog() {
                 />
               </Field>
             </>
-          )}
-
-          {section === "Preview" && (
-            <Field label={t("preferences.livePreview.title")}>
-              <RadioCardGroup<LivePreviewPreference>
-                label={t("preferences.livePreview.title")}
-                value={prefs.preview.livePreview}
-                onChange={store.setLivePreview}
-              >
-                <RadioCard
-                  value="always"
-                  title={t("preferences.livePreview.always")}
-                  description={t("preferences.livePreview.alwaysHint")}
-                />
-                <RadioCard
-                  value="manual"
-                  title={t("preferences.livePreview.manual")}
-                  description={t("preferences.livePreview.manualHint")}
-                />
-              </RadioCardGroup>
-              <p className="text-[var(--muted)]">{t("preferences.livePreview.note")}</p>
-            </Field>
-          )}
-
-          {section === "Appearance" && (
-            <Field label={t("preferences.appearance.theme")}>
-              <Segmented<ThemePreference>
-                label={t("preferences.appearance.theme")}
-                value={prefs.appearance.theme}
-                onChange={store.setTheme}
-                options={THEMES.map((theme) => ({ value: theme, label: t(`preferences.appearance.${theme}`) }))}
-              />
-            </Field>
           )}
 
           {section === "AI" && <AiSettings />}

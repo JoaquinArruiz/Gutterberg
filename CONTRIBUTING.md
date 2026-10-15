@@ -5,7 +5,7 @@ Thanks for wanting to help. Bug reports, ideas, fixes and new features are all w
 ## Report a bug or suggest something
 
 Open an [issue](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose) and pick the form. For a bug, the
-version and your system are what help most: in the app, **Preferences › Help › Report on GitHub** opens the form with
+version and your system are what help most: in the app, **Preferences › About › Report on GitHub** opens the form with
 both filled in, **Copy app info** gives you the line to paste, and **Copy log** gives you the end of the log
 (useful when the app closed by itself or showed an error). A PDF that does not work is the best test case,
 if you are allowed to share it.

@@ -385,7 +385,7 @@ on macOS and in the `logs` folder of the `Gutterberg` data folder elsewhere. It 
 cleared, so the record of a run that crashed is there at the next start. It is bounded: a run writes at most 64 KB, a
 file over 256 KB is moved to `gutterberg.old.log` at the next start (replacing the previous one), so the folder holds
 about half a megabyte at most. Every write failure is ignored; logging never stops or slows the app. "Copy log" in
-Preferences › Help (the `read_log` command) hands over the last 24,000 characters, from a whole line, which keeps a
+Preferences › About (the `read_log` command) hands over the last 24,000 characters, from a whole line, which keeps a
 bug report under GitHub's 65,536-character limit. Only the Rust side logs; the web view's own errors are not in it.
 
 ## Preferences
@@ -400,6 +400,13 @@ the default would be named after the identifier). `src-tauri/src/data_dirs.rs` m
 folder there once, before the webview opens, and never overwrites or merges into a `Gutterberg` that already exists.
 macOS keeps its storage under the bundle identifier whatever the override says, so nothing moves there. The identifier
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
+
+The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
+Layout (the panels of each tab), Display (theme, Live preview, rulers), AI Mode, Help (tour, tips, shortcuts),
+Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
+goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
+names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into
+view and pulses twice, then clears `prefsPulse`.
 
 ## Decisions
 

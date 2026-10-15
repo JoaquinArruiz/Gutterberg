@@ -89,3 +89,25 @@ body {
     display: none;
   }
 }
+
+/* A Preferences setting a link pointed at: a ring in the accent colour pulses twice around it. */
+@keyframes prefs-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+  }
+}
+.prefs-pulse {
+  animation: prefs-pulse 0.7s ease-in-out 2;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* No movement: the ring shows steady until Preferences closes. */
+  .prefs-pulse {
+    animation: none;
+    box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}

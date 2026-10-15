@@ -3,7 +3,7 @@ import type { HintActionId } from "./hints";
 
 /** What each named hint button does. The catalog only holds the names. */
 const ACTIONS: Record<HintActionId, () => void> = {
-  "open-preferences:preview": () => useUiStore.getState().setPrefsOpen(true, "Preview"),
+  "open-preferences:preview": () => useUiStore.getState().setPrefsOpen(true, "Display", "livePreview"),
 };
 
 export const runHintAction = (id: HintActionId) => ACTIONS[id]();

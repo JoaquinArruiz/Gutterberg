@@ -552,8 +552,8 @@
     "sections": {
       "General": "General",
       "Workspace": "Workspace",
-      "Preview": "Preview",
-      "Appearance": "Appearance",
+      "Layout": "Layout",
+      "Display": "Display",
       "About": "About",
       "AI": "AI Mode (experimental)",
       "Help": "Help",
@@ -601,7 +601,7 @@
       "layoutPrint": "Layout of the Print tab",
       "rulers": "Rulers",
       "invertRulers": "Invert rulers",
-      "invertRulersHint": "Each ruler gives the guide across it: drag from the top ruler for a vertical guide and from the left ruler for a horizontal one. Off: each ruler gives the guide along it."
+      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it."
     },
     "livePreview": {
       "title": "Live preview",
@@ -752,13 +752,13 @@
     },
     "live-preview-output": {
       "main": {
-        "text": "Live preview is off, so this preview isn't generated automatically. Press the refresh button (bottom right) to generate it. You can change this in Preferences > Preview.",
+        "text": "Live preview is off, so this preview isn't generated automatically. Press the refresh button (bottom right) to generate it. You can change this in Preferences › Display.",
         "action": "Open Preferences"
       }
     },
     "live-preview-sheets": {
       "main": {
-        "text": "Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the refresh button (top right) to update it. The large sheet always follows the plan. You can change this in Preferences > Preview.",
+        "text": "Live preview is off, so the row of sheet previews above is not redrawn as you change the plan. Press the refresh button (top right) to update it. The large sheet always follows the plan. You can change this in Preferences › Display.",
         "action": "Open Preferences"
       }
     },

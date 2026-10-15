@@ -4,13 +4,16 @@ import { emitHintEvent } from "../lib/hint-events";
 export type PrefsSection =
   | "General"
   | "Workspace"
-  | "Preview"
-  | "Appearance"
+  | "Layout"
+  | "Display"
   | "AI"
   | "Help"
   | "Updates"
   | "Experimental"
   | "About";
+
+/** A setting a link can point at: Preferences opens on its section and the setting pulses twice. */
+export type PrefsTarget = "livePreview" | "helpTips";
 
 /** How long help tips keep waiting after the welcome tour closes, so the first one does not fire at once. */
 export const WELCOME_HINT_DELAY_MS = 2500;
@@ -25,7 +28,10 @@ export const useUiStore = create<{
   prefsOpen: boolean;
   /** Section to show next time the dialog opens (set by "open preferences" links), then cleared. */
   prefsSection: PrefsSection | null;
-  setPrefsOpen: (open: boolean, section?: PrefsSection) => void;
+  /** The setting a link pointed at, pulsing until its animation ends or the dialog closes. */
+  prefsPulse: PrefsTarget | null;
+  setPrefsOpen: (open: boolean, section?: PrefsSection, target?: PrefsTarget) => void;
+  clearPrefsPulse: () => void;
   /** Preferences › Updates should put the focus on its Install button when it shows it (the update toast), then clear this. */
   focusInstall: boolean;
   setFocusInstall: (focus: boolean) => void;
@@ -52,7 +58,10 @@ export const useUiStore = create<{
 }>((set) => ({
   prefsOpen: false,
   prefsSection: null,
-  setPrefsOpen: (prefsOpen, section) => set({ prefsOpen, prefsSection: section ?? null }),
+  prefsPulse: null,
+  setPrefsOpen: (prefsOpen, section, target) =>
+    set({ prefsOpen, prefsSection: section ?? null, prefsPulse: prefsOpen ? (target ?? null) : null }),
+  clearPrefsPulse: () => set({ prefsPulse: null }),
   focusInstall: false,
   setFocusInstall: (focusInstall) => set({ focusInstall }),
   shortcutsOpen: false,
