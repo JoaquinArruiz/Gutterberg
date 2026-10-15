@@ -58,6 +58,7 @@ beforeEach(() => {
   );
   if (!("PointerEvent" in window)) vi.stubGlobal("PointerEvent", MouseEvent);
   Element.prototype.setPointerCapture = () => {};
+  Element.prototype.scrollIntoView = vi.fn();
   usePreferencesStore.getState().resetToDefaults();
   useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4], hash: "" }], 0);
   store().resetDocument(1);
@@ -88,12 +89,88 @@ describe("the list of grids", () => {
     expect(store().activeGrid).toBe(0);
     rerender(<GridsSection group={group()} page={0} />);
     expect(screen.getByRole("button", { name: /^Grid 1/ }).getAttribute("aria-pressed")).toBe("true");
-    fireEvent.click(screen.getByRole("button", { name: "Delete grid 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Grid 1" }));
     expect(group().grids.map((r) => r.selection)).toEqual([BOTTOM]);
   });
 });
 
+describe("naming, coloring and folding grids", () => {
+  it("renames a grid, gives it a color and puts it in a new folder", () => {
+    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Name, color and folder of Grid 1" }));
+    const name = screen.getByRole("textbox", { name: "Grid name" });
+    fireEvent.change(name, { target: { value: "  Poker cards " } });
+    fireEvent.blur(name);
+    expect(group().grids[0].name).toBe("Poker cards");
+    rerender(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Red" }));
+    expect(group().grids[0].color).toBe("#ef4444");
+    fireEvent.click(screen.getByRole("combobox", { name: "Folder" }));
+    fireEvent.click(screen.getByRole("option", { name: "New folder" }));
+    expect(group().grids[0].folder).toBe("Folder 1");
+    rerender(<GridsSection group={group()} page={0} />);
+    expect(screen.getByRole("button", { name: /^Folder 1/ })).toBeTruthy();
+    // Esc leaves a name as it was.
+    const again = screen.getByRole("textbox", { name: "Grid name" });
+    fireEvent.change(again, { target: { value: "Oops" } });
+    fireEvent.keyDown(again, { key: "Escape" });
+    expect(group().grids[0].name).toBe("Poker cards");
+  });
+
+  it("picks a folder, renames it and takes its grids out", () => {
+    store().addGrid(0);
+    store().setGridLook(0, 0, { folder: "Cards" });
+    store().setGridLook(0, 1, { folder: "Cards" });
+    const { rerender } = render(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /^Cards/ }));
+    expect(store().pickedFolder).toBe("Cards");
+    expect(useEditorStore.getState().pickedRegion).toBe(0);
+    fireEvent.click(screen.getByRole("button", { name: "Rename Cards" }));
+    const field = screen.getByRole("textbox", { name: "Folder name" });
+    fireEvent.change(field, { target: { value: "Big" } });
+    fireEvent.keyDown(field, { key: "Enter" });
+    fireEvent.blur(field);
+    expect(group().grids.map((r) => r.folder)).toEqual(["Big", "Big"]);
+    expect(store().pickedFolder).toBe("Big");
+    rerender(<GridsSection group={group()} page={0} />);
+    fireEvent.click(screen.getByRole("button", { name: "Take the grids out of Big" }));
+    expect(group().grids.map((r) => r.folder)).toEqual([undefined, undefined]);
+  });
+});
+
 describe("several grids on the page", () => {
+  it("drags every grid of a picked folder together, and one grid alone once it is picked", async () => {
+    store().addGrid(0);
+    store().setSelection(0, BOTTOM);
+    store().setGridLook(0, 0, { folder: "Cards" });
+    store().setGridLook(0, 1, { folder: "Cards" });
+    store().pickFolder(0, "Cards");
+    useEditorStore.setState({ pickedRegion: 0 });
+    render(<EditorViewport />);
+    await act(async () => {});
+    const svg = screen.getByRole("img", { name: "Page canvas" });
+    const other = screen.getByTestId("other-grids").querySelector<SVGRectElement>("[data-hit='other-grid']");
+    expect(other?.dataset.grid).toBe("1");
+    fireEvent.pointerDown(other as SVGRectElement, at({ x: 0.3, y: 0.7 }));
+    fireEvent.pointerMove(svg, at({ x: 0.33, y: 0.65 }));
+    fireEvent.pointerUp(svg, at({ x: 0.33, y: 0.65 }));
+    const [a, b] = group().grids.map((r) => r.selection);
+    expect(a?.x).toBeGreaterThan(TOP.x);
+    expect((b?.x ?? 0) - BOTTOM.x).toBeCloseTo((a?.x ?? 0) - TOP.x, 9);
+    expect((b?.y ?? 0) - BOTTOM.y).toBeCloseTo((a?.y ?? 0) - TOP.y, 9);
+    expect(store().pickedFolder).toBe("Cards");
+
+    // Picked on its own, the second grid moves alone.
+    act(() => store().setActiveGrid(1));
+    const before = group().grids[0].selection;
+    const body = svg.querySelector<SVGRectElement>("[data-hit='body']");
+    fireEvent.pointerDown(body as SVGRectElement, at({ x: 0.3, y: 0.62 }));
+    fireEvent.pointerMove(svg, at({ x: 0.3, y: 0.66 }));
+    fireEvent.pointerUp(svg, at({ x: 0.3, y: 0.66 }));
+    expect(group().grids[0].selection).toEqual(before);
+    expect(group().grids[1].selection?.y).toBeGreaterThan(b?.y ?? 1);
+  });
+
   it("draws the other grids dimmer, and pressing one picks it and drags it", async () => {
     store().addGrid(0);
     store().setSelection(0, BOTTOM);

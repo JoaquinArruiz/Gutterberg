@@ -12,12 +12,14 @@ import { MAX_MARGIN_MM } from "../stores/layout-store";
 import { CARD_KEY, type DocumentId, OrientedRectSchema } from "./card";
 import { type CardEdits, clampScale } from "./card-edits";
 import {
+  cleanGridName,
   type FreeformCards,
   type GridRegion,
   MAX_GAP_MM,
   MAX_GRIDS,
   type PageGroup,
   patchGrid,
+  withLook,
 } from "./document-layout";
 import { cleanFinish, FinishSchema } from "./finish";
 import { ImagePlacementSchema } from "./images";
@@ -44,7 +46,17 @@ const GroupGridSchema = z.object({
   sourceGapLinked: z.boolean(),
 });
 
-const GridRegionSchema = z.object({ grid: GroupGridSchema, selection: NormalizedRectSchema.nullable() });
+const GridRegionSchema = z.object({
+  grid: GroupGridSchema,
+  selection: NormalizedRectSchema.nullable(),
+  name: z.string().optional(),
+  folder: z.string().optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional()
+    .catch(undefined),
+});
 
 const PageGroupSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -214,7 +226,14 @@ function cleanRegion(r: z.infer<typeof GridRegionSchema>): GridRegion {
     sourceGapYMm: r.grid.sourceGapYMm,
     sourceGapLinked: r.grid.sourceGapLinked,
   });
-  return { ...r, grid };
+  return withLook(
+    { ...r, grid },
+    {
+      name: cleanGridName(r.name ?? ""),
+      color: r.color,
+      folder: cleanGridName(r.folder ?? ""),
+    },
+  );
 }
 
 function cleanGroup(g: z.infer<typeof PageGroupSchema>): PageGroup {

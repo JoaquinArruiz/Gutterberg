@@ -158,6 +158,7 @@ export default function App() {
         case "Escape":
           ed.setSelectedCard(null);
           ed.setPickedRegion(null);
+          useLayoutStore.setState({ pickedFolder: null });
           break;
         case "+":
         case "=":

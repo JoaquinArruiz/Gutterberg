@@ -35,8 +35,22 @@ export const DEFAULT_GROUP_GRID: GroupGrid = {
   sourceGapLinked: true,
 };
 
-/** One grid of a group: how it divides its region, and the region (normalized to the page; null = not drawn yet). */
-export type GridRegion = { grid: GroupGrid; selection: NormalizedRect | null };
+/**
+ * One grid of a group: how it divides its region, and the region (normalized to the page; null = not drawn yet).
+ * `name` and `color` are the user's, to tell grids apart: without them the grid is "Grid n" in the accent colour.
+ * `folder` is the name of the folder it is in, if any: the grids with the same folder name are listed together and
+ * can be picked and moved together. A folder exists while a grid is in it.
+ */
+export type GridRegion = {
+  grid: GroupGrid;
+  selection: NormalizedRect | null;
+  name?: string;
+  color?: string;
+  folder?: string;
+};
+
+/** What the user can set on a grid besides its layout: a key given as undefined clears it. */
+export type GridLook = { name?: string; color?: string; folder?: string };
 
 /**
  * Pages cut into pieces with one or more grids, each inside its own region. There is always at least one; a grid's
@@ -47,6 +61,63 @@ export type GridGroup = { kind: "grid"; pages: PageRange; grids: GridRegion[] };
 
 /** How many grids a page can hold. */
 export const MAX_GRIDS = 9;
+
+/** The colours a grid can be given, picked to read on the light and the dark theme. */
+export const GRID_COLORS = [
+  { id: "blue", hex: "#3b82f6" },
+  { id: "red", hex: "#ef4444" },
+  { id: "green", hex: "#22c55e" },
+  { id: "amber", hex: "#f59e0b" },
+  { id: "pink", hex: "#ec4899" },
+  { id: "teal", hex: "#14b8a6" },
+  { id: "orange", hex: "#f97316" },
+  { id: "indigo", hex: "#6366f1" },
+] as const;
+
+/** How long a grid's name can be. */
+export const MAX_GRID_NAME = 40;
+
+/** A name as typed, trimmed and cut to `MAX_GRID_NAME`; empty means the grid goes back to "Grid n". */
+export const cleanGridName = (raw: string): string | undefined =>
+  raw.trim().slice(0, MAX_GRID_NAME).trim() || undefined;
+
+/** A grid's name, colour and folder set or cleared (a key given as undefined), leaving no empty keys behind. */
+export function withLook(r: GridRegion, look: GridLook): GridRegion {
+  const next: GridRegion = { ...r, ...look };
+  if (next.name === undefined) delete next.name;
+  if (next.color === undefined) delete next.color;
+  if (next.folder === undefined) delete next.folder;
+  return next;
+}
+
+/** The folders of `g`, in the order their first grid comes. */
+export const folderNames = (g: GridGroup): string[] => [
+  ...new Set(g.grids.flatMap((r) => (r.folder === undefined ? [] : [r.folder]))),
+];
+
+/** The numbers of the grids of `g` in `folder`. */
+export const folderGrids = (g: GridGroup, folder: string): number[] =>
+  g.grids.flatMap((r, n) => (r.folder === folder ? [n] : []));
+
+/** `base` with the first number that no folder of `g` has: "Folder 1", "Folder 2"… */
+export function newFolderName(g: GridGroup, base: string): string {
+  const taken = new Set(folderNames(g));
+  let k = 1;
+  while (taken.has(`${base} ${k}`)) k++;
+  return `${base} ${k}`;
+}
+
+/**
+ * Renames `folder` in the grid group `page` belongs to (every grid in it), or ungroups it with `to` undefined. A name
+ * another folder has merges the two.
+ */
+export function renameFolder(groups: PageGroup[], page: number, folder: string, to: string | undefined): PageGroup[] {
+  return updateGridGroup(groups, page, (g) =>
+    g.grids.some((r) => r.folder === folder)
+      ? { ...g, grids: g.grids.map((r) => (r.folder === folder ? withLook(r, { folder: to }) : r)) }
+      : g,
+  );
+}
 
 /** A new grid with the default settings and no region. */
 export const newGridRegion = (): GridRegion => ({ grid: { ...DEFAULT_GROUP_GRID }, selection: null });
@@ -246,6 +317,7 @@ export function clearGridRegion(groups: PageGroup[], page: number, onlyPage: boo
 }
 
 const copyRegion = (r: GridRegion): GridRegion => ({
+  ...r,
   grid: { ...r.grid },
   selection: r.selection ? { ...r.selection } : null,
 });

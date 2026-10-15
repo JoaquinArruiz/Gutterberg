@@ -129,3 +129,49 @@ describe("duplicate, pick all and delete", () => {
     expect(pieces()).toHaveLength(3);
   });
 });
+
+describe("the arrow keys with a folder of grids", () => {
+  const A = { x: 0.1, y: 0.1, width: 0.3, height: 0.2 };
+  const B = { x: 0.5, y: 0.1, width: 0.3, height: 0.2 };
+  const C = { x: 0.1, y: 0.6, width: 0.3, height: 0.2 };
+  const grids = () => {
+    const g = layout().groups[0];
+    return g.kind === "grid" ? g.grids : [];
+  };
+  beforeEach(() => {
+    layout().setSelection(0, A);
+    layout().addGrid(0);
+    layout().setSelection(0, B);
+    layout().addGrid(0);
+    layout().setSelection(0, C);
+    layout().setGridLook(0, 0, { folder: "Top" });
+    layout().setGridLook(0, 1, { folder: "Top" });
+    useEditorStore.setState({ tool: "select", pickedRegion: 0 });
+  });
+
+  it("move every grid of the picked folder, and only them", () => {
+    layout().pickFolder(0, "Top");
+    expect(layout().activeGrid).toBe(0);
+    expect(nudgePicked(0, 1, false)).toBe(true);
+    expect(grids()[0].selection?.y).toBeCloseTo(0.1 + mmY(1), 9);
+    expect(grids()[1].selection?.y).toBeCloseTo(0.1 + mmY(1), 9);
+    expect(grids()[2].selection).toEqual(C);
+  });
+
+  it("stop the folder as one at the page's edge", () => {
+    layout().pickFolder(0, "Top");
+    for (let i = 0; i < 40; i++) nudgePicked(1, 0, true);
+    expect(grids()[1].selection?.x).toBeCloseTo(0.7, 9);
+    // The other grid kept its distance.
+    expect(grids()[0].selection?.x).toBeCloseTo(0.3, 9);
+  });
+
+  it("move a grid on its own once it is picked alone, even in a folder", () => {
+    layout().pickFolder(0, "Top");
+    layout().setActiveGrid(1);
+    expect(layout().pickedFolder).toBeNull();
+    nudgePicked(1, 0, false);
+    expect(grids()[0].selection).toEqual(A);
+    expect(grids()[1].selection?.x).toBeCloseTo(0.5 + mmX(1), 9);
+  });
+});

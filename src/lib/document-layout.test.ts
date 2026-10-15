@@ -4,26 +4,35 @@ import {
   addGrid,
   applyGridTo,
   clampRange,
+  cleanGridName,
   clearGridRegion,
   DEFAULT_GROUP_GRID,
   defaultGroups,
   deleteGrid,
   drawnGrids,
+  folderGrids,
+  folderNames,
   type GridGroup,
+  gridGroupAt,
   groupAt,
   hasRegion,
   includedPages,
   isSkipped,
+  MAX_GRID_NAME,
   MAX_GRIDS,
+  newFolderName,
+  newGridRegion,
   type PageGroup,
   pageBadge,
   pagesOfSameSize,
   patchGrid,
   rangeLabel,
+  renameFolder,
   runsOf,
   setSkipped,
   updateGrid,
   updateGridGroup,
+  withLook,
 } from "./document-layout";
 
 const sel = { x: 0.1, y: 0.1, width: 0.8, height: 0.8 };
@@ -333,5 +342,45 @@ describe("several grids in a group", () => {
     const g = clearGridRegion(twoGrids(), 2, true, 1);
     expect((groupAt(g, 2) as GridGroup).grids.map((r) => r.selection)).toEqual([sel, null]);
     expect((groupAt(g, 1) as GridGroup).grids.map((r) => r.selection)).toEqual([sel, other]);
+  });
+});
+
+describe("names, colors and folders of grids", () => {
+  const three = () => {
+    let groups = addGrid(addGrid(defaultGroups(2), 0), 0);
+    groups = updateGrid(groups, 0, 0, (r) => withLook(r, { folder: "Folder 1" }));
+    return updateGrid(groups, 0, 2, (r) => withLook(r, { folder: "Folder 1", name: "Tokens" }));
+  };
+
+  it("sets and clears a grid's look, leaving no empty keys", () => {
+    const r = withLook(newGridRegion(), { name: "Cards", color: "#3b82f6" });
+    expect(r).toMatchObject({ name: "Cards", color: "#3b82f6" });
+    expect(Object.keys(withLook(r, { name: undefined, color: undefined }))).toEqual(["grid", "selection"]);
+    expect(cleanGridName("  ")).toBeUndefined();
+    expect(cleanGridName(` ${"a".repeat(50)}`)).toHaveLength(MAX_GRID_NAME);
+  });
+
+  it("lists folders and their grids, and names a new folder after the others", () => {
+    const g = gridGroupAt(three(), 0) as GridGroup;
+    expect(folderNames(g)).toEqual(["Folder 1"]);
+    expect(folderGrids(g, "Folder 1")).toEqual([0, 2]);
+    expect(newFolderName(g, "Folder")).toBe("Folder 2");
+  });
+
+  it("renames a folder on every grid in it, or ungroups it", () => {
+    const renamed = gridGroupAt(renameFolder(three(), 1, "Folder 1", "Top"), 0) as GridGroup;
+    expect(renamed.grids.map((r) => r.folder)).toEqual(["Top", undefined, "Top"]);
+    const ungrouped = gridGroupAt(renameFolder(three(), 0, "Folder 1", undefined), 0) as GridGroup;
+    expect(folderNames(ungrouped)).toEqual([]);
+    expect(ungrouped.grids[2].name).toBe("Tokens");
+  });
+
+  it("copies names, colors and folders with Apply this grid to…", () => {
+    const out = applyGridTo(three(), 0, [1], "all");
+    expect((gridGroupAt(out, 1) as GridGroup).grids.map((r) => [r.name, r.folder])).toEqual([
+      [undefined, "Folder 1"],
+      [undefined, undefined],
+      ["Tokens", "Folder 1"],
+    ]);
   });
 });

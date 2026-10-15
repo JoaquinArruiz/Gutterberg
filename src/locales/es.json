@@ -207,12 +207,36 @@
     "grids": {
       "item": "Cuadrícula {{n}}",
       "noRegion": "sin región",
-      "pick": "Editar la cuadrícula {{n}}",
+      "pick": "Editar solo {{name}}",
       "add": "Agregar cuadrícula",
       "addTitle": "Agrega otra cuadrícula a esta página, para piezas de otro tamaño, y luego dibuja su región en la página",
       "full": "Una página puede tener hasta {{count}} cuadrículas.",
-      "delete": "Eliminar la cuadrícula {{n}}",
-      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación. Los ajustes de abajo son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges."
+      "delete": "Eliminar {{name}}",
+      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. Los ajustes de arriba son los de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Pon cuadrículas en una carpeta para moverlas juntas: elige la carpeta y arrastra una de sus cuadrículas o usa las flechas. Al elegir una cuadrícula, se mueve sola.",
+      "edit": "Nombre, color y carpeta de {{name}}",
+      "name": "Nombre de la cuadrícula",
+      "color": "Color de la cuadrícula",
+      "colors": {
+        "default": "Predeterminado",
+        "blue": "Azul",
+        "red": "Rojo",
+        "green": "Verde",
+        "amber": "Ámbar",
+        "pink": "Rosa",
+        "teal": "Verde azulado",
+        "orange": "Naranja",
+        "indigo": "Índigo"
+      },
+      "folder": "Carpeta",
+      "noFolder": "Sin carpeta",
+      "newFolder": "Carpeta nueva",
+      "folderBase": "Carpeta",
+      "folderName": "Nombre de la carpeta",
+      "pickFolder": "Elegir las cuadrículas de {{name}}, para moverlas juntas",
+      "renameFolder": "Cambiar el nombre de {{name}}",
+      "ungroup": "Sacar las cuadrículas de {{name}}",
+      "fold": "Plegar {{name}}",
+      "unfold": "Desplegar {{name}}"
     }
   },
   "freeform": {

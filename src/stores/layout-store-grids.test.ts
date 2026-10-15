@@ -115,3 +115,40 @@ describe("several grids on one page", () => {
     expect(grids()[1].selection).toEqual(TOP);
   });
 });
+
+describe("names, colors and folders of grids", () => {
+  it("are set in one undo step each, and kept when the region moves or is detected", () => {
+    store().setGridLook(0, 0, { name: "Cards", color: "#22c55e" });
+    store().setSelection(0, BOTTOM);
+    store().applyDetectedGrid(0, {
+      selection: TOP,
+      rows: 2,
+      columns: 2,
+      sourceGapXMm: 0,
+      sourceGapYMm: 0,
+      sourceGapLinked: true,
+    });
+    expect(grids()[0]).toMatchObject({ name: "Cards", color: "#22c55e", selection: TOP });
+    undo();
+    undo();
+    undo();
+    expect(grids()[0].name).toBeUndefined();
+  });
+
+  it("picks a folder, and forgets it when a grid is picked alone or the page moves to another group", () => {
+    store().addGrid(0);
+    store().setGridLook(0, 1, { folder: "Tokens" });
+    store().pickFolder(0, "Tokens");
+    expect([store().pickedFolder, store().activeGrid]).toEqual(["Tokens", 1]);
+    store().renameFolder(0, "Tokens", "Small");
+    expect(store().pickedFolder).toBe("Small");
+    store().setActiveGrid(0);
+    expect(store().pickedFolder).toBeNull();
+    store().pickFolder(0, "Nope");
+    expect(store().pickedFolder).toBeNull();
+    store().pickFolder(0, "Small");
+    store().applyGrid(0, [2]);
+    useDocumentStore.getState().setCurrentPage(2);
+    expect(store().pickedFolder).toBeNull();
+  });
+});

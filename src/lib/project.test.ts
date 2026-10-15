@@ -373,4 +373,22 @@ describe("several grids in the file", () => {
     empty.documents[0].groups[0].grids = [];
     expect(() => parseProject(empty)).toThrow();
   });
+  it("keeps each grid's name, color and folder, and drops what is not one", () => {
+    const s = state();
+    const first = s.documents[0];
+    let groups = addGrid(first.groups, 0);
+    groups = updateGrid(groups, 0, 0, (r) => ({ ...r, name: "Cards", color: "#ef4444", folder: "Top" }));
+    groups = updateGrid(groups, 0, 1, (r) => ({ ...r, folder: "Top" }));
+    const several: ProjectState = { ...s, documents: [{ ...first, groups }, s.documents[1]] };
+    expect(fromProject(parseProject(file(several))).documents[0].groups).toEqual(groups);
+
+    const f = file(several);
+    Object.assign(f.documents[0].groups[0].grids[0], { name: "   ", color: "red", folder: "x".repeat(80) });
+    const back = fromProject(parseProject(f)).documents[0].groups[0];
+    expect(back.kind === "grid" && back.grids[0]).toEqual({
+      grid: groups[0].kind === "grid" && groups[0].grids[0].grid,
+      selection: sel,
+      folder: "x".repeat(40),
+    });
+  });
 });

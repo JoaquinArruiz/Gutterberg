@@ -4,11 +4,18 @@
 
 import { useDocumentStore } from "../stores/document-store";
 import { useEditorStore } from "../stores/editor-store";
-import { beginEdit, endEdit, getCurrentSelection, setCurrentSelection, useLayoutStore } from "../stores/layout-store";
+import {
+  beginEdit,
+  endEdit,
+  getCurrentSelection,
+  getPickedFolderGrids,
+  setCurrentSelection,
+  useLayoutStore,
+} from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
 import type { OrientedRect } from "./card";
-import { clamp } from "./coordinates";
-import { moveRect } from "./selection";
+import { clamp, type NormalizedRect } from "./coordinates";
+import { moveRect, moveRectsTogether } from "./selection";
 import { mmToPt } from "./units";
 
 /** A burst of arrow presses closer together than this is one undo step. */
@@ -83,6 +90,13 @@ export function nudgePicked(dirX: number, dirY: number, big: boolean): boolean {
     return true;
   }
   if (ed.tool === "select" && ed.pickedRegion === current) {
+    // A picked folder moves as one.
+    const folder = getPickedFolderGrids();
+    if (folder.length > 0) {
+      inBurst();
+      moveGridsBy(current, folder, dx, dy);
+      return true;
+    }
     const region = getCurrentSelection();
     if (!region) return false;
     inBurst();
@@ -90,6 +104,19 @@ export function nudgePicked(dirX: number, dirY: number, big: boolean): boolean {
     return true;
   }
   return false;
+}
+
+/** Moves the regions `grids` of `page`'s group by (dx, dy) normalized, together (see `moveRectsTogether`). */
+export function moveGridsBy(page: number, grids: { n: number; selection: NormalizedRect }[], dx: number, dy: number) {
+  const moved = moveRectsTogether(
+    grids.map((g) => g.selection),
+    dx,
+    dy,
+  );
+  useLayoutStore.getState().moveGrids(
+    page,
+    grids.map((g, i) => ({ n: g.n, selection: moved[i] })),
+  );
 }
 
 /**

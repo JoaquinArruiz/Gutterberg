@@ -56,7 +56,15 @@ n > 0), so ids and edits from before several grids keep their meaning and need n
 is sent to the engine as `null`, so the grids after it keep their numbers. Deleting a grid renumbers the ones after
 it: `keyAfterGridDelete` re-keys the edits, and `onGridDeleted` the Print stage's copies, selection and common back.
 Pieces come out page by page, grid by grid (each row by row), then the page's freeform pieces; pairing backs
-matches pieces grid by grid. A page can
+matches pieces grid by grid.
+
+**Names, colours and folders.** A grid can carry a `name`, a `color` (one of `GRID_COLORS`) and a `folder`, saved in
+the project and copied by "Apply this grid to…"; none of them reaches the engine or a piece's id, so they change no
+key. A folder is only a name its grids share: it exists while one grid has it, and renaming or ungrouping it rewrites
+that name on its grids (`renameFolder`). `pickedFolder` in the layout store, session state beside `activeGrid`, is the
+folder picked in the list: a drag on one of its grids (the `grids-move` drag) and the arrow keys move its regions
+together through `moveRectsTogether`, which stops them as one at the page's edge. Picking a single grid
+(`setActiveGrid`) drops the folder. A page can
 have a grid and freeform pieces together (`toRustGroups` puts a page's freeform pieces after its grid pieces).
 "Turn into pieces" (`turnGridIntoPieces` in the layout store, `lib/grid-to-pieces.ts`) takes the cells the engine
 extracts for the page (`compute_cards`), appends them as freeform pieces, clears the group's region and re-keys the

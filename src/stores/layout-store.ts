@@ -24,6 +24,8 @@ import {
   defaultGroups,
   deleteGrid,
   type FreeformCards,
+  folderGrids,
+  type GridLook,
   type GridPatch,
   type GridRegion,
   gridGroupAt,
@@ -34,9 +36,11 @@ import {
   newGridRegion,
   type PageGroup,
   patchGrid,
+  renameFolder,
   setSkipped,
   updateGrid,
   updateGridGroup,
+  withLook,
 } from "../lib/document-layout";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
 import { gridToPieces } from "../lib/grid-to-pieces";
@@ -140,7 +144,21 @@ type LayoutState = OutputSettings & {
    * `activeIndex`, so a number past the end means the last grid.
    */
   activeGrid: number;
+  /** Makes grid `n` the one being edited, on its own: a folder that was picked is no longer. */
   setActiveGrid: (n: number) => void;
+  /**
+   * The folder of grids picked on the viewed page, moved together on the page and with the arrow keys; null when one
+   * grid is picked on its own. Session state, outside undo, like `activeGrid`.
+   */
+  pickedFolder: string | null;
+  /** Picks `folder` of `page`'s group (its first grid becomes the one being edited), or no folder. */
+  pickFolder: (page: number, folder: string | null) => void;
+  /** Sets or clears (a key given as undefined) grid `n`'s name, colour or folder. One undo step. */
+  setGridLook: (page: number, n: number, look: GridLook) => void;
+  /** Renames a folder of `page`'s group, or ungroups its grids with `to` undefined. */
+  renameFolder: (page: number, folder: string, to: string | undefined) => void;
+  /** Moves the regions of several grids of `page`'s group at once (a folder dragged on the page). */
+  moveGrids: (page: number, moves: { n: number; selection: NormalizedRect }[]) => void;
   /** Live output preview for this session (initial value = Live Preview preference). */
   live: boolean;
   /** Result frozen by "Update preview" (manual mode). */
@@ -277,18 +295,56 @@ export const useLayoutStore = create<LayoutState>()(
       cardEdits: NO_EDITS,
       ...DEFAULT_OUTPUT,
       activeGrid: 0,
-      setActiveGrid: (activeGrid) => set({ activeGrid: Math.max(0, activeGrid) }),
+      setActiveGrid: (activeGrid) => set({ activeGrid: Math.max(0, activeGrid), pickedFolder: null }),
+      pickedFolder: null,
+      pickFolder: (page, folder) => {
+        const g = gridGroupAt(get().groups, page);
+        const first = g && folder !== null ? folderGrids(g, folder)[0] : undefined;
+        if (first === undefined) set({ pickedFolder: null });
+        else set({ pickedFolder: folder, activeGrid: first });
+      },
+      setGridLook: (page, n, look) => set((s) => ({ groups: updateGrid(s.groups, page, n, (r) => withLook(r, look)) })),
+      renameFolder: (page, folder, to) =>
+        set((s) => ({
+          groups: renameFolder(s.groups, page, folder, to),
+          pickedFolder: s.pickedFolder === folder ? (to ?? null) : s.pickedFolder,
+        })),
+      moveGrids: (page, moves) =>
+        set((s) => ({
+          groups: updateGridGroup(s.groups, page, (g) => ({
+            ...g,
+            grids: g.grids.map((r, n) => {
+              const m = moves.find((x) => x.n === n);
+              return m ? { ...r, selection: m.selection } : r;
+            }),
+          })),
+        })),
       // Session state: starts from the Live Preview preference, toggling it does not change the preference.
       live: sessionDefaults(usePreferencesStore.getState().prefs).live,
       snapshot: null,
       result: null,
       layoutError: null,
       resetDocument: (pageCount) => {
-        set({ groups: defaultGroups(pageCount), freeform: {}, parked: {}, cardEdits: NO_EDITS, activeGrid: 0 });
+        set({
+          groups: defaultGroups(pageCount),
+          freeform: {},
+          parked: {},
+          cardEdits: NO_EDITS,
+          activeGrid: 0,
+          pickedFolder: null,
+        });
         useLayoutStore.temporal.getState().clear();
       },
       loadProject: ({ active, parked, output, edits }) => {
-        set({ ...output, groups: active.groups, freeform: active.freeform, parked, cardEdits: edits, activeGrid: 0 });
+        set({
+          ...output,
+          groups: active.groups,
+          freeform: active.freeform,
+          parked,
+          cardEdits: edits,
+          activeGrid: 0,
+          pickedFolder: null,
+        });
         useLayoutStore.temporal.getState().clear();
       },
       parkDocument: (id, layout) => set((s) => ({ parked: { ...s.parked, [id]: layout } })),
@@ -325,6 +381,7 @@ export const useLayoutStore = create<LayoutState>()(
           groups: target.groups,
           freeform: target.freeform,
           activeGrid: 0,
+          pickedFolder: null,
         });
         useLayoutStore.temporal.getState().clear();
       },
@@ -384,7 +441,7 @@ export const useLayoutStore = create<LayoutState>()(
         const created = (regionOf(get().groups, page, n)?.selection ?? null) === null;
         const { selection, ...fields } = grid;
         set((s) => ({
-          groups: updateGrid(s.groups, page, n, (r) => ({ selection, grid: patchGrid(r.grid, fields) })),
+          groups: updateGrid(s.groups, page, n, (r) => ({ ...r, selection, grid: patchGrid(r.grid, fields) })),
         }));
         if (created) emitHintEvent("selection-created");
       },
@@ -394,7 +451,7 @@ export const useLayoutStore = create<LayoutState>()(
         const created = !group.grids.some((r) => r.selection !== null);
         const grids = detected.slice(0, MAX_GRIDS).map(({ selection, ...fields }, i): GridRegion => {
           const own = group.grids[i] ?? newGridRegion();
-          return { selection, grid: patchGrid(own.grid, fields) };
+          return { ...own, selection, grid: patchGrid(own.grid, fields) };
         });
         // Grids past the detected ones keep their settings but lose their region: the page has what was found.
         const rest = group.grids.slice(grids.length).map((r) => ({ ...r, selection: null }));
@@ -529,9 +586,12 @@ function activeGridAt(s: Pick<LayoutState, "groups" | "activeGrid">, page: numbe
 // The grid being edited goes back to the first when the viewed page moves to another group.
 useDocumentStore.subscribe((s, prev) => {
   if (s.currentPage === prev.currentPage) return;
-  const { groups, activeGrid } = useLayoutStore.getState();
-  if (activeGrid !== 0 && groupAt(groups, s.currentPage) !== groupAt(groups, prev.currentPage))
-    useLayoutStore.setState({ activeGrid: 0 });
+  const { groups, activeGrid, pickedFolder } = useLayoutStore.getState();
+  if (
+    (activeGrid !== 0 || pickedFolder !== null) &&
+    groupAt(groups, s.currentPage) !== groupAt(groups, prev.currentPage)
+  )
+    useLayoutStore.setState({ activeGrid: 0, pickedFolder: null });
 });
 
 /** The group the viewed page belongs to. */
@@ -613,6 +673,30 @@ export function getOtherSelections(): { n: number; selection: NormalizedRect }[]
   if (!g) return [];
   const active = activeIndex(g, s.activeGrid);
   return g.grids.flatMap((r, n) => (n !== active && r.selection ? [{ n, selection: r.selection }] : []));
+}
+
+/**
+ * The grids of the folder picked on the viewed page that have a region, with their numbers; empty when no folder is
+ * picked (or it is gone).
+ */
+export function getPickedFolderGrids(): { n: number; selection: NormalizedRect }[] {
+  const s = useLayoutStore.getState();
+  if (s.pickedFolder === null) return [];
+  const g = gridGroupAt(s.groups, useDocumentStore.getState().currentPage);
+  if (!g) return [];
+  return folderGrids(g, s.pickedFolder).flatMap((n) => {
+    const selection = g.grids[n].selection;
+    return selection ? [{ n, selection }] : [];
+  });
+}
+
+/** The folder picked on the viewed page, when it still has grids there. */
+export function usePickedFolder(): string | null {
+  const page = useDocumentStore((s) => s.currentPage);
+  return useLayoutStore((s) => {
+    const g = gridGroupAt(s.groups, page);
+    return g && s.pickedFolder !== null && g.grids.some((r) => r.folder === s.pickedFolder) ? s.pickedFolder : null;
+  });
 }
 
 /** Sets the region of the grid being edited on the viewed page (every page of the group). */

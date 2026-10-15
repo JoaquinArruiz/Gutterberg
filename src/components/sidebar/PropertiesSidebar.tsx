@@ -86,7 +86,6 @@ export function PropertiesSidebar() {
 
       {group?.kind === "grid" && grid && spec && (
         <>
-          <GridsSection group={group} page={currentPage} />
           <CollapsibleSection id="cards.layout" title={t("source.sections.layout")}>
             <p className="text-[var(--muted)]">
               {t("source.sharedGrid", { range: rangeLabel(group.pages), count: pageCount(group.pages) })}
@@ -176,6 +175,9 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
+
+      {/* Last, so the list can grow without pushing the picked grid's settings down. */}
+      {group?.kind === "grid" && <GridsSection group={group} page={currentPage} />}
     </div>
   );
 }

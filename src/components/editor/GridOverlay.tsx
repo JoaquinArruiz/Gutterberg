@@ -4,17 +4,19 @@ import type { PageSize } from "../../lib/tauri";
 
 const MIN_LABEL_PX = 28;
 
-/** Card boundaries (and numbers) inside the selection. Pointer-transparent. */
+/** Card boundaries (and numbers) inside the selection, in the grid's colour. Pointer-transparent. */
 export function GridOverlay({
   selection,
   grid,
   viewport,
   page,
+  color = "var(--accent)",
 }: {
   selection: NormalizedRect;
   grid: GridSpec;
   viewport: ViewportState;
   page: PageSize;
+  color?: string;
 }) {
   const cards = cardRects(selection, grid, page).map((r) => rectToScreen(r, viewport, page));
   // Source gaps = selection minus the cards (even-odd), so existing spacing is visible.
@@ -33,7 +35,7 @@ export function GridOverlay({
             width={c.width}
             height={c.height}
             fill="none"
-            stroke="var(--accent)"
+            stroke={color}
             strokeWidth={1}
             strokeDasharray="4 3"
             strokeOpacity={0.9}
