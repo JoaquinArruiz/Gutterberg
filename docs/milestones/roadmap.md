@@ -1,4 +1,4 @@
-# Roadmap after 0.15.0
+# Roadmap after 0.16.0
 
 The order of the next versions and why. Each version has its own brief in this folder; when a version is released,
 its brief is deleted (see "Planning" in `AGENTS.md`) and its line here goes with it. When the last one is done, this

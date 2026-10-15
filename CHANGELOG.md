@@ -5,9 +5,11 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 0.16.0 (2026-10-15)
+
 ### Added
 
-- Several grids on one page (Source tab): the new Grids section of the sidebar lists the viewed page group's grids, each with its own region, rows, columns and gaps, with Add grid (up to 9) and a delete button. The picked grid is edited on the page as before and the others are drawn dimmer; with the Grid region tool, pressing a dimmer grid picks it and moves it. Layout, presets and "Apply this grid to…" act on the picked grid, and "Apply this grid to…" can also copy all of them. A page with cards of three sizes can be marked with three grids that stay grids, instead of turning each into freeform pieces.
+- Several grids on one page (Source tab): the Grids and pieces panel lists the viewed page group's grids, each with its own region, rows, columns and gaps, with Add grid (up to 9) and a delete button. The picked grid is edited on the page as before and the others are drawn dimmer; with the Select or the Grid tool, pressing a dimmer grid picks it and moves it. Layout, presets and "Apply this grid to…" act on the picked grid, and "Apply this grid to…" can also copy all of them. A page with cards of three sizes can be marked with three grids that stay grids, instead of turning each into freeform pieces.
 - The Grids and pieces panel in the Source tab, under Properties on the right (the Panels menu moves or hides it): the page's grids, their folders and its freeform pieces in one list. Pressing a piece picks it with the Piece tool, and every grid and piece has a bin (the last grid only loses its region).
 - Grids can have a name and a color: double-click a name to change it, and click the dot at its left for the colors: the suggested ones, then your own, which the + adds from the system's picker and a right-click or the × on hover deletes (they are kept in Preferences for every project). The colors close when you press outside them; the pencil has the name, the color and the folder together. The name shows in the list and above the grid on the page, and the grid's lines are drawn in its color.
 - Folders of grids: the folder-and-plus button in the panel's header adds a folder, and grids dragged onto it go in. Pressing the folder in the list picks its grids, and dragging one of them on the page, or the arrow keys, moves them all as one. Pressing one grid picks it alone, even inside a folder. Folders can be renamed with a double-click, folded away in the list and ungrouped.
