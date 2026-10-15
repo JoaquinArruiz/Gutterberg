@@ -80,7 +80,8 @@ export type PaginateOptionsPayload = { order: "grouped" | "interleaved"; group_b
 /** A page group as the Rust engine takes it (`card_core::card::PageGroup`). */
 export type RustGroup = { pages: { first: number; last: number } } & (
   | { kind: "skip" }
-  | { kind: "grid"; grid: GridPayload }
+  // A grid's place in the list is its number in its pieces' ids; null = its region is not drawn yet.
+  | { kind: "grid"; grids: (GridPayload | null)[] }
   | { kind: "freeform"; cards: z.infer<typeof OrientedRectSchema>[] }
 );
 

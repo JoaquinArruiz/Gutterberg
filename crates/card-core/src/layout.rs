@@ -62,11 +62,12 @@ pub struct SourceCard {
 }
 
 impl SourceCard {
-    /// Identity of this card on `page_index` of `document_id`.
-    pub fn id(&self, document_id: DocumentId, page_index: usize) -> CardId {
+    /// Identity of this card on `page_index` of `document_id`, in the page's grid number `grid`.
+    pub fn id(&self, document_id: DocumentId, page_index: usize, grid: usize) -> CardId {
         CardId::Grid {
             document_id,
             page_index,
+            grid,
             row: self.row,
             column: self.column,
         }
@@ -288,10 +289,11 @@ mod tests {
         let cards = source_cards(page, &grid).unwrap();
         let card = cards[4]; // row 1, column 1
         assert_eq!(
-            card.id(7, 5),
+            card.id(7, 5, 2),
             CardId::Grid {
                 document_id: 7,
                 page_index: 5,
+                grid: 2,
                 row: 1,
                 column: 1
             }

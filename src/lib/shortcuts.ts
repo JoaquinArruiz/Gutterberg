@@ -15,6 +15,7 @@ export type ShortcutId =
   | "redo"
   | "shortcuts"
   | "closeDialog"
+  | "selectTool"
   | "gridRegionTool"
   | "pieceTool"
   | "panTool"
@@ -78,7 +79,8 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
     { id: "closeDialog", keys: [["Esc"]] },
   ],
   source: [
-    { id: "gridRegionTool", keys: [["V"]] },
+    { id: "selectTool", keys: [["V"]] },
+    { id: "gridRegionTool", keys: [["G"]] },
     { id: "pieceTool", keys: [["C"]] },
     { id: "panTool", keys: [["H"]] },
     { id: "panHeld", keys: [["Space"]] },

@@ -17,7 +17,7 @@ import type { PageSize } from "../lib/tauri";
 import { usePreferencesStore } from "./preferences-store";
 
 /** `select` edits the grid region, `card` draws and edits freeform cards one by one, `pan` moves the page. */
-export type Tool = "select" | "card" | "pan";
+export type Tool = "pick" | "grid" | "card" | "pan";
 /** The current workspace: "source" edits the card region, "output" previews the spaced-out page, "split" shows both. */
 export type ViewMode = WorkspaceMode;
 
@@ -82,7 +82,7 @@ type EditorState = {
 export const useEditorStore = create<EditorState>((set, get) => ({
   viewport: { zoom: 1, panX: 0, panY: 0 },
   fitMode: true,
-  tool: "select",
+  tool: "grid",
   selectedCard: null,
   pickedCards: [],
   pickedRegion: null,

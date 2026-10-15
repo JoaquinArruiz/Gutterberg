@@ -273,3 +273,63 @@ export function editsAfterRekey(edits: CardEdits, moves: Record<string, string>)
     backs: Object.fromEntries(Object.entries(edits.backs).map(([k, v]) => [to(k), to(v)])),
   };
 }
+
+const GRID = /^g:(\d+):(\d+):(\d+):(\d+)(?::(\d+))?$/;
+
+/**
+ * A key after grid number `grid` of the pages `first`..`last` of document `documentId` is deleted: its pieces' entries
+ * go and the pieces of the grids after it take the number one lower, because a grid's number is its place on the page.
+ */
+export function keyAfterGridDelete(
+  k: string,
+  documentId: number,
+  pages: { first: number; last: number },
+  grid: number,
+): string | null {
+  return keyAfterGridRenumber(k, documentId, pages, (n) => (n === grid ? null : n < grid ? n : n - 1));
+}
+
+/**
+ * A key after the grids of the pages `first`..`last` of document `documentId` were renumbered: grid n's pieces take
+ * the number `to(n)`, or go when it is null. Other keys stay as they are.
+ */
+export function keyAfterGridRenumber(
+  k: string,
+  documentId: number,
+  pages: { first: number; last: number },
+  to: (n: number) => number | null,
+): string | null {
+  const m = GRID.exec(k);
+  if (!m || Number(m[1]) !== documentId) return k;
+  const page = Number(m[2]);
+  if (page < pages.first || page > pages.last) return k;
+  const n = to(Number(m[5] ?? 0));
+  if (n === null) return null;
+  return `g:${m[1]}:${m[2]}:${m[3]}:${m[4]}${n > 0 ? `:${n}` : ""}`;
+}
+
+/** `rec` with each key passed through `to`; entries whose key goes (null) are dropped. */
+export function remapKeys<T>(rec: Record<string, T>, to: (k: string) => string | null): Record<string, T> {
+  const out: Record<string, T> = {};
+  for (const [k, v] of Object.entries(rec)) {
+    const nk = to(k);
+    if (nk !== null) out[nk] = v;
+  }
+  return out;
+}
+
+/** The card edits after each key is passed through `to`: entries, places in the order and pairs whose piece goes are dropped. */
+export function editsAfterRemap(edits: CardEdits, to: (k: string) => string | null): CardEdits {
+  const backs: Record<string, string> = {};
+  for (const [k, v] of Object.entries(edits.backs)) {
+    const [nk, nv] = [to(k), to(v)];
+    if (nk !== null && nv !== null) backs[nk] = nv;
+  }
+  return {
+    turns: remapKeys(edits.turns, to),
+    scales: remapKeys(edits.scales, to),
+    ...(edits.scalesY ? { scalesY: remapKeys(edits.scalesY, to) } : {}),
+    order: edits.order.flatMap((k) => to(k) ?? []),
+    backs,
+  };
+}

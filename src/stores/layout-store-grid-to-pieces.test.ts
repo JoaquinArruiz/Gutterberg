@@ -30,11 +30,11 @@ describe("turning a grid into pieces", () => {
     expect(store().turnGridIntoPieces(0, false, cellsOf(0, 1, 2, 3))).toBe(16);
     // The group had every page: all of them now have their pieces.
     for (const p of [0, 1, 2, 3]) expect(store().freeform[p]).toHaveLength(4);
-    expect(gridGroupAt(store().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(store().groups, 0)?.grids[0].selection).toBeNull();
     expect(store().freeform[0][0].center).toEqual({ x: 100 / 600, y: 100 / 800 });
     undo();
     expect(store().freeform).toEqual({});
-    expect(gridGroupAt(store().groups, 0)?.selection).toEqual(REGION);
+    expect(gridGroupAt(store().groups, 0)?.grids[0].selection).toEqual(REGION);
     redo();
     expect(store().freeform[0]).toHaveLength(4);
   });
@@ -43,10 +43,10 @@ describe("turning a grid into pieces", () => {
     expect(store().turnGridIntoPieces(1, true, cellsOf(1))).toBe(4);
     expect(store().freeform[1]).toHaveLength(4);
     expect(store().freeform[0]).toBeUndefined();
-    expect(gridGroupAt(store().groups, 1)?.selection).toBeNull();
+    expect(gridGroupAt(store().groups, 1)?.grids[0].selection).toBeNull();
     expect(gridGroupAt(store().groups, 1)?.pages).toEqual({ first: 1, last: 1 });
-    expect(gridGroupAt(store().groups, 0)?.selection).toEqual(REGION);
-    expect(gridGroupAt(store().groups, 2)?.selection).toEqual(REGION);
+    expect(gridGroupAt(store().groups, 0)?.grids[0].selection).toEqual(REGION);
+    expect(gridGroupAt(store().groups, 2)?.grids[0].selection).toEqual(REGION);
   });
 
   it("does nothing without a region or without cells", () => {

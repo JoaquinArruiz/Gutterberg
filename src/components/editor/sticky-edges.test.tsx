@@ -32,7 +32,7 @@ const at = (p: Point, extra: Record<string, unknown> = {}) => {
 };
 const region = (): NormalizedRect | null => {
   const g = useLayoutStore.getState().groups[0];
-  return g.kind === "grid" ? g.selection : null;
+  return g.kind === "grid" ? g.grids[0].selection : null;
 };
 /** Screen pixels as a fraction of the page's width, at the fitted zoom. */
 const pxX = (px: number) => px / pageScreenRect(editor().viewport, A4).width;
@@ -56,7 +56,7 @@ beforeEach(() => {
   useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: [A4], hash: "" }], 0);
   useLayoutStore.getState().resetDocument(1);
   useLayoutStore.getState().setSelection(0, { x: 0.4, y: 0.2, width: 0.3, height: 0.5 });
-  useEditorStore.setState({ tool: "select", pickedRegion: null, viewMode: "source", fitMode: true });
+  useEditorStore.setState({ tool: "grid", pickedRegion: null, viewMode: "source", fitMode: true });
 });
 afterEach(() => {
   cleanup();

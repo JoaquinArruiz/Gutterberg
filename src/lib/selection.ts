@@ -15,6 +15,26 @@ export function rectFromPoints(a: Point, b: Point): NormalizedRect {
   return { x: x0, y: y0, width: x1 - x0, height: y1 - y0 };
 }
 
+/** The box around several rectangles. */
+export function union(rects: NormalizedRect[]): NormalizedRect {
+  const [x, y] = [Math.min(...rects.map((r) => r.x)), Math.min(...rects.map((r) => r.y))];
+  const right = Math.max(...rects.map((r) => r.x + r.width));
+  const bottom = Math.max(...rects.map((r) => r.y + r.height));
+  return { x, y, width: right - x, height: bottom - y };
+}
+
+/**
+ * Moves several rectangles together by (dx, dy) normalized, stopping them as one at the page's edges so they keep
+ * their places to each other.
+ */
+export function moveRectsTogether(rects: NormalizedRect[], dx: number, dy: number): NormalizedRect[] {
+  if (rects.length === 0) return rects;
+  const box = union(rects);
+  const moved = moveRect(box, dx, dy);
+  const [mx, my] = [moved.x - box.x, moved.y - box.y];
+  return rects.map((r) => ({ ...r, x: r.x + mx, y: r.y + my }));
+}
+
 /** Translate by (dx, dy) normalized, keeping the rect inside the page. */
 export function moveRect(r: NormalizedRect, dx: number, dy: number): NormalizedRect {
   return {

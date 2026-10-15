@@ -52,6 +52,34 @@ describe("pairing by alternating pages", () => {
   });
 });
 
+describe("pairing pages with several grids", () => {
+  /** Grid number `n` of `page`, rows x columns. */
+  const grid = (pg: number, n: number, rows: number, columns: number) =>
+    Array.from({ length: rows * columns }, (_, i) => piece(gridCardId(0, pg, Math.floor(i / columns), i % columns, n)));
+  const at = (pg: number, n: number, row: number, column: number) => k(piece(gridCardId(0, pg, row, column, n)));
+
+  it("pairs each grid with the same grid of the backs' page, mirrored within that grid", () => {
+    const cards = [...grid(0, 0, 2, 3), ...grid(0, 1, 1, 2), ...grid(1, 0, 2, 3), ...grid(1, 1, 1, 2)];
+    const { backs, unpaired } = pairPieces(cards, opts({ rule: "alternating", mirrored: true }));
+    expect(backs[at(0, 0, 0, 0)]).toBe(at(1, 0, 0, 2));
+    // The second grid has two columns of its own: its first piece meets its second.
+    expect(backs[at(0, 1, 0, 0)]).toBe(at(1, 1, 0, 1));
+    expect(backs[at(0, 1, 0, 1)]).toBe(at(1, 1, 0, 0));
+    expect(Object.keys(backs)).toHaveLength(8);
+    expect(unpaired).toEqual([]);
+  });
+
+  it("folds each grid of a gutterfold page on its own", () => {
+    const cards = [...grid(0, 0, 1, 4), ...grid(0, 1, 1, 2)];
+    const { backs } = pairPieces(cards, opts({ rule: "beside", split: "columns" }));
+    expect(backs).toEqual({
+      [at(0, 0, 0, 0)]: at(0, 0, 0, 3),
+      [at(0, 0, 0, 1)]: at(0, 0, 0, 2),
+      [at(0, 1, 0, 0)]: at(0, 1, 0, 1),
+    });
+  });
+});
+
 describe("pairing with the backs after the fronts", () => {
   it("pairs page i of the first half with page i of the second", () => {
     const cards = [...page(0, 1, 2), ...page(1, 1, 2), ...page(2, 1, 2), ...page(3, 1, 2)];

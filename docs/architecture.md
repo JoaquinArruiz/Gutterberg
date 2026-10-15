@@ -42,11 +42,36 @@ and the download of a new version.
 
 ### Pieces and page groups (`card`)
 
-A piece is identified by a `CardId`: a grid piece (document, page, row, column) or a freeform piece (document,
+A piece is identified by a `CardId`: a grid piece (document, page, grid, row, column) or a freeform piece (document,
 page, index), always carrying its `DocumentId` so several PDFs can share a project. An `OrientedRect` is a piece's
 source area, rotated about its centre; grid pieces have an angle of 0. The pages of a document are covered by
-`PageGroup`s with no gaps: `grid` (pages, rows, columns, a selection), `skip`, and `freeform`. Edits apply to the
-group the viewed page belongs to; "Apply this grid to…" copies a grid onto other pages as separate groups. A page can
+`PageGroup`s with no gaps: `grid` (pages and a list of 1 to 9 grids, each with rows, columns, gaps and a selection
+that may be empty), `skip`, and `freeform`. A page removed from view is a `skip` group marked `removed`, never joined
+with pages that are only skipped: it is left out of the export like them, and also out of the Pages panel and the
+page-by-page keys (`lib/removed-pages.ts`), so restoring it is including it and undo covers both. Edits apply to the group the viewed page belongs to, and to its active grid
+(`activeGrid` in the layout store: session state, not undone, back to 0 when the viewed page moves to another group);
+"Apply this grid to…" copies the active grid, or all of them, onto other pages as separate groups.
+
+**The grid number.** A grid piece's id carries the grid's place in its group. It is left out when it is 0, in the
+JSON (`skip_serializing_if`) and in the key of per-piece edits (`g:doc:page:row:col`, `g:doc:page:row:col:n` for
+n > 0), so ids and edits from before several grids keep their meaning and need no migration. A grid with no region
+is sent to the engine as `null`, so the grids after it keep their numbers. Deleting a grid renumbers the ones after
+it: `keyAfterGridDelete` re-keys the edits, and `onGridDeleted` the Print stage's copies, selection and common back.
+Pieces come out page by page, grid by grid (each row by row), then the page's freeform pieces; pairing backs
+matches pieces grid by grid.
+
+**Names, colours, folders and hiding.** A grid can carry a `name`, a `color` (one of `GRID_COLORS`), a `folder` and
+`hidden`, saved in the project and copied by "Apply this grid to…"; none of them reaches the engine or a piece's id,
+so they change no key, and a hidden grid still prints. A folder is a name its grids share; the group's `folders` list
+also keeps empty ones, which the list shows first. Renaming or ungrouping a folder rewrites that name on its grids
+(`renameFolder`). The Grids list (`gridList`) shows a folder where its first grid is, so moving rows
+(`moveInGridList`, dragged with pointer events like the piece library) puts a folder's grids together and renumbers
+the grids in list order; the list is its own panel (`grids` in `PANEL_DEFS`, `GridsPanel`), with the page's freeform
+pieces after the grids. The pieces' keys follow through `keyAfterGridRenumber` and the `onGridsRenumbered` listener,
+as when a grid is deleted. `pickedFolder` in the layout store, session state beside `activeGrid`, is the
+folder picked in the list: a drag on one of its grids (the `grids-move` drag) and the arrow keys move its regions
+together through `moveRectsTogether`, which stops them as one at the page's edge. Picking a single grid
+(`setActiveGrid`) drops the folder. A page can
 have a grid and freeform pieces together (`toRustGroups` puts a page's freeform pieces after its grid pieces).
 "Turn into pieces" (`turnGridIntoPieces` in the layout store, `lib/grid-to-pieces.ts`) takes the cells the engine
 extracts for the page (`compute_cards`), appends them as freeform pieces, clears the group's region and re-keys the
@@ -76,8 +101,8 @@ The engine behind every export, in four steps:
    sheets pass through untouched, and the exported content stream is the same as before.
 4. **Export** (`export`). `export_sheets` builds a PDF from any list of sheets and several source documents.
 
-The plan the Print tab runs is `plan_print`: either `SameAsSource` (each grid page becomes one sheet through
-`calculate_layout`, byte-identical to what the Source tab exports) or `plan_sheets` with a sheet grid, copies and
+The plan the Print tab runs is `plan_print`: either `SameAsSource` (each drawn grid of a page becomes one sheet through
+`calculate_layout`, so a page with three grids gives three sheets; byte-identical to what the Source tab exports) or `plan_sheets` with a sheet grid, copies and
 auto-fill. `card_transform` (and `card_transform_xy` for two factors) is the one place that does the matrix maths for
 placing a piece: `R(turn) · S(scale, scale_y) · R(-source angle)` about the piece's centre, then move the centre onto
 its slot. The piece is stretched along its own sides before it is turned; with equal factors it is a plain rotation
@@ -166,7 +191,8 @@ an error in the interface and not a crash at startup.
 
 ### Detection (`detect`)
 
-**Detect pieces** proposes where the pieces are on the viewed page, locally. It returns proposals, best first, each
+**Detect pieces** ("Detect on this page", at the bottom of the Layout section, whose grid it fills) proposes where the pieces are on the
+viewed page, locally. It returns proposals, best first, each
 a grid or a list of rectangles with a confidence, the engine that found it and notes (missing cells, crop marks,
 uneven sizes...). Three engines run in order, and the search stops at a confidence of 0.85:
 
@@ -177,8 +203,14 @@ uneven sizes...). Three engines run in order, and the search stops at a confiden
 3. **Blobs:** for scans: foreground by Otsu against the page border's median, morphological clean-up, connected
    components, and each blob's convex hull and minimum-area rectangle, so tilted pieces come out straight.
 
+When one engine finds two or more good grids (confidence 0.7 or more) that do not overlap, such as blocks of pieces of
+different sizes, it also offers them together as one `Grids` proposal (up to 9, in reading order, with the lowest of
+their confidences), ahead of the grids one by one. Applied, they become the page group's grids.
+
 A proposal is never applied by itself. It is a draft drawn on the page (dashed outlines, its confidence and engine in
-words) that the user applies in one undo step, steps through ("Next proposal") or discards. The weights were tuned
+words) that the user applies in one undo step, steps through ("Next proposal") or discards. Once the page's grid is
+drawn, a grid proposal is either added as new grids (`addDetectedGrids`, the first one picked) or replaces the grid
+being edited, or all of them for several grids; nothing is replaced without that choice. The weights were tuned
 on generated fixtures; they are constants at the top of each engine.
 
 **Page edges** (`detect::page_edges`, for sticky edges) reads the same `PageData` for a different answer: the strong
@@ -212,8 +244,8 @@ rebuilt on open.
   functions, each taking one version to the next (`v1_to_v2` adds the print finishing, `v2_to_v3` adds the document
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
-  gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold); the current
-  version is 6. A change to the format adds a version and a migration with a test file.
+  gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
+  `grid` and `selection` into a list of one in `grids`); the current version is 7. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
@@ -232,7 +264,7 @@ convert with `pt = mm * 72 / 25.4`. Numbers shown follow the user's unit (mm, cm
 ## The interface (`src/`)
 
 **Two tabs, one engine.** The Source tab edits the pages of the source PDFs (where the pieces are, which pages to
-skip) and shows the page as it is (**Original**), the re-spaced result (**Preview**) or both (**Split**). The Print
+skip) and shows the page as it is (**Original**), the re-spaced result (**Preview**, of the active grid when the page has several) or both (**Split**). The Print
 tab chooses what goes on the sheets (the piece library, copies, order, the sheet and page, marks, bleed, duplex) and
 exports. The Source tab's own export is the Print tab's default plan.
 
@@ -241,13 +273,17 @@ the helpers for the sizes a user saves (`sizePresets` in preferences). A preset 
 typing a size does (`presetScales`: both sides set each; one side keeps the proportions), so it is one undo step and
 is shown wherever a size is shown. A size with both sides is asked about first when it would stretch a piece.
 
-**Piece references.** A piece is named `p3 · r1 c2` (grid) or `p4 · #2` (freeform) in the library, in the Selected
+**Piece references.** A piece is named `p3 · r1 c2` (grid), `p3 · g2 · r1 c2` (grid on a page with several grids,
+`cu2` in Spanish) or `p4 · #2` (freeform) in the library, in the Selected
 pieces section and, when the switch in the sheet preview's header is on (`print.showReferences`), on the large sheet
 (`SheetReferences`: a chip at each piece's corner, shortened or left out when the piece is too small for it, never in
 the exported file). `pieceReference` and `documentLetter` in `lib/card.ts` build the text; with several PDFs each gets
 a letter by its place in the project (A, B, …) that goes in front.
 
-**Editing on the page.** The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
+**Editing on the page.** Four tools: Select (`pick`) takes whatever is pressed, a piece over a grid, and draws
+nothing; Grid (`grid`) draws and edits grid regions; Piece (`card`) draws and edits pieces; Pan. Select only routes a
+press to the Grid or Piece tool's own handling by what was hit (`data-card` or `data-hit`), so the drags are the same.
+The editor store keeps what is picked: `selectedCard` (the piece whose handles and fields
 show), `pickedCards` (every picked piece of that page) and `pickedRegion` (the page whose grid region the arrow keys
 move). `lib/editor-actions.ts` holds what the keys do to them (nudge, with a burst of presses held open as one undo
 step; duplicate; pick all; delete), so `App.tsx` and the viewport's Alt-drag call the same functions. Snapping is pure
@@ -290,7 +326,10 @@ size with its margins dashed. Orientation, margins and gap are always the user's
 ChainToggle, ...). Pairs of values that can follow each other (the horizontal and vertical gaps, a piece's width and
 height) have a chain icon beside them (`ChainToggle`, `ChainedFields`), pressed while linked;
 no native checkboxes or radios are left. Long explanations sit behind info tips; warnings and the reasons a control
-is off stay visible. AI actions are their own buttons, with a spark in the AI colour.
+is off stay visible. AI actions are their own buttons, with a spark in the AI colour. Right-click menus go through
+`ContextMenu`: `openContextMenu(event, entries)` from any element, drawn once by `ContextMenuHost` in `App.tsx`, one
+menu at a time; the entries are built where the right-click lands (the page, a row of the Grids list, a colour), so a
+menu only ever repeats actions that have a button or a key of their own.
 
 **Previews and caching.** The main view is tiled (one request in flight at a time) and the magnifier is debounced
 and renders at quarter-octave scale steps so small zoom changes reuse an image. Piece thumbnails are `render_region`
@@ -392,7 +431,8 @@ bug report under GitHub's 65,536-character limit. Only the Rust side logs; the w
 
 One versioned model (`src/lib/preferences.ts`), kept in the webview's storage. `normalizePreferences` is the only way
 raw data becomes preferences: it merges onto the defaults, drops invalid values and repairs invariants, so the rest
-of the app never sees an invalid state. A newer version's added setting appears with its default for existing users,
+of the app never sees an invalid state. The user's own grid colours (`gridColors`, version 16) are preferences, not
+project data, so they are offered in every project; a grid keeps the hex it was given even when that colour is deleted. A newer version's added setting appears with its default for existing users,
 and a migration only exists where meaning changed. Document settings (gaps, page, margins) are never preferences.
 The key is `gutterberg:preferences`; the old `pdf-card-editor:preferences` is read once and removed. On Windows and
 Linux the webview keeps its storage in a folder named `Gutterberg` (`app.appDirectoriesOverride` in `tauri.conf.json`;
@@ -402,7 +442,7 @@ macOS keeps its storage under the bundle identifier whatever the override says, 
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
 The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
-Layout (the panels of each tab), Display (theme, Live preview, rulers), AI Mode, Help (tour, tips, shortcuts),
+Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tips, shortcuts),
 Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
 goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
 names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into

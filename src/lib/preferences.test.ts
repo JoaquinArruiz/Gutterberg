@@ -458,6 +458,7 @@ describe("the sticky edges preference", () => {
       snapEdges: true,
       rulers: false,
       invertRulers: false,
+      selectAfterGrid: true,
     });
   });
 
@@ -482,5 +483,15 @@ describe("the rulers preference", () => {
     expect(
       migratePreferences({ version: PREFERENCES_VERSION, editor: { invertRulers: true } }).editor.invertRulers,
     ).toBe(true);
+  });
+});
+
+describe("the user's own grid colors", () => {
+  it("keeps valid colors once each, in lower case, up to the limit", () => {
+    const prefs = normalizePreferences({ gridColors: ["#AABBCC", "#aabbcc", "red", 4, "#12345", "#0f0f0f"] });
+    expect(prefs.gridColors).toEqual(["#aabbcc", "#0f0f0f"]);
+    const many = Array.from({ length: 40 }, (_, i) => `#0000${i.toString(16).padStart(2, "0")}`);
+    expect(normalizePreferences({ gridColors: many }).gridColors).toHaveLength(24);
+    expect(normalizePreferences({ gridColors: "x" }).gridColors).toEqual([]);
   });
 });

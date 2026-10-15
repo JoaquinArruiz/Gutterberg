@@ -57,7 +57,7 @@ describe("Turn into pieces", () => {
     });
     expect(store().freeform[0]).toHaveLength(2);
     expect(store().freeform[1]).toBeUndefined();
-    expect(gridGroupAt(store().groups, 1)?.selection).toEqual(REGION);
+    expect(gridGroupAt(store().groups, 1)?.grids[0].selection).toEqual(REGION);
     expect(screen.getByRole("status").textContent).toContain("2 pieces made");
   });
 

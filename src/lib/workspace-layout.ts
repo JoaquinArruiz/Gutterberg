@@ -11,7 +11,7 @@
 // never moves anything in the other. The Source tab ("cards") has Pages and Properties around the
 // page view; the Print tab ("print") has the piece library and the settings around the sheets.
 
-export type PanelId = "pages" | "properties" | "library" | "inspector";
+export type PanelId = "pages" | "properties" | "grids" | "library" | "inspector";
 export type PanelPosition = "left" | "right" | "top" | "bottom" | "hidden";
 export type RegionPosition = Exclude<PanelPosition, "hidden">;
 export type PanelOrientation = "vertical" | "horizontal";
@@ -21,7 +21,7 @@ export type LayoutId = "cards" | "print";
 export const LAYOUT_IDS: LayoutId[] = ["cards", "print"];
 /** The panels of each tab, in the order presets give them slots (first, second). */
 export const LAYOUT_PANELS: Record<LayoutId, PanelId[]> = {
-  cards: ["pages", "properties"],
+  cards: ["pages", "properties", "grids"],
   print: ["library", "inspector"],
 };
 export const PANEL_IDS: PanelId[] = LAYOUT_IDS.flatMap((id) => LAYOUT_PANELS[id]);
@@ -96,6 +96,14 @@ export const PANEL_DEFS: Record<
     defaultOrder: 0,
     defaultSize: { vertical: 280, horizontal: 280 },
     minSize: { vertical: 240, horizontal: 240 },
+  },
+  // The list of the page's grids, folders and pieces: a vertical list, under Properties at first.
+  grids: {
+    positions: ["left", "right", "hidden"],
+    defaultPosition: "right",
+    defaultOrder: 1,
+    defaultSize: { vertical: 280, horizontal: 280 },
+    minSize: { vertical: 220, horizontal: 220 },
   },
   // The piece library has its controls and a grid of thumbnails, so it can sit anywhere.
   library: {
@@ -301,27 +309,32 @@ export const LAYOUT_PRESETS: Record<LayoutId, NamedPreset[]> = {
   print: ["classic", "right-sidebar", "library-top", "focus"],
 };
 
-/** Position and slot of a tab's first and second panel, for each preset. */
+/** Position and slot of a tab's first, second and third panel (the Source tab's Grids), for each preset. */
 const PRESET_PANELS: Record<NamedPreset, [PanelPosition, number][]> = {
   classic: [
     ["left", 0],
     ["right", 0],
+    ["right", 1],
   ],
   "right-sidebar": [
     ["right", 0],
     ["right", 1],
+    ["right", 2],
   ],
   "pages-top": [
     ["top", 0],
     ["right", 0],
+    ["right", 1],
   ],
   "library-top": [
     ["top", 0],
     ["right", 0],
+    ["right", 1],
   ],
   focus: [
     ["hidden", 0],
     ["hidden", 1],
+    ["hidden", 2],
   ],
 };
 

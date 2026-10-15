@@ -14,8 +14,8 @@ import {
   screenToDocument,
 } from "../../lib/coordinates";
 import { pageEdges } from "../../lib/edges-api";
-import { copyPieces, movePieces, pickedOnPage } from "../../lib/editor-actions";
-import { drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
+import { copyPieces, deletePicked, moveGridsBy, movePieces, pickedOnPage } from "../../lib/editor-actions";
+import { cardContains, drawCard, isTooSmall, resizeCard, rotateCardTo } from "../../lib/freeform";
 import {
   dropGuide,
   type GuideAxis,
@@ -26,7 +26,7 @@ import {
   rulerOf,
 } from "../../lib/guides";
 import { emitHintEvent } from "../../lib/hint-events";
-import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect } from "../../lib/selection";
+import { HANDLES, type Handle, moveRect, rectFromPoints, resizeRect, union } from "../../lib/selection";
 import {
   cardBox,
   type EdgeLines,
@@ -53,18 +53,25 @@ import {
   beginEdit,
   endEdit,
   getCurrentSelection,
+  getOtherSelections,
+  getPickedFolderGrids,
   setCurrentSelection,
+  useActiveGrid,
+  useCurrentGrid,
   useCurrentGridGroup,
   useCurrentGroup,
   useLayoutStore,
+  usePickedFolder,
 } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
+import { openContextMenu } from "../ui/ContextMenu";
 import { HintToast } from "../ui/HintToast";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 import { FreeformOverlay } from "./FreeformOverlay";
 import { GridOverlay } from "./GridOverlay";
 import { type GuideDrag, GuideLines } from "./GuideLines";
 import { MAG, Magnifier } from "./Magnifier";
+import { OtherGrids } from "./OtherGrids";
 import { OutputNotice } from "./OutputNotice";
 import { OutputPane } from "./OutputPane";
 import { OutputPreview } from "./OutputPreview";
@@ -77,6 +84,8 @@ type Drag =
   | { kind: "pan"; start: Point; panX: number; panY: number }
   | { kind: "create"; anchor: Point }
   | { kind: "move"; start: Point; rect: NormalizedRect }
+  // A picked folder of grids, moved as one; `grids` are where they were when the drag started.
+  | { kind: "grids-move"; start: Point; grids: { n: number; selection: NormalizedRect }[] }
   | { kind: "resize"; handle: Handle; start: Point; rect: NormalizedRect; fine?: boolean }
   // The card tool: `index` is null until a drawn card is big enough to exist.
   | { kind: "card-create"; anchor: Point; index: number | null }
@@ -103,14 +112,6 @@ const movedEdges = (r: NormalizedRect, handle: Handle): SnapLines => ({
   ys: handle.includes("n") ? [r.y] : handle.includes("s") ? [r.y + r.height] : [],
 });
 
-/** The box around several rectangles. */
-function union(rects: NormalizedRect[]): NormalizedRect {
-  const [x, y] = [Math.min(...rects.map((r) => r.x)), Math.min(...rects.map((r) => r.y))];
-  const right = Math.max(...rects.map((r) => r.x + r.width));
-  const bottom = Math.max(...rects.map((r) => r.y + r.height));
-  return { x, y, width: right - x, height: bottom - y };
-}
-
 export function EditorViewport() {
   const { t } = useTranslation();
   const pages = useDocumentStore((s) => s.pages);
@@ -122,19 +123,25 @@ export function EditorViewport() {
   const pickedCards = useEditorStore((s) => s.pickedCards);
   const pickedRegion = useEditorStore((s) => s.pickedRegion);
   const freeform = useLayoutStore((s) => s.freeform[currentPage]) ?? NO_CARDS;
+  // The grid being edited; the page's other grids are drawn dimmer, and pressing one picks it.
   const group = useCurrentGridGroup();
+  const current = useCurrentGrid();
+  const activeGrid = useActiveGrid();
+  const pickedFolder = usePickedFolder();
   const skipped = useCurrentGroup()?.kind === "skip";
-  const selection = group?.selection ?? null;
+  // A hidden grid is not drawn, and the page does not edit it.
+  const hiddenGrid = current?.hidden === true;
+  const selection = hiddenGrid ? null : (current?.selection ?? null);
   // A grid and freeform pieces on one page: the tip says that is allowed and how to get several sizes.
   const hasGridAndPieces = selection !== null && freeform.length > 0;
   const fitMode = useEditorStore((s) => s.fitMode);
   const viewMode = useEditorStore((s) => s.viewMode);
   const previewResult = usePreviewResult();
-  const gridSpec = group && {
-    rows: group.grid.rows,
-    columns: group.grid.columns,
-    gapXMm: group.grid.sourceGapXMm,
-    gapYMm: group.grid.sourceGapYMm,
+  const gridSpec = current && {
+    rows: current.grid.rows,
+    columns: current.grid.columns,
+    gapXMm: current.grid.sourceGapXMm,
+    gapYMm: current.grid.sourceGapYMm,
   };
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);
@@ -252,7 +259,7 @@ export function EditorViewport() {
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  const local = (e: React.PointerEvent): Point => {
+  const local = (e: { clientX: number; clientY: number }): Point => {
     const r = ref.current!.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   };
@@ -260,6 +267,8 @@ export function EditorViewport() {
   const panMode = output || tool === "pan" || spaceDown;
   // The card tool edits freeform cards; skipped pages are left out of the export, so they take none.
   const cardTool = tool === "card" && !output && !skipped && !panMode;
+  // The Select tool picks and edits whatever is pressed, a piece or a grid, and draws nothing.
+  const pickTool = tool === "pick" && !output && !panMode;
   const picked = selectedCard?.page === currentPage ? selectedCard.index : null;
   // Every picked piece of this page; the handles and the magnifier are for one piece at a time.
   const pickedHere = selectedCard?.page === currentPage ? pickedCards : [];
@@ -323,7 +332,8 @@ export function EditorViewport() {
   };
 
   const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    if (!page) return;
+    // The right button opens the menu (`onContextMenu`): no capture, so the menu's event reaches the page as it is.
+    if (!page || e.button === 2) return;
     // Stop the webview from starting a native text/image selection (WebKit paints it
     // blue over the page while dragging). This also skips the focus change, so blur
     // the focused field by hand: sidebar inputs commit on blur.
@@ -342,14 +352,16 @@ export function EditorViewport() {
     const doc = screenToDocument(p, ed.viewport, page);
     const hit = (e.target as SVGElement).dataset.hit;
     if (hit === "guide") {
-      // A guide is grabbed with the Grid region or Piece tool: drag it, or back onto its ruler to delete it.
+      // A guide is grabbed with any tool but Pan: drag it, or back onto its ruler to delete it.
       const data = (e.target as SVGElement).dataset;
       const axis = data.axis === "x" ? "x" : "y";
       drag.current = { kind: "guide", axis, index: Number(data.index) };
       trackGuide(axis, Number(data.index), p);
       return;
     }
-    if (cardTool) {
+    const onPiece = (e.target as SVGElement).dataset.card !== undefined;
+    if (cardTool || (pickTool && !skipped && onPiece)) {
+      if (pickTool) ed.setPickedRegion(null);
       const L = useLayoutStore.getState();
       const own = L.freeform[currentPage] ?? NO_CARDS;
       const index = Number((e.target as SVGElement).dataset.card);
@@ -385,11 +397,36 @@ export function EditorViewport() {
       }
       return;
     }
+    const onGrid = hit === "body" || hit === "other-grid" || isHandle(hit);
+    if (pickTool && !onGrid) {
+      // A press on the empty page picks nothing.
+      ed.setSelectedCard(null);
+      ed.setPickedRegion(null);
+      return;
+    }
+    if (pickTool) ed.setSelectedCard(null);
     if (!group) return; // a skipped page has no region to edit
-    const current = getCurrentSelection();
+    // A hidden grid is out of reach; another grid pressed on the page is still picked.
+    if (hiddenGrid && hit !== "other-grid") return;
     // Pressing on the region, or drawing a new one, picks it: the arrow keys then move it.
     ed.setPickedRegion(currentPage);
     beginEdit(); // the whole drag is one undo step
+    // With a folder picked, pressing one of its grids drags the whole folder.
+    const folder = getPickedFolderGrids();
+    const pressed = hit === "other-grid" ? Number((e.target as SVGElement).dataset.grid) : null;
+    if (folder.length > 0 && (hit === "body" || folder.some((g) => g.n === pressed))) {
+      drag.current = { kind: "grids-move", start: doc, grids: folder };
+      return;
+    }
+    if (hit === "other-grid") {
+      // Pressing another grid makes it the one being edited, on its own, and drags it.
+      const n = Number(pressed);
+      useLayoutStore.getState().setActiveGrid(n);
+      const rect = getCurrentSelection();
+      if (rect) drag.current = { kind: "move", start: doc, rect };
+      return;
+    }
+    const current = getCurrentSelection();
     if (hit && current) {
       drag.current =
         hit === "body"
@@ -401,6 +438,47 @@ export function EditorViewport() {
       setCurrentSelection(null);
       drag.current = { kind: "create", anchor: doc };
     }
+  };
+
+  /**
+   * Right-click on the page: Delete for a piece, Hide and Delete for a grid. What is under the pointer is found from
+   * where it is, whichever tool is on (the tools only decide what a press takes): the pieces first, as they are drawn
+   * on top, then the grid being edited, then the others; hidden grids are out of reach.
+   */
+  const onContextMenu = (e: React.MouseEvent<SVGSVGElement>) => {
+    e.preventDefault();
+    if (output || !page || drag.current) return;
+    const doc = screenToDocument(local(e), useEditorStore.getState().viewport, page);
+    let index = freeform.length - 1;
+    while (index >= 0 && !cardContains(freeform[index], doc, page)) index--;
+    if (index >= 0) {
+      const ed = useEditorStore.getState();
+      // A piece among several picked ones deletes them all, as the Delete key does; another one on its own.
+      if (!pickedOnPage().includes(index)) ed.setSelectedCard({ page: currentPage, index });
+      const count = pickedOnPage().length;
+      openContextMenu(e, [
+        { label: t("viewport.menu.deletePieces", { count }), danger: true, onSelect: () => deletePicked() },
+      ]);
+      return;
+    }
+    if (!group) return;
+    const inside = (n: number) => {
+      const r = group.grids[n];
+      const sel = r && !r.hidden ? r.selection : null;
+      return !!sel && doc.x >= sel.x && doc.x <= sel.x + sel.width && doc.y >= sel.y && doc.y <= sel.y + sel.height;
+    };
+    const n = inside(activeGrid) ? activeGrid : group.grids.findIndex((_, i) => inside(i));
+    if (n < 0) return;
+    const name = group.grids[n].name ?? t("source.grids.item", { n: n + 1 });
+    const L = useLayoutStore.getState();
+    openContextMenu(e, [
+      { label: t("viewport.menu.hideGrid", { name }), onSelect: () => L.setGridLook(currentPage, n, { hidden: true }) },
+      {
+        label: t(group.grids.length > 1 ? "viewport.menu.deleteGrid" : "viewport.menu.clearGrid", { name }),
+        danger: true,
+        onSelect: () => L.deleteGrid(currentPage, n),
+      },
+    ]);
   };
 
   const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -448,10 +526,12 @@ export function EditorViewport() {
      */
     // The edges in the artwork among the targets, to tell when one of them holds a side.
     let fromEdges: SnapLines = NO_GUIDES;
-    const targets = (skip: number[], withRegion: boolean, box: NormalizedRect | null) => {
+    const targets = (skip: number[], withRegion: boolean, box: NormalizedRect | null, skipGrids: number[] = []) => {
       const others = own0.filter((_, i) => !skip.includes(i)).map((c) => cardBox(c, page));
       const region = getCurrentSelection();
       if (withRegion && region) others.push(region);
+      // The page's other grids, so grids side by side line up.
+      for (const o of getOtherSelections()) if (!skipGrids.includes(o.n)) others.push(o.selection);
       // Guides show, and are snapped to, while the rulers are on.
       const ownGuides = useEditorStore.getState().guides[activeId];
       const lines = magnet
@@ -510,6 +590,21 @@ export function EditorViewport() {
       }
       return;
     }
+    if (d.kind === "grids-move") {
+      const [dx, dy] = [doc.x - d.start.x, doc.y - d.start.y];
+      const box = union(d.grids.map((g) => moveRect(g.selection, dx, dy)));
+      const s = snap(
+        rectLines(box),
+        targets(
+          [],
+          false,
+          box,
+          d.grids.map((g) => g.n),
+        ),
+      );
+      moveGridsBy(currentPage, d.grids, dx + s.dx, dy + s.dy);
+      return;
+    }
     if (d.kind === "create") {
       // The corner being drawn snaps.
       const s = snap({ xs: [doc.x], ys: [doc.y] }, targets([], false, rectFromPoints(d.anchor, doc)));
@@ -557,6 +652,9 @@ export function EditorViewport() {
       if (s && (s.width < MIN_CLICK_DRAG || s.height < MIN_CLICK_DRAG)) {
         setCurrentSelection(null);
         useEditorStore.getState().setPickedRegion(null);
+      } else if (s && usePreferencesStore.getState().prefs.editor.selectAfterGrid) {
+        // A grid just drawn is usually moved or adjusted next: the Select tool, with the grid still picked.
+        useEditorStore.getState().setTool("pick");
       }
     }
     endEdit();
@@ -564,7 +662,7 @@ export function EditorViewport() {
 
   const pageRect = viewPage ? pageScreenRect(viewport, viewPage) : null;
   const selScreen = page && selection ? rectToScreen(selection, viewport, page) : null;
-  const cursor = panMode ? (panning ? "grabbing" : "grab") : "crosshair";
+  const cursor = panMode ? (panning ? "grabbing" : "grab") : pickTool ? "default" : "crosshair";
 
   const split = viewMode === "split" && !!page;
   const unit = usePreferencesStore((s) => s.prefs.measurement.unit);
@@ -624,6 +722,7 @@ export function EditorViewport() {
                   className="absolute inset-0 h-full w-full select-none"
                   style={{ cursor, touchAction: "none", WebkitUserSelect: "none" }}
                   onPointerDown={onPointerDown}
+                  onContextMenu={onContextMenu}
                   onPointerMove={onPointerMove}
                   onPointerUp={onPointerUp}
                   onPointerCancel={onPointerUp}
@@ -645,8 +744,24 @@ export function EditorViewport() {
                       unit={unit}
                     />
                   )}
+                  {!output && group && group.grids.length > 1 && (
+                    <OtherGrids
+                      group={group}
+                      active={activeGrid}
+                      folder={pickedFolder}
+                      viewport={viewport}
+                      page={page}
+                      pickable={(tool === "grid" || tool === "pick") && !panMode}
+                    />
+                  )}
                   {!output && selection && gridSpec && (
-                    <GridOverlay selection={selection} grid={gridSpec} viewport={viewport} page={page} />
+                    <GridOverlay
+                      selection={selection}
+                      grid={gridSpec}
+                      viewport={viewport}
+                      page={page}
+                      color={current?.color}
+                    />
                   )}
                   {!output && selScreen && (
                     // In the card tool the grid region is only a backdrop: it must not catch the pointer.
@@ -654,7 +769,9 @@ export function EditorViewport() {
                       <SelectionRect
                         screen={selScreen}
                         movable={!panMode && tool !== "card"}
-                        picked={tool === "select" && pickedRegion === currentPage}
+                        picked={(tool === "grid" || tool === "pick") && pickedRegion === currentPage}
+                        resizable={pickedFolder === null}
+                        color={current?.color}
                       />
                     </g>
                   )}
@@ -665,7 +782,7 @@ export function EditorViewport() {
                       picked={pickedHere}
                       viewport={viewport}
                       page={page}
-                      interactive={cardTool}
+                      interactive={cardTool || (pickTool && !skipped)}
                     />
                   )}
                   {!output && <DetectOverlay viewport={viewport} page={page} />}
@@ -722,7 +839,7 @@ export function EditorViewport() {
                     className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"
                   />
                 )}
-                {!output && tool === "select" && !panMode && selection && !hasGridAndPieces && (
+                {!output && (tool === "grid" || tool === "pick") && !panMode && selection && !hasGridAndPieces && (
                   <HintToast
                     hint="move-region"
                     className="absolute left-1/2 top-3 z-30 w-[22rem] max-w-[90%] -translate-x-1/2"

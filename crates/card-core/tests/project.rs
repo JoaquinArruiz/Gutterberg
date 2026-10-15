@@ -114,13 +114,48 @@ fn a_version_5_project_folds_its_gutterfold_pairs_in_version_6() {
 }
 
 #[test]
+fn a_version_6_project_gets_a_list_of_one_grid_and_keeps_its_edits() {
+    let text = include_str!("data/project_v6.gtr");
+    let mut before: serde_json::Value = serde_json::from_str(text).unwrap();
+    let after = serde_json::Value::Object(parse_project(text).unwrap());
+    assert_eq!(after["version"], VERSION);
+    let groups = &after["documents"][0]["groups"];
+    assert_eq!(
+        groups[0],
+        json!({
+            "kind": "grid",
+            "pages": { "first": 0, "last": 1 },
+            "grids": [{
+                "grid": { "rows": 2, "columns": 3, "sourceGapXMm": 1, "sourceGapYMm": 1, "sourceGapLinked": true },
+                "selection": { "x": 0.1, "y": 0.1, "width": 0.8, "height": 0.5 },
+            }],
+        })
+    );
+    assert_eq!(
+        groups[1],
+        json!({ "kind": "skip", "pages": { "first": 2, "last": 2 } })
+    );
+    // The pieces of the first grid keep their keys, so their edits, copies and backs need nothing.
+    before["version"] = VERSION.into();
+    before["documents"][0]["groups"] = groups.clone();
+    assert_eq!(after, before);
+}
+
+#[test]
+fn a_grid_group_that_already_has_a_list_is_left_as_it_is() {
+    let text = r#"{"format":"gutterberg-project","version":6,"documents":[{"groups":[{"kind":"grid","pages":{"first":0,"last":0},"grids":[]}]}]}"#;
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["documents"][0]["groups"][0]["grids"], json!([]));
+}
+
+#[test]
 fn a_version_3_project_opens_with_nothing_changed_but_the_new_duplex_defaults() {
     let text = include_str!("data/project_v3_images.gtr");
     let mut before: serde_json::Value = serde_json::from_str(text).unwrap();
     let mut after = serde_json::Value::Object(parse_project(text).unwrap());
     assert_eq!(after["version"], VERSION);
     // Version 4 changes nothing; versions 5 and 6 only add where the backs go and how pairs are
-    // cut, as they were.
+    // cut, as they were; version 7 makes each grid group's grid a list of one.
     if let Some(duplex) = after
         .pointer_mut("/plan/finish/duplex")
         .and_then(|d| d.as_object_mut())
@@ -130,6 +165,10 @@ fn a_version_3_project_opens_with_nothing_changed_but_the_new_duplex_defaults() 
             duplex.remove(k);
         }
     }
+    let group = before.pointer_mut("/documents/0/groups/0").unwrap();
+    let grid = group.as_object_mut().unwrap().remove("grid").unwrap();
+    let selection = group.as_object_mut().unwrap().remove("selection").unwrap();
+    group["grids"] = json!([{ "grid": grid, "selection": selection }]);
     // Everything else is as the file had it.
     before["version"] = VERSION.into();
     assert_eq!(after, before);

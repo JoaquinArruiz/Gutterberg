@@ -63,7 +63,15 @@ describe("parseCardKey", () => {
   it("reads grid and freeform keys and nothing else", () => {
     expect(parseCardKey("g:1:2:3:4")).toEqual({ kind: "grid", document_id: 1, page_index: 2, row: 3, column: 4 });
     expect(parseCardKey("f:0:5:6")).toEqual({ kind: "freeform", document_id: 0, page_index: 5, index: 6 });
-    for (const bad of ["", "g:1:2:3", "f:1:2:3:4", "g:a:b:c:d", "x:1:2:3", "g:-1:0:0:0"]) {
+    expect(parseCardKey("g:1:2:3:4:2")).toEqual({
+      kind: "grid",
+      document_id: 1,
+      page_index: 2,
+      grid: 2,
+      row: 3,
+      column: 4,
+    });
+    for (const bad of ["", "g:1:2:3", "f:1:2:3:4", "g:a:b:c:d", "x:1:2:3", "g:-1:0:0:0", "g:1:2:3:4:0"]) {
       expect(parseCardKey(bad)).toBeNull();
     }
   });

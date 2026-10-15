@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_OUTPUT } from "../stores/layout-store";
 import { gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
-import { applyGridTo, defaultGroups, setSkipped, updateGridGroup } from "./document-layout";
+import { addGrid, applyGridTo, defaultGroups, setSkipped, updateGrid, updateGridGroup } from "./document-layout";
 import { DEFAULT_FINISH } from "./finish";
 import { imageGroups } from "./images";
 import { applyPairing, DEFAULT_PAIRING, pairPieces } from "./pairing";
@@ -25,7 +25,7 @@ const tilted = { center: { x: 0.5, y: 0.5 }, width: 0.2, height: 0.3, angle_deg:
 
 /** A project that uses everything a file stores: groups, a skipped page, freeform pieces, edits, a plan. */
 function state(): ProjectState {
-  let groups = updateGridGroup(defaultGroups(4), 0, (g) => ({ ...g, selection: sel }));
+  let groups = updateGridGroup(defaultGroups(4), 0, (g) => ({ ...g, grids: [{ ...g.grids[0], selection: sel }] }));
   groups = applyGridTo(groups, 0, [1]);
   groups = setSkipped(groups, 3, true);
   return {
@@ -180,7 +180,7 @@ describe("the project file", () => {
     f.plan.rows = 400;
     f.edits.scales = { "g:0:0:0:0": 40, "not a key": 2 };
     f.edits.order = ["g:0:0:0:0", "junk"];
-    f.documents[0].groups[0].grid.rows = 99;
+    f.documents[0].groups[0].grids[0].grid.rows = 99;
     const back = fromProject(parseProject(f));
     expect(back.output.gapXMm).toBe(50);
     expect(back.output.gapYMm).toBe(50);
@@ -190,7 +190,7 @@ describe("the project file", () => {
     expect(back.edits.scales).toEqual({ "g:0:0:0:0": 5 });
     expect(back.edits.order).toEqual(["g:0:0:0:0"]);
     const group = back.documents[0].groups[0];
-    expect(group.kind === "grid" && group.grid.rows).toBe(30);
+    expect(group.kind === "grid" && group.grids[0].grid.rows).toBe(30);
   });
 });
 
@@ -228,8 +228,8 @@ describe("images documents in the file", () => {
 
   it("start as a 1 × 1 grid over the piece, on every page", () => {
     const [group] = imageGroups(3, piece);
-    expect(group).toMatchObject({ kind: "grid", pages: { first: 0, last: 2 }, selection: piece });
-    expect(group.kind === "grid" && [group.grid.rows, group.grid.columns]).toEqual([1, 1]);
+    expect(group).toMatchObject({ kind: "grid", pages: { first: 0, last: 2 }, grids: [{ selection: piece }] });
+    expect(group.kind === "grid" && [group.grids[0].grid.rows, group.grids[0].grid.columns]).toEqual([1, 1]);
     expect(imageGroups(0, piece)).toEqual([]);
   });
 
@@ -351,5 +351,44 @@ describe("groupsCoverPages", () => {
     expect(groupsCoverPages([], 0)).toBe(true);
     const gap = defaultGroups(4).map((g) => ({ ...g, pages: { first: 1, last: 3 } }));
     expect(groupsCoverPages(gap, 4)).toBe(false);
+  });
+});
+
+describe("several grids in the file", () => {
+  it("saves every grid of a group in order and brings them back", () => {
+    const s = state();
+    const first = s.documents[0];
+    let groups = addGrid(first.groups, 0);
+    groups = updateGrid(groups, 0, 1, (r) => ({ ...r, selection: { x: 0.1, y: 0.92, width: 0.3, height: 0.05 } }));
+    const several: ProjectState = { ...s, documents: [{ ...first, groups }, s.documents[1]] };
+    const back = fromProject(parseProject(file(several)));
+    expect(back.documents[0].groups).toEqual(groups);
+  });
+
+  it("keeps the edits of pieces of later grids, and refuses a group without a grid", () => {
+    const s = state();
+    const f = file({ ...s, edits: { ...NO_EDITS, turns: { "g:0:0:1:2:1": 90, "g:0:0:1:2:0": 90 } } });
+    expect(fromProject(parseProject(f)).edits.turns).toEqual({ "g:0:0:1:2:1": 90 });
+    const empty = file(s);
+    empty.documents[0].groups[0].grids = [];
+    expect(() => parseProject(empty)).toThrow();
+  });
+  it("keeps each grid's name, color and folder, and drops what is not one", () => {
+    const s = state();
+    const first = s.documents[0];
+    let groups = addGrid(first.groups, 0);
+    groups = updateGrid(groups, 0, 0, (r) => ({ ...r, name: "Cards", color: "#ef4444", folder: "Top" }));
+    groups = updateGrid(groups, 0, 1, (r) => ({ ...r, folder: "Top" }));
+    const several: ProjectState = { ...s, documents: [{ ...first, groups }, s.documents[1]] };
+    expect(fromProject(parseProject(file(several))).documents[0].groups).toEqual(groups);
+
+    const f = file(several);
+    Object.assign(f.documents[0].groups[0].grids[0], { name: "   ", color: "red", folder: "x".repeat(80) });
+    const back = fromProject(parseProject(f)).documents[0].groups[0];
+    expect(back.kind === "grid" && back.grids[0]).toEqual({
+      grid: groups[0].kind === "grid" && groups[0].grids[0].grid,
+      selection: sel,
+      folder: "x".repeat(40),
+    });
   });
 });

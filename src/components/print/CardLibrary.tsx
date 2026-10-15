@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { cardIdKey, documentLetter } from "../../lib/card";
 import { moveCards, orientCards, setBacks, turnCards } from "../../lib/card-edits";
-import { rangeLabel } from "../../lib/document-layout";
+import { gridsLabel, hasRegion, rangeLabel } from "../../lib/document-layout";
 import { useLayoutDocuments } from "../../lib/documents";
 import { formatError } from "../../lib/errors";
 import { commonQuantity, filterCards } from "../../lib/library";
@@ -134,15 +134,14 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
     : [];
   const groupOptions = documents.flatMap((d) =>
     d.groups.flatMap((g, i) =>
-      g.kind === "grid" && g.selection
+      g.kind === "grid" && hasRegion(g)
         ? [
             {
               value: `group:${d.id}:${i}` as FilterChoice,
               label: t(several ? "library.groupIn" : "library.group", {
                 name: nameOf(d.id),
                 range: rangeLabel(g.pages),
-                rows: g.grid.rows,
-                columns: g.grid.columns,
+                grids: gridsLabel(g),
               }),
             },
           ]

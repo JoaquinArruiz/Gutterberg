@@ -7,7 +7,7 @@ import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../..
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useDocumentStore } from "../../stores/document-store";
-import { useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGrid, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
@@ -16,7 +16,7 @@ import { GapFields } from "../ui/GapFields";
 import { MeasurementInput } from "../ui/MeasurementInput";
 import { NumberField } from "../ui/NumberField";
 import { AiSortSection } from "./AiSortSection";
-import { DetectSection } from "./DetectSection";
+import { DetectControls } from "./DetectControls";
 import { FreeformSection } from "./FreeformSection";
 import { PresetsSection } from "./PresetsSection";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
@@ -36,8 +36,10 @@ export function PropertiesSidebar() {
     })),
   );
   const setStage = useUiStore((s) => s.setStage);
-  const grid = group?.kind === "grid" ? group.grid : null;
-  const selection = group?.kind === "grid" ? group.selection : null;
+  // The grid being edited, when the page has several.
+  const current = useCurrentGrid();
+  const grid = current?.grid ?? null;
+  const selection = current?.selection ?? null;
   const setSelection = (r: NormalizedRect | null) => L.setSelection(currentPage, r);
   const unit = useUnit();
   const fmt = (mm: number, decimals?: number) => formatMeasurement(mm, unit, decimals);
@@ -76,8 +78,6 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
-
-      {group?.kind !== "skip" && <DetectSection />}
 
       <AiSortSection />
 
@@ -124,6 +124,7 @@ export function PropertiesSidebar() {
               <Button onClick={() => L.setSkipped(currentPage, true)}>{t("source.skipPage")}</Button>
               <TurnIntoPiecesButton />
             </div>
+            <DetectControls />
           </CollapsibleSection>
 
           <CollapsibleSection id="cards.spacing" title={t("source.sections.gap")} info={t("source.gapNote")}>
@@ -142,13 +143,6 @@ export function PropertiesSidebar() {
       )}
 
       {group?.kind !== "skip" && <FreeformSection />}
-
-      <CollapsibleSection id="cards.output" title={t("source.sections.output")} info={t("source.outputNote")}>
-        <div>
-          <Button onClick={() => setStage("print")}>{t("source.openPrint")}</Button>
-        </div>
-        {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
-      </CollapsibleSection>
 
       {selection && (
         <CollapsibleSection id="cards.selection" title={t("source.sections.selection")}>
@@ -172,6 +166,13 @@ export function PropertiesSidebar() {
           </div>
         </CollapsibleSection>
       )}
+
+      <CollapsibleSection id="cards.output" title={t("source.sections.output")} info={t("source.outputNote")}>
+        <div>
+          <Button onClick={() => setStage("print")}>{t("source.openPrint")}</Button>
+        </div>
+        {L.layoutError && <p className="text-red-400">{formatError(L.layoutError)}</p>}
+      </CollapsibleSection>
     </div>
   );
 }

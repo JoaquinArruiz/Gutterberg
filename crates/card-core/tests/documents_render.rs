@@ -52,9 +52,7 @@ fn one_sheet_shows_a_card_from_each_of_two_pdfs() {
 
     let group = PageGroup {
         pages: PageRange { first: 0, last: 0 },
-        kind: PageGroupKind::Grid {
-            grid: sample_grid(0.0),
-        },
+        kind: PageGroupKind::grid(sample_grid(0.0)),
     };
     let first_of =
         |document_id| extract_cards(document_id, &[page], std::slice::from_ref(&group)).unwrap()[0];

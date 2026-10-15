@@ -28,6 +28,7 @@ fn card_in(doc: u32, n: usize, w: f64, h: f64) -> Card {
     let id = CardId::Grid {
         document_id: doc,
         page_index: 0,
+        grid: 0,
         row: 0,
         column: n,
     };
@@ -406,7 +407,7 @@ fn all_cards_in_order_matches_the_layout_engine() {
 
         let group = PageGroup {
             pages: PageRange { first: 0, last: 0 },
-            kind: PageGroupKind::Grid { grid },
+            kind: PageGroupKind::grid(grid),
         };
         let cards = extract_cards(DEFAULT_DOCUMENT_ID, &[page], &[group]).unwrap();
         let spec = SheetSpec {
@@ -477,7 +478,7 @@ fn export_document_still_builds_the_same_pages_through_export_sheets() {
         &[card_core::export::page_size(&sample_pdf(), 0).unwrap()],
         &[PageGroup {
             pages: PageRange { first: 0, last: 0 },
-            kind: PageGroupKind::Grid { grid },
+            kind: PageGroupKind::grid(grid),
         }],
     )
     .unwrap();
@@ -683,7 +684,7 @@ fn the_ipc_json_shapes_deserialise_with_defaults() {
 fn grid_group(first: usize, last: usize, grid: GridLayout) -> PageGroup {
     PageGroup {
         pages: PageRange { first, last },
-        kind: PageGroupKind::Grid { grid },
+        kind: PageGroupKind::grid(grid),
     }
 }
 
@@ -723,6 +724,7 @@ fn extract_cards_follows_the_groups() {
         CardId::Grid {
             document_id: 0,
             page_index: 1,
+            grid: 0,
             row: 1,
             column: 1
         }
@@ -772,6 +774,7 @@ fn the_default_plan_prints_every_card_once_in_order() {
     let id = CardId::Grid {
         document_id: 0,
         page_index: 0,
+        grid: 0,
         row: 0,
         column: 0,
     };
@@ -878,6 +881,7 @@ fn the_page_size_can_follow_the_source_page() {
             id: CardId::Grid {
                 document_id: 0,
                 page_index: 0,
+                grid: 0,
                 row: column / 3,
                 column: column % 3,
             },
@@ -1157,6 +1161,7 @@ mod print_examples {
         CardId::Grid {
             document_id: 0,
             page_index: 0,
+            grid: 0,
             row,
             column,
         }
@@ -1271,6 +1276,7 @@ fn grid_id(page_index: usize, row: usize, column: usize) -> CardId {
     CardId::Grid {
         document_id: 0,
         page_index,
+        grid: 0,
         row,
         column,
     }

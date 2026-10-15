@@ -1,7 +1,7 @@
 // Turns the document layout into what the exporter takes: one PageJob per included page.
 
 import { gridPayload, type OutputSettings } from "../stores/layout-store";
-import type { FreeformCards, PageGroup } from "./document-layout";
+import { drawnGrids, type FreeformCards, type PageGroup } from "./document-layout";
 import type { PageIssue, PageJob } from "./tauri";
 
 export type ExportPlan = {
@@ -15,8 +15,8 @@ export type ExportPlan = {
 const issue = (page: number, code: string, message: string): PageIssue => ({ page_index: page, message, code });
 
 /**
- * The Source tab re-spaces grids only. Freeform pieces are printed from the Print tab, so a page that
- * has nothing but freeform pieces is reported rather than silently exported empty.
+ * The Source tab re-spaces grids only, each grid of a page on its own sheet. Freeform pieces are printed from the
+ * Print tab, so a page that has nothing but freeform pieces is reported rather than silently exported empty.
  */
 export function buildExportPlan(
   groups: PageGroup[],
@@ -28,7 +28,8 @@ export function buildExportPlan(
   for (const g of groups) {
     for (let page = g.pages.first; page <= g.pages.last; page++) {
       if (g.kind === "skip") continue;
-      if (!g.selection) {
+      const grids = drawnGrids(g);
+      if (grids.length === 0) {
         const own = freeform[page]?.length ?? 0;
         issues.push(
           own > 0
@@ -36,7 +37,8 @@ export function buildExportPlan(
             : issue(page, "no_region", "no piece region is selected"),
         );
       } else {
-        jobs.push({ page_index: page, grid: gridPayload(g.selection, g.grid, settings) });
+        for (const { region } of grids)
+          jobs.push({ page_index: page, grid: gridPayload(region.selection, region.grid, settings) });
       }
     }
   }

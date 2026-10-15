@@ -116,7 +116,7 @@ describe("the Print tab's panels", () => {
     render(<PrintStage />);
     const source = () => prefs().prefs.workspace.layout.panels.map((p) => `${p.id}:${p.position}`);
     act(() => prefs().setPanelPosition("library", "bottom"));
-    expect(source()).toEqual(["pages:left", "properties:right"]);
+    expect(source()).toEqual(["pages:left", "properties:right", "grids:right"]);
     act(() => prefs().setPanelPosition("pages", "top"));
     expect(panel("library")?.getAttribute("data-position")).toBe("bottom");
   });

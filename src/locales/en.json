@@ -22,7 +22,8 @@
       "print": "Print"
     },
     "tools": {
-      "select": "Grid region",
+      "pick": "Select",
+      "grid": "Grid tool",
       "card": "Piece tool",
       "pan": "Pan"
     },
@@ -104,7 +105,14 @@
     "pageSkipped": "This page is skipped: it is left out of the export.",
     "guidesMenu": "Guides",
     "clearGuides": "Clear guides",
-    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it."
+    "noGuides": "Drag from a ruler onto the page to make a guide; drag it back onto its ruler to delete it.",
+    "menu": {
+      "hideGrid": "Hide {{name}}",
+      "deleteGrid": "Delete {{name}}",
+      "clearGrid": "Clear the region of {{name}}",
+      "deletePieces_one": "Delete piece",
+      "deletePieces_other": "Delete {{count}} pieces"
+    }
   },
   "preview": {
     "title": "Preview",
@@ -121,7 +129,8 @@
       "pages": "Pages",
       "properties": "Properties",
       "library": "Piece library",
-      "inspector": "Print settings"
+      "inspector": "Print settings",
+      "grids": "Grids and pieces"
     },
     "titleHidden": "{{title}} (hidden)",
     "expand": "Expand {{title}}",
@@ -153,7 +162,8 @@
       "pages": "Pages",
       "properties": "Props",
       "library": "Library",
-      "inspector": "Print"
+      "inspector": "Print",
+      "grids": "Grids"
     }
   },
   "gapFields": {
@@ -202,6 +212,71 @@
       "everyPage_one": "This page",
       "everyPage_other": "Every page of the group ({{count}})",
       "everyPageHint": "All of them become pieces, and their grid region is cleared."
+    },
+    "grids": {
+      "item": "Grid {{n}}",
+      "noRegion": "no region",
+      "pick": "Edit {{name}} on its own",
+      "add": "Add grid",
+      "addTitle": "Add another grid to this page, for pieces of another size, then draw its region on the page",
+      "full": "A page can hold up to {{count}} grids.",
+      "delete": "Delete {{name}}",
+      "note": "Each grid has its own region, rows, columns and gap, and can have a name and a color. The Properties panel has the picked grid's settings, and it is the one edited on the page; the others are drawn dimmer, and clicking one picks it. Drag grids and folders in the list to change their order, or drop a grid into a folder. Pick a folder to move its grids together on the page; picking a grid moves it on its own. The page's freeform pieces are listed after the grids. Double-click a name to change it, and click the dot for the color.",
+      "edit": "Name, color and folder of {{name}}",
+      "name": "Grid name",
+      "color": "Grid color",
+      "colors": {
+        "default": "Default",
+        "blue": "Blue",
+        "red": "Red",
+        "green": "Green",
+        "amber": "Amber",
+        "pink": "Pink",
+        "teal": "Teal",
+        "orange": "Orange",
+        "indigo": "Indigo"
+      },
+      "folder": "Folder",
+      "noFolder": "No folder",
+      "newFolder": "New folder",
+      "folderBase": "Folder",
+      "folderName": "Folder name",
+      "pickFolder": "Pick the grids of {{name}}, to move them together",
+      "renameFolder": "Rename {{name}}",
+      "ungroup": "Take the grids out of {{name}}",
+      "fold": "Fold {{name}}",
+      "unfold": "Unfold {{name}}",
+      "pickColor": "Color of {{name}}",
+      "newFolderTitle": "New folder: drag grids into it to move them together",
+      "emptyFolder": "{{name}} is empty: drag grids into it",
+      "deleteFolder": "Delete {{name}}",
+      "hide": "Hide {{name}} on the page (it still prints)",
+      "show": "Show {{name}} on the page",
+      "pieces_one": "Freeform pieces ({{count}})",
+      "pieces_other": "Freeform pieces ({{count}})",
+      "piece": "Piece {{n}}",
+      "pickPiece": "Pick {{name}} with the Piece tool",
+      "skipped": "This page is skipped: it has no grids.",
+      "deleteLast": "Clear {{name}}: the last grid loses its region, so it can be drawn again",
+      "suggestedColors": "Suggested",
+      "ownColors": "Your colors",
+      "addColor": "Add a color of your own",
+      "deleteColor": "Delete color",
+      "deleteColorNamed": "Delete {{hex}}",
+      "menu": {
+        "rename": "Rename",
+        "color": "Change color",
+        "hide": "Hide",
+        "show": "Show",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "moveTo": "Move to {{folder}}",
+        "moveToNew": "Move to a new folder",
+        "takeOut": "Take out of {{folder}}",
+        "ungroup": "Ungroup",
+        "delete": "Delete",
+        "clear": "Clear region"
+      }
     }
   },
   "freeform": {
@@ -209,7 +284,7 @@
     "none": "No freeform pieces on this page. They are printed from the Print tab.",
     "count_one": "{{count}} freeform piece on this page. It is printed from the Print tab.",
     "count_other": "{{count}} freeform pieces on this page. They are printed from the Print tab.",
-    "chooseTool": "Choose the Piece tool (C) to move, resize or rotate them.",
+    "chooseTool": "Choose the Select tool (V) or the Piece tool (C) to move, resize or rotate them.",
     "drawHint": "Drag on the page to draw a piece, and click one to edit it. Drag the dot above a piece to rotate it; Shift snaps to 15°. Shift-click picks several, Ctrl+A picks them all, and the arrow keys move what is picked.",
     "piece": "Piece",
     "angle": "Angle",
@@ -237,7 +312,18 @@
     "addPdf": "Add PDF…",
     "addPdfTitle": "Add another PDF to this project. Its pieces join the piece library.",
     "addImages": "Add images…",
-    "addImagesTitle": "Adds PNG, JPEG or WebP images as pieces, one per page."
+    "addImagesTitle": "Adds PNG, JPEG or WebP images as pieces, one per page.",
+    "removed_one": "Removed pages ({{count}})",
+    "removed_other": "Removed pages ({{count}})",
+    "restoreTitle": "Bring this page back",
+    "menu": {
+      "remove": "Remove page",
+      "removeOthers": "Remove the other pages",
+      "skip": "Skip page",
+      "include": "Include page",
+      "restore": "Bring back",
+      "restoreAll": "Bring all back"
+    }
   },
   "applyGrid": {
     "dialog": "Apply this grid to",
@@ -249,14 +335,18 @@
     "toPage": "To page",
     "to": "to",
     "sameSize": "All pages of the same size (skipped pages stay skipped)",
-    "skippedNoGrid": "This page is skipped, so it has no grid to copy."
+    "skippedNoGrid": "This page is skipped, so it has no grid to copy.",
+    "which": "What to copy",
+    "thisGrid": "Grid {{n}} ({{rows}}×{{columns}})",
+    "allGrids": "All {{count}} grids ({{grids}})",
+    "descriptionSeveral": "Copies grids and their piece regions from page {{page}}. Each target becomes its own group, so you can edit it separately afterwards."
   },
   "library": {
     "openPdf": "Open a PDF to see its pieces.",
     "show": "Show",
     "filterLabel": "Filter pieces by group",
     "all": "All pieces",
-    "group": "{{range}} ({{rows}}×{{columns}})",
+    "group": "{{range}} ({{grids}})",
     "page": "Page",
     "showOnlyPage": "Show only page",
     "selectAll": "Select all",
@@ -283,6 +373,7 @@
     "thumb": {
       "gridPosition": "r{{row}} c{{column}}",
       "freeformPosition": "#{{n}}",
+      "gridNumber": "g{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Page {{page}}, {{position}} · {{size}}",
       "titleTurned": "Page {{page}}, {{position}} · {{size}} · turned {{turn}}°",
@@ -293,7 +384,7 @@
       "gridShort": "r{{row}}c{{column}}"
     },
     "allOfDocument": "All pieces of {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "groupIn": "{{name}}: {{range}} ({{grids}})",
     "pickingBack": "Click the piece to use as the back of the selection. Esc cancels."
   },
   "print": {
@@ -601,7 +692,10 @@
       "layoutPrint": "Layout of the Print tab",
       "rulers": "Rulers",
       "invertRulers": "Invert rulers",
-      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it."
+      "invertRulersHint": "Drag from a ruler for a guide across it instead of along it.",
+      "tools": "Tools",
+      "selectAfterGrid": "Select tool after drawing a grid",
+      "selectAfterGridHint": "Switches to the Select tool once a grid is drawn."
     },
     "livePreview": {
       "title": "Live preview",
@@ -782,8 +876,8 @@
     },
     "grid-and-pieces": {
       "one": {
-        "title": "A grid and pieces on one page",
-        "text": "A page can have one grid and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Turn into pieces, then draw the next grid."
+        "title": "Grids and pieces on one page",
+        "text": "A page can have several grids and any number of pieces drawn one by one. For three sizes on a page: draw a grid, press Add grid under Grids, draw the next one, and so on."
       }
     },
     "move-region": {
@@ -897,7 +991,6 @@
     }
   },
   "detect": {
-    "title": "Detect pieces",
     "note": "Proposes where the pieces are on this page, found on your computer. Nothing changes until you apply it.",
     "button": "Detect on this page",
     "running": "Detecting…",
@@ -907,6 +1000,8 @@
     "draft": "Proposal",
     "gridSize_one": "{{rows}} × {{columns}} = {{count}} piece",
     "gridSize_other": "{{rows}} × {{columns}} = {{count}} pieces",
+    "gridsSize_one": "{{grids}} = {{count}} piece",
+    "gridsSize_other": "{{grids}} = {{count}} pieces",
     "pieceCount_one": "{{count}} piece",
     "pieceCount_other": "{{count}} pieces",
     "engines": {
@@ -926,6 +1021,10 @@
     "apply": "Apply",
     "replace_one": "Replace {{count}} piece",
     "replace_other": "Replace {{count}} pieces",
+    "addGrid": "Add as new grid",
+    "addGrids": "Add as new grids",
+    "replaceGrid": "Replace {{name}}",
+    "replaceGrids": "Replace grids",
     "next": "Next proposal",
     "discard": "Discard",
     "notes": {
@@ -1060,7 +1159,8 @@
       "redo": "Redo",
       "shortcuts": "Show this list",
       "closeDialog": "Close a dialog, a menu, an info tip, a help tip or a message",
-      "gridRegionTool": "Grid region tool",
+      "selectTool": "Select tool",
+      "gridRegionTool": "Grid tool",
       "pieceTool": "Piece tool",
       "panTool": "Pan tool",
       "panHeld": "Pan while held",
@@ -1070,7 +1170,7 @@
       "zoomCursor": "Zoom at the cursor",
       "nextPage": "Next page (the arrow, with nothing picked)",
       "previousPage": "Previous page (the arrow, with nothing picked)",
-      "deletePiece": "Delete the picked piece (Piece tool)",
+      "deletePiece": "Delete the picked pieces (Select or Piece tool)",
       "snapRotation": "Rotate a piece in 15° steps (hold while turning it)",
       "applyProposal": "Apply the proposal",
       "discardProposal": "Discard the proposal",
@@ -1087,11 +1187,11 @@
       "panWheel": "Pan the page (with Shift, sideways)",
       "nudgePicked": "Move the picked region or pieces 1 mm (0.05 in)",
       "nudgePickedBig": "Move the picked region or pieces 10 mm (0.5 in)",
-      "pickMore": "Add or remove a piece from the picked ones (Piece tool)",
+      "pickMore": "Add or remove a piece from the picked ones (Select or Piece tool)",
       "pickAll": "Pick every piece of the page",
       "pickNone": "Pick nothing (the pieces and the region)",
-      "duplicatePieces": "Duplicate the picked pieces (Piece tool)",
-      "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Piece tool)",
+      "duplicatePieces": "Duplicate the picked pieces (Select or Piece tool)",
+      "dragCopy": "Drag a copy of the picked pieces, leaving them where they are (Select or Piece tool)",
       "dragFree": "Drag a region or pieces without snapping or sticking to edges",
       "toggleRulers": "Show or hide the rulers",
       "makeGuide": "Make a guide: drag from a ruler onto the page (rulers on)",

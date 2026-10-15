@@ -14,7 +14,7 @@ import { formatDecimal } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useLibraryCards } from "../../lib/use-library-cards";
 import { useDocumentStore } from "../../stores/document-store";
-import { useLayoutStore } from "../../stores/layout-store";
+import { useLayoutStore, useSeveralGrids } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
@@ -36,6 +36,7 @@ const SAME_SIZE_PT = 0.5;
 export function SelectedCardsSection() {
   const documentIds = useDocumentStore((s) => s.documents.map((d) => d.id).join(","));
   const letterOf = (id: number) => documentLetter(documentIds === "" ? [] : documentIds.split(",").map(Number), id);
+  const severalGrids = useSeveralGrids();
   const { t } = useTranslation();
   const cards = useLibraryCards();
   const selected = usePrintStore((s) => s.selection.selected);
@@ -89,7 +90,12 @@ export function SelectedCardsSection() {
     sharedBack === undefined
       ? t("print.selected.backMixed")
       : backCard
-        ? pieceReference(backCard.id, letterOf(backCard.id.document_id))
+        ? pieceReference(
+            backCard.id,
+            letterOf(backCard.id.document_id),
+            false,
+            severalGrids(backCard.id.document_id, backCard.id.page_index),
+          )
         : commonBack
           ? t("print.selected.backCommon")
           : t("print.selected.backNone");

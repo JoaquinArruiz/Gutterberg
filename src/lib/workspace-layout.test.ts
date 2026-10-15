@@ -35,10 +35,10 @@ const move = (l: WorkspaceLayoutPrefs, id: "pages" | "properties", pos: Paramete
   setPanelPosition(l, id, pos);
 
 describe("default layout", () => {
-  it("is Pages left, Properties right", () => {
+  it("is Pages left, Properties right with Grids and pieces under it", () => {
     const l = defaultLayout();
     expect(ids(l, "left")).toEqual(["pages"]);
-    expect(ids(l, "right")).toEqual(["properties"]);
+    expect(ids(l, "right")).toEqual(["properties", "grids"]);
     expect(detectPreset(l)).toBe("classic");
   });
 });
@@ -46,15 +46,15 @@ describe("default layout", () => {
 describe("placement", () => {
   it("both on the right stack in order", () => {
     const l = move(defaultLayout(), "pages", "right");
-    expect(ids(l, "right")).toEqual(["properties", "pages"]); // pages joins the end of the stack
+    expect(ids(l, "right")).toEqual(["properties", "grids", "pages"]); // pages joins the end of the stack
     expect(ids(l, "left")).toEqual([]);
   });
 
   it("order decides the stack", () => {
     const l = applyPreset(defaultLayout(), "right-sidebar");
-    expect(ids(l, "right")).toEqual(["pages", "properties"]);
-    const flipped = { ...l, panels: l.panels.map((p) => ({ ...p, order: p.id === "pages" ? 1 : 0 })) };
-    expect(ids(flipped, "right")).toEqual(["properties", "pages"]);
+    expect(ids(l, "right")).toEqual(["pages", "properties", "grids"]);
+    const flipped = { ...l, panels: l.panels.map((p) => ({ ...p, order: p.id === "pages" ? 5 : p.order })) };
+    expect(ids(flipped, "right")).toEqual(["properties", "grids", "pages"]);
   });
 
   it("orientation follows the position: top/bottom horizontal, left/right vertical", () => {
@@ -94,7 +94,7 @@ describe("normalizeLayout", () => {
       ],
       regionSizes: { left: "x" },
     });
-    expect(l.panels.map((p) => p.id)).toEqual(["pages", "properties"]);
+    expect(l.panels.map((p) => p.id)).toEqual(["pages", "properties", "grids"]);
     expect(l.panels.find((p) => p.id === "properties")?.position).toBe("right");
     expect(l.regionSizes).toEqual({});
   });
@@ -134,6 +134,7 @@ describe("the Print tab's layout", () => {
     expect(normalizeLayout({ panels: [{ id: "library", position: "top" }] }).panels.map((p) => p.id)).toEqual([
       "pages",
       "properties",
+      "grids",
     ]);
   });
 

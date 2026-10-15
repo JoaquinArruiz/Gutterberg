@@ -9,6 +9,7 @@ import { StartScreen } from "./components/start/StartScreen";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
 import { ProjectNotices } from "./components/toolbar/ProjectNotices";
 import { StatusBar } from "./components/toolbar/StatusBar";
+import { ContextMenuHost } from "./components/ui/ContextMenu";
 import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
 import { Toast } from "./components/ui/Toast";
 import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
@@ -17,6 +18,7 @@ import { deletePicked, duplicatePicked, nudgePicked, pickAllPieces } from "./lib
 import { resolveStartMode } from "./lib/preferences";
 import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
 import { useProjectTracking } from "./lib/project-state";
+import { stepPage } from "./lib/removed-pages";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { startUpdateChecks } from "./lib/update-actions";
@@ -70,7 +72,6 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const doc = useDocumentStore.getState();
       const ed = useEditorStore.getState();
       const mod = e.ctrlKey || e.metaKey;
       if (mod && e.key === ",") {
@@ -140,7 +141,11 @@ export default function App() {
       switch (e.key) {
         case "v":
         case "V":
-          ed.setTool("select");
+          ed.setTool("pick");
+          break;
+        case "g":
+        case "G":
+          ed.setTool("grid");
           break;
         case "c":
         case "C":
@@ -153,11 +158,12 @@ export default function App() {
         case "Delete":
         case "Backspace":
           // Deletes the picked freeform pieces.
-          if (ed.tool === "card" && deletePicked()) e.preventDefault();
+          if ((ed.tool === "card" || ed.tool === "pick") && deletePicked()) e.preventDefault();
           break;
         case "Escape":
           ed.setSelectedCard(null);
           ed.setPickedRegion(null);
+          useLayoutStore.setState({ pickedFolder: null });
           break;
         case "+":
         case "=":
@@ -171,11 +177,11 @@ export default function App() {
           break;
         case "PageDown":
         case "ArrowRight":
-          doc.setCurrentPage(doc.currentPage + 1);
+          stepPage(1);
           break;
         case "PageUp":
         case "ArrowLeft":
-          doc.setCurrentPage(doc.currentPage - 1);
+          stepPage(-1);
           break;
       }
     };
@@ -204,6 +210,7 @@ export default function App() {
       <ImageSizeDialog />
       <WelcomeDialog />
       <Toast />
+      <ContextMenuHost />
     </div>
   );
 }

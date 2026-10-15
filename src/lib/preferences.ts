@@ -30,8 +30,20 @@ import { defaultLayout, normalizeLayout, type RegionPosition, type WorkspaceLayo
 // shared size list (the old "small" is "japanese"). v14: adds editor.snap (snapping while dragging on the page, on by
 // default) and help.tipsOn (help tips and screen tours show, on by default). v15: adds editor.snapEdges (sticking to the
 // edges in the artwork, on by default) editor.rulers (rulers along the page, off by default) and editor.invertRulers (each ruler gives the guide
-// perpendicular to it, off by default). Older files migrate by taking the defaults of what they lack.
-export const PREFERENCES_VERSION = 15;
+// perpendicular to it, off by default). v16: adds gridColors (the colours the user added for grids)
+// and editor.selectAfterGrid (the Select tool after a grid is drawn, on by default). Older files
+// migrate by taking the defaults of what they lack.
+export const PREFERENCES_VERSION = 16;
+
+/** How many colours of their own a user can keep for grids. */
+export const MAX_GRID_COLORS = 24;
+/** Colours as the grid colour picker gives them: "#rrggbb", lower case, each once, at most `MAX_GRID_COLORS`. */
+export const normalizeGridColors = (raw: unknown): string[] =>
+  Array.isArray(raw)
+    ? [
+        ...new Set(raw.flatMap((c) => (typeof c === "string" && /^#[0-9a-f]{6}$/i.test(c) ? [c.toLowerCase()] : []))),
+      ].slice(0, MAX_GRID_COLORS)
+    : [];
 
 export type WorkspaceMode = "source" | "output" | "split";
 /** Canonical order, also the priority used to pick a fallback default. */
@@ -94,6 +106,8 @@ export interface AppPreferences {
     rulers: boolean;
     /** Each ruler gives the guide perpendicular to it (the top ruler a vertical guide), not the one parallel to it. */
     invertRulers: boolean;
+    /** Drawing a grid region switches to the Select tool, the grid picked. */
+    selectAfterGrid: boolean;
   };
   inspector: {
     /** Collapsible inspector sections the user opened (true) or closed (false); missing = the section's default. */
@@ -113,6 +127,8 @@ export interface AppPreferences {
   presets: GridPreset[];
   /** Saved piece sizes, in the order they were made (the built-in ones are in `size-presets.ts`). */
   sizePresets: UserSizePreset[];
+  /** Colours the user added to the grid colour picker, after the suggested ones, oldest first. */
+  gridColors: string[];
   /** Images as pieces (M24). */
   images: { size: ImageSizePrefs };
   /** AI Mode (M19). */
@@ -169,12 +185,13 @@ export const DEFAULT_PREFERENCES: AppPreferences = {
   preview: { livePreview: "manual" },
   appearance: { theme: "system" },
   help: { dismissedHints: {}, welcomeSeen: 0, tipsOn: true },
-  editor: { snap: true, snapEdges: true, rulers: false, invertRulers: false },
+  editor: { snap: true, snapEdges: true, rulers: false, invertRulers: false, selectAfterGrid: true },
   inspector: { sections: {} },
   print: { layout: defaultLayout("print"), showReferences: false },
   files: { recent: [] },
   presets: [],
   sizePresets: [],
+  gridColors: [],
   images: { size: DEFAULT_IMAGE_SIZE },
   ai: DEFAULT_AI,
   updates: DEFAULT_UPDATES,
@@ -312,6 +329,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
       snapEdges: ed.snapEdges !== false,
       rulers: ed.rulers === true,
       invertRulers: ed.invertRulers === true,
+      selectAfterGrid: ed.selectAfterGrid !== false,
     },
     inspector: { sections: normalizeSections(ins.sections) },
     // The two "remember" switches are one setting for both tabs: the Source tab's copy is the one the user sets.
@@ -326,6 +344,7 @@ export function normalizePreferences(raw: unknown): AppPreferences {
     files: { recent: normalizeRecent(fl.recent) },
     presets: normalizePresets(r.presets),
     sizePresets: normalizeSizePresets(r.sizePresets),
+    gridColors: normalizeGridColors(r.gridColors),
     images: { size: normalizeImageSize(isObj(r.images) ? r.images.size : undefined) },
     ai: normalizeAi(r.ai),
     updates: normalizeUpdates(r.updates),

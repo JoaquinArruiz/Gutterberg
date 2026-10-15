@@ -3,7 +3,7 @@
 // land is decided in Rust; this file only holds the choices and clamps them.
 
 import { z } from "zod";
-import { type CardId, freeformCardId, gridCardId } from "./card";
+import { CARD_KEY, type CardId, freeformCardId, gridCardId } from "./card";
 import type { Turn } from "./sheet-api";
 
 export const MARK_STYLES = ["off", "ticks", "gaps"] as const;
@@ -99,8 +99,8 @@ const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
 export const cleanColor = (value: string): string =>
   /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : DEFAULT_FINISH.marks.color;
 
-/** Piece keys name a document, a page and a place. */
-const KEY = /^(?:g:\d+:\d+:\d+:\d+|f:\d+:\d+:\d+)$/;
+/** Piece keys name a document, a page and a place; only keys of this shape are kept. */
+const KEY = CARD_KEY;
 
 /** Every value pulled back into what the engine accepts (also for a hand-edited project). */
 export function cleanFinish(f: Finish): Finish {
@@ -134,6 +134,7 @@ export function parseCardKey(key: string): CardId | null {
   const n = key.split(":").slice(1).map(Number);
   if (n.some((v) => !Number.isInteger(v) || v < 0)) return null;
   if (key.startsWith("g:") && n.length === 4) return gridCardId(n[0], n[1], n[2], n[3]);
+  if (key.startsWith("g:") && n.length === 5 && n[4] > 0) return gridCardId(n[0], n[1], n[2], n[3], n[4]);
   if (key.startsWith("f:") && n.length === 3) return freeformCardId(n[0], n[1], n[2]);
   return null;
 }

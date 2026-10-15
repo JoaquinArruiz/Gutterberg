@@ -1,0 +1,59 @@
+{
+  "format": "gutterberg-project",
+  "version": 6,
+  "documents": [
+    {
+      "kind": "pdf",
+      "id": 0,
+      "path": "/games/tokens.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pageCount": 3,
+      "groups": [
+        {
+          "kind": "grid",
+          "pages": { "first": 0, "last": 1 },
+          "grid": { "rows": 2, "columns": 3, "sourceGapXMm": 1, "sourceGapYMm": 1, "sourceGapLinked": true },
+          "selection": { "x": 0.1, "y": 0.1, "width": 0.8, "height": 0.5 }
+        },
+        { "kind": "skip", "pages": { "first": 2, "last": 2 } }
+      ],
+      "freeform": { "1": [{ "center": { "x": 0.5, "y": 0.8 }, "width": 0.2, "height": 0.1, "angle_deg": 0 }] },
+      "viewedPage": 1
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 3,
+    "gapYMm": 3,
+    "gapLinked": true,
+    "pageMode": "same",
+    "orientation": "portrait",
+    "customWidthMm": 210,
+    "customHeightMm": 297,
+    "margins": { "top": 0, "right": 0, "bottom": 0, "left": 0 }
+  },
+  "edits": {
+    "turns": { "g:0:1:1:2": 90 },
+    "scales": { "g:0:0:0:0": 1.5 },
+    "order": ["g:0:1:1:2", "f:0:1:0"],
+    "backs": { "g:0:0:0:0": "g:0:1:0:0" }
+  },
+  "plan": {
+    "mode": "custom",
+    "quantities": { "g:0:0:0:0": 2 },
+    "autoFill": false,
+    "order": "grouped",
+    "groupBySize": true,
+    "sheetGrid": "same",
+    "rows": 3,
+    "columns": 3,
+    "finish": {
+      "marks": { "style": "off", "widthMm": 0.25, "color": "#000000", "lengthMm": 3, "offsetMm": 1 },
+      "bleed": { "mm": 0, "source": "mirror" },
+      "duplex": {
+        "on": false, "flip": "long", "offsetXMm": 0, "offsetYMm": 0, "commonBack": null,
+        "layout": "duplex", "fold": "vertical", "foldGapMm": 0, "backUpsideDown": null, "cutApart": false
+      }
+    }
+  }
+}

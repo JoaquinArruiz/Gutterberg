@@ -4,34 +4,36 @@
       "document_id": 0,
       "groups": [
         {
-          "grid": {
-            "bounds": {
-              "height": 0.2,
-              "width": 0.6,
-              "x": 0.1,
-              "y": 0.1
-            },
-            "columns": 2,
-            "fit_page": false,
-            "gap_x_mm": 2,
-            "gap_y_mm": 2,
-            "margin_bottom_mm": 5,
-            "margin_left_mm": 5,
-            "margin_right_mm": 5,
-            "margin_top_mm": 5,
-            "output_page": {
-              "height_pt": 841.8897637795276,
-              "width_pt": 595.2755905511812
-            },
-            "rows": 1,
-            "source_gap_x_mm": 0,
-            "source_gap_y_mm": 0
-          },
           "kind": "grid",
           "pages": {
             "first": 0,
             "last": 0
-          }
+          },
+          "grids": [
+            {
+              "bounds": {
+                "height": 0.2,
+                "width": 0.6,
+                "x": 0.1,
+                "y": 0.1
+              },
+              "columns": 2,
+              "fit_page": false,
+              "gap_x_mm": 2,
+              "gap_y_mm": 2,
+              "margin_bottom_mm": 5,
+              "margin_left_mm": 5,
+              "margin_right_mm": 5,
+              "margin_top_mm": 5,
+              "output_page": {
+                "height_pt": 841.8897637795276,
+                "width_pt": 595.2755905511812
+              },
+              "rows": 1,
+              "source_gap_x_mm": 0,
+              "source_gap_y_mm": 0
+            }
+          ]
         },
         {
           "cards": [

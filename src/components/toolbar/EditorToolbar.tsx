@@ -1,5 +1,6 @@
 import {
   Download,
+  Grid3x3,
   Hand,
   Magnet,
   Maximize,
@@ -43,7 +44,8 @@ import { DocumentName } from "./DocumentName";
 import { FileMenu } from "./FileMenu";
 
 const TOOLS = [
-  { id: "select", label: "toolbar.tools.select", key: "V", Icon: MousePointer2 },
+  { id: "pick", label: "toolbar.tools.pick", key: "V", Icon: MousePointer2 },
+  { id: "grid", label: "toolbar.tools.grid", key: "G", Icon: Grid3x3 },
   { id: "card", label: "toolbar.tools.card", key: "C", Icon: RectangleVertical },
   { id: "pan", label: "toolbar.tools.pan", key: "H", Icon: Hand },
 ] as const satisfies { id: Tool; label: string; key: string; Icon: typeof Hand }[];

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { hasRegion } from "../../lib/document-layout";
 import { useDocumentStore } from "../../stores/document-store";
 import { useCurrentGridGroup } from "../../stores/layout-store";
 import { useUiStore } from "../../stores/ui-store";
@@ -12,7 +13,8 @@ import { HintToast } from "../ui/HintToast";
 export function FirstPdfTour() {
   const hasDocument = useDocumentStore((s) => s.pages.length > 0);
   const stage = useUiStore((s) => s.stage);
-  const noRegion = !useCurrentGridGroup()?.selection;
+  const group = useCurrentGridGroup();
+  const noRegion = !group || !hasRegion(group);
   const [started, setStarted] = useState(false);
   useEffect(() => {
     if (!hasDocument) setStarted(false);

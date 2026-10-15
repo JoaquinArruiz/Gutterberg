@@ -12,7 +12,7 @@ use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, Pa
 use crate::error::{Error, Result};
 use crate::finish::{SheetBleed, SheetMarks, SheetWarning, Side};
 use crate::geometry::{PageSize, Point, Rect};
-use crate::layout::{calculate_fitting_layout, source_cards, LayoutResult};
+use crate::layout::{calculate_fitting_layout, source_cards, GridLayout, LayoutResult};
 use crate::units::{mm_to_pt, pt_to_mm};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -154,9 +154,9 @@ fn check_range(range: PageRange, total_pages: usize) -> Result<()> {
     Ok(())
 }
 
-/// Every card of the page groups, in page order (row-major within a grid). Skipped pages give
-/// none. Grid cards are unrotated with scale 1.0; a freeform group's cards map one to one onto
-/// each page of its range.
+/// Every card of the page groups, in page order: on each page grid by grid, row-major within a grid.
+/// Skipped pages give none. Grid cards are unrotated with scale 1.0; a freeform group's cards map one
+/// to one onto each page of its range.
 pub fn extract_cards(
     document_id: DocumentId,
     pages: &[PageSize],
@@ -170,9 +170,14 @@ pub fn extract_cards(
         for (page_index, &page) in (range.first..).zip(in_range) {
             match &g.kind {
                 PageGroupKind::Skip => {}
-                PageGroupKind::Grid { grid } => {
-                    for sc in source_cards(page, grid)? {
-                        cards.push(Card::new(sc.id(document_id, page_index), sc.oriented()));
+                PageGroupKind::Grid { grids } => {
+                    for (number, grid) in drawn_grids(grids) {
+                        for sc in source_cards(page, grid)? {
+                            cards.push(Card::new(
+                                sc.id(document_id, page_index, number),
+                                sc.oriented(),
+                            ));
+                        }
                     }
                 }
                 PageGroupKind::Freeform { cards: drawn } => {
@@ -189,6 +194,14 @@ pub fn extract_cards(
         }
     }
     Ok(cards)
+}
+
+/// The grids of a group whose region is drawn, with their numbers.
+fn drawn_grids(grids: &[Option<GridLayout>]) -> impl Iterator<Item = (usize, &GridLayout)> {
+    grids
+        .iter()
+        .enumerate()
+        .filter_map(|(number, grid)| grid.as_ref().map(|g| (number, g)))
 }
 
 /// One source PDF as the planner sees it: the sizes of its pages (as the UI shows them, or
@@ -748,11 +761,12 @@ pub enum PrintLayout {
     Grid { spec: SheetSpec },
 }
 
-/// The sheet for one source page laid out by `calculate_layout` (all cards in order,
-/// sheet grid = source grid).
+/// The sheet for one grid of a source page laid out by `calculate_layout` (all its cards in
+/// order, sheet grid = source grid). `grid` is the grid's number on the page.
 pub fn sheet_from_layout(
     document_id: DocumentId,
     page_index: usize,
+    grid: usize,
     columns: usize,
     layout: &LayoutResult,
 ) -> OutputSheet {
@@ -765,6 +779,7 @@ pub fn sheet_from_layout(
                 card_id: CardId::Grid {
                     document_id,
                     page_index,
+                    grid,
                     row: p.index / columns,
                     column: p.index % columns,
                 },
@@ -778,8 +793,8 @@ pub fn sheet_from_layout(
     )
 }
 
-/// One sheet per grid page, as the Cards stage lays it out. Freeform groups have no grid and
-/// give no sheet here.
+/// One sheet per grid of each grid page (a page with several grids gives a sheet for each, in
+/// order), as the Source tab lays it out. Freeform groups have no grid and give no sheet here.
 pub fn source_sheets(
     document_id: DocumentId,
     pages: &[PageSize],
@@ -808,16 +823,19 @@ fn source_sheets_into(
 ) -> Result<()> {
     for g in groups {
         check_range(g.pages, pages.len())?;
-        if let PageGroupKind::Grid { grid } = &g.kind {
+        if let PageGroupKind::Grid { grids } = &g.kind {
             let in_range = pages[g.pages.first..=g.pages.last].iter();
             for (page_index, &page) in (g.pages.first..).zip(in_range) {
-                let layout = calculate_fitting_layout(page, grid)?;
-                sheets.push(sheet_from_layout(
-                    document_id,
-                    page_index,
-                    grid.columns,
-                    &layout,
-                ));
+                for (number, grid) in drawn_grids(grids) {
+                    let layout = calculate_fitting_layout(page, grid)?;
+                    sheets.push(sheet_from_layout(
+                        document_id,
+                        page_index,
+                        number,
+                        grid.columns,
+                        &layout,
+                    ));
+                }
             }
         }
     }

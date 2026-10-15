@@ -6,14 +6,14 @@ import { formatError, toAppError } from "../../lib/errors";
 import { toRustDocuments } from "../../lib/print-request";
 import { computeCards } from "../../lib/sheet-api";
 import { useDocumentStore } from "../../stores/document-store";
-import { useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGrid, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { Button } from "../ui/Button";
 import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
 
 type Scope = "page" | "group";
 
 /**
- * "Turn into pieces": the grid of the viewed page becomes freeform pieces at the same place and size, so the page is
+ * "Turn into pieces": the grid being edited on the viewed page becomes freeform pieces at the same place and size, so the page is
  * free for the next grid. When the grid is shared by several pages it asks whether this page only or all of them.
  * The cells come from the engine (`compute_cards`), so they are exactly what the library shows.
  */
@@ -28,6 +28,7 @@ export function TurnIntoPiecesButton() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const grid = group?.kind === "grid" ? group : null;
+  const region = useCurrentGrid()?.selection ?? null;
   const shared = grid ? pageCount(grid.pages) : 1;
 
   // The dialog exists only while it is open, so nothing of it is in the page otherwise.
@@ -57,7 +58,7 @@ export function TurnIntoPiecesButton() {
   return (
     <>
       <Button
-        disabled={!grid?.selection || busy}
+        disabled={!region || busy}
         title={t("source.turnIntoPieces.title")}
         onClick={() => (shared > 1 ? (setScope("page"), setOpen(true)) : void run(true))}
       >

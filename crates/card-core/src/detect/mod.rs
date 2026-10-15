@@ -109,6 +109,19 @@ pub enum ProposalKind {
     },
     /// One rectangle per piece, tilt included, in reading order.
     Rects { rects: Vec<OrientedRect> },
+    /// Several regular grids side by side, one per size of piece, in reading order: a page with blocks of
+    /// pieces of different sizes, marked with one grid each.
+    Grids { grids: Vec<GridProposal> },
+}
+
+/// One grid of a [`ProposalKind::Grids`] proposal, with the fields of [`ProposalKind::Grid`].
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct GridProposal {
+    pub bounds: Rect,
+    pub rows: usize,
+    pub columns: usize,
+    pub source_gap_x_mm: f64,
+    pub source_gap_y_mm: f64,
 }
 
 /// Something worth telling the user about a proposal; the UI words each code.
@@ -151,8 +164,84 @@ impl Proposal {
         match &self.kind {
             ProposalKind::Grid { bounds, .. } => bounds.width * bounds.height,
             ProposalKind::Rects { rects } => rects.iter().map(|r| r.width * r.height).sum(),
+            ProposalKind::Grids { grids } => {
+                grids.iter().map(|g| g.bounds.width * g.bounds.height).sum()
+            }
         }
     }
+}
+
+/// How many grids a [`ProposalKind::Grids`] proposal can hold (as many as a page can).
+pub const MAX_GRIDS: usize = 9;
+
+/// Good grid proposals of one engine whose blocks do not overlap, put together as one proposal of several grids
+/// when there are two or more: what a page with pieces of different sizes, each size in its own block, needs. The
+/// largest blocks are taken first; the proposal is as confident as its least confident grid.
+fn combined_grids(proposals: &[Proposal]) -> Option<Proposal> {
+    let mut grids: Vec<&Proposal> = proposals
+        .iter()
+        .filter(|p| matches!(p.kind, ProposalKind::Grid { .. }) && p.confidence >= GOOD_CONFIDENCE)
+        .collect();
+    let engine = grids.first()?.engine.clone();
+    grids.retain(|p| p.engine == engine);
+    grids.sort_by(|a, b| b.coverage().total_cmp(&a.coverage()));
+    let mut chosen: Vec<(&Proposal, GridProposal)> = Vec::new();
+    for p in grids {
+        let ProposalKind::Grid {
+            bounds,
+            rows,
+            columns,
+            source_gap_x_mm,
+            source_gap_y_mm,
+        } = p.kind
+        else {
+            continue;
+        };
+        if chosen.len() < MAX_GRIDS && chosen.iter().all(|(_, g)| !overlaps(g.bounds, bounds)) {
+            let grid = GridProposal {
+                bounds,
+                rows,
+                columns,
+                source_gap_x_mm,
+                source_gap_y_mm,
+            };
+            chosen.push((p, grid));
+        }
+    }
+    if chosen.len() < 2 {
+        return None;
+    }
+    let confidence = chosen
+        .iter()
+        .map(|(p, _)| p.confidence)
+        .fold(f64::MAX, f64::min);
+    let mut notes: Vec<Note> = Vec::new();
+    for n in chosen.iter().flat_map(|(p, _)| p.notes.iter()) {
+        if !notes.contains(n) {
+            notes.push(*n);
+        }
+    }
+    let mut grids: Vec<GridProposal> = chosen.into_iter().map(|(_, g)| g).collect();
+    // Reading order: top to bottom, then left to right.
+    let tol = mm_to_pt(POSITION_TOLERANCE_MM);
+    grids.sort_by(|a, b| {
+        if (a.bounds.y - b.bounds.y).abs() <= tol {
+            a.bounds.x.total_cmp(&b.bounds.x)
+        } else {
+            a.bounds.y.total_cmp(&b.bounds.y)
+        }
+    });
+    Some(Proposal {
+        kind: ProposalKind::Grids { grids },
+        confidence,
+        engine,
+        notes,
+    })
+}
+
+/// Whether two blocks share any area (touching edges do not count).
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
 
 /// What one engine found: proposals (of any confidence) and why it found less than it could have.
@@ -186,7 +275,8 @@ pub fn default_engines() -> Vec<Box<dyn Detector>> {
 
 /// Runs `engines` in order and keeps what is worth offering: proposals under [`MIN_CONFIDENCE`] are
 /// dropped, the rest sorted by confidence (then by what they cover). The search ends as soon as a
-/// proposal reaches [`STOP_CONFIDENCE`].
+/// proposal reaches [`STOP_CONFIDENCE`]. When good grids of different blocks were found, they are also
+/// offered together as one proposal of several grids.
 pub fn detect_page(page: &PageData, engines: &[Box<dyn Detector>]) -> Detection {
     let mut kept: Vec<Proposal> = Vec::new();
     let mut reasons: Vec<Note> = Vec::new();
@@ -206,6 +296,9 @@ pub fn detect_page(page: &PageData, engines: &[Box<dyn Detector>]) -> Detection 
         if kept.iter().any(|p| p.confidence >= STOP_CONFIDENCE) {
             break;
         }
+    }
+    if let Some(all) = combined_grids(&kept) {
+        kept.push(all);
     }
     kept.sort_by(|a, b| {
         let key = |p: &Proposal| (p.confidence * 100.0).round();

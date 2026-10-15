@@ -33,9 +33,23 @@ export type DetectedGrid = {
 const unit = (v: number) => Math.min(Math.max(v, 0), 1);
 const GAP_EPSILON_MM = 0.05;
 
+type GridFields = Pick<
+  Extract<Proposal, { kind: "grid" }>,
+  "bounds" | "rows" | "columns" | "source_gap_x_mm" | "source_gap_y_mm"
+>;
+
 /** The region and grid of a `grid` proposal. The region is pulled inside the page, as the layout engine needs. */
 export function gridFromProposal(p: Proposal, page: PageSize): DetectedGrid | null {
-  if (p.kind !== "grid") return null;
+  return p.kind === "grid" ? detectedGrid(p, page) : null;
+}
+
+/** The grids a proposal sets, in order: one for a `grid` proposal, each of a `grids` one; null for rectangles. */
+export function gridsFromProposal(p: Proposal, page: PageSize): DetectedGrid[] | null {
+  if (p.kind === "grid") return [detectedGrid(p, page)];
+  return p.kind === "grids" ? p.grids.map((g) => detectedGrid(g, page)) : null;
+}
+
+function detectedGrid(p: GridFields, page: PageSize): DetectedGrid {
   const x0 = unit(p.bounds.x / page.width_pt);
   const y0 = unit(p.bounds.y / page.height_pt);
   const x1 = unit((p.bounds.x + p.bounds.width) / page.width_pt);
@@ -58,4 +72,9 @@ export function piecesFromProposal(p: Proposal, page: PageSize): OrientedRect[] 
 }
 
 /** How many pieces applying the proposal would give. */
-export const pieceCount = (p: Proposal): number => (p.kind === "grid" ? p.rows * p.columns : p.rects.length);
+export const pieceCount = (p: Proposal): number =>
+  p.kind === "grid"
+    ? p.rows * p.columns
+    : p.kind === "grids"
+      ? p.grids.reduce((n, g) => n + g.rows * g.columns, 0)
+      : p.rects.length;

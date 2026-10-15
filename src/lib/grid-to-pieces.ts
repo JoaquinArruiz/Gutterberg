@@ -2,7 +2,7 @@
 // size, so the page is free for the next grid. The cells come from the Rust engine (`compute_cards`), not from
 // maths here; this file only files them as freeform pieces and says which key each one had and has.
 
-import { cardIdKey, freeformCardId, type OrientedRect } from "./card";
+import { cardIdKey, freeformCardId, gridNumber, type OrientedRect } from "./card";
 import { orientedFromPoints } from "./coordinates";
 import type { FreeformCards } from "./document-layout";
 import type { Card } from "./sheet-api";
@@ -19,8 +19,8 @@ const cellOrder = (a: Card, b: Card) =>
   a.id.kind === "grid" && b.id.kind === "grid" ? a.id.row - b.id.row || a.id.column - b.id.column : 0;
 
 /**
- * The grid pieces of `pages` of document `documentId` as freeform pieces, row by row, after the `existing` ones of
- * each page. Pages without grid pieces are left out.
+ * The pieces of grid number `grid` on `pages` of document `documentId` as freeform pieces, row by row, after the
+ * `existing` ones of each page. Pages without such pieces are left out.
  */
 export function gridToPieces(
   cards: Card[],
@@ -28,12 +28,19 @@ export function gridToPieces(
   pages: number[],
   sizes: PageSize[],
   existing: FreeformCards,
+  grid = 0,
 ): GridPieces {
   const out: GridPieces = { pieces: {}, moves: {} };
   for (const page of pages) {
     const size = sizes[page];
     const cells = cards
-      .filter((c) => c.id.kind === "grid" && c.id.document_id === documentId && c.id.page_index === page)
+      .filter(
+        (c) =>
+          c.id.kind === "grid" &&
+          c.id.document_id === documentId &&
+          c.id.page_index === page &&
+          gridNumber(c.id) === grid,
+      )
       .sort(cellOrder);
     if (!size || cells.length === 0) continue;
     const start = existing[page]?.length ?? 0;

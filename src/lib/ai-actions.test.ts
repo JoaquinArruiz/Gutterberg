@@ -184,19 +184,21 @@ describe("sorting pages with AI", () => {
     ai().updateRow(3, { skip: true }); // the user also skips the backs
     ai().updateRow(4, { skip: false }); // and keeps page 5
     useLayoutStore.getState().setSelection(2, { x: 0.1, y: 0.1, width: 0.5, height: 0.5 });
-    const regionBefore = useLayoutStore.getState().groups.find((g) => g.kind === "grid" && g.selection !== null);
+    const regionBefore = useLayoutStore
+      .getState()
+      .groups.find((g) => g.kind === "grid" && g.grids[0].selection !== null);
     applySort();
     const groups = useLayoutStore.getState().groups;
     expect([0, 1, 2, 3, 4, 5].map((p) => isSkipped(groups, p))).toEqual([true, true, false, true, false, false]);
     expect(ai().sort).toBeNull();
     // The region drawn on page 3 is still there.
-    expect(groups.some((g) => g.kind === "grid" && g.selection !== null)).toBe(true);
+    expect(groups.some((g) => g.kind === "grid" && g.grids[0].selection !== null)).toBe(true);
     expect(regionBefore).toBeDefined();
 
     undo();
     const back = useLayoutStore.getState().groups;
     expect([0, 1, 2, 3, 4, 5].map((p) => isSkipped(back, p))).toEqual([false, false, false, false, false, false]);
-    expect(back.some((g) => g.kind === "grid" && g.selection !== null)).toBe(true);
+    expect(back.some((g) => g.kind === "grid" && g.grids[0].selection !== null)).toBe(true);
   });
 
   it("changes nothing when it is dropped", async () => {

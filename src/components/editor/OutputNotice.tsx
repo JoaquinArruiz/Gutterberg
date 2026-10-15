@@ -2,14 +2,14 @@ import { useTranslation } from "react-i18next";
 import { formatError } from "../../lib/errors";
 import { formatMeasurement } from "../../lib/measurement";
 import { usePreviewResult } from "../../lib/view-page";
-import { useCurrentGridGroup, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
+import { useCurrentGrid, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { HintToast } from "../ui/HintToast";
 
 /** Why the output view may be empty or wrong: no selection, invalid grid, no manual preview yet, overflow. */
 export function OutputNotice() {
   const { t } = useTranslation();
-  const selection = useCurrentGridGroup()?.selection ?? null;
+  const selection = useCurrentGrid()?.selection ?? null;
   const skipped = useCurrentGroup()?.kind === "skip";
   const layoutError = useLayoutStore((s) => s.layoutError);
   const live = useLayoutStore((s) => s.live);

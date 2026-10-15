@@ -380,6 +380,14 @@ export function PreferencesDialog() {
                   hint={t("preferences.workspace.invertRulersHint")}
                 />
               </Field>
+              <Field label={t("preferences.workspace.tools")}>
+                <Switch
+                  checked={prefs.editor.selectAfterGrid}
+                  onChange={store.setSelectAfterGrid}
+                  label={t("preferences.workspace.selectAfterGrid")}
+                  hint={t("preferences.workspace.selectAfterGridHint")}
+                />
+              </Field>
             </>
           )}
 

@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { clampRange, pagesOfSameSize, rangeLabel, runsOf } from "../../lib/document-layout";
+import { clampRange, gridsLabel, pagesOfSameSize, rangeLabel, runsOf } from "../../lib/document-layout";
 import { useDocumentStore } from "../../stores/document-store";
-import { useCurrentGridGroup, useLayoutStore } from "../../stores/layout-store";
+import { useActiveGrid, useCurrentGridGroup, useLayoutStore } from "../../stores/layout-store";
 import { Button } from "../ui/Button";
 import { NumberField } from "../ui/NumberField";
 import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
 
 type Target = "page" | "range" | "same-size";
+type Which = "active" | "all";
 
 /**
  * "Apply this grid to…": copies the viewed page's grid and piece region onto this page, a range of
  * pages or every page of the same size. Each target becomes its own group, so it can then be
- * edited without touching the rest.
+ * edited without touching the rest. With several grids on the page it copies the grid being edited,
+ * or all of them.
  */
 export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useTranslation();
@@ -20,6 +22,10 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
   const pages = useDocumentStore((s) => s.pages);
   const currentPage = useDocumentStore((s) => s.currentPage);
   const group = useCurrentGridGroup();
+  const active = useActiveGrid();
+  const [which, setWhich] = useState<Which>("all");
+  const several = (group?.grids.length ?? 0) > 1;
+  const region = group?.grids[active];
   const groups = useLayoutStore((s) => s.groups);
   const applyGrid = useLayoutStore((s) => s.applyGrid);
   const [target, setTarget] = useState<Target>("same-size");
@@ -58,12 +64,32 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
       {group ? (
         <>
           <p className="mb-3 text-[var(--muted)]">
-            {t("applyGrid.description", {
-              page: currentPage + 1,
-              rows: group.grid.rows,
-              columns: group.grid.columns,
-            })}
+            {several
+              ? t("applyGrid.descriptionSeveral", { page: currentPage + 1 })
+              : t("applyGrid.description", {
+                  page: currentPage + 1,
+                  rows: group.grids[0].grid.rows,
+                  columns: group.grids[0].grid.columns,
+                })}
           </p>
+          {several && region && (
+            <div className="mb-3">
+              <RadioCardGroup<Which> label={t("applyGrid.which")} value={which} onChange={setWhich}>
+                <RadioCard
+                  value="all"
+                  title={t("applyGrid.allGrids", { count: group.grids.length, grids: gridsLabel(group) })}
+                />
+                <RadioCard
+                  value="active"
+                  title={t("applyGrid.thisGrid", {
+                    n: active + 1,
+                    rows: region.grid.rows,
+                    columns: region.grid.columns,
+                  })}
+                />
+              </RadioCardGroup>
+            </div>
+          )}
           <RadioCardGroup<Target> label={t("applyGrid.dialog")} value={target} onChange={setTarget}>
             <RadioCard value="page" title={t("applyGrid.onlyThisPage")} />
             <RadioCard value="range" title={t("applyGrid.pagesRange")}>
@@ -102,7 +128,7 @@ export function ApplyGridDialog({ open, onClose }: { open: boolean; onClose: () 
           size="md"
           disabled={!group || targets.length === 0}
           onClick={() => {
-            applyGrid(currentPage, targets);
+            applyGrid(currentPage, targets, several && which === "all" ? "all" : active);
             onClose();
           }}
         >

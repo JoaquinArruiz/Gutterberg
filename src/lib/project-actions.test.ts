@@ -184,7 +184,7 @@ describe("starting a project", () => {
     await newProject();
     expect(fake.asked).toHaveLength(1);
     expect(docs().documents).toHaveLength(1);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
 
     fake.confirms.push(true);
     await newProject();
@@ -278,7 +278,7 @@ describe("saving and opening", () => {
     await openProjectDialog("/projects/notes.gtr");
     expect(errorCodes()).toEqual(["not_a_project"]);
     expect(docs().documents.map((d) => d.path)).toEqual(["/games/a.pdf"]);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
   });
 
   it("refuses a project from a newer version, and opens nothing of it", async () => {
@@ -339,7 +339,7 @@ describe("a PDF that moved or changed", () => {
     expect(errorCodes()).toEqual([]);
     expect(noticeKeys()).toEqual([]);
     expect(docs().documents.map((d) => d.path)).toEqual(["/moved/a.pdf"]);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     // The file says the old place, so saving would update it.
     expect(modified()).toBe(true);
   });
@@ -376,7 +376,7 @@ describe("a PDF that moved or changed", () => {
     fake.pdfs.set("/games/a.pdf", { hash: hash(9), pages: 3 });
     await openProjectDialog("/projects/game.gtr");
     expect(noticeKeys()).toEqual(["pdfChanged"]);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     expect(docs().documents[0].hash).toBe(hash(9));
   });
 
@@ -386,7 +386,11 @@ describe("a PDF that moved or changed", () => {
     await openProjectDialog("/projects/game.gtr");
     expect(noticeKeys().sort()).toEqual(["layoutReset", "pdfChanged"]);
     expect(layout().groups).toHaveLength(1);
-    expect(layout().groups[0]).toMatchObject({ kind: "grid", pages: { first: 0, last: 4 }, selection: null });
+    expect(layout().groups[0]).toMatchObject({
+      kind: "grid",
+      pages: { first: 0, last: 4 },
+      grids: [{ selection: null }],
+    });
     expect(layout().freeform).toEqual({});
     expect(layout().cardEdits).toEqual({ turns: {}, scales: {}, order: [], backs: {} });
     expect(usePrintStore.getState().quantities).toEqual({});
@@ -413,8 +417,8 @@ describe("several PDFs in one project", () => {
     expect(docs().activeId).toBe(1);
     expect(docs().pages).toHaveLength(2);
     // The new PDF starts with a default layout; the first one's is parked untouched.
-    expect(layout().groups[0]).toMatchObject({ selection: null, pages: { first: 0, last: 1 } });
-    expect(layout().parked[0].groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: null }], pages: { first: 0, last: 1 } });
+    expect(layout().parked[0].groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     expect(fake.opened).toContainEqual([1, "/games/b.pdf"]);
   });
 
@@ -425,10 +429,10 @@ describe("several PDFs in one project", () => {
     activateDocument(0);
     expect(docs().activeId).toBe(0);
     expect(docs().pages).toHaveLength(3);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     expect(layout().freeform).toEqual({});
     activateDocument(1);
-    expect(layout().groups[0]).toMatchObject({ selection: { x: 0, y: 0, width: 0.5, height: 0.5 } });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: { x: 0, y: 0, width: 0.5, height: 0.5 } }] });
     expect(layout().freeform).toEqual({ 0: [tilted] });
   });
 
@@ -480,7 +484,7 @@ describe("several PDFs in one project", () => {
     await removeActiveDocument();
     expect(docs().documents.map((d) => d.id)).toEqual([0]);
     expect(docs().activeId).toBe(0);
-    expect(layout().groups[0]).toMatchObject({ selection: sel });
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     expect(layout().parked).toEqual({});
     expect(usePrintStore.getState().quantities).toEqual({ [cardKey(0, 0, 0, 0)]: 2 });
   });

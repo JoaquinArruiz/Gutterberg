@@ -7,7 +7,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
-import { DetectSection } from "../sidebar/DetectSection";
+import { DetectControls } from "../sidebar/DetectControls";
 import { DetectDraftBar, DetectOverlay } from "./DetectDraft";
 
 vi.mock("../../lib/detect-api", async (importOriginal) => ({
@@ -54,7 +54,7 @@ async function detectWith(d: Detection) {
 
 const all = () => (
   <>
-    <DetectSection />
+    <DetectControls />
     <svg role="img" aria-label="page">
       <DetectOverlay viewport={viewport} page={A4} />
     </svg>
@@ -69,13 +69,13 @@ beforeEach(() => {
   useLayoutStore.getState().resetDocument(2);
   editor().setDraft(null);
   editor().setDetectError(null);
-  editor().setTool("select");
+  editor().setTool("grid");
 });
 afterEach(cleanup);
 
 describe("Detect pieces section", () => {
   it("says what it does and waits to be asked", () => {
-    render(<DetectSection />);
+    render(<DetectControls />);
     expect(screen.getByText(/Nothing changes until you apply it/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Detect on this page" }).hasAttribute("disabled")).toBe(false);
     expect(detect).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe("Detect pieces section", () => {
 
   it("is off on a skipped page", () => {
     useLayoutStore.getState().setSkipped(0, true);
-    render(<DetectSection />);
+    render(<DetectControls />);
     expect(screen.getByRole("button", { name: "Detect on this page" }).hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("This page is skipped.")).toBeTruthy();
   });
@@ -91,7 +91,7 @@ describe("Detect pieces section", () => {
   it("shows that it is working", async () => {
     let resolve: (d: Detection) => void = () => {};
     detect.mockReturnValue(new Promise((r) => (resolve = r)));
-    render(<DetectSection />);
+    render(<DetectControls />);
     fireEvent.click(screen.getByRole("button", { name: "Detect on this page" }));
     expect(screen.getByRole("button", { name: "Detecting…" }).hasAttribute("disabled")).toBe(true);
     await act(async () => resolve({ proposals: [], reasons: [] }));
@@ -99,7 +99,7 @@ describe("Detect pieces section", () => {
   });
 
   it("says when nothing was found, and why", async () => {
-    render(<DetectSection />);
+    render(<DetectControls />);
     await detectWith({ proposals: [], reasons: ["merged_pieces"] });
     expect(screen.getByTestId("detect-none").textContent).toContain("No pieces found on this page");
     expect(screen.getByTestId("detect-none").textContent).toContain("pieces that touch cannot be told apart");
@@ -107,7 +107,7 @@ describe("Detect pieces section", () => {
 
   it("shows an error from the engine", async () => {
     detect.mockRejectedValue({ code: "page_out_of_range", message: "x", page: 4, count: 2 });
-    render(<DetectSection />);
+    render(<DetectControls />);
     fireEvent.click(screen.getByRole("button", { name: "Detect on this page" }));
     await act(async () => {});
     expect(screen.getByRole("alert").textContent).toContain("Page 4 does not exist");
@@ -147,15 +147,33 @@ describe("the draft on the page", () => {
   it("applies on the button and on Enter, and leaves nothing behind", async () => {
     render(all());
     await detectWith({ proposals: [grid({ rows: 2, columns: 4 })], reasons: [] });
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grid).toMatchObject({ rows: 2, columns: 4 });
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].grid).toMatchObject({ rows: 2, columns: 4 });
     expect(screen.queryByTestId("detect-bar")).toBeNull();
     expect(screen.queryByTestId("detect-overlay")?.children.length ?? 0).toBe(0);
 
+    // With the grid drawn, Enter adds the next proposal as a new grid and leaves the first one as it is.
     await detectWith({ proposals: [grid({ rows: 1, columns: 2 })], reasons: [] });
     fireEvent.keyDown(window, { key: "Enter" });
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grid).toMatchObject({ rows: 1, columns: 2 });
+    const grids = gridGroupAt(useLayoutStore.getState().groups, 0)?.grids ?? [];
+    expect(grids.map((r) => [r.grid.rows, r.grid.columns])).toEqual([
+      [2, 4],
+      [1, 2],
+    ]);
+    expect(useLayoutStore.getState().activeGrid).toBe(1);
+  });
+
+  it("asks whether to add a grid proposal or replace the grid being edited, once that grid is drawn", async () => {
+    render(all());
+    await detectWith({ proposals: [grid({ rows: 2, columns: 4 })], reasons: [] });
+    expect(screen.queryByRole("button", { name: "Add as new grid" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+    await detectWith({ proposals: [grid({ rows: 3, columns: 3 })], reasons: [] });
+    fireEvent.click(screen.getByRole("button", { name: "Replace Grid 1" }));
+    const grids = gridGroupAt(useLayoutStore.getState().groups, 0)?.grids ?? [];
+    expect(grids).toHaveLength(1);
+    expect(grids[0].grid).toMatchObject({ rows: 3, columns: 3 });
   });
 
   it("is discarded on the button and on Esc, changing nothing", async () => {
@@ -166,7 +184,7 @@ describe("the draft on the page", () => {
     await detectWith({ proposals: [grid()], reasons: [] });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByTestId("detect-bar")).toBeNull();
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
   });
 
   it("leaves Enter and Esc to a field being typed in", async () => {
@@ -180,7 +198,7 @@ describe("the draft on the page", () => {
     fireEvent.keyDown(screen.getByLabelText("field"), { key: "Enter" });
     fireEvent.keyDown(screen.getByLabelText("field"), { key: "Escape" });
     expect(screen.getByTestId("detect-bar")).toBeTruthy();
-    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.selection).toBeNull();
+    expect(gridGroupAt(useLayoutStore.getState().groups, 0)?.grids[0].selection).toBeNull();
   });
 
   it("offers the other proposals one after another", async () => {

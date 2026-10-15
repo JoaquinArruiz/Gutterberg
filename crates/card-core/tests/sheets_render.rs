@@ -29,7 +29,7 @@ fn grid() -> GridLayout {
 fn sheet_with(card_turn: Turn, page: PageSize) -> OutputSheet {
     let group = PageGroup {
         pages: PageRange { first: 0, last: 0 },
-        kind: PageGroupKind::Grid { grid: grid() },
+        kind: PageGroupKind::grid(grid()),
     };
     let mut cards = extract_cards(DEFAULT_DOCUMENT_ID, &[page], &[group]).unwrap();
     // Card (row 0, column 0): the top-left card of the sample page.
@@ -81,7 +81,7 @@ fn every_turn_shows_the_card_turned_clockwise_and_clipped() {
         &[page],
         &[PageGroup {
             pages: PageRange { first: 0, last: 0 },
-            kind: PageGroupKind::Grid { grid: grid() },
+            kind: PageGroupKind::grid(grid()),
         }],
     )
     .unwrap()[0];

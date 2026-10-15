@@ -60,7 +60,9 @@ export function FreeformSection() {
   return (
     <CollapsibleSection id="cards.freeform" title={t("freeform.title")}>
       <p className="text-[var(--muted)]">{count === 0 ? t("freeform.none") : t("freeform.count", { count })}</p>
-      {tool !== "card" && count > 0 && <p className="text-[var(--muted)]">{t("freeform.chooseTool")}</p>}
+      {tool !== "card" && tool !== "pick" && count > 0 && (
+        <p className="text-[var(--muted)]">{t("freeform.chooseTool")}</p>
+      )}
       {tool === "card" && !card && <p className="text-[var(--muted)]">{t("freeform.drawHint")}</p>}
       {card && size && index !== null && (
         <>

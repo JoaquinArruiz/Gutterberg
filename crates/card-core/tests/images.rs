@@ -612,6 +612,7 @@ fn an_image_printed_fifty_times_is_stored_once() {
     let id = CardId::Grid {
         document_id: 0,
         page_index: 0,
+        grid: 0,
         row: 0,
         column: 0,
     };
@@ -707,7 +708,7 @@ fn image_source(doc: &Document, spec: &ImageSpec, count: usize) -> DocumentSourc
                 first: 0,
                 last: count - 1,
             },
-            kind: PageGroupKind::Grid { grid },
+            kind: PageGroupKind::grid(grid),
         }],
     }
 }

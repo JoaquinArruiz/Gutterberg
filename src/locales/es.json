@@ -22,7 +22,8 @@
       "print": "Imprimir"
     },
     "tools": {
-      "select": "Región de cuadrícula",
+      "pick": "Seleccionar",
+      "grid": "Herramienta Cuadrícula",
       "card": "Herramienta Pieza",
       "pan": "Desplazar"
     },
@@ -104,7 +105,14 @@
     "pageSkipped": "Esta página está omitida: no se incluye en la exportación.",
     "guidesMenu": "Guías",
     "clearGuides": "Borrar las guías",
-    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla."
+    "noGuides": "Arrastra desde una regla hasta la página para crear una guía; arrástrala de vuelta a su regla para borrarla.",
+    "menu": {
+      "hideGrid": "Ocultar {{name}}",
+      "deleteGrid": "Eliminar {{name}}",
+      "clearGrid": "Vaciar la región de {{name}}",
+      "deletePieces_one": "Eliminar pieza",
+      "deletePieces_other": "Eliminar {{count}} piezas"
+    }
   },
   "preview": {
     "title": "Vista previa",
@@ -121,7 +129,8 @@
       "pages": "Páginas",
       "properties": "Propiedades",
       "library": "Biblioteca de piezas",
-      "inspector": "Ajustes de impresión"
+      "inspector": "Ajustes de impresión",
+      "grids": "Cuadrículas y piezas"
     },
     "titleHidden": "{{title}} (oculto)",
     "expand": "Expandir {{title}}",
@@ -153,7 +162,8 @@
       "pages": "Págs.",
       "properties": "Prop.",
       "library": "Bibl.",
-      "inspector": "Ajustes"
+      "inspector": "Ajustes",
+      "grids": "Cuadr."
     }
   },
   "gapFields": {
@@ -202,6 +212,71 @@
       "everyPage_one": "Esta página",
       "everyPage_other": "Todas las páginas del grupo ({{count}})",
       "everyPageHint": "Todas se convierten en piezas y se borra la región de su cuadrícula."
+    },
+    "grids": {
+      "item": "Cuadrícula {{n}}",
+      "noRegion": "sin región",
+      "pick": "Editar solo {{name}}",
+      "add": "Agregar cuadrícula",
+      "addTitle": "Agrega otra cuadrícula a esta página, para piezas de otro tamaño, y luego dibuja su región en la página",
+      "full": "Una página puede tener hasta {{count}} cuadrículas.",
+      "delete": "Eliminar {{name}}",
+      "note": "Cada cuadrícula tiene su propia región, filas, columnas y separación, y puede tener un nombre y un color. El panel Propiedades tiene los ajustes de la cuadrícula elegida, que es la que se edita en la página; las demás se dibujan más tenues, y al hacer clic en una la eliges. Arrastra cuadrículas y carpetas en la lista para cambiar su orden, o suelta una cuadrícula en una carpeta. Elige una carpeta para mover sus cuadrículas juntas en la página; al elegir una cuadrícula, se mueve sola. Las piezas libres de la página aparecen después de las cuadrículas. Haz doble clic en un nombre para cambiarlo, y clic en el punto para el color.",
+      "edit": "Nombre, color y carpeta de {{name}}",
+      "name": "Nombre de la cuadrícula",
+      "color": "Color de la cuadrícula",
+      "colors": {
+        "default": "Predeterminado",
+        "blue": "Azul",
+        "red": "Rojo",
+        "green": "Verde",
+        "amber": "Ámbar",
+        "pink": "Rosa",
+        "teal": "Verde azulado",
+        "orange": "Naranja",
+        "indigo": "Índigo"
+      },
+      "folder": "Carpeta",
+      "noFolder": "Sin carpeta",
+      "newFolder": "Carpeta nueva",
+      "folderBase": "Carpeta",
+      "folderName": "Nombre de la carpeta",
+      "pickFolder": "Elegir las cuadrículas de {{name}}, para moverlas juntas",
+      "renameFolder": "Cambiar el nombre de {{name}}",
+      "ungroup": "Sacar las cuadrículas de {{name}}",
+      "fold": "Plegar {{name}}",
+      "unfold": "Desplegar {{name}}",
+      "pickColor": "Color de {{name}}",
+      "newFolderTitle": "Carpeta nueva: arrastra cuadrículas a ella para moverlas juntas",
+      "emptyFolder": "{{name}} está vacía: arrastra cuadrículas a ella",
+      "deleteFolder": "Eliminar {{name}}",
+      "hide": "Ocultar {{name}} en la página (se sigue imprimiendo)",
+      "show": "Mostrar {{name}} en la página",
+      "pieces_one": "Piezas libres ({{count}})",
+      "pieces_other": "Piezas libres ({{count}})",
+      "piece": "Pieza {{n}}",
+      "pickPiece": "Elegir {{name}} con la Herramienta Pieza",
+      "skipped": "Esta página se omite: no tiene cuadrículas.",
+      "deleteLast": "Vaciar {{name}}: la última cuadrícula pierde su región, para volver a dibujarla",
+      "suggestedColors": "Sugeridos",
+      "ownColors": "Tus colores",
+      "addColor": "Agregar un color propio",
+      "deleteColor": "Eliminar color",
+      "deleteColorNamed": "Eliminar {{hex}}",
+      "menu": {
+        "rename": "Cambiar nombre",
+        "color": "Cambiar color",
+        "hide": "Ocultar",
+        "show": "Mostrar",
+        "moveUp": "Subir",
+        "moveDown": "Bajar",
+        "moveTo": "Mover a {{folder}}",
+        "moveToNew": "Mover a una carpeta nueva",
+        "takeOut": "Sacar de {{folder}}",
+        "ungroup": "Desagrupar",
+        "delete": "Eliminar",
+        "clear": "Borrar región"
+      }
     }
   },
   "freeform": {
@@ -209,7 +284,7 @@
     "none": "No hay piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
     "count_one": "{{count}} pieza libre en esta página. Se imprime desde la pestaña Imprimir.",
     "count_other": "{{count}} piezas libres en esta página. Se imprimen desde la pestaña Imprimir.",
-    "chooseTool": "Elige la Herramienta Pieza (C) para moverlas, cambiar su tamaño o girarlas.",
+    "chooseTool": "Elige la Herramienta Seleccionar (V) o la Herramienta Pieza (C) para moverlas, cambiar su tamaño o girarlas.",
     "drawHint": "Arrastra sobre la página para dibujar una pieza y haz clic en una para editarla. Arrastra el punto que está sobre una pieza para girarla; Mayús ajusta a pasos de 15°. Mayús+clic elige varias, Ctrl+A las elige todas y las flechas mueven lo elegido.",
     "piece": "Pieza",
     "angle": "Ángulo",
@@ -237,7 +312,18 @@
     "addPdf": "Agregar PDF…",
     "addPdfTitle": "Agrega otro PDF a este proyecto. Sus piezas se suman a la biblioteca de piezas.",
     "addImages": "Agregar imágenes…",
-    "addImagesTitle": "Agrega imágenes PNG, JPEG o WebP como piezas, una por página."
+    "addImagesTitle": "Agrega imágenes PNG, JPEG o WebP como piezas, una por página.",
+    "removed_one": "Páginas quitadas ({{count}})",
+    "removed_other": "Páginas quitadas ({{count}})",
+    "restoreTitle": "Recuperar esta página",
+    "menu": {
+      "remove": "Quitar página",
+      "removeOthers": "Quitar las demás páginas",
+      "skip": "Omitir página",
+      "include": "Incluir página",
+      "restore": "Recuperar",
+      "restoreAll": "Recuperar todas"
+    }
   },
   "applyGrid": {
     "dialog": "Aplicar esta cuadrícula a",
@@ -249,14 +335,18 @@
     "toPage": "Hasta la página",
     "to": "a",
     "sameSize": "Todas las páginas del mismo tamaño (las páginas omitidas siguen omitidas)",
-    "skippedNoGrid": "Esta página está omitida, así que no tiene cuadrícula que copiar."
+    "skippedNoGrid": "Esta página está omitida, así que no tiene cuadrícula que copiar.",
+    "which": "Qué copiar",
+    "thisGrid": "Cuadrícula {{n}} ({{rows}}×{{columns}})",
+    "allGrids": "Las {{count}} cuadrículas ({{grids}})",
+    "descriptionSeveral": "Copia cuadrículas y sus regiones de piezas de la página {{page}}. Cada destino se convierte en su propio grupo, así que después puedes editarlo por separado."
   },
   "library": {
     "openPdf": "Abre un PDF para ver sus piezas.",
     "show": "Mostrar",
     "filterLabel": "Filtrar piezas por grupo",
     "all": "Todas las piezas",
-    "group": "{{range}} ({{rows}}×{{columns}})",
+    "group": "{{range}} ({{grids}})",
     "page": "Pág.",
     "showOnlyPage": "Mostrar solo la página",
     "selectAll": "Seleccionar todas",
@@ -283,6 +373,7 @@
     "thumb": {
       "gridPosition": "f{{row}} c{{column}}",
       "freeformPosition": "#{{n}}",
+      "gridNumber": "cu{{n}}",
       "label": "p{{page}} · {{position}}",
       "title": "Página {{page}}, {{position}} · {{size}}",
       "titleTurned": "Página {{page}}, {{position}} · {{size}} · girada {{turn}}°",
@@ -293,7 +384,7 @@
       "gridShort": "f{{row}}c{{column}}"
     },
     "allOfDocument": "Todas las piezas de {{name}}",
-    "groupIn": "{{name}}: {{range}} ({{rows}}×{{columns}})",
+    "groupIn": "{{name}}: {{range}} ({{grids}})",
     "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela."
   },
   "print": {
@@ -601,7 +692,10 @@
       "layoutPrint": "Disposición de la pestaña Imprimir",
       "rulers": "Reglas",
       "invertRulers": "Invertir las reglas",
-      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella."
+      "invertRulersHint": "Arrastra desde una regla para una guía que la cruce en lugar de una paralela a ella.",
+      "tools": "Herramientas",
+      "selectAfterGrid": "Herramienta Seleccionar después de dibujar una cuadrícula",
+      "selectAfterGridHint": "Cambia a la Herramienta Seleccionar al terminar de dibujar una cuadrícula."
     },
     "livePreview": {
       "title": "Vista previa en vivo",
@@ -782,8 +876,8 @@
     },
     "grid-and-pieces": {
       "one": {
-        "title": "Una cuadrícula y piezas en una página",
-        "text": "Una página puede tener una cuadrícula y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Convertir en piezas y dibuja la siguiente."
+        "title": "Cuadrículas y piezas en una página",
+        "text": "Una página puede tener varias cuadrículas y cualquier cantidad de piezas dibujadas una a una. Para tres tamaños en una página: dibuja una cuadrícula, pulsa Agregar cuadrícula en Cuadrículas, dibuja la siguiente, y así sucesivamente."
       }
     },
     "move-region": {
@@ -897,7 +991,6 @@
     }
   },
   "detect": {
-    "title": "Detectar piezas",
     "note": "Propone dónde están las piezas de esta página, calculado en tu computadora. No cambia nada hasta que lo apliques.",
     "button": "Detectar en esta página",
     "running": "Detectando…",
@@ -907,6 +1000,8 @@
     "draft": "Propuesta",
     "gridSize_one": "{{rows}} × {{columns}} = {{count}} pieza",
     "gridSize_other": "{{rows}} × {{columns}} = {{count}} piezas",
+    "gridsSize_one": "{{grids}} = {{count}} pieza",
+    "gridsSize_other": "{{grids}} = {{count}} piezas",
     "pieceCount_one": "{{count}} pieza",
     "pieceCount_other": "{{count}} piezas",
     "engines": {
@@ -926,6 +1021,10 @@
     "apply": "Aplicar",
     "replace_one": "Reemplazar {{count}} pieza",
     "replace_other": "Reemplazar {{count}} piezas",
+    "addGrid": "Agregar como cuadrícula nueva",
+    "addGrids": "Agregar como cuadrículas nuevas",
+    "replaceGrid": "Reemplazar {{name}}",
+    "replaceGrids": "Reemplazar cuadrículas",
     "next": "Siguiente propuesta",
     "discard": "Descartar",
     "notes": {
@@ -1060,7 +1159,8 @@
       "redo": "Rehacer",
       "shortcuts": "Mostrar esta lista",
       "closeDialog": "Cerrar un cuadro de diálogo, un menú, un consejo de información, un consejo o un mensaje",
-      "gridRegionTool": "Herramienta Región de cuadrícula",
+      "selectTool": "Herramienta Seleccionar",
+      "gridRegionTool": "Herramienta Cuadrícula",
       "pieceTool": "Herramienta Pieza",
       "panTool": "Herramienta Desplazar",
       "panHeld": "Desplazar mientras se mantiene pulsada",
@@ -1070,7 +1170,7 @@
       "zoomCursor": "Acercar o alejar en el cursor",
       "nextPage": "Página siguiente (la flecha, sin nada elegido)",
       "previousPage": "Página anterior (la flecha, sin nada elegido)",
-      "deletePiece": "Eliminar la pieza elegida (Herramienta Pieza)",
+      "deletePiece": "Eliminar las piezas elegidas (Herramienta Seleccionar o Pieza)",
       "snapRotation": "Girar una pieza en pasos de 15° (mantén pulsada la tecla mientras la giras)",
       "applyProposal": "Aplicar la propuesta",
       "discardProposal": "Descartar la propuesta",
@@ -1087,11 +1187,11 @@
       "panWheel": "Desplazar la página (con Mayús, de lado)",
       "nudgePicked": "Mover 1 mm (0.05 in) la región o las piezas elegidas",
       "nudgePickedBig": "Mover 10 mm (0.5 in) la región o las piezas elegidas",
-      "pickMore": "Agregar o quitar una pieza de las elegidas (Herramienta Pieza)",
+      "pickMore": "Agregar o quitar una pieza de las elegidas (Herramienta Seleccionar o Pieza)",
       "pickAll": "Elegir todas las piezas de la página",
       "pickNone": "No elegir nada (ni las piezas ni la región)",
-      "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Pieza)",
-      "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Pieza)",
+      "duplicatePieces": "Duplicar las piezas elegidas (Herramienta Seleccionar o Pieza)",
+      "dragCopy": "Arrastrar una copia de las piezas elegidas, dejándolas donde están (Herramienta Seleccionar o Pieza)",
       "dragFree": "Arrastrar una región o piezas sin que se ajusten ni se peguen a los bordes",
       "toggleRulers": "Mostrar u ocultar las reglas",
       "makeGuide": "Crear una guía: arrastra desde una regla hasta la página (con las reglas visibles)",

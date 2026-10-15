@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 6;
+pub const VERSION: u32 = 7;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -32,7 +32,7 @@ pub type Body = Map<String, Value>;
 /// `i + 1` to `i + 2`.
 pub type Migration = fn(&mut Body);
 
-const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6];
+const MIGRATIONS: &[Migration] = &[v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7];
 
 /// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
 /// pieces to the edits. A version 1 project opens with every feature off.
@@ -103,6 +103,36 @@ fn v5_to_v6(body: &mut Body) {
         .and_then(Value::as_object_mut);
     if let Some(duplex) = duplex {
         duplex.entry("cutApart").or_insert(Value::Bool(false));
+    }
+}
+
+/// Version 7 lets a page hold several grids: a grid group's one grid and region (`grid`, `selection`)
+/// become a list of one (`grids`). The pieces keep their keys, since the first grid's number is left out
+/// of them.
+fn v6_to_v7(body: &mut Body) {
+    let Some(Value::Array(documents)) = body.get_mut("documents") else {
+        return;
+    };
+    for document in documents {
+        let Some(Value::Array(groups)) = document.get_mut("groups") else {
+            continue;
+        };
+        for group in groups {
+            let Value::Object(group) = group else {
+                continue;
+            };
+            if group.get("kind").and_then(Value::as_str) != Some("grid")
+                || group.contains_key("grids")
+            {
+                continue;
+            }
+            let grid = group.remove("grid").unwrap_or(Value::Null);
+            let selection = group.remove("selection").unwrap_or(Value::Null);
+            group.insert(
+                "grids".into(),
+                serde_json::json!([{ "grid": grid, "selection": selection }]),
+            );
+        }
     }
 }
 

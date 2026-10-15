@@ -20,7 +20,7 @@ describe("freeform cards", () => {
     expect(store().freeform[0]).toHaveLength(2);
     expect(store().freeform[3]).toHaveLength(1);
     // A page keeps its grid region as well.
-    expect(gridGroupAt(store().groups, 0)?.selection).toEqual({ x: 0.1, y: 0.1, width: 0.5, height: 0.5 });
+    expect(gridGroupAt(store().groups, 0)?.grids[0].selection).toEqual({ x: 0.1, y: 0.1, width: 0.5, height: 0.5 });
   });
 
   it("updates one card, and ignores a card that is not there", () => {

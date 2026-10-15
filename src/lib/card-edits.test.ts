@@ -5,10 +5,12 @@ import {
   type CardEdits,
   clampScale,
   editsAfterDelete,
+  editsAfterRemap,
   finalSizePt,
   formatCardSize,
   hasCardEdits,
   keyAfterDelete,
+  keyAfterGridDelete,
   moveCards,
   NO_EDITS,
   orientCards,
@@ -175,6 +177,42 @@ describe("deleting a freeform card", () => {
       scales: { "f:0:0:1": 0.8 },
       order: ["f:0:0:1", "f:1:0:2", "f:0:0:0"],
       backs: {},
+    });
+  });
+});
+
+describe("deleting a grid", () => {
+  const pages = { first: 1, last: 2 };
+
+  it("drops its pieces' keys and gives the later grids' pieces the number one lower, on its pages only", () => {
+    expect(keyAfterGridDelete("g:0:1:0:0:1", 0, pages, 1)).toBeNull();
+    expect(keyAfterGridDelete("g:0:2:3:4:2", 0, pages, 1)).toBe("g:0:2:3:4:1");
+    expect(keyAfterGridDelete("g:0:2:3:4:1", 0, pages, 0)).toBe("g:0:2:3:4");
+    expect(keyAfterGridDelete("g:0:2:3:4", 0, pages, 1)).toBe("g:0:2:3:4");
+    // Another page, another PDF, a freeform piece: as they were.
+    expect(keyAfterGridDelete("g:0:3:0:0:2", 0, pages, 1)).toBe("g:0:3:0:0:2");
+    expect(keyAfterGridDelete("g:1:1:0:0:1", 0, pages, 1)).toBe("g:1:1:0:0:1");
+    expect(keyAfterGridDelete("f:0:1:1", 0, pages, 1)).toBe("f:0:1:1");
+  });
+
+  it("takes the edits along: turns, sizes, order and pairs", () => {
+    const to = (k: string) => keyAfterGridDelete(k, 0, pages, 0);
+    const edits = editsAfterRemap(
+      {
+        turns: { "g:0:1:0:0": 90, "g:0:1:0:0:1": 180 },
+        scales: { "g:0:1:0:0:1": 2 },
+        scalesY: { "g:0:1:0:0:1": 3 },
+        order: ["g:0:1:0:0:1", "g:0:1:0:0"],
+        backs: { "g:0:1:0:0:1": "f:0:1:0", "g:0:1:0:1:1": "g:0:1:0:0" },
+      },
+      to,
+    );
+    expect(edits).toEqual({
+      turns: { "g:0:1:0:0": 180 },
+      scales: { "g:0:1:0:0": 2 },
+      scalesY: { "g:0:1:0:0": 3 },
+      order: ["g:0:1:0:0"],
+      backs: { "g:0:1:0:0": "f:0:1:0" },
     });
   });
 });

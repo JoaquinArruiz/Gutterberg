@@ -1,9 +1,9 @@
 // Automatic front and back pairing: which piece is the back of which, found from where the pieces are in the
-// source PDF (pages, rows and columns; freeform pieces by their order), so a whole game pairs in one click instead
+// source PDF (pages, grids, rows and columns; freeform pieces by their order), so a whole game pairs in one click instead
 // of one "Pick back…" per piece. Pure data over the pieces; the result goes into `CardEdits.backs` and the backs'
 // turns, as one undo step (`PairBacksDialog`).
 
-import { type CardId, cardIdKey, type DocumentId } from "./card";
+import { type CardId, cardIdKey, type DocumentId, gridNumber } from "./card";
 import type { CardEdits } from "./card-edits";
 import type { Card, Turn } from "./sheet-api";
 
@@ -54,8 +54,14 @@ export type Pairing = {
 type Grid = Extract<CardId, { kind: "grid" }>;
 type Freeform = Extract<CardId, { kind: "freeform" }>;
 
-/** A source page's pieces: grid ones by row and column, freeform ones in their order. */
-type Page = { index: number; grid: Card[]; freeform: Card[]; rows: number; columns: number };
+/** How many rows and columns one grid of a page has, from its pieces. */
+type GridSize = { rows: number; columns: number };
+
+/**
+ * A source page's pieces: grid ones by grid, row and column, freeform ones in their order. A page with several grids
+ * pairs grid with grid: grid 2 of the fronts' page with grid 2 of the backs' page.
+ */
+type Page = { index: number; grid: Card[]; freeform: Card[]; grids: Map<number, GridSize> };
 
 const key = (c: Card) => cardIdKey(c.id);
 const grid = (c: Card) => c.id as Grid;
@@ -73,12 +79,19 @@ function pagesOf(cards: Card[]): Map<number, Page[]> {
     (a, b) => a.doc - b.doc || a.page - b.page,
   )) {
     const g = on.filter((c) => c.id.kind === "grid");
+    const grids = new Map<number, GridSize>();
+    for (const c of g) {
+      const size = grids.get(gridNumber(c.id)) ?? { rows: 0, columns: 0 };
+      grids.set(gridNumber(c.id), {
+        rows: Math.max(size.rows, grid(c).row + 1),
+        columns: Math.max(size.columns, grid(c).column + 1),
+      });
+    }
     const page: Page = {
       index: pageIndex,
       grid: g,
       freeform: on.filter((c) => c.id.kind === "freeform").sort((a, b) => index(a) - index(b)),
-      rows: Math.max(0, ...g.map((c) => grid(c).row + 1)),
-      columns: Math.max(0, ...g.map((c) => grid(c).column + 1)),
+      grids,
     };
     byDocument.set(doc, [...(byDocument.get(doc) ?? []), page]);
   }
@@ -87,12 +100,17 @@ function pagesOf(cards: Card[]): Map<number, Page[]> {
 
 const index = (c: Card) => (c.id as Freeform).index;
 
-/** The pairs between a page of fronts and a page of backs: by row and column, freeform pieces by order. */
+/** Where a grid piece is on its page: its grid, row and column. */
+const cell = (n: number, row: number, column: number) => `${n}:${row}:${column}`;
+
+/** The pairs between a page of fronts and a page of backs: grid by grid, by row and column, freeform pieces by order. */
 function pairPages(front: Page, back: Page, mirrored: boolean, into: Record<string, string>) {
-  const at = new Map(back.grid.map((c) => [`${grid(c).row}:${grid(c).column}`, c]));
+  const at = new Map(back.grid.map((c) => [cell(gridNumber(c.id), grid(c).row, grid(c).column), c]));
   for (const f of front.grid) {
     const { row, column } = grid(f);
-    const b = at.get(`${row}:${mirrored ? back.columns - 1 - column : column}`);
+    const n = gridNumber(f.id);
+    const columns = back.grids.get(n)?.columns ?? 0;
+    const b = at.get(cell(n, row, mirrored ? columns - 1 - column : column));
     if (b) into[key(f)] = key(b);
   }
   front.freeform.forEach((f, i) => {
@@ -101,15 +119,20 @@ function pairPages(front: Page, back: Page, mirrored: boolean, into: Record<stri
   });
 }
 
-/** The pairs within one page folded down the middle: each piece with the one it meets when the page is folded. */
+/**
+ * The pairs within one page folded down the middle: each piece with the one it meets when the page is folded. Each
+ * grid of the page folds on its own.
+ */
 function pairHalves(page: Page, split: PairingSplit, into: Record<string, string>) {
-  const across = split === "columns" ? page.columns : page.rows;
-  const at = new Map(page.grid.map((c) => [`${grid(c).row}:${grid(c).column}`, c]));
+  const at = new Map(page.grid.map((c) => [cell(gridNumber(c.id), grid(c).row, grid(c).column), c]));
   for (const f of page.grid) {
     const { row, column } = grid(f);
+    const g = gridNumber(f.id);
+    const size = page.grids.get(g) ?? { rows: 0, columns: 0 };
+    const across = split === "columns" ? size.columns : size.rows;
     const n = split === "columns" ? column : row;
     if (n >= Math.floor(across / 2)) continue;
-    const b = at.get(split === "columns" ? `${row}:${across - 1 - column}` : `${across - 1 - row}:${column}`);
+    const b = at.get(split === "columns" ? cell(g, row, across - 1 - column) : cell(g, across - 1 - row, column));
     if (b) into[key(f)] = key(b);
   }
   // Freeform pieces: the first half of their order with the second half, in order.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fixtureText from "../../crates/card-core/tests/data/detection.json?raw";
-import { confidenceBand, gridFromProposal, pieceCount, piecesFromProposal } from "./detect";
+import { confidenceBand, gridFromProposal, gridsFromProposal, pieceCount, piecesFromProposal } from "./detect";
 import { DetectionSchema, type Proposal } from "./detect-api";
 
 const A4 = { width_pt: 595.2756, height_pt: 841.8898 };
@@ -106,5 +106,47 @@ describe("a rectangles proposal", () => {
   it("counts pieces for both kinds", () => {
     expect(pieceCount(rects)).toBe(1);
     expect(pieceCount(grid({ rows: 2, columns: 4 }))).toBe(8);
+  });
+});
+
+describe("a proposal of several grids", () => {
+  const several: Proposal = {
+    kind: "grids",
+    grids: [
+      {
+        bounds: { x: 0, y: 0, width: 297.6378, height: 420.9449 },
+        rows: 2,
+        columns: 2,
+        source_gap_x_mm: 0,
+        source_gap_y_mm: 0,
+      },
+      {
+        bounds: { x: 0, y: 420.9449, width: 595.2756, height: 100 },
+        rows: 1,
+        columns: 5,
+        source_gap_x_mm: 1,
+        source_gap_y_mm: 0,
+      },
+    ],
+    confidence: 0.95,
+    engine: "pdf-objects",
+    notes: [],
+  };
+
+  it("gives one grid per block, in order, and counts all their pieces", () => {
+    const grids = gridsFromProposal(several, A4);
+    expect(grids?.map((g) => [g.rows, g.columns])).toEqual([
+      [2, 2],
+      [1, 5],
+    ]);
+    expect(grids?.[0].selection.width).toBeCloseTo(0.5, 6);
+    expect(grids?.[1].sourceGapLinked).toBe(false);
+    expect(pieceCount(several)).toBe(9);
+    expect(gridFromProposal(several, A4)).toBeNull();
+    expect(gridsFromProposal(grid(), A4)).toHaveLength(1);
+  });
+
+  it("is what Rust sends", () => {
+    expect(DetectionSchema.parse({ proposals: [several], reasons: [] }).proposals[0]).toEqual(several);
   });
 });

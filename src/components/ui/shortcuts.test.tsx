@@ -55,7 +55,8 @@ describe("the catalog of shortcuts", () => {
     expect(keysOf("openProject")).toEqual(["Mod+Shift+O"]);
     expect(keysOf("redo")).toEqual(["Mod+Shift+Z", "Mod+Y"]);
     expect(keysOf("shortcuts")).toEqual(["?"]);
-    expect(keysOf("gridRegionTool")).toEqual(["V"]);
+    expect(keysOf("selectTool")).toEqual(["V"]);
+    expect(keysOf("gridRegionTool")).toEqual(["G"]);
     expect(keysOf("pieceTool")).toEqual(["C"]);
     expect(keysOf("panTool")).toEqual(["H"]);
     expect(keysOf("turnLeft")).toEqual(["Shift+R"]);

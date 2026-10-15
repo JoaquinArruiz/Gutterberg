@@ -131,7 +131,7 @@ describe("workspace layout in the store", () => {
     const st = createPreferencesStore(storage).getState();
     st.setPanelPosition("pages", "top");
     st.setPanelPosition("properties", "left");
-    expect(regions(createPreferencesStore(storage))).toEqual(["pages:top", "properties:left"]);
+    expect(regions(createPreferencesStore(storage))).toEqual(["grids:right", "pages:top", "properties:left"]);
   });
 
   it("persists dragged sizes when 'remember sizes' is on, and ignores them when it is off", () => {
@@ -169,7 +169,7 @@ describe("workspace layout in the store", () => {
   it("applying a preset updates positions", () => {
     const st = createPreferencesStore(memory());
     st.getState().applyLayoutPreset("cards", "right-sidebar");
-    expect(regions(st)).toEqual(["pages:right", "properties:right"]);
+    expect(regions(st)).toEqual(["grids:right", "pages:right", "properties:right"]);
   });
 
   it("Reset workspace restores the layout and views but keeps unit, theme and live preview", () => {
@@ -184,7 +184,7 @@ describe("workspace layout in the store", () => {
     s.setDefaultMode("split");
     st.getState().resetWorkspace();
     const p = st.getState().prefs;
-    expect(regions(st)).toEqual(["pages:left", "properties:right"]);
+    expect(regions(st)).toEqual(["grids:right", "pages:left", "properties:right"]);
     expect(p.workspace.layout.regionSizes).toEqual({});
     expect(p.workspace.visibleModes).toEqual(["source", "output", "split"]);
     expect(p.workspace.defaultMode).toBe("source");
@@ -290,11 +290,11 @@ describe("Print tab layout", () => {
     st.getState().setPanelPosition("library", "bottom");
     st.getState().setPanelPosition("inspector", "left");
     expect(printPanels(createPreferencesStore(storage))).toEqual(["inspector:left", "library:bottom"]);
-    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+    expect(sourcePanels(st)).toEqual(["grids:right", "pages:left", "properties:right"]);
 
     st.getState().setPanelPosition("pages", "top");
     expect(printPanels(st)).toEqual(["inspector:left", "library:bottom"]);
-    expect(sourcePanels(st)).toEqual(["pages:top", "properties:right"]);
+    expect(sourcePanels(st)).toEqual(["grids:right", "pages:top", "properties:right"]);
   });
 
   it("keeps the dragged sizes of each tab apart, and ignores them when 'remember sizes' is off", () => {
@@ -317,7 +317,7 @@ describe("Print tab layout", () => {
     const st = createPreferencesStore(memory());
     st.getState().applyLayoutPreset("print", "library-top");
     expect(printPanels(st)).toEqual(["inspector:right", "library:top"]);
-    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+    expect(sourcePanels(st)).toEqual(["grids:right", "pages:left", "properties:right"]);
   });
 
   it("Reset workspace restores both layouts", () => {
@@ -328,7 +328,7 @@ describe("Print tab layout", () => {
     st.getState().resetWorkspace();
     expect(printPanels(st)).toEqual(["inspector:right", "library:left"]);
     expect(st.getState().prefs.print.layout.regionSizes).toEqual({});
-    expect(sourcePanels(st)).toEqual(["pages:left", "properties:right"]);
+    expect(sourcePanels(st)).toEqual(["grids:right", "pages:left", "properties:right"]);
   });
 
   it("moves a panel from the toolbar menu's id alone: the tab is known from the panel", () => {

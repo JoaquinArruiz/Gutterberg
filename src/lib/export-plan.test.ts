@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { OutputSettings } from "../stores/layout-store";
-import { applyGridTo, defaultGroups, patchGrid, setSkipped, updateGridGroup } from "./document-layout";
+import {
+  addGrid,
+  applyGridTo,
+  defaultGroups,
+  patchGrid,
+  setSkipped,
+  updateGrid,
+  updateGridGroup,
+} from "./document-layout";
 import { buildExportPlan, mergeIssues } from "./export-plan";
 
 const settings: OutputSettings = {
@@ -17,7 +25,7 @@ const sel = { x: 0.1, y: 0.2, width: 0.5, height: 0.6 };
 
 describe("buildExportPlan", () => {
   it("makes one job per included page and leaves skipped pages out", () => {
-    let g = updateGridGroup(defaultGroups(4), 0, (x) => ({ ...x, selection: sel }));
+    let g = updateGridGroup(defaultGroups(4), 0, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     g = setSkipped(g, 0, true);
     const { jobs, issues } = buildExportPlan(g, settings);
     expect(issues).toEqual([]);
@@ -28,12 +36,11 @@ describe("buildExportPlan", () => {
     // Page 0 rules (skipped), pages 1-2 a 3x3 section, page 3 a 2x2 section.
     let g = defaultGroups(4);
     g = setSkipped(g, 0, true);
-    g = updateGridGroup(g, 1, (x) => ({ ...x, selection: sel }));
+    g = updateGridGroup(g, 1, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     g = applyGridTo(g, 1, [3]); // page 3 becomes its own group, then gets its own grid
     g = updateGridGroup(g, 3, (x) => ({
       ...x,
-      grid: patchGrid(x.grid, { rows: 2, columns: 2 }),
-      selection: { ...sel, width: 0.3 },
+      grids: [{ grid: patchGrid(x.grids[0].grid, { rows: 2, columns: 2 }), selection: { ...sel, width: 0.3 } }],
     }));
     const { jobs } = buildExportPlan(g, settings);
     expect(jobs.map((j) => [j.page_index, j.grid.rows, j.grid.columns])).toEqual([
@@ -46,7 +53,7 @@ describe("buildExportPlan", () => {
   });
 
   it("carries the global output settings into every job", () => {
-    const g = updateGridGroup(defaultGroups(2), 0, (x) => ({ ...x, selection: sel }));
+    const g = updateGridGroup(defaultGroups(2), 0, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     const [job] = buildExportPlan(g, settings).jobs;
     expect(job.grid.gap_x_mm).toBe(3);
     expect(job.grid.gap_y_mm).toBe(4);
@@ -76,7 +83,7 @@ describe("buildExportPlan", () => {
   });
 
   it("re-spaces the grid of a page that also has freeform pieces, and leaves those pieces to the Print tab", () => {
-    const g = updateGridGroup(defaultGroups(1), 0, (x) => ({ ...x, selection: sel }));
+    const g = updateGridGroup(defaultGroups(1), 0, (x) => ({ ...x, grids: [{ ...x.grids[0], selection: sel }] }));
     const own = { 0: [{ center: { x: 0.5, y: 0.5 }, width: 0.2, height: 0.3, angle_deg: 4 }] };
     const { jobs, issues } = buildExportPlan(g, settings, own);
     expect(issues).toEqual([]);
@@ -90,5 +97,21 @@ describe("mergeIssues", () => {
     const b = { page_index: 1, message: "b" };
     const c = { page_index: 4, message: "c" };
     expect(mergeIssues([a, b], [c])).toEqual([b, a]);
+  });
+});
+
+describe("a page with several grids", () => {
+  it("gives each drawn grid of a page its own job, in order", () => {
+    let g = updateGrid(defaultGroups(2), 0, 0, (r) => ({ ...r, selection: sel }));
+    g = addGrid(addGrid(g, 0), 0);
+    g = updateGrid(g, 0, 2, (r) => ({ grid: patchGrid(r.grid, { rows: 1, columns: 4 }), selection: sel }));
+    const { jobs, issues } = buildExportPlan(g, settings);
+    expect(jobs.map((j) => [j.page_index, j.grid.rows, j.grid.columns])).toEqual([
+      [0, 3, 3],
+      [0, 1, 4],
+      [1, 3, 3],
+      [1, 1, 4],
+    ]);
+    expect(issues).toEqual([]);
   });
 });

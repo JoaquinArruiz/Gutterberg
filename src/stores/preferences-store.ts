@@ -13,6 +13,7 @@ import {
   type LivePreviewPreference,
   migratePreferences,
   moveMode,
+  normalizeGridColors,
   normalizePreferences,
   type ThemePreference,
   toggleMode,
@@ -136,6 +137,7 @@ type PreferencesState = {
   setRulers: (rulers: boolean) => void;
   /** Which guide each ruler gives: the one parallel to it, or (inverted) the one perpendicular to it. */
   setInvertRulers: (invertRulers: boolean) => void;
+  setSelectAfterGrid: (on: boolean) => void;
   /** A project file was opened or saved: it goes to the top of the recent list. */
   addRecentProject: (path: string) => void;
   /** The file is gone: drop it from the recent list. */
@@ -164,6 +166,9 @@ type PreferencesState = {
   saveSizePreset: (preset: UserSizePreset) => void;
   renameSizePreset: (name: string, to: string) => void;
   deleteSizePreset: (name: string) => void;
+  /** Adds a colour to the grid colour picker's own colours (moved to the end if it was there). */
+  addGridColor: (hex: string) => void;
+  deleteGridColor: (hex: string) => void;
   setPanelPosition: (id: PanelId, position: PanelPosition) => void;
   setPanelCollapsed: (id: PanelId, collapsed: boolean) => void;
   /** The preset applies to one tab's layout. */
@@ -272,6 +277,10 @@ export function createPreferencesStore(storage: KeyValueStorage) {
         if (get().prefs.editor.invertRulers !== invertRulers)
           edit((p) => ({ ...p, editor: { ...p.editor, invertRulers } }));
       },
+      setSelectAfterGrid: (on) => {
+        if (get().prefs.editor.selectAfterGrid !== on)
+          edit((p) => ({ ...p, editor: { ...p.editor, selectAfterGrid: on } }));
+      },
       addRecentProject: (path) =>
         edit((p) => ({ ...p, files: { recent: [path, ...p.files.recent.filter((x) => x !== path)] } })),
       removeRecentProject: (path) =>
@@ -321,6 +330,13 @@ export function createPreferencesStore(storage: KeyValueStorage) {
           };
         }),
       deleteSizePreset: (name) => edit((p) => ({ ...p, sizePresets: p.sizePresets.filter((x) => x.name !== name) })),
+      addGridColor: (hex) =>
+        edit((p) => {
+          const c = hex.toLowerCase();
+          return { ...p, gridColors: normalizeGridColors([...p.gridColors.filter((x) => x !== c), c]) };
+        }),
+      deleteGridColor: (hex) =>
+        edit((p) => ({ ...p, gridColors: p.gridColors.filter((x) => x !== hex.toLowerCase()) })),
       deletePreset: (name) => edit((p) => ({ ...p, presets: p.presets.filter((x) => x.name !== name) })),
       setPanelPosition: (id, position) => editLayout(layoutOfPanel(id), (l) => setPanelPosition(l, id, position)),
       setPanelCollapsed: (id, collapsed) => editLayout(layoutOfPanel(id), (l) => setPanelCollapsed(l, id, collapsed)),

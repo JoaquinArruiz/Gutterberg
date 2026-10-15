@@ -1,4 +1,4 @@
-# Roadmap after 0.15.0
+# Roadmap after 0.16.0
 
 The order of the next versions and why. Each version has its own brief in this folder; when a version is released,
 its brief is deleted (see "Planning" in `AGENTS.md`) and its line here goes with it. When the last one is done, this
@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.16.0 | `0.16-several-grids.md` | Several grids on one page | 7 | unchanged |
 | 0.17.0 | `0.17-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
 

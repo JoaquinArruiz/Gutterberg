@@ -1,9 +1,10 @@
 import { useTranslation } from "react-i18next";
-import { cardIdKey, cropWidthPx, documentLetter, pieceReference } from "../../lib/card";
+import { cardIdKey, cropWidthPx, documentLetter, piecePosition, pieceReference } from "../../lib/card";
 import { finalSizePt, formatCardSize, hasOwnHeight } from "../../lib/card-edits";
 import type { Card } from "../../lib/sheet-api";
 import { useCardImage } from "../../lib/use-card-image";
 import { documentById, useDocumentStore } from "../../stores/document-store";
+import { useSeveralGrids } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { CardImage } from "./CardImage";
 
@@ -66,12 +67,10 @@ export function CardThumb({
     cropWidthPx(card.source, card.turn, boxW, boxH) * dpr,
     "thumbnail",
   );
-  const position =
-    card.id.kind === "grid"
-      ? t("library.thumb.gridPosition", { row: card.id.row + 1, column: card.id.column + 1 })
-      : t("library.thumb.freeformPosition", { n: card.id.index + 1 });
+  const several = useSeveralGrids()(card.id.document_id, card.id.page_index);
+  const position = piecePosition(card.id, several);
   const page1 = card.id.page_index + 1;
-  const label = pieceReference(card.id, letter);
+  const label = pieceReference(card.id, letter, false, several);
   const size = formatCardSize(card, unit);
   const printed = copies === null || copies > 0;
   const scaled = Math.abs(card.scale - 1) > 1e-6 || hasOwnHeight(card);

@@ -5,7 +5,7 @@ import { beginEdit, endEdit, redo, undo, useLayoutStore } from "./layout-store";
 const sel = (x: number) => ({ x, y: 0.1, width: 0.5, height: 0.5 });
 const store = () => useLayoutStore.getState();
 const history = () => useLayoutStore.temporal.getState();
-const selectionOf = (groups: PageGroup[], page = 0) => gridGroupAt(groups, page)?.selection ?? null;
+const selectionOf = (groups: PageGroup[], page = 0) => gridGroupAt(groups, page)?.grids[0].selection ?? null;
 
 beforeEach(() => {
   store().resetDocument(6);
@@ -44,7 +44,7 @@ describe("undo and redo", () => {
     store().setGrid(0, { rows: 2, columns: 4 });
     undo();
     const g = gridGroupAt(store().groups, 0);
-    expect([g?.grid.rows, g?.grid.columns]).toEqual([3, 3]);
+    expect([g?.grids[0].grid.rows, g?.grids[0].grid.columns]).toEqual([3, 3]);
   });
 
   it("undoes page skips and group splits", () => {
