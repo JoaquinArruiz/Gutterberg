@@ -10,7 +10,7 @@ import { useEditorStore } from "../../stores/editor-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { EditorViewport } from "../editor/EditorViewport";
-import { GridsPanel } from "./GridsPanel";
+import { GridsPanel, NewFolderButton } from "./GridsPanel";
 import { TurnIntoPiecesButton } from "./TurnIntoPiecesButton";
 
 vi.mock("../../lib/tauri", async (importOriginal) => ({
@@ -162,7 +162,12 @@ describe("the Grids list, rearranged and hidden", () => {
   });
 
   it("adds an empty folder from the header, ready to be named, and deletes it", () => {
-    const { rerender } = render(<GridsPanel />);
+    const { rerender } = render(
+      <>
+        <NewFolderButton />
+        <GridsPanel />
+      </>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "New folder" }));
     expect(group().folders).toEqual(["Folder 1"]);
     rerender(<GridsPanel />);

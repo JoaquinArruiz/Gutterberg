@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { create } from "zustand";
 import type { OrientedRect } from "../../lib/card";
 import {
   cleanGridName,
@@ -161,7 +162,8 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
   const remove = useLayoutStore((s) => s.deleteGrid);
   const [editing, setEditing] = useState<number | null>(null);
   const [coloring, setColoring] = useState<number | null>(null);
-  const [renaming, setRenaming] = useState<ListRef | null>(null);
+  const renaming = useGridsUi((s) => s.renaming);
+  const setRenaming = useGridsUi((s) => s.setRenaming);
   const [folded, setFolded] = useState<ReadonlySet<string>>(new Set());
   const { drag, onPointerDown, wasDrag } = useGridListDrag((item, drop) => moveInList(page, item, drop));
   // The last grid is not deleted: it loses its region, so the page can draw it again.
@@ -323,17 +325,6 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
 
   return (
     <div className="flex flex-col gap-1.5">
-      <div className="flex items-center justify-end gap-1">
-        <Button
-          variant="ghost"
-          aria-label={t("source.grids.newFolder")}
-          title={t("source.grids.newFolderTitle")}
-          onClick={() => setRenaming({ kind: "folder", name: newFolder() })}
-        >
-          <FolderPlus size={13} />
-        </Button>
-        <InfoTip text={t("source.grids.note")} />
-      </div>
       <ul className="flex flex-col gap-1" data-hint-target="grid-list">
         {gridList(group).map((item) => {
           if (item.kind === "grid") return gridRow(item.n, undefined);
@@ -509,6 +500,44 @@ function PiecesList({ page }: { page: number }) {
 
 const NO_PIECES: OrientedRect[] = [];
 const NO_PICKED: number[] = [];
+
+/** Session state of the list shared with the panel's header: the grid or folder whose name is being typed. */
+const useGridsUi = create<{ renaming: ListRef | null; setRenaming: (r: ListRef | null) => void }>((set) => ({
+  renaming: null,
+  setRenaming: (renaming) => set({ renaming }),
+}));
+
+/** The ⓘ next to the panel's title. */
+export function GridsPanelInfo() {
+  const { t } = useTranslation();
+  return <InfoTip text={t("source.grids.note")} />;
+}
+
+/** The panel header's New folder button: adds an empty folder to the viewed page's group, its name ready to type. */
+export function NewFolderButton() {
+  const { t } = useTranslation();
+  const page = useDocumentStore((s) => s.currentPage);
+  const group = useCurrentGroup();
+  const addFolder = useLayoutStore((s) => s.addFolder);
+  const setRenaming = useGridsUi((s) => s.setRenaming);
+  return (
+    <button
+      type="button"
+      aria-label={t("source.grids.newFolder")}
+      title={t("source.grids.newFolderTitle")}
+      disabled={group?.kind !== "grid"}
+      onClick={() => {
+        if (group?.kind !== "grid") return;
+        const name = newFolderName(group, t("source.grids.folderBase"));
+        addFolder(page, name);
+        setRenaming({ kind: "folder", name });
+      }}
+      className="rounded p-0.5 text-[var(--muted)] hover:bg-[var(--hover)] hover:text-[var(--fg)] disabled:opacity-40"
+    >
+      <FolderPlus size={13} />
+    </button>
+  );
+}
 
 /**
  * The Grids panel of the Source tab: the grids, folders and freeform pieces of the viewed page, on its own beside

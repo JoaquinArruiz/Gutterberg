@@ -10,7 +10,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Several grids on one page (Source tab): the new Grids section of the sidebar lists the viewed page group's grids, each with its own region, rows, columns and gaps, with Add grid (up to 9) and a delete button. The picked grid is edited on the page as before and the others are drawn dimmer; with the Grid region tool, pressing a dimmer grid picks it and moves it. Layout, presets and "Apply this grid to…" act on the picked grid, and "Apply this grid to…" can also copy all of them. A page with cards of three sizes can be marked with three grids that stay grids, instead of turning each into freeform pieces.
 - The Grids and pieces panel in the Source tab, under Properties on the right (the Panels menu moves or hides it): the page's grids, their folders and its freeform pieces in one list. Pressing a piece picks it with the Piece tool, and every grid and piece has a bin (the last grid only loses its region).
 - Grids can have a name and a color: double-click a name to change it, and click the dot at its left for the colors, or any other color from the last swatch; the pencil has the name, the color and the folder together. The name shows in the list and above the grid on the page, and the grid's lines are drawn in its color.
-- Folders of grids: the folder-and-plus button at the top of the panel adds a folder, and grids dragged onto it go in. Pressing the folder in the list picks its grids, and dragging one of them on the page, or the arrow keys, moves them all as one. Pressing one grid picks it alone, even inside a folder. Folders can be renamed with a double-click, folded away in the list and ungrouped.
+- Folders of grids: the folder-and-plus button in the panel's header adds a folder, and grids dragged onto it go in. Pressing the folder in the list picks its grids, and dragging one of them on the page, or the arrow keys, moves them all as one. Pressing one grid picks it alone, even inside a folder. Folders can be renamed with a double-click, folded away in the list and ungrouped.
 - Grids and folders are put in another order by dragging them in the list; the order of the list is the order the pieces come out.
 - The eye next to a grid or a folder hides it on the page; it still exists and prints.
 - Detect pieces offers several grids at once when it finds blocks of pieces of different sizes on a page, as one proposal ahead of the grids one by one. Applying it makes them the page's grids, in one undo step.
@@ -18,6 +18,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Folding a panel or opening it again slides its contents up or down instead of jumping (no movement with reduced motion).
 - Projects are saved as version 7 (for several grids); older projects open as before with their edits intact, and an older Gutterberg asks to be updated.
 - With "Same as source", and in the Source tab's export, each grid of a page gives its own sheet.
 - Pieces come out page by page, grid by grid, then the page's freeform pieces, and Pair backs automatically… pairs them grid by grid.

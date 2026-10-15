@@ -112,3 +112,29 @@ body {
     outline-color: var(--accent);
   }
 }
+
+/* A panel's body slides down when the panel opens, and up before it folds away (PANEL_ANIMATION_MS). */
+@keyframes panel-body-in {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+}
+.panel-body-in {
+  animation: panel-body-in 160ms ease-out;
+}
+.panel-body-out {
+  animation: panel-body-in 160ms ease-in reverse forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel-body-in,
+  .panel-body-out {
+    animation: none;
+  }
+}

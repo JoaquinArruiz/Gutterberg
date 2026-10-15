@@ -19,7 +19,7 @@ import {
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { CardLibrary } from "../print/CardLibrary";
 import { PrintInspector } from "../print/PrintInspector";
-import { GridsPanel } from "../sidebar/GridsPanel";
+import { GridsPanel, GridsPanelInfo, NewFolderButton } from "../sidebar/GridsPanel";
 import { PagesPanel } from "../sidebar/PagesPanel";
 import { PropertiesSidebar } from "../sidebar/PropertiesSidebar";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "../ui/resizable";
@@ -34,13 +34,24 @@ const PANEL_BODY: Record<PanelId, (p: { orientation: "vertical" | "horizontal" }
   inspector: () => <PrintInspector />,
 };
 
+/** What a panel adds to its header: an ⓘ after the title, buttons before the menu. */
+const PANEL_HEADER: Partial<Record<PanelId, { info?: ReactNode; actions?: ReactNode }>> = {
+  grids: { info: <GridsPanelInfo />, actions: <NewFolderButton /> },
+};
+
 function Region({ position, panels }: { position: RegionPosition; panels: PanelConfig[] }) {
   const orientation = panelOrientation(position);
   const regionCollapsed = isRegionCollapsed(panels);
   const saveStack = usePreferencesStore((s) => s.saveStackSize);
 
   const frame = (p: PanelConfig) => (
-    <PanelFrame panel={p} position={position} orientation={orientation} regionCollapsed={regionCollapsed}>
+    <PanelFrame
+      panel={p}
+      position={position}
+      orientation={orientation}
+      regionCollapsed={regionCollapsed}
+      {...PANEL_HEADER[p.id]}
+    >
       {PANEL_BODY[p.id]({ orientation })}
     </PanelFrame>
   );
