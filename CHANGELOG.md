@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- A command line, `gutterberg-cli`, installed next to the app and attached to each release on its own: `gutterberg-cli export my-game.gtr -o sheets.pdf` writes the same PDF as the app's Export for that project, and `gutterberg-cli check my-game.gtr` lists what would stop the export without writing anything. A PDF or image that is not the file the project was saved with stops it unless `--force`; a PDF that is gone stops it; a missing image leaves its page blank, as in the app. Settings are not changed from the command line. It needs no pdfium and no screen.
+
 ## 0.16.0 (2026-10-15)
 
 ### Added

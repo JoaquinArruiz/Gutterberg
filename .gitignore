@@ -6,6 +6,8 @@ out/
 src-tauri/resources/pdfium/*
 !src-tauri/resources/pdfium/.gitkeep
 src-tauri/gen/
+# The command line, copied here for the installers by the release workflow.
+src-tauri/binaries/
 
 # AI tool leftovers
 .claude/worktrees/

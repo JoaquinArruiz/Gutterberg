@@ -1,0 +1,121 @@
+{
+  "format": "gutterberg-project",
+  "version": 7,
+  "documents": [
+    {
+      "kind": "images",
+      "id": 0,
+      "pageCount": 2,
+      "groups": [
+        {
+          "kind": "grid",
+          "pages": {
+            "first": 0,
+            "last": 1
+          },
+          "grids": [
+            {
+              "grid": {
+                "rows": 1,
+                "columns": 1,
+                "sourceGapXMm": 0,
+                "sourceGapYMm": 0,
+                "sourceGapLinked": true
+              },
+              "selection": {
+                "x": 0,
+                "y": 0,
+                "width": 1,
+                "height": 1
+              }
+            }
+          ]
+        }
+      ],
+      "freeform": {},
+      "viewedPage": 0,
+      "name": "Proxies",
+      "images": [
+        {
+          "path": "/img/0.png",
+          "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "placement": {
+            "widthMm": 63,
+            "heightMm": 88,
+            "bleedMm": 0,
+            "fit": "fit",
+            "reduceLarge": true
+          }
+        },
+        {
+          "path": "/img/1.png",
+          "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+          "placement": {
+            "widthMm": 63,
+            "heightMm": 88,
+            "bleedMm": 0,
+            "fit": "fit",
+            "reduceLarge": true
+          }
+        }
+      ]
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 3,
+    "gapYMm": 3,
+    "gapLinked": true,
+    "pageMode": "custom",
+    "orientation": "portrait",
+    "customWidthMm": 100,
+    "customHeightMm": 150,
+    "margins": {
+      "top": 0,
+      "right": 0,
+      "bottom": 0,
+      "left": 0
+    }
+  },
+  "edits": {
+    "turns": {},
+    "scales": {},
+    "order": [],
+    "backs": {}
+  },
+  "plan": {
+    "mode": "all",
+    "quantities": {},
+    "autoFill": false,
+    "order": "grouped",
+    "groupBySize": true,
+    "sheetGrid": "same",
+    "rows": 3,
+    "columns": 3,
+    "finish": {
+      "marks": {
+        "style": "off",
+        "widthMm": 0.25,
+        "color": "#000000",
+        "lengthMm": 3,
+        "offsetMm": 1
+      },
+      "bleed": {
+        "mm": 0,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": false,
+        "layout": "duplex",
+        "fold": "vertical",
+        "foldGapMm": 0,
+        "cutApart": false,
+        "backUpsideDown": null,
+        "flip": "long",
+        "offsetXMm": 0,
+        "offsetYMm": 0,
+        "commonBack": null
+      }
+    }
+  }
+}

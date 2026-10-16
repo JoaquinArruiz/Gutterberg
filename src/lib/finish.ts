@@ -3,8 +3,7 @@
 // land is decided in Rust; this file only holds the choices and clamps them.
 
 import { z } from "zod";
-import { CARD_KEY, type CardId, freeformCardId, gridCardId } from "./card";
-import type { Turn } from "./sheet-api";
+import { CARD_KEY } from "./card";
 
 export const MARK_STYLES = ["off", "ticks", "gaps"] as const;
 export type MarkStyle = (typeof MARK_STYLES)[number];
@@ -126,85 +125,6 @@ export function cleanFinish(f: Finish): Finish {
       offsetYMm: clampTo(f.duplex.offsetYMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
       commonBack: f.duplex.commonBack !== null && KEY.test(f.duplex.commonBack) ? f.duplex.commonBack : null,
     },
-  };
-}
-
-/** The `CardId` a piece key (`cardIdKey`) stands for, or null when it is not one. */
-export function parseCardKey(key: string): CardId | null {
-  const n = key.split(":").slice(1).map(Number);
-  if (n.some((v) => !Number.isInteger(v) || v < 0)) return null;
-  if (key.startsWith("g:") && n.length === 4) return gridCardId(n[0], n[1], n[2], n[3]);
-  if (key.startsWith("g:") && n.length === 5 && n[4] > 0) return gridCardId(n[0], n[1], n[2], n[3], n[4]);
-  if (key.startsWith("f:") && n.length === 3) return freeformCardId(n[0], n[1], n[2]);
-  return null;
-}
-
-/** What the Rust command takes (`card_core::finish::Finishing`). */
-export type FinishingPayload = {
-  options: {
-    marks: { style: MarkStyle; width_mm: number; color: string; length_mm: number; offset_mm: number };
-    bleed: { mm: number; source: BleedSource };
-    duplex: {
-      on: boolean;
-      layout: BackLayout;
-      fold: Fold;
-      fold_gap_mm: number;
-      cut_apart: boolean;
-      back_upside_down: boolean | null;
-      flip: Flip;
-      offset_x_mm: number;
-      offset_y_mm: number;
-      common_back: CardId | null;
-      common_back_turn: Turn;
-    };
-  };
-  backs: { card: CardId; back: CardId; turn: Turn }[];
-};
-
-/**
- * The finishing for a request. `known` are the keys of the pieces that exist: a back that points at a piece
- * that is gone is left out rather than failing the plan. `turns` are the user's turns of the pieces: a back
- * turned in the library is turned that much more on the sheet, so it faces like its front.
- */
-export function finishingPayload(
-  finish: Finish,
-  backs: Record<string, string>,
-  known: Set<string>,
-  turns: Record<string, Turn> = {},
-): FinishingPayload {
-  const f = cleanFinish(finish);
-  const exists = (k: string | null): k is string => k !== null && known.has(k);
-  const common = exists(f.duplex.commonBack) ? parseCardKey(f.duplex.commonBack) : null;
-  const pairs: FinishingPayload["backs"] = [];
-  for (const [card, back] of Object.entries(backs)) {
-    const [from, to] = [parseCardKey(card), parseCardKey(back)];
-    if (known.has(card) && known.has(back) && from && to) pairs.push({ card: from, back: to, turn: turns[back] ?? 0 });
-  }
-  return {
-    options: {
-      marks: {
-        style: f.marks.style,
-        width_mm: f.marks.widthMm,
-        color: f.marks.color,
-        length_mm: f.marks.lengthMm,
-        offset_mm: f.marks.offsetMm,
-      },
-      bleed: f.bleed,
-      duplex: {
-        on: f.duplex.on,
-        layout: f.duplex.layout,
-        fold: f.duplex.fold,
-        fold_gap_mm: f.duplex.foldGapMm,
-        cut_apart: f.duplex.cutApart,
-        back_upside_down: f.duplex.backUpsideDown,
-        flip: f.duplex.flip,
-        offset_x_mm: f.duplex.offsetXMm,
-        offset_y_mm: f.duplex.offsetYMm,
-        common_back: common,
-        common_back_turn: common && f.duplex.commonBack ? (turns[f.duplex.commonBack] ?? 0) : 0,
-      },
-    },
-    backs: pairs,
   };
 }
 

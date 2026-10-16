@@ -81,7 +81,19 @@ jobs:
         shell: bash
         run: node scripts/third-party-licenses.mjs
 
+      # The command line (crates/card-cli) goes into every installer next to the app (Tauri's externalBin, added by
+      # tauri.cli.conf.json, wants it named for the target), and is attached to the release on its own as well.
+      - name: Build the command line
+        shell: bash
+        run: |
+          cargo build --release -p card-cli --target ${{ matrix.target }}
+          ext=""; [[ "${{ matrix.target }}" == *windows* ]] && ext=".exe"
+          mkdir -p src-tauri/binaries
+          cp "target/${{ matrix.target }}/release/gutterberg-cli$ext" "src-tauri/binaries/gutterberg-cli-${{ matrix.target }}$ext"
+          echo "CLI_ASSET=src-tauri/binaries/gutterberg-cli-${{ matrix.target }}$ext" >> "$GITHUB_ENV"
+
       - uses: tauri-apps/tauri-action@v0
+        id: tauri
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -92,4 +104,14 @@ jobs:
           releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --config src-tauri/tauri.cli.conf.json
+
+      - name: Attach the command line to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.tauri.outputs.releaseId }}
+        # By the release's id: the release is still a draft, which a lookup by tag does not find.
+        run: |
+          gh api -X POST -H "Content-Type: application/octet-stream" --input "$CLI_ASSET" \
+            "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$(basename "$CLI_ASSET")"

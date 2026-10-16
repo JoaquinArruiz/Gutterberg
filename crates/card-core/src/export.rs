@@ -363,6 +363,31 @@ fn fitting_layout(frame: &PageFrame, grid: &GridLayout) -> Result<LayoutResult> 
     calculate_fitting_layout(frame.size(), grid)
 }
 
+/// Whether `output` is the same file as `input`, after resolving symlinks and `..`.
+/// The output may not exist yet, so its folder is resolved instead.
+pub fn same_file(input: &Path, output: &Path) -> bool {
+    let resolved = output.canonicalize().or_else(|_| {
+        let name = output.file_name().ok_or(std::io::ErrorKind::InvalidInput)?;
+        let dir = output
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        dir.canonicalize().map(|d| d.join(name))
+    });
+    match (input.canonicalize(), resolved) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => input == output,
+    }
+}
+
+/// The output would overwrite a PDF it is made from.
+pub fn same_file_error() -> ErrorInfo {
+    ErrorInfo::new(
+        "same_file",
+        "choose a different file than the one that is open",
+    )
+}
+
 /// A page that would make the export fail, found before anything is written.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PageIssue {

@@ -28,6 +28,7 @@ Source PDFs ─► Source tab ─► extract_cards ─► piece library
 | Part | Where | What it is |
 | --- | --- | --- |
 | `card-core` | `crates/card-core/` | Geometry, layout, the sheet engine, PDF export (`lopdf`), rendering (`pdfium-render`), detection, images, the project file, permission flags. No Tauri and no UI. |
+| `card-cli` | `crates/card-cli/` | `gutterberg-cli`, the command line: exports or checks a saved project without the app. Only `card-core` and `lopdf`; no pdfium, no window. |
 | `card-ai` | `crates/card-ai/` | The optional AI Mode: provider adapters, prompts, reply checks. The only crate that sends a user's data over the network. |
 | Tauri shell | `src-tauri/` | The window and the glue. `src/commands/*` are thin IPC wrappers around `card-core` and `card-ai`; it also owns the system keychain, the updater, the file association and the render thread's state. |
 | Frontend | `src/` | React 19 and TypeScript. Zustand stores in `src/stores/`, pure helpers in `src/lib/`, components in `src/components/`, texts in `src/locales/`. |
@@ -107,6 +108,23 @@ auto-fill. `card_transform` (and `card_transform_xy` for two factors) is the one
 placing a piece: `R(turn) · S(scale, scale_y) · R(-source angle)` about the piece's centre, then move the centre onto
 its slot. The piece is stretched along its own sides before it is turned; with equal factors it is a plain rotation
 and scale.
+
+### The print request (`print_request`)
+
+The Print tab's plan, as the project saves it, becomes the planner's input in one place. `print_request` reads the
+parts of a project body that printing needs (`PrintProject`: the documents' page groups and freeform pieces, the
+piece edits, the plan and the output settings, in the UI's camelCase and normalized coordinates) and builds the
+`PrintRequest`: the page groups in points (a page's freeform pieces become a one-page group right after its grid
+pieces), the per-piece settings in the user's order, the sheet layout ("same as source" only for the default plan;
+freeform, edited, image or gutterfold pieces need the planner) and the finishing, with backs that name a gone piece
+left out. Values are pulled back into what the interface allows, as opening a project does, so a hand-edited file
+prints the same in the app and from the command line.
+
+The app sends its live stores in that shape (`printProject` in `src/lib/print-request.ts`) to `compute_sheets`,
+`validate_print` and `export_print`, with the page sizes it shows; the command line reads it from the file, with the
+page sizes in the PDFs (`lopdf`). The two agree on every example PDF (`crates/card-cli/tests/export.rs` compares the
+bytes with pdfium's sizes when pdfium is there). `tests/print_request.rs` checks the request against the one the
+TypeScript built before the step moved here, for nine projects (`tests/data/print-requests/`).
 
 ### Export (`export`)
 
@@ -253,6 +271,22 @@ rebuilt on open.
   Zod schema and clamps out-of-range values back into what the interface allows.
 - The file association (`.gtr`, type `dev.joaquinarruiz.gutterberg.project`) opens a project at startup (command-line
   argument on Windows and Linux, the "opened" event on macOS) through the same open path, with the same checks.
+
+## The command line (`card-cli`)
+
+`gutterberg-cli export my-game.gtr -o sheets.pdf` writes what the app's Export writes for that project;
+`gutterberg-cli check my-game.gtr` plans the same sheets and lists what would stop the export, writing nothing.
+It reads the project with `read_project` (so an older one is migrated and a newer one refused, with the app's error
+codes), finds the PDFs at their saved paths and checks their hashes: a PDF that is gone stops it, and one that changed
+stops it unless `--force` (the app asks in both cases). An images document's PDF is rebuilt in the system's temporary
+folder; a missing image leaves its page blank with a warning, as in the app. Settings are never changed from the
+command line. Messages are in English, each error with its code.
+
+It is a separate binary rather than a subcommand of the app: the app is a GUI program on Windows (no console to print
+to), and a binary with only `card-core` also runs on a machine with no screen. Its version is the app's
+(`build.rs` reads `src-tauri/Cargo.toml`). The release workflow builds it for each target and puts it next to the app
+in the installers (Tauri's `externalBin`, added only for the release by `src-tauri/tauri.cli.conf.json`, so
+`pnpm tauri dev` and `cargo test` do not need it), and attaches it to the release on its own.
 
 ## Coordinates and units
 
@@ -466,6 +500,7 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Project file | `.gtr`, JSON with a `gutterberg-project` signature and a version, checked on open: not a project / older, migrate / newer, refuse. |
 | Locked PDFs | Locked against printing or modifying: refused. Other restrictions: kept on the output. Never stripped. |
 | AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; every action asks first. |
+| Command line | A separate binary, `gutterberg-cli`, with export and check only; settings change in the app. |
 | Help tips | One catalog; tours point at the interface with React Joyride (MIT); shown at the moment of need, never as a long tour at first launch except the short welcome. |
 | Images | Each import is a one-page-per-image PDF; pixels never resampled; the user picks the size, never stretched. |
 | Logo | The logo for light backgrounds, a dark variant, and an app icon on a bone-coloured plate (not pure white). |

@@ -15,6 +15,7 @@ included. `CONTRIBUTING.md` is the human version.
 
 - `crates/card-core/`: geometry, layout, the sheet engine, PDF export (lopdf), rendering (pdfium-render),
   detection, images and the project file. No Tauri or UI dependency.
+- `crates/card-cli/`: `gutterberg-cli`, the command line that exports or checks a saved project. Only `card-core`.
 - `crates/card-ai/`: the optional AI Mode: provider adapters, prompts and reply checks. The only crate that sends
   a user's data over the network.
 - `src-tauri/`: Tauri shell; `src/commands/*` are thin IPC wrappers around `card-core`. It also holds the updater

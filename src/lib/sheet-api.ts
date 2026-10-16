@@ -3,9 +3,11 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
+import type { OutputSettings } from "../stores/layout-store";
 import { CardIdSchema, type DocumentId, OrientedRectSchema } from "./card";
-import { type FinishingPayload, SHEET_WARNINGS } from "./finish";
-import type { GridPayload, PageIssue, PageSize } from "./tauri";
+import { SHEET_WARNINGS } from "./finish";
+import { type LayoutDocument, outputSettings, type PrintProject, printDocuments } from "./print-request";
+import type { PageIssue, PageSize } from "./tauri";
 import { PageIssueSchema } from "./tauri";
 
 const RectSchema = z.object({ x: z.number(), y: z.number(), width: z.number(), height: z.number() });
@@ -56,66 +58,41 @@ export const OutputSheetSchema = z.object({
 });
 export type OutputSheet = z.infer<typeof OutputSheetSchema>;
 
-/** What the user decided about one card: how many copies, turned how far, at what scale. */
-export type CardSetting = { id: Card["id"]; quantity: number; turn: Turn; scale: number; scale_y?: number };
-
-export type SheetPagePayload =
-  | { kind: "size"; width_pt: number; height_pt: number }
-  | { kind: "fit" }
-  | { kind: "same_as_source" };
-
-export type SheetSpecPayload = {
-  page: SheetPagePayload;
-  rows: number | null;
-  columns: number | null;
-  gap_x_mm: number;
-  gap_y_mm: number;
-  margins: { top_mm: number; right_mm: number; bottom_mm: number; left_mm: number };
-};
-
-export type PrintLayoutPayload = { kind: "same_as_source" } | { kind: "grid"; spec: SheetSpecPayload };
-
-export type PaginateOptionsPayload = { order: "grouped" | "interleaved"; group_by_size: boolean; auto_fill: boolean };
-
-/** A page group as the Rust engine takes it (`card_core::card::PageGroup`). */
-export type RustGroup = { pages: { first: number; last: number } } & (
-  | { kind: "skip" }
-  // A grid's place in the list is its number in its pieces' ids; null = its region is not drawn yet.
-  | { kind: "grid"; grids: (GridPayload | null)[] }
-  | { kind: "freeform"; cards: z.infer<typeof OrientedRectSchema>[] }
-);
-
-/** One PDF of the project and where its pieces are: what the export reads from. */
-export type RustDocument = { document_id: DocumentId; groups: RustGroup[] };
-
-export type PrintRequest = {
-  documents: RustDocument[];
-  settings: CardSetting[];
-  layout: PrintLayoutPayload;
-  options: PaginateOptionsPayload;
-  finishing: FinishingPayload;
-};
-
-/** A document with the page sizes the UI shows: what the preview plans from. */
-export type RustDocumentWithPages = RustDocument & { pages: PageSize[] };
-
 /** Every card of the documents' groups, in page order, one document after the other: the piece library. */
-export async function computeCards(documents: RustDocumentWithPages[]): Promise<Card[]> {
-  return z.array(CardSchema).parse(await invoke("compute_cards", { documents }));
+export async function computeCards(documents: LayoutDocument[], output: OutputSettings): Promise<Card[]> {
+  return z.array(CardSchema).parse(
+    await invoke("compute_cards", {
+      documents: printDocuments(documents),
+      output: outputSettings(output),
+      pages: Object.fromEntries(documents.map((d) => [d.id, d.pages])),
+    }),
+  );
 }
 
-/** The sheets the plan produces, from the same planner the export runs. `pages` are the sizes by document id. */
-export async function computeSheets(pages: Record<DocumentId, PageSize[]>, req: PrintRequest): Promise<OutputSheet[]> {
-  const documents = req.documents.map((d) => ({ ...d, pages: pages[d.document_id] ?? [] }));
-  return z.array(OutputSheetSchema).parse(await invoke("compute_sheets", { ...req, documents }));
+/**
+ * The sheets the plan produces, from the same request and planner the export runs. `pages` are the sizes by document
+ * id, as shown.
+ */
+export async function computeSheets(
+  project: PrintProject,
+  pages: Record<DocumentId, PageSize[]>,
+): Promise<OutputSheet[]> {
+  return z.array(OutputSheetSchema).parse(await invoke("compute_sheets", { project, pages }));
 }
 
 /** Pre-flight: pages that would make the export fail. Rejects with a message when the plan itself does not work. */
-export async function validatePrint(req: PrintRequest): Promise<PageIssue[]> {
-  return z.array(PageIssueSchema).parse(await invoke("validate_print", { ...req }));
+export async function validatePrint(
+  project: PrintProject,
+  pages: Record<DocumentId, PageSize[]>,
+): Promise<PageIssue[]> {
+  return z.array(PageIssueSchema).parse(await invoke("validate_print", { project, pages }));
 }
 
 /** Exports the plan from the project's PDFs. Resolves to the number of sheets written. */
-export async function exportPrint(req: PrintRequest, outputPath: string): Promise<number> {
-  return invoke<number>("export_print", { ...req, outputPath });
+export async function exportPrint(
+  project: PrintProject,
+  pages: Record<DocumentId, PageSize[]>,
+  outputPath: string,
+): Promise<number> {
+  return invoke<number>("export_print", { project, pages, outputPath });
 }

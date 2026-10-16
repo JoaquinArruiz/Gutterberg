@@ -4,7 +4,7 @@ import { useLayoutStore } from "../stores/layout-store";
 import { planOf, usePrintStore } from "../stores/print-store";
 import { useUiStore } from "../stores/ui-store";
 import { pagesById, useLayoutDocuments } from "./documents";
-import { buildPrintRequest, toRustDocuments } from "./print-request";
+import { printProject } from "./print-request";
 import { computeCards, computeSheets } from "./sheet-api";
 
 /**
@@ -28,7 +28,6 @@ export function usePrintSync() {
     })),
   );
   const plan = usePrintStore(useShallow(planOf));
-  const cards = usePrintStore((s) => s.cards);
 
   // Entering the Print stage starts a fresh plan, so the preview never shows sheets from before the edits.
   useEffect(() => {
@@ -41,7 +40,7 @@ export function usePrintSync() {
     const { setCards } = usePrintStore.getState();
     let stale = false;
     const t = setTimeout(() => {
-      computeCards(toRustDocuments(documents, useLayoutStore.getState()))
+      computeCards(documents, useLayoutStore.getState())
         .then((c) => !stale && setCards(c, null))
         .catch((e) => !stale && setCards([], e));
     }, 30);
@@ -57,7 +56,7 @@ export function usePrintSync() {
     const { setSheets } = usePrintStore.getState();
     let stale = false;
     const t = setTimeout(() => {
-      computeSheets(pagesById(documents), buildPrintRequest(plan, cards, documents, output, edits))
+      computeSheets(printProject(plan, documents, output, edits), pagesById(documents))
         .then((s) => !stale && setSheets(s, null))
         .catch((e) => !stale && setSheets(null, e));
     }, 30);
@@ -65,5 +64,5 @@ export function usePrintSync() {
       stale = true;
       clearTimeout(t);
     };
-  }, [active, documents, edits, output, plan, cards]);
+  }, [active, documents, edits, output, plan]);
 }

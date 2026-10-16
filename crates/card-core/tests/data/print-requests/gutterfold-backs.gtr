@@ -1,0 +1,139 @@
+{
+  "format": "gutterberg-project",
+  "version": 7,
+  "documents": [
+    {
+      "kind": "pdf",
+      "id": 0,
+      "pageCount": 1,
+      "groups": [
+        {
+          "kind": "grid",
+          "pages": {
+            "first": 0,
+            "last": 0
+          },
+          "grids": [
+            {
+              "grid": {
+                "rows": 2,
+                "columns": 2,
+                "sourceGapXMm": 0,
+                "sourceGapYMm": 0,
+                "sourceGapLinked": true
+              },
+              "selection": {
+                "x": 0.1,
+                "y": 0.1,
+                "width": 0.8,
+                "height": 0.6
+              }
+            }
+          ]
+        }
+      ],
+      "freeform": {},
+      "viewedPage": 0,
+      "path": "/games/doc0.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "kind": "pdf",
+      "id": 1,
+      "pageCount": 1,
+      "groups": [
+        {
+          "kind": "grid",
+          "pages": {
+            "first": 0,
+            "last": 0
+          },
+          "grids": [
+            {
+              "grid": {
+                "rows": 2,
+                "columns": 2,
+                "sourceGapXMm": 0,
+                "sourceGapYMm": 0,
+                "sourceGapLinked": true
+              },
+              "selection": {
+                "x": 0.1,
+                "y": 0.1,
+                "width": 0.8,
+                "height": 0.6
+              }
+            }
+          ]
+        }
+      ],
+      "freeform": {},
+      "viewedPage": 0,
+      "path": "/games/doc1.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 3,
+    "gapYMm": 3,
+    "gapLinked": true,
+    "pageMode": "fit",
+    "orientation": "portrait",
+    "customWidthMm": 210,
+    "customHeightMm": 297,
+    "margins": {
+      "top": 4,
+      "right": 4,
+      "bottom": 4,
+      "left": 4
+    }
+  },
+  "edits": {
+    "turns": {
+      "g:1:0:0:1": 180
+    },
+    "scales": {},
+    "order": [],
+    "backs": {
+      "g:0:0:0:0": "g:1:0:0:1",
+      "g:0:0:0:1": "g:1:0:0:0",
+      "g:0:0:1:1": "g:5:0:0:0"
+    }
+  },
+  "plan": {
+    "mode": "all",
+    "quantities": {},
+    "autoFill": false,
+    "order": "grouped",
+    "groupBySize": true,
+    "sheetGrid": "custom",
+    "rows": 2,
+    "columns": 1,
+    "finish": {
+      "marks": {
+        "style": "ticks",
+        "widthMm": 0.3,
+        "color": "#FF0000",
+        "lengthMm": 4,
+        "offsetMm": 1.5
+      },
+      "bleed": {
+        "mm": 2,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": true,
+        "layout": "gutterfold",
+        "fold": "horizontal",
+        "foldGapMm": 2,
+        "cutApart": true,
+        "backUpsideDown": null,
+        "flip": "long",
+        "offsetXMm": 15,
+        "offsetYMm": -1.5,
+        "commonBack": "g:1:0:1:0"
+      }
+    }
+  }
+}

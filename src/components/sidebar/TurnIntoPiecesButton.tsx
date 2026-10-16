@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { pageCount } from "../../lib/document-layout";
 import { getLayoutDocuments } from "../../lib/documents";
 import { formatError, toAppError } from "../../lib/errors";
-import { toRustDocuments } from "../../lib/print-request";
 import { computeCards } from "../../lib/sheet-api";
 import { useDocumentStore } from "../../stores/document-store";
 import { useCurrentGrid, useCurrentGroup, useLayoutStore } from "../../stores/layout-store";
@@ -41,7 +40,7 @@ export function TurnIntoPiecesButton() {
     setMessage(null);
     try {
       const output = useLayoutStore.getState();
-      const cards = await computeCards(toRustDocuments(getLayoutDocuments(), output));
+      const cards = await computeCards(getLayoutDocuments(), output);
       const made = turn(page, onlyPage, cards);
       setMessage(
         made > 0

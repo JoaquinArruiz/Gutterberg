@@ -1,0 +1,110 @@
+{
+  "pages": {
+    "0": [
+      {
+        "width_pt": 178.583,
+        "height_pt": 249.449
+      },
+      {
+        "width_pt": 178.583,
+        "height_pt": 249.449
+      }
+    ]
+  },
+  "request": {
+    "documents": [
+      {
+        "document_id": 0,
+        "groups": [
+          {
+            "pages": {
+              "first": 0,
+              "last": 1
+            },
+            "kind": "grid",
+            "grids": [
+              {
+                "bounds": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 1,
+                  "height": 1
+                },
+                "rows": 1,
+                "columns": 1,
+                "source_gap_x_mm": 0,
+                "source_gap_y_mm": 0,
+                "gap_x_mm": 3,
+                "gap_y_mm": 3,
+                "margin_top_mm": 0,
+                "margin_right_mm": 0,
+                "margin_bottom_mm": 0,
+                "margin_left_mm": 0,
+                "output_page": {
+                  "width_pt": 283.46456692913387,
+                  "height_pt": 425.1968503937008
+                },
+                "fit_page": false
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "settings": [],
+    "layout": {
+      "kind": "grid",
+      "spec": {
+        "page": {
+          "kind": "size",
+          "width_pt": 283.46456692913387,
+          "height_pt": 425.1968503937008
+        },
+        "rows": null,
+        "columns": null,
+        "gap_x_mm": 3,
+        "gap_y_mm": 3,
+        "margins": {
+          "top_mm": 0,
+          "right_mm": 0,
+          "bottom_mm": 0,
+          "left_mm": 0
+        }
+      }
+    },
+    "options": {
+      "order": "grouped",
+      "group_by_size": true,
+      "auto_fill": false
+    },
+    "finishing": {
+      "options": {
+        "marks": {
+          "style": "off",
+          "width_mm": 0.25,
+          "color": "#000000",
+          "length_mm": 3,
+          "offset_mm": 1
+        },
+        "bleed": {
+          "mm": 0,
+          "source": "mirror"
+        },
+        "duplex": {
+          "on": false,
+          "layout": "duplex",
+          "fold": "vertical",
+          "fold_gap_mm": 0,
+          "cut_apart": false,
+          "back_upside_down": null,
+          "flip": "long",
+          "offset_x_mm": 0,
+          "offset_y_mm": 0,
+          "common_back": null,
+          "common_back_turn": 0
+        }
+      },
+      "backs": []
+    }
+  }
+}

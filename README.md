@@ -176,6 +176,24 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - English and Spanish, a welcome tour, help tips, a keyboard shortcuts sheet and a bug report form that
   fills in your version and system. The full list of controls is in [docs/controls.md](docs/controls.md).
 
+## Command line
+
+Gutterberg comes with `gutterberg-cli`, which exports a saved project without opening the app. When a publisher
+updates a print-and-play PDF and the pieces are in the same places, replace the file and run one command:
+
+```sh
+gutterberg-cli export my-game.gtr -o my-game-sheets.pdf
+gutterberg-cli check my-game.gtr        # says what an export would refuse, writes nothing
+```
+
+The PDF is the same one the app's Export writes. If a PDF of the project is not the file it was saved with, the
+command stops and says which one; add `--force` to export anyway. Settings (sheet size, gaps, copies) are the ones in
+the project: change them in the app.
+
+It is installed next to the app: in `Gutterberg.app/Contents/MacOS/` on macOS, in the install folder on Windows,
+and in `/usr/bin` with the `.deb` and `.rpm` packages (the AppImage keeps it inside). Each release also has it on its own (`gutterberg-cli-<platform>`), for a
+machine without the app. It needs nothing else, not even a screen.
+
 ## Why
 
 > Most print-and-play PDFs pack their cards edge to edge to save paper. That makes them hard to cut: every cut is shared by two cards, a millimetre off spoils both, and there’s nowhere for bleed or cut marks. Gutterberg takes that PDF and gives every piece its own space, at its exact size, with the original artwork untouched. I made it after none of the print shops in my area would take my board game's cards for printing, and I’m sharing it for anyone who’s had the same fight with a craft knife.

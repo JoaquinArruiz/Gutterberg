@@ -1,7 +1,9 @@
 # Releasing Gutterberg
 
 How a new version gets to people. Pushing a tag builds the app for Windows, macOS (Apple silicon and
-Intel) and Linux and leaves a **draft** GitHub release; installed apps only see it once you publish it.
+Intel) and Linux and leaves a **draft** GitHub release; installed apps only see it once you publish it. The
+command line, `gutterberg-cli`, is built in the same run: it goes into every installer and is attached to the
+release on its own (`gutterberg-cli-<target>`), with the app's version.
 
 ## Versions
 

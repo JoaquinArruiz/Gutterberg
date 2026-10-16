@@ -1,15 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { backsWithoutDocument, editsAfterDelete, NO_EDITS, setBacks } from "./card-edits";
-import {
-  cleanColor,
-  cleanFinish,
-  DEFAULT_FINISH,
-  type Finish,
-  finishingOn,
-  finishingPayload,
-  MAX_BLEED_MM,
-  parseCardKey,
-} from "./finish";
+import { cleanColor, cleanFinish, DEFAULT_FINISH, type Finish, finishingOn, MAX_BLEED_MM } from "./finish";
 
 describe("finish settings", () => {
   it("start with everything off", () => {
@@ -56,70 +47,6 @@ describe("finish settings", () => {
     });
     expect(cleanColor("#ABCDEF")).toBe("#abcdef");
     expect(cleanColor("#abc")).toBe("#000000");
-  });
-});
-
-describe("parseCardKey", () => {
-  it("reads grid and freeform keys and nothing else", () => {
-    expect(parseCardKey("g:1:2:3:4")).toEqual({ kind: "grid", document_id: 1, page_index: 2, row: 3, column: 4 });
-    expect(parseCardKey("f:0:5:6")).toEqual({ kind: "freeform", document_id: 0, page_index: 5, index: 6 });
-    expect(parseCardKey("g:1:2:3:4:2")).toEqual({
-      kind: "grid",
-      document_id: 1,
-      page_index: 2,
-      grid: 2,
-      row: 3,
-      column: 4,
-    });
-    for (const bad of ["", "g:1:2:3", "f:1:2:3:4", "g:a:b:c:d", "x:1:2:3", "g:-1:0:0:0", "g:1:2:3:4:0"]) {
-      expect(parseCardKey(bad)).toBeNull();
-    }
-  });
-});
-
-describe("finishingPayload", () => {
-  const known = new Set(["g:0:0:0:0", "g:0:0:0:1", "g:0:0:1:0"]);
-  const finish: Finish = {
-    marks: { style: "gaps", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
-    bleed: { mm: 2, source: "mirror" },
-    duplex: { ...DEFAULT_FINISH.duplex, on: true, flip: "long", offsetXMm: 1, offsetYMm: -1, commonBack: "g:0:0:1:0" },
-  };
-
-  it("uses the engine's snake_case names and card ids", () => {
-    const p = finishingPayload(finish, { "g:0:0:0:0": "g:0:0:0:1" }, known);
-    expect(p.options.marks).toEqual({ style: "gaps", width_mm: 0.5, color: "#ff0000", length_mm: 4, offset_mm: 2 });
-    expect(p.options.duplex.common_back).toEqual({ kind: "grid", document_id: 0, page_index: 0, row: 1, column: 0 });
-    expect(p.options.duplex.offset_y_mm).toBe(-1);
-    expect(p.backs).toEqual([
-      {
-        card: { kind: "grid", document_id: 0, page_index: 0, row: 0, column: 0 },
-        back: { kind: "grid", document_id: 0, page_index: 0, row: 0, column: 1 },
-        turn: 0,
-      },
-    ]);
-  });
-
-  it("sends whether gutterfold pairs are cut apart", () => {
-    expect(finishingPayload(finish, {}, known).options.duplex.cut_apart).toBe(false);
-    const apart = { ...finish, duplex: { ...finish.duplex, layout: "gutterfold" as const, cutApart: true } };
-    expect(finishingPayload(apart, {}, known).options.duplex.cut_apart).toBe(true);
-  });
-
-  it("sends the user's turn of each back and of the common back", () => {
-    const turns = { "g:0:0:0:1": 180, "g:0:0:1:0": 90 } as const;
-    const p = finishingPayload(finish, { "g:0:0:0:0": "g:0:0:0:1" }, known, turns);
-    expect(p.backs[0].turn).toBe(180);
-    expect(p.options.duplex.common_back_turn).toBe(90);
-  });
-
-  it("leaves out a back that points at a piece that is gone", () => {
-    const p = finishingPayload(
-      { ...finish, duplex: { ...finish.duplex, commonBack: "g:0:9:9:9" } },
-      { "g:0:0:0:0": "g:0:7:7:7", "g:0:6:6:6": "g:0:0:0:1" },
-      known,
-    );
-    expect(p.backs).toEqual([]);
-    expect(p.options.duplex.common_back).toBeNull();
   });
 });
 

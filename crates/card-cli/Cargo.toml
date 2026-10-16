@@ -1,0 +1,20 @@
+[package]
+name = "card-cli"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "Gutterberg's command line: export a saved project without opening the app"
+
+[[bin]]
+name = "gutterberg-cli"
+path = "src/main.rs"
+
+[dependencies]
+card-core = { path = "../card-core" }
+lopdf = "0.45"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+# The tests make a small PNG for a project made of images.
+image = { version = "0.25", default-features = false, features = ["png"] }
