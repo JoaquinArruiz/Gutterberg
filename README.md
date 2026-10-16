@@ -193,8 +193,9 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 ## Examples
 
-Thirteen small PDFs to try it on, from a plain 3 × 3 sheet to a rotated page, a scan, a locked file, fronts and
-backs in separate PDFs and a page with pieces of three sizes, with what each shows and what to expect:
+Seventeen small PDFs and a folder of images to try it on, from a plain 3 × 3 sheet to a rotated page, a scan, a
+locked file, fronts and backs in separate PDFs, a page with pieces of three sizes, and a made-up card game with round
+tokens and hex tiles, with what each shows and what to expect:
 [examples/README.md](examples/README.md).
 
 ## Build from source
