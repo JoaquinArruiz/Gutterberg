@@ -6,7 +6,7 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 0.17.0 | `0.17-command-line.md` | Export a saved project from the command line | unchanged | unchanged |
+| 0.17.0 | `0.17-command-line.md`, `0.17-tutorials.md` | Export a saved project from the command line; tutorials started from a Help menu | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
 
 The project and preferences numbers assume this order; whichever version changes the format first takes the next
