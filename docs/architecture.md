@@ -405,6 +405,24 @@ so a shortcut added or changed in a `keydown` handler changes there too; `shortc
 the texts have the same ids. `ShortcutsList` (the sheet and Preferences › Help) has a sticky search field that filters by
 the translated text and the key names (`Mod` also matches Ctrl, Cmd and Command; `Alt` also Option).
 
+**Tutorials.** A tutorial is a walkthrough that the user starts, not one the app picks: the catalog `src/lib/tutorials.ts`
+has an id, a group (Source, Print, Duplex, App), what it `needs` (nothing, a PDF, or a PDF with pieces) and its steps,
+which are `HintStep`s with the same targets, events and actions as a tip; the texts are `tutorials.<id>.…` in both
+languages (`mark-and-export` reuses the steps of `first-pdf-tour` and `print-stage-intro` instead of repeating them).
+`HintCard.tsx` holds what a tip and a tutorial share, the card and the Joyride spotlight (`HintStepView`) and the
+`advanceOn` subscription; `HintToast` and `TutorialHost` decide when and what to show. `ui-store` holds the running
+tutorial (`tutorial: { id, step }`) and starts it from the list (`startTutorial`, which also closes the list and
+Preferences); one `TutorialHost` is mounted in `App.tsx`. It ignores `help.tipsOn` and the closed tips, and holds every
+tip while it runs (`hintsHeld`, as for the welcome tour, and a check in `useHint`), and for a moment after. Done, the ×
+and `Esc` end it. If its need is not met, `TutorialHost` shows the need (`NEEDS_STEPS`: Open PDF…, or start “Mark pieces
+and export”) in place of the step, and goes on by itself when the PDF or the pieces are there; a tutorial never opens
+a sample or changes the project. A step for a place the user is already in (the Print tab) is skipped. A modal dialog
+(Preferences, the calibration sheet, the pairing, the image size) covers the page, so while one is open the card sits
+inside it instead of pointing at something behind it. Nothing is saved: no preference or project field, so tutorials
+do not change either version. The list (`TutorialsList`: a sticky search field over the translated title and summary,
+ignoring case and accents) is in the Tutorials dialog, opened from the `?` Help menu in the toolbar (`HelpMenu`, which
+also has the shortcuts, the welcome tour and Report a problem), and in Preferences › Help above the tips switch.
+
 ## Languages (`i18n`)
 
 English and neutral Latin American Spanish (`tú`), chosen in Preferences (System, English, Español), with the decimal
@@ -476,7 +494,7 @@ macOS keeps its storage under the bundle identifier whatever the override says, 
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
 The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
-Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tips, shortcuts),
+Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tutorials, tips, shortcuts),
 Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
 goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
 names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into

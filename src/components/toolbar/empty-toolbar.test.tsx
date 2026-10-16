@@ -32,10 +32,11 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe("the toolbar with nothing open", () => {
-  it("shows only File, the panels menu and Preferences", () => {
+  it("shows only File, the panels menu, Help and Preferences", () => {
     render(<EditorToolbar />);
     expect(screen.getByRole("button", { name: /^File/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: /Panels/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Preferences" })).toBeTruthy();
     expect(screen.queryAllByRole("tab")).toHaveLength(0);
     for (const title of TITLES) expect(screen.queryByTitle(title), title).toBeNull();
@@ -62,6 +63,7 @@ describe("the toolbar with a document open", () => {
     ]);
     for (const title of TITLES) expect(screen.getByTitle(title), title).toBeTruthy();
     expect(screen.getByText("Export PDF")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Help" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Preferences" })).toBeTruthy();
   });
 });

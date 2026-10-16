@@ -16,6 +16,7 @@
 //   4. To point a step at the UI, give it a `target` (an element marked `data-hint-target="…"`;
 //      add the name to `HintTargetId`). A step can also `advanceOn` an app event (add its name to
 //      `HintEventId` and call `emitHintEvent` from where it happens, see `hint-events.ts`).
+//      A tutorial (`tutorials.ts`) uses the same steps, targets, events and actions.
 //   5. To show a hint again after you reword it, raise its `version`.
 
 import type { ParseKeys } from "i18next";
@@ -24,7 +25,17 @@ import type { ParseKeys } from "i18next";
 export type TextKey = ParseKeys;
 
 /** Things a hint button can do; implemented in `hint-actions.ts`. */
-export type HintActionId = "open-preferences:preview";
+export type HintActionId =
+  | "open-preferences:preview"
+  | "open-preferences:updates"
+  | "open-bug-report"
+  | "open-pdf"
+  | "go-stage:cards"
+  | "go-stage:print"
+  | "open-section:print.sheet"
+  | "open-section:print.page"
+  | "open-section:print.duplex"
+  | "start-tutorial:mark-and-export";
 
 /** Elements a step can point at; each is marked `data-hint-target="<id>"` in the UI. */
 export type HintTargetId =
@@ -36,7 +47,23 @@ export type HintTargetId =
   | "copies"
   | "sheet-inspector"
   | "export-button"
-  | "sticky-edges-button";
+  | "sticky-edges-button"
+  | "file-menu"
+  | "help-menu"
+  | "select-tool-button"
+  | "grid-tool-button"
+  | "grid-list"
+  | "add-grid-button"
+  | "piece-size"
+  | "sheet-size"
+  | "sheet-orientation"
+  | "sheet-preview"
+  | "references-button"
+  | "duplex-section"
+  | "gutterfold-pairs"
+  | "pair-backs-button"
+  | "calibrate-button"
+  | "back-offset";
 
 /** App events that can move a step forward, fired with `emitHintEvent`. */
 export type HintEventId =
@@ -44,9 +71,25 @@ export type HintEventId =
   | "selection-created"
   | "grid-changed"
   | "stage-changed:print"
+  | "stage-changed:cards"
   | "copies-changed"
   | "export-started"
-  | "edge-stuck";
+  | "edge-stuck"
+  | "library-selection-changed"
+  | "piece-size-changed"
+  | "sheet-size-changed"
+  | "duplex-changed"
+  | "calibration-opened"
+  | "pairing-opened"
+  | "pairing-applied"
+  | "references-shown"
+  | "grid-added"
+  | "images-dialog-opened"
+  | "images-added"
+  | "prefs-opened:updates"
+  | "prefs-opened:about"
+  | "update-check-started"
+  | "log-copied";
 
 export type HintStep = {
   title?: TextKey;

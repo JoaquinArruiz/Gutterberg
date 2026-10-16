@@ -10,6 +10,7 @@ import {
   scaleForSize,
   setBacks,
 } from "../../lib/card-edits";
+import { emitHintEvent } from "../../lib/hint-events";
 import { formatDecimal } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useLibraryCards } from "../../lib/use-library-cards";
@@ -55,7 +56,11 @@ export function SelectedCardsSection() {
         Math.abs(c.source.width - first.source.width) < SAME_SIZE_PT &&
         Math.abs(c.source.height - first.source.height) < SAME_SIZE_PT,
     );
-  const apply = (s: number) => setEdits(scaleCards(edits, keys, s));
+  const resized = (next: typeof edits) => {
+    setEdits(next);
+    emitHintEvent("piece-size-changed");
+  };
+  const apply = (s: number) => resized(scaleCards(edits, keys, s));
   // The chain: linked, width and height keep their proportions (one scale); unlinked, each is set on its own.
   // Unlinked while any selected piece has its own height, or after the user opened the chain for this selection.
   const keysId = keys.join(",");
@@ -73,7 +78,7 @@ export function SelectedCardsSection() {
       const { x, y } = cardScales(c);
       next = scaleCardsXY(next, [cardIdKey(c.id)], side === "width" ? s : x, side === "height" ? s : y);
     }
-    setEdits(next);
+    resized(next);
   };
   const setLinked = (on: boolean) => {
     if (on && scale !== null) apply(scale); // the height follows the width again
@@ -126,47 +131,51 @@ export function SelectedCardsSection() {
                   : `${formatDecimal(scale * 100, 1)}%`}
             </span>
           </FieldRow>
-          <ChainedFields
-            chain={
-              <ChainToggle
-                linked={linked}
-                onChange={setLinked}
-                label={t("print.selected.link")}
-                linkedHint={t("print.selected.linkedHint")}
-                unlinkedHint={t("print.selected.unlinkedHint")}
+          <div className="flex flex-col gap-1.5" data-hint-target="piece-size">
+            <ChainedFields
+              chain={
+                <ChainToggle
+                  linked={linked}
+                  onChange={setLinked}
+                  label={t("print.selected.link")}
+                  linkedHint={t("print.selected.linkedHint")}
+                  unlinkedHint={t("print.selected.unlinkedHint")}
+                />
+              }
+            >
+              <MeasurementInput
+                label={t("common.width")}
+                precise
+                min={1}
+                disabled={!sameSource}
+                value={sameSource && scale !== null ? ptToMm(first.source.width * scale) : null}
+                onChange={(mm) => (linked ? apply(scaleForSize(first.source, "width", mm)) : setSide("width", mm))}
               />
-            }
-          >
-            <MeasurementInput
-              label={t("common.width")}
-              precise
-              min={1}
-              disabled={!sameSource}
-              value={sameSource && scale !== null ? ptToMm(first.source.width * scale) : null}
-              onChange={(mm) => (linked ? apply(scaleForSize(first.source, "width", mm)) : setSide("width", mm))}
+              <MeasurementInput
+                label={t("common.height")}
+                precise
+                min={1}
+                disabled={!sameSource}
+                value={sameSource && heightScale !== null ? ptToMm(first.source.height * heightScale) : null}
+                onChange={(mm) => (linked ? apply(scaleForSize(first.source, "height", mm)) : setSide("height", mm))}
+              />
+            </ChainedFields>
+            <SizePresets />
+            <NumberField
+              label={t("print.selected.scale")}
+              value={
+                scale === null || heightScale === null || Math.abs(scale - heightScale) > 1e-6 ? null : scale * 100
+              }
+              decimals={1}
+              min={10}
+              max={500}
+              step={1}
+              fineStep={0.1}
+              coarseStep={10}
+              suffix="%"
+              onCommit={(pct) => apply(pct / 100)}
             />
-            <MeasurementInput
-              label={t("common.height")}
-              precise
-              min={1}
-              disabled={!sameSource}
-              value={sameSource && heightScale !== null ? ptToMm(first.source.height * heightScale) : null}
-              onChange={(mm) => (linked ? apply(scaleForSize(first.source, "height", mm)) : setSide("height", mm))}
-            />
-          </ChainedFields>
-          <SizePresets />
-          <NumberField
-            label={t("print.selected.scale")}
-            value={scale === null || heightScale === null || Math.abs(scale - heightScale) > 1e-6 ? null : scale * 100}
-            decimals={1}
-            min={10}
-            max={500}
-            step={1}
-            fineStep={0.1}
-            coarseStep={10}
-            suffix="%"
-            onCommit={(pct) => apply(pct / 100)}
-          />
+          </div>
           <FieldRow label={null} wrap>
             <Button
               disabled={picked.every((c) => c.scale === 1 && !hasOwnHeight(c))}

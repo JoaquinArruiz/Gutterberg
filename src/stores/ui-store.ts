@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { emitHintEvent } from "../lib/hint-events";
+import type { TutorialId } from "../lib/tutorials";
 
 export type PrefsSection =
   | "General"
@@ -13,12 +14,15 @@ export type PrefsSection =
   | "About";
 
 /** A setting a link can point at: Preferences opens on its section and the setting pulses twice. */
-export type PrefsTarget = "livePreview" | "helpTips";
+export type PrefsTarget = "livePreview" | "helpTips" | "bugReport";
 
 /** How long help tips keep waiting after the welcome tour closes, so the first one does not fire at once. */
 export const WELCOME_HINT_DELAY_MS = 2500;
 
 let releaseHints: ReturnType<typeof setTimeout> | undefined;
+
+/** The tutorial that is running and the step it is on. Nothing about it is saved. */
+export type RunningTutorial = { id: TutorialId; step: number };
 
 /** The two halves of the app: define where the cards are, then choose what to print. */
 export type Stage = "cards" | "print";
@@ -47,7 +51,16 @@ export const useUiStore = create<{
    */
   welcomeDeferred: boolean;
   deferWelcome: (deferred?: boolean) => void;
-  /** Help tips wait while the welcome is open and for a moment after it closes. */
+  /** The Tutorials list (Help menu). */
+  tutorialsOpen: boolean;
+  setTutorialsOpen: (open: boolean) => void;
+  /** The tutorial the user started, if one is running (`TutorialHost` shows it). */
+  tutorial: RunningTutorial | null;
+  /** Starts a tutorial from its first step, closing the list and Preferences it was picked from. */
+  startTutorial: (id: TutorialId) => void;
+  setTutorialStep: (step: number) => void;
+  endTutorial: () => void;
+  /** Help tips wait while the welcome or a tutorial is open and for a moment after it closes. */
   hintsHeld: boolean;
   /** An export is running: the automatic update check waits for it to finish. */
   exporting: boolean;
@@ -72,6 +85,26 @@ export const useUiStore = create<{
     set({ welcomeOpen, hintsHeld: true });
     if (!welcomeOpen) releaseHints = setTimeout(() => set({ hintsHeld: false }), WELCOME_HINT_DELAY_MS);
   },
+  tutorialsOpen: false,
+  setTutorialsOpen: (tutorialsOpen) => set({ tutorialsOpen }),
+  tutorial: null,
+  startTutorial: (id) => {
+    clearTimeout(releaseHints);
+    set({
+      tutorial: { id, step: 0 },
+      hintsHeld: true,
+      tutorialsOpen: false,
+      prefsOpen: false,
+      prefsSection: null,
+      prefsPulse: null,
+    });
+  },
+  setTutorialStep: (step) => set((s) => (s.tutorial ? { tutorial: { ...s.tutorial, step } } : s)),
+  endTutorial: () => {
+    clearTimeout(releaseHints);
+    set({ tutorial: null, hintsHeld: true });
+    releaseHints = setTimeout(() => set((s) => (s.welcomeOpen ? s : { hintsHeld: false })), WELCOME_HINT_DELAY_MS);
+  },
   welcomeDeferred: false,
   deferWelcome: (welcomeDeferred = true) => set({ welcomeDeferred }),
   hintsHeld: false,
@@ -80,6 +113,6 @@ export const useUiStore = create<{
   stage: "cards",
   setStage: (stage) => {
     set({ stage });
-    if (stage === "print") emitHintEvent("stage-changed:print");
+    emitHintEvent(stage === "print" ? "stage-changed:print" : "stage-changed:cards");
   },
 }));

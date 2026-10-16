@@ -34,12 +34,15 @@ export function useHint(id: HintId) {
   const dismissHint = usePreferencesStore((s) => s.dismissHint);
   // No tip shows while the welcome tour is open, nor in the moment after it closes.
   const held = useUiStore((s) => s.hintsHeld);
+  // Nor while a tutorial runs: the user asked for that one, and a tip over it would only be in the way.
+  const tutorialRunning = useUiStore((s) => s.tutorial !== null);
   return {
     register: () => {
       add(id);
       return () => remove(id);
     },
-    visible: tipsOn && !held && HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
+    visible:
+      tipsOn && !held && !tutorialRunning && HINT_IDS.find((h) => mounted[h] && !isHintDismissed(dismissed, h)) === id,
     dismiss: () => dismissHint(id),
   };
 }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { emitHintEvent } from "../../lib/hint-events";
 import {
   applyPairing,
   DEFAULT_PAIRING,
@@ -48,7 +49,10 @@ export function PairBacksDialog({ open, onClose }: { open: boolean; onClose: () 
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (open && !d.open) d.showModal();
+    if (open && !d.open) {
+      d.showModal();
+      emitHintEvent("pairing-opened");
+    }
     if (!open && d.open) d.close();
   }, [open]);
 
@@ -59,6 +63,7 @@ export function PairBacksDialog({ open, onClose }: { open: boolean; onClose: () 
     });
 
   const apply = () => {
+    emitHintEvent("pairing-applied");
     together(() => {
       const layout = useLayoutStore.getState();
       layout.setCardEdits(applyPairing(layout.cardEdits, pairing, options.upsideDown));

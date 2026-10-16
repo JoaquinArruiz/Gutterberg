@@ -42,6 +42,7 @@ import { Button } from "../ui/Button";
 import { PanelsMenu } from "../workspace/PanelsMenu";
 import { DocumentName } from "./DocumentName";
 import { FileMenu } from "./FileMenu";
+import { HelpMenu } from "./HelpMenu";
 
 const TOOLS = [
   { id: "pick", label: "toolbar.tools.pick", key: "V", Icon: MousePointer2 },
@@ -252,6 +253,7 @@ export function EditorToolbar() {
                 type="button"
                 key={id}
                 title={t("toolbar.toolTitle", { label: t(label), key })}
+                data-hint-target={id === "grid" ? "grid-tool-button" : id === "pick" ? "select-tool-button" : undefined}
                 onClick={() => setTool(id)}
                 className={`${iconBtn} ${tool === id ? "bg-[var(--active)]" : ""}`}
               >
@@ -351,6 +353,7 @@ export function EditorToolbar() {
         </span>
       )}
       <PanelsMenu />
+      <HelpMenu />
       <button
         type="button"
         title={t("toolbar.preferences")}

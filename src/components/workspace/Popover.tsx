@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import type { HintTargetId } from "../../lib/hints";
 
 /** Button + dropdown surface that closes on outside click or Escape. */
 export function Popover({
@@ -8,6 +9,7 @@ export function Popover({
   align = "right",
   triggerClassName,
   testId,
+  hintTarget,
 }: {
   trigger: React.ReactNode;
   label: string;
@@ -15,6 +17,8 @@ export function Popover({
   align?: "left" | "right";
   triggerClassName?: string;
   testId?: string;
+  /** Marks the button for a help tip or tutorial step to point at (`data-hint-target`). */
+  hintTarget?: HintTargetId;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -32,7 +36,7 @@ export function Popover({
   }, [open]);
 
   return (
-    <div ref={ref} className="relative" data-testid={testId}>
+    <div ref={ref} className="relative" data-testid={testId} data-hint-target={hintTarget}>
       <button
         type="button"
         aria-label={label}

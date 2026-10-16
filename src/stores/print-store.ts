@@ -128,13 +128,20 @@ export const usePrintStore = create<PrintState>()(
         set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) })),
       setBleed: (patch) =>
         set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, ...patch } }) })),
-      setDuplex: (patch) =>
-        set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) })),
+      setDuplex: (patch) => {
+        set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) }));
+        if ("on" in patch || "layout" in patch) emitHintEvent("duplex-changed");
+      },
       setPickingBack: (pickingBack) => set({ pickingBack }),
       setFilter: (filter) => set({ filter }),
-      clickCard: (key, visible, modifier) =>
-        set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) })),
-      selectAll: (keys) => set({ selection: { selected: keys, anchor: keys[0] ?? null } }),
+      clickCard: (key, visible, modifier) => {
+        set((s) => ({ selection: clickCard(s.selection, key, visible, modifier) }));
+        if (usePrintStore.getState().selection.selected.length > 0) emitHintEvent("library-selection-changed");
+      },
+      selectAll: (keys) => {
+        set({ selection: { selected: keys, anchor: keys[0] ?? null } });
+        if (keys.length > 0) emitHintEvent("library-selection-changed");
+      },
       clearSelection: () => set({ selection: EMPTY_SELECTION }),
       setCards: (cards, error) =>
         set((s) => ({

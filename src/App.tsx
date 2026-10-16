@@ -12,6 +12,8 @@ import { StatusBar } from "./components/toolbar/StatusBar";
 import { ContextMenuHost } from "./components/ui/ContextMenu";
 import { ShortcutsDialog } from "./components/ui/ShortcutsDialog";
 import { Toast } from "./components/ui/Toast";
+import { TutorialHost } from "./components/ui/TutorialHost";
+import { TutorialsDialog } from "./components/ui/TutorialsDialog";
 import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeDialog";
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { deletePicked, duplicatePicked, nudgePicked, pickAllPieces } from "./lib/editor-actions";
@@ -206,6 +208,8 @@ export default function App() {
       <FirstPdfTour />
       <PreferencesDialog />
       <ShortcutsDialog />
+      <TutorialsDialog />
+      <TutorialHost />
       <AiConfirmDialog />
       <ImageSizeDialog />
       <WelcomeDialog />

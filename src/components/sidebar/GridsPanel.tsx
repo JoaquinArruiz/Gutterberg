@@ -28,6 +28,7 @@ import {
   moveInGridList,
   newFolderName,
 } from "../../lib/document-layout";
+import { emitHintEvent } from "../../lib/hint-events";
 import { useDocumentStore } from "../../stores/document-store";
 import { useEditorStore } from "../../stores/editor-store";
 import { useActiveGrid, useCurrentGroup, useLayoutStore, usePickedFolder } from "../../stores/layout-store";
@@ -656,13 +657,14 @@ export function GridsList({ group, page }: { group: GridGroup; page: number }) {
           );
         })}
       </ul>
-      <div>
+      <div data-hint-target="add-grid-button">
         <Button
           className="inline-flex items-center gap-1"
           disabled={full}
           title={full ? t("source.grids.full", { count: MAX_GRIDS }) : t("source.grids.addTitle")}
           onClick={() => {
             add(page);
+            emitHintEvent("grid-added");
             // The new grid is drawn with the Grid region tool.
             pickOnPage();
           }}

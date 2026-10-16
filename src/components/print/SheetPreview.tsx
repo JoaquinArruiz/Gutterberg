@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
 import { formatError } from "../../lib/errors";
+import { emitHintEvent } from "../../lib/hint-events";
 import type { PageSize } from "../../lib/tauri";
 import { mmToPt } from "../../lib/units";
 import { useDocumentStore } from "../../stores/document-store";
@@ -101,7 +102,7 @@ export function SheetPreview() {
   }
 
   return (
-    <div className="flex h-full min-w-0 flex-col" data-testid="sheet-preview">
+    <div className="flex h-full min-w-0 flex-col" data-testid="sheet-preview" data-hint-target="sheet-preview">
       {/* Wraps to a second line when the pane is narrow (longer texts, e.g. in Spanish) instead of clipping. */}
       <div className="flex min-h-9 shrink-0 flex-wrap items-center gap-x-2 gap-y-0.5 border-b border-[var(--border)] bg-[var(--panel)] px-3 py-0.5">
         <button
@@ -146,7 +147,11 @@ export function SheetPreview() {
           aria-label={t("sheets.references")}
           title={`${t("sheets.references")}. ${t("sheets.referencesHint")}`}
           aria-pressed={showReferences}
-          onClick={() => setShowReferences(!showReferences)}
+          data-hint-target="references-button"
+          onClick={() => {
+            setShowReferences(!showReferences);
+            if (!showReferences) emitHintEvent("references-shown");
+          }}
           className={`rounded p-1 hover:bg-[var(--hover)] ${showReferences ? "bg-[var(--accent)]/25 text-[var(--accent)]" : ""}`}
         >
           <Tag size={14} />

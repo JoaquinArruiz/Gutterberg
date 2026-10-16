@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { HINT_IDS, HINTS, type HintDef } from "../lib/hints";
+import { HINT_IDS, HINTS, type HintDef, type HintStep } from "../lib/hints";
+import {
+  NEEDS_STEPS,
+  TUTORIAL_GROUPS,
+  TUTORIAL_IDS,
+  TUTORIALS,
+  tutorialGroupKey,
+  tutorialSummaryKey,
+  tutorialTitleKey,
+} from "../lib/tutorials";
 import en from "./en.json";
 import es from "./es.json";
 
@@ -57,6 +66,40 @@ describe("translation catalogs", () => {
         }
       }
     }
+  });
+
+  it("has the title, summary and every step text of every tutorial, and the texts of its group and needs", () => {
+    const keys: string[] = [
+      ...TUTORIAL_GROUPS.map(tutorialGroupKey),
+      ...TUTORIAL_IDS.flatMap((id) => [tutorialTitleKey(id), tutorialSummaryKey(id)]),
+    ];
+    for (const step of [
+      ...Object.values(NEEDS_STEPS),
+      ...TUTORIAL_IDS.flatMap((id) => TUTORIALS[id].steps as readonly HintStep[]),
+    ]) {
+      for (const key of [step.title, step.text, step.action?.label]) if (key) keys.push(key);
+    }
+    for (const key of keys) {
+      expect(english, key).toHaveProperty([key]);
+      expect(spanish, key).toHaveProperty([key]);
+    }
+  });
+
+  it("has no tutorial text that nothing uses", () => {
+    const used = new Set<string>([
+      ...TUTORIAL_GROUPS.map(tutorialGroupKey),
+      ...TUTORIAL_IDS.flatMap((id) => [tutorialTitleKey(id), tutorialSummaryKey(id)]),
+      ...Object.values(NEEDS_STEPS).flatMap((s) => [s.title, s.text, s.action.label]),
+      ...TUTORIAL_IDS.flatMap((id) =>
+        (TUTORIALS[id].steps as readonly HintStep[]).flatMap((s) => [s.title ?? "", s.text, s.action?.label ?? ""]),
+      ),
+    ]);
+    // The list's own texts (title, search, ...) are used by the components; the rest must come from the catalog.
+    const own = new Set(["title", "hint", "search", "noMatch", "close", "closeTitle"]);
+    const unused = Object.keys(english).filter(
+      (k) => k.startsWith("tutorials.") && !own.has(k.slice("tutorials.".length)) && !used.has(k),
+    );
+    expect(unused).toEqual([]);
   });
 
   it("uses the glossary's Spanish terms", () => {

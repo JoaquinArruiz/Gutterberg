@@ -46,7 +46,13 @@ beforeEach(() => {
   writeText.mockReset().mockResolvedValue(undefined);
   Object.assign(navigator, { clipboard: { writeText } });
   usePreferencesStore.setState({ prefs: DEFAULT_PREFERENCES });
-  useUiStore.setState({ prefsOpen: false, prefsSection: null, welcomeOpen: false, hintsHeld: false });
+  useUiStore.setState({
+    prefsOpen: false,
+    prefsSection: null,
+    welcomeOpen: false,
+    hintsHeld: false,
+    tutorial: null,
+  });
 });
 afterEach(() => {
   cleanup();
@@ -61,13 +67,29 @@ describe("Preferences › Help", () => {
     expect(screen.getByText("Welcome tour")).toBeTruthy();
   });
 
-  it("has the three groups, in order, and no longer the bug report (it is in About)", async () => {
+  it("has the four groups, in order, and no longer the bug report (it is in About)", async () => {
     render(<PreferencesDialog />);
     await openHelp();
     expect(screen.queryByText("Found a bug?")).toBeNull();
-    const titles = ["Welcome tour", "Help tips", "Keyboard shortcuts"].map((t) => screen.getByText(t));
+    const titles = ["Welcome tour", "Tutorials", "Help tips", "Keyboard shortcuts"].map((t) => screen.getByText(t));
     for (let i = 1; i < titles.length; i++)
       expect(titles[i - 1].compareDocumentPosition(titles[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("lists the tutorials above the tips switch, and starts the one picked, closing Preferences", async () => {
+    render(<PreferencesDialog />);
+    await openHelp();
+    const list = screen.getByTestId("help-tutorials");
+    expect(list.querySelectorAll("[data-tutorial]").length).toBeGreaterThan(10);
+    expect(
+      screen.getByText("Tutorials").compareDocumentPosition(screen.getByRole("switch", { name: "Show help tips" })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Even with the tips off: a tutorial is asked for.
+    usePreferencesStore.getState().setTipsOn(false);
+    fireEvent.click(within(list).getByRole("button", { name: /Report a problem/ }));
+    expect(useUiStore.getState().tutorial).toEqual({ id: "report-problem", step: 0 });
+    expect(useUiStore.getState().prefsOpen).toBe(false);
   });
 
   it("replays the welcome tour, stepping out of the way", async () => {

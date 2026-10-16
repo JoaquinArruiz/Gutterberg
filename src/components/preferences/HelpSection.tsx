@@ -4,11 +4,12 @@ import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
 import { ShortcutsList } from "../ui/ShortcutsList";
 import { Switch } from "../ui/Switch";
+import { TutorialsList } from "../ui/TutorialsList";
 import { Field } from "./Field";
 
 /**
- * Preferences › Help: everything about learning the app. The welcome tour, the help tips that were closed, and the
- * keyboard shortcuts. How to report a bug is in About (`BugReportField`).
+ * Preferences › Help: everything about learning the app. The welcome tour, the tutorials, the help tips that were
+ * closed, and the keyboard shortcuts. How to report a bug is in About (`BugReportField`).
  */
 export function HelpSection() {
   const { t } = useTranslation();
@@ -32,6 +33,13 @@ export function HelpSection() {
           <Button size="md" onClick={replay}>
             {t("preferences.help.replayWelcome")}
           </Button>
+        </div>
+      </Field>
+
+      <Field label={t("preferences.help.tutorials")}>
+        <p className="text-[var(--muted)]">{t("preferences.help.tutorialsNote")}</p>
+        <div className="rounded border border-[var(--border)] px-3 py-1" data-testid="help-tutorials">
+          <TutorialsList />
         </div>
       </Field>
 

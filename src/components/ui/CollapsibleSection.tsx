@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
+import type { HintTargetId } from "../../lib/hints";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { InfoTip } from "./InfoTip";
 
@@ -12,6 +13,7 @@ export function CollapsibleSection({
   defaultOpen = true,
   info,
   actions,
+  hintTarget,
   children,
 }: {
   id: string;
@@ -21,13 +23,19 @@ export function CollapsibleSection({
   info?: React.ReactNode;
   /** Small buttons in the header, before the InfoTip (a section's "add" button). */
   actions?: React.ReactNode;
+  /** Marks the whole section for a help tip or tutorial step to point at, folded or not (`data-hint-target`). */
+  hintTarget?: HintTargetId;
   children: React.ReactNode;
 }) {
   const stored = usePreferencesStore((s) => s.prefs.inspector.sections[id]);
   const setSectionOpen = usePreferencesStore((s) => s.setSectionOpen);
   const open = stored ?? defaultOpen;
   return (
-    <section className="mb-3 border-b border-[var(--border)] pb-2 last:border-b-0" data-testid={`section-${id}`}>
+    <section
+      className="mb-3 border-b border-[var(--border)] pb-2 last:border-b-0"
+      data-testid={`section-${id}`}
+      data-hint-target={hintTarget}
+    >
       <div className="mb-1.5 flex items-center gap-1">
         <button
           type="button"

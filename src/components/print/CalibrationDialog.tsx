@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { FALLBACK_SHEET, readingToOffset, saveCalibrationSheet } from "../../lib/calibration";
 import { formatError, toAppError } from "../../lib/errors";
 import { MAX_DUPLEX_OFFSET_MM } from "../../lib/finish";
+import { emitHintEvent } from "../../lib/hint-events";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
 import { MeasurementInput } from "../ui/MeasurementInput";
@@ -29,6 +30,7 @@ export function CalibrationDialog({ open, onClose }: { open: boolean; onClose: (
       setY(0);
       setStatus(null);
       d.showModal();
+      emitHintEvent("calibration-opened");
     }
     if (!open && d.open) d.close();
   }, [open]);

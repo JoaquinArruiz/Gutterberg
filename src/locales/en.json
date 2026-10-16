@@ -72,6 +72,13 @@
       "note": "These do not stop the export."
     }
   },
+  "helpMenu": {
+    "label": "Help",
+    "tutorials": "Tutorials…",
+    "shortcuts": "Keyboard shortcuts",
+    "welcome": "Welcome tour",
+    "report": "Report a problem"
+  },
   "files": {
     "pdfFilter": "PDF",
     "suffixSpaced": "spaced",
@@ -770,7 +777,9 @@
       "copyFailed": "Couldn't copy. Select the text above and copy it yourself.",
       "report": "Report on GitHub",
       "discord": "Discord",
-      "discordSoon": "Coming soon"
+      "discordSoon": "Coming soon",
+      "tutorials": "Tutorials",
+      "tutorialsNote": "Step-by-step walkthroughs that you start when you need them. Picking one closes Preferences."
     },
     "updates": {
       "current": "Version",
@@ -890,6 +899,215 @@
       "one": {
         "title": "Sticky edges",
         "text": "That side stuck to an edge in the artwork. It stays there for a few pixels, then lets go if you keep dragging. Hold Ctrl/Cmd to drag freely, or turn sticky edges off with this button."
+      }
+    }
+  },
+  "tutorials": {
+    "title": "Tutorials",
+    "hint": "Pick one and it starts.",
+    "search": "Search tutorials",
+    "noMatch": "No tutorial matches that.",
+    "close": "End tutorial",
+    "closeTitle": "End the tutorial",
+    "groups": {
+      "source": "Source tab",
+      "print": "Print tab",
+      "duplex": "Duplex (Print tab)",
+      "app": "App"
+    },
+    "needs": {
+      "document": {
+        "title": "Open a PDF first",
+        "text": "This tutorial works on a PDF that is open. Open one, and the tutorial goes on from here.",
+        "action": "Open PDF…"
+      },
+      "pieces": {
+        "title": "Mark some pieces first",
+        "text": "This tutorial needs pieces to work on, and none are marked yet. The “Mark pieces and export” tutorial shows how.",
+        "action": "Start “Mark pieces and export”"
+      }
+    },
+    "steps": {
+      "goPrint": {
+        "title": "Open the Print tab",
+        "text": "This is done in the Print tab. Open it from the tabs at the top.",
+        "action": "Open the Print tab"
+      },
+      "goSource": {
+        "title": "Open the Source tab",
+        "text": "This is done in the Source tab, where the pieces are marked on the pages. Open it from the tabs at the top.",
+        "action": "Open the Source tab"
+      }
+    },
+    "resize-pieces": {
+      "title": "Make pieces bigger or smaller",
+      "summary": "Give pieces a real size or a percentage, without touching the PDF.",
+      "pick": {
+        "title": "Pick the pieces",
+        "text": "Click the piece you want to resize in the piece library. Select all picks every piece shown, and the selected ones are resized together."
+      },
+      "size": {
+        "title": "Set the size",
+        "text": "In Selected pieces, type a new Width or Height: the other side follows while the chain between them is linked. Or type a Scale in percent: 100% is the size on the page."
+      },
+      "sheet": {
+        "title": "Check the sheet",
+        "text": "The sheet preview shows the pieces at their new size. Pieces are never shrunk to fit: if they do not fit, you get a message to change the sheet instead. “Back to the size on the page” undoes it."
+      }
+    },
+    "align-backs": {
+      "title": "Line up fronts and backs",
+      "summary": "Correct the printer's drift between the two sides of a sheet with a calibration sheet.",
+      "duplex": {
+        "title": "Turn on the backs",
+        "text": "Open the Duplex section, turn on Print backs and keep Backs on “On the other side”. In Flip on, choose the edge your printer turns the paper over on.",
+        "action": "Open the Duplex section"
+      },
+      "calibrate": {
+        "title": "Print the calibration sheet",
+        "text": "Press Calibration sheet…, then Save the sheet… and print it on both sides of one piece of paper at actual size (100%, not “fit to page”), with the same paper and printer settings as for your pieces. If you don't see the button, check that Backs is “On the other side”."
+      },
+      "read": {
+        "title": "Read the two numbers",
+        "text": "Hold the paper up to a light with the back facing you. See where the lines of the front's crosshair cross the rulers of the back, and type the numbers in the dialog: the horizontal ruler gives X, the vertical one Y, and right and down are positive. Then press Apply."
+      },
+      "offset": {
+        "title": "Check Back offset",
+        "text": "Apply puts the numbers in Back offset X and Y. Print your pieces again and see whether the backs line up; you can fine-tune the offset here by hand."
+      }
+    },
+    "gutterfold": {
+      "title": "Print gutterfold, or turn it into double-sided",
+      "summary": "Print each back beside its front to fold or cut apart, or pair the backs and print double-sided.",
+      "backs": {
+        "title": "Print the backs beside the fronts",
+        "text": "Open the Duplex section, turn on Print backs and set Backs to “Beside the front”: each back is printed next to its front, to fold (gutterfold).",
+        "action": "Open the Duplex section"
+      },
+      "pairs": {
+        "title": "Fold or cut apart",
+        "text": "Pairs says what each front and back become. Fold keeps them as one piece, with a dashed line at the fold and cut marks around the pair. Cut apart leaves them as two pieces side by side, with no fold line, for quick builds that are not double-sided. Fold (Back, when cut apart) sets whether the back goes to the right or below."
+      },
+      "double": {
+        "title": "Or make it double-sided",
+        "text": "If your file has the backs beside the fronts and you want a double-sided print instead, press Pair backs automatically…, choose “Beside each other on the page” and Apply, then set Backs to “On the other side”."
+      }
+    },
+    "pair-backs": {
+      "title": "Pair fronts with their backs",
+      "summary": "Let Gutterberg find each piece's back from where it is in the file.",
+      "open": {
+        "title": "Open the pairing",
+        "text": "Open the Duplex section, turn on Print backs and press Pair backs automatically….",
+        "action": "Open the Duplex section"
+      },
+      "rule": {
+        "title": "Say where the backs are",
+        "text": "Under “Where the backs are”, pick the rule that matches your file: Alternating pages (page 1 with 2, 3 with 4…), Backs after fronts, Beside each other on the page, or Backs in another PDF. Options such as mirrored or upside-down backs appear when they apply. Press Apply when the dialog counts the pairs you expect."
+      },
+      "check": {
+        "title": "Check the pairs",
+        "text": "A piece with a back shows it in the piece library, and Selected pieces › Back says which one it is. Pieces left without a pair keep what they had; select one and use Pick back… to set its back by hand."
+      }
+    },
+    "paper-size": {
+      "title": "Choose the paper size",
+      "summary": "Print on A4, Letter, A3 or another size, in portrait or landscape.",
+      "size": {
+        "title": "Choose the paper",
+        "text": "In the Sheet section, open Size and choose the paper: A4, Letter, A3, A5, Legal, Tabloid / Ledger, Custom, Same as source or Auto-fit to pieces. Pieces keep their size whichever you pick.",
+        "action": "Open the Sheet section"
+      },
+      "orientation": {
+        "title": "Portrait or landscape",
+        "text": "In the Page section, Orientation turns the sheet (it isn't there for Same as source or Auto-fit to pieces). The margins are there too, and the sheet preview shows the result.",
+        "action": "Open the Page section"
+      }
+    },
+    "find-piece": {
+      "title": "Find a piece on the sheet",
+      "summary": "Show each piece's reference on the sheet and look it up in the piece library.",
+      "show": {
+        "title": "Show the references",
+        "text": "Press Show piece references above the sheet to write each piece's reference (its page and position, like p3 · r1 c2) on it. It is only on screen: the exported PDF doesn't have them."
+      },
+      "library": {
+        "title": "Find it in the library",
+        "text": "The piece library shows the same reference under each piece. Click that piece to select it and change its copies, size or back."
+      }
+    },
+    "several-grids": {
+      "title": "Mark pieces of different sizes on one page",
+      "summary": "Draw one grid for each size of piece on the same page.",
+      "first": {
+        "title": "Mark the first size",
+        "text": "Choose the Grid tool (G), drag a rectangle round the pieces of one size, and set its columns and rows."
+      },
+      "add": {
+        "title": "Add the next grid",
+        "text": "Press Add grid in the Grids and pieces panel, then drag a rectangle round the pieces of the next size. A page can hold up to 9 grids."
+      },
+      "name": {
+        "title": "Name and color them",
+        "text": "Double-click a grid's name in the list to rename it, and click the dot at its left to choose its color. Each grid keeps its own rows, columns and gap."
+      },
+      "pick": {
+        "title": "Pick either one",
+        "text": "With the Select tool (V), press any grid on the page to pick it, drag it or resize it from its handles. Pressing its name in the list picks it too."
+      }
+    },
+    "images-as-pieces": {
+      "title": "Use images as pieces",
+      "summary": "Turn image files, such as scans or card art, into pieces of a size you choose.",
+      "open": {
+        "title": "Add the images",
+        "text": "Open the File menu and choose Add images…, or drag the image files onto the window."
+      },
+      "size": {
+        "title": "Choose the size",
+        "text": "Under Piece size, choose the size the images print at (a preset, the size the image says it is, or Custom) and say whether they include bleed. Images are never stretched or resampled. Press Add images."
+      },
+      "library": {
+        "title": "They are pieces now",
+        "text": "Each image is a piece in the piece library of the Print tab, ready to get copies, a back and a place on the sheets."
+      }
+    },
+    "mark-and-export": {
+      "title": "Mark pieces and export",
+      "summary": "From a PDF to cut-ready sheets: mark the pieces, choose copies and export."
+    },
+    "update": {
+      "title": "Update Gutterberg",
+      "summary": "Check for a newer version and install it.",
+      "open": {
+        "title": "Open Updates",
+        "text": "Preferences › Updates shows the version you have.",
+        "action": "Open Updates"
+      },
+      "check": {
+        "title": "Check for updates",
+        "text": "Press Check for updates. It says if you are up to date."
+      },
+      "install": {
+        "title": "Install it",
+        "text": "If a newer version is available, it is listed with what's new. Press Download and install, and Restart now when it is ready. If the project has changes that are not saved, Gutterberg asks to save them first."
+      }
+    },
+    "report-problem": {
+      "title": "Report a problem",
+      "summary": "Copy the log and open the GitHub form with your version filled in.",
+      "menu": {
+        "title": "Open Report a problem",
+        "text": "Open the ? Help menu and choose Report a problem. It opens Preferences › About, on “Found a bug?”.",
+        "action": "Open “Found a bug?”"
+      },
+      "log": {
+        "title": "Copy the log",
+        "text": "If the app closed by itself or showed an error, press Copy log. It has no PDFs, but an error can mention a file name, so look it over before you share it. Copy app info copies the version and system."
+      },
+      "form": {
+        "title": "Report it on GitHub",
+        "text": "Press Report on GitHub. After asking, it opens the issue form in your browser with your version and system filled in. Say what you did, step by step, what you expected, and paste the log."
       }
     }
   },

@@ -44,6 +44,7 @@ export function FileMenu() {
     <Popover
       label={t("project.menu.file")}
       testId="file-menu"
+      hintTarget="file-menu"
       align="left"
       triggerClassName="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded px-2 py-1 hover:bg-[var(--hover)] disabled:opacity-40"
       trigger={
