@@ -128,14 +128,20 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 **Source tab: say where the pieces are**
 
-- Draw the region of the pieces on a PDF page and set its rows and columns, or draw each piece on its own with the
-  Piece tool (movable, resizable and rotatable). Sizes are exact, in mm, cm or inches.
+- Draw the region of the pieces on a PDF page with the Grid tool and set its rows and columns, or draw each piece
+  on its own with the Piece tool (movable, resizable and rotatable). Sizes are exact, in mm, cm or inches.
+- Several grids on one page, for pages with pieces of different sizes. The Grids and pieces panel lists them with
+  their names and colors, groups them in folders that move as one, hides them, and sets the order the pieces come
+  out in.
+- The Select tool picks, moves and resizes any grid or piece on the page, and right-click menus on the page and in
+  the list rename, hide, reorder and delete them.
 - **Detect pieces** proposes the grid or the rectangles of a page from the PDF's own objects, from repeating
-  edges, or from the shapes in a scan. It is a draft until you apply it.
+  edges, or from the shapes in a scan, and several grids at once when a page has blocks of pieces of different
+  sizes. It is a draft until you apply it.
 - Snapping to the page and the other pieces, sticky edges that hold a side on the borders and cut lines of the
-  artwork, and rulers with guides in your unit.
-- Source gap, output gap, margins and page size; **Original**, **Preview** and **Split** views; skip pages;
-  give page ranges their own grid; save grids as presets.
+  artwork, rulers with guides in your unit, and number fields that work out sums like `63+3`.
+- Source gap, output gap, margins and page size; **Original**, **Preview** and **Split** views; skip pages, or
+  remove the ones you do not need from view; give page ranges their own grids; save grids as presets.
 - A pre-flight check lists the pages that cannot be exported before anything is written.
 
 **Print tab: choose what goes on the sheets**
@@ -161,7 +167,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 **AI Mode (optional)**
 
-- Off and hidden until you turn it on. Detect pieces and Sort pages with an AI engine of your choice
+- Experimental, and off and hidden until you turn it on. Detect pieces and Sort pages with an AI engine of your choice
   (Anthropic, OpenAI-compatible, Gemini or Ollama), with your own key kept in the system keychain. Every action
   asks first what is sent and what it costs, and every result is a proposal you can edit.
 
@@ -172,7 +178,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 ## Why
 
-> Most print-and-play PDFs pack their cards edge to edge to save paper. That makes them hard to cut: every cut is shared by two cards, a millimetre off spoils both, and there’s nowhere for bleed or cut marks. Gutterberg takes that PDF and gives every piece its own space, at its exact size, with the original artwork untouched. I made it after any print-shops in my area would take my boardgame's card for printing, and I’m sharing it for anyone who’s had the same fight with a craft knife.
+> Most print-and-play PDFs pack their cards edge to edge to save paper. That makes them hard to cut: every cut is shared by two cards, a millimetre off spoils both, and there’s nowhere for bleed or cut marks. Gutterberg takes that PDF and gives every piece its own space, at its exact size, with the original artwork untouched. I made it after none of the print shops in my area would take my board game's cards for printing, and I’m sharing it for anyone who’s had the same fight with a craft knife.
 
 ### Why not just use…
 
@@ -218,7 +224,7 @@ How a release is made is in [docs/releasing.md](docs/releasing.md).
 
 ## Roadmap
 
-Nothing in mind currently, just bug fixes / small features
+Next is exporting a saved project from the command line, and signed builds for macOS and Windows.
 
 ## Contributing
 
