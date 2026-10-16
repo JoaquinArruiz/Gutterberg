@@ -31,6 +31,7 @@ already between the pieces in the PDF, and **Output gap** (Print tab) is the spa
 | [`16-hex-tiles.pdf`](16-hex-tiles.pdf) | 24 hexagonal terrain tiles, 4 × 6, 2 mm apart |
 | [`17-game-kit.pdf`](17-game-kit.pdf) | A landscape page with cards, hex tiles, tokens and a back lying on its side |
 | [`images/`](images/) | Cards, a back, tokens and hex tiles as 300 dpi PNG images |
+| [`images/generic/`](images/generic/) | Blank card templates in eight colors and a back, as 300 dpi PNG images |
 
 ## 01 · Default 3 × 3 on A4
 
@@ -199,3 +200,8 @@ The [`images/`](images/) folder has the same pieces as pictures, at 300 dpi: nin
 - **How:** add the card images as pieces and set their size once to 63 × 88 mm; add the tokens and tiles
   separately with their own size.
 - **Result:** the images are placed as they are, never resampled, at the size you set.
+
+The [`images/generic/`](images/generic/) folder has eight blank card templates, one per color (red, blue, green,
+yellow, purple, black, white, colorless), with "Card Name", placeholder art and placeholder rules text, and a plain
+back: 745 × 1040 px, 63 × 88 mm at 300 dpi. They show how a card made as an image goes onto sheets, without being any
+particular game.
