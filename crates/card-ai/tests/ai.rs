@@ -537,6 +537,98 @@ fn a_rectangles_answer_keeps_the_tilt_and_turns_a_quarter_into_swapped_sides() {
     assert!((rects[0].height - 0.2 * A4.width_pt).abs() < 1e-6);
 }
 
+fn block(x: f64, y: f64, w: f64, h: f64, rows: u32, columns: u32) -> Value {
+    json!({ "x": x, "y": y, "width": w, "height": h, "rows": rows, "columns": columns, "gap_x_mm": 0, "gap_y_mm": 0 })
+}
+
+fn grids_reply(grids: Value) -> Value {
+    json!({
+        "kind": "grids", "confidence": 0.7,
+        "grid_x": 0, "grid_y": 0, "grid_width": 0, "grid_height": 0, "grid_rows": 0, "grid_columns": 0,
+        "gap_x_mm": 0, "gap_y_mm": 0, "rects": [], "grids": grids,
+    })
+}
+
+#[test]
+fn a_grids_answer_becomes_several_grids_in_reading_order() {
+    // Small pieces below, big ones on top: given in the wrong order.
+    let d = parse_detect(
+        &grids_reply(json!([
+            block(0.1, 0.6, 0.8, 0.3, 2, 6),
+            block(0.1, 0.1, 0.8, 0.4, 1, 3),
+        ])),
+        A4,
+    )
+    .unwrap();
+    let p = &d.proposals[0];
+    assert_eq!(p.engine, "ai");
+    let ProposalKind::Grids { grids } = &p.kind else {
+        panic!("{:?}", p.kind)
+    };
+    assert_eq!(grids.len(), 2);
+    assert_eq!((grids[0].rows, grids[0].columns), (1, 3));
+    assert_eq!((grids[1].rows, grids[1].columns), (2, 6));
+    assert!((grids[1].bounds.y - 0.6 * A4.height_pt).abs() < 1e-6);
+
+    // One block is a plain grid.
+    let d = parse_detect(&grids_reply(json!([block(0.1, 0.1, 0.8, 0.8, 3, 3)])), A4).unwrap();
+    assert!(matches!(
+        d.proposals[0].kind,
+        ProposalKind::Grid {
+            rows: 3,
+            columns: 3,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn a_grids_answer_that_cannot_be_blocks_of_this_page_is_refused() {
+    let bad = |v: Value| parse_detect(&v, A4).unwrap_err();
+    // None, too many, overlapping, outside the page, tiny pieces.
+    assert!(matches!(
+        bad(grids_reply(json!([]))),
+        AiError::InvalidProposal(_)
+    ));
+    let many: Vec<Value> = (0..10)
+        .map(|i| block(0.0, f64::from(i) * 0.1, 0.5, 0.09, 1, 1))
+        .collect();
+    assert!(matches!(
+        bad(grids_reply(json!(many))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.4, 0.4, 0.5, 0.5, 2, 2)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.7, 0.1, 0.5, 0.5, 2, 2)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.1, 0.7, 0.05, 0.05, 30, 30)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    // Not the shape asked for.
+    assert!(matches!(
+        bad(json!({ "kind": "grids", "confidence": 0.5 })),
+        AiError::InvalidReply(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([{ "x": 0.1 }]))),
+        AiError::InvalidReply(_)
+    ));
+}
+
 #[test]
 fn none_means_no_proposal() {
     let d = parse_detect(&json!({ "kind": "none", "confidence": 0.9 }), A4).unwrap();
@@ -634,6 +726,7 @@ fn the_detect_request_sends_the_picture_or_only_the_boxes() {
     assert_eq!(r.images.len(), 1);
     assert!(r.instruction.contains("210 mm wide and 297 mm tall"));
     assert!(r.instruction.contains("\"grid\"") && r.instruction.contains("\"rects\""));
+    assert!(r.instruction.contains("\"grids\""));
 
     let objects = [
         PageObject {

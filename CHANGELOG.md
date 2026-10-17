@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Detect with AI can find several grids on one page, like the other engines: a page with blocks of pieces of different sizes gets one proposal with a grid per block, and applying it makes them the page's grids, in one undo step.
+
 ## 1.0.0 (2026-10-17)
 
 Gutterberg has done what I built it for since the first versions: take a print-and-play PDF, find the pieces and lay them out again with real gutters, without touching the art. 1.0.0 says it is ready. It adds the two things people asked about most once that worked. When a publisher updates a PDF, a saved project can now be exported again without opening the app, with a command line, `gutterberg-cli`, that writes the same PDF as the app. And help no longer only comes as tips at the right moment: twelve Tutorials, started from a new Help menu, walk through a task on the real controls when you need it. Cut marks can also be dashed or dotted.

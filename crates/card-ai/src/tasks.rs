@@ -6,7 +6,8 @@ use crate::error::{AiError, Result};
 use crate::provider::{AiRequest, Image};
 use card_core::card::OrientedRect;
 use card_core::detect::{
-    Detection, ObjectKind, PageObject, Proposal, ProposalKind, MIN_CONFIDENCE, MIN_PIECE_MM,
+    Detection, GridProposal, ObjectKind, PageObject, Proposal, ProposalKind, MAX_GRIDS,
+    MIN_CONFIDENCE, MIN_PIECE_MM,
 };
 use card_core::geometry::{PageSize, Point, Rect};
 use card_core::units::{mm_to_pt, pt_to_mm};
@@ -35,7 +36,7 @@ pub fn detect_schema() -> Value {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-            "kind": { "type": "string", "enum": ["grid", "rects", "none"] },
+            "kind": { "type": "string", "enum": ["grid", "grids", "rects", "none"] },
             "confidence": n(),
             "grid_x": n(), "grid_y": n(), "grid_width": n(), "grid_height": n(),
             "grid_rows": number("integer"), "grid_columns": number("integer"),
@@ -49,10 +50,23 @@ pub fn detect_schema() -> Value {
                     "required": ["cx", "cy", "width", "height", "angle_deg"],
                 },
             },
+            "grids": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                        "x": n(), "y": n(), "width": n(), "height": n(),
+                        "rows": number("integer"), "columns": number("integer"),
+                        "gap_x_mm": n(), "gap_y_mm": n(),
+                    },
+                    "required": ["x", "y", "width", "height", "rows", "columns", "gap_x_mm", "gap_y_mm"],
+                },
+            },
         },
         "required": [
             "kind", "confidence", "grid_x", "grid_y", "grid_width", "grid_height", "grid_rows",
-            "grid_columns", "gap_x_mm", "gap_y_mm", "rects",
+            "grid_columns", "gap_x_mm", "gap_y_mm", "rects", "grids",
         ],
     })
 }
@@ -62,10 +76,13 @@ not the page border, margins, titles or art around them. All positions are fract
 height, from 0 to 1, with the origin at the top-left. If the pieces form a regular grid of equal pieces, answer \
 kind \"grid\" with grid_x, grid_y, grid_width and grid_height for the box around all the pieces (gaps \
 included), grid_rows, grid_columns, and gap_x_mm and gap_y_mm for the space between neighbouring pieces in \
-millimetres (0 when they touch). Otherwise answer kind \"rects\" with one entry per piece: its centre cx, cy, its \
+millimetres (0 when they touch). If the page has separate blocks of pieces of different sizes, each block a \
+regular grid of equal pieces, answer kind \"grids\" with one entry per block in grids: x, y, width and height for \
+the box around that block's pieces, rows, columns, gap_x_mm and gap_y_mm, the same as for one grid; the blocks must \
+not overlap. Otherwise answer kind \"rects\" with one entry per piece: its centre cx, cy, its \
 width and height along its own sides, and angle_deg, how far it is tilted clockwise (0 when upright). If there \
 are no pieces, answer kind \"none\". Give confidence from 0 to 1. Fill the fields you do not use with 0, and \
-rects with an empty list.";
+rects and grids with an empty list.";
 
 fn boxes(page: PageSize, objects: &[PageObject]) -> Value {
     let round = |v: f64| (v * 10_000.0).round() / 10_000.0;
@@ -156,6 +173,83 @@ fn whole(name: &str, v: f64, max: i64) -> Result<usize> {
     }
 }
 
+/// The names of a grid's fields: in the reply itself for one grid, in each entry of `grids` for several.
+struct GridFields {
+    x: &'static str,
+    y: &'static str,
+    width: &'static str,
+    height: &'static str,
+    rows: &'static str,
+    columns: &'static str,
+}
+
+const GRID_FIELDS: GridFields = GridFields {
+    x: "grid_x",
+    y: "grid_y",
+    width: "grid_width",
+    height: "grid_height",
+    rows: "grid_rows",
+    columns: "grid_columns",
+};
+
+const BLOCK_FIELDS: GridFields = GridFields {
+    x: "x",
+    y: "y",
+    width: "width",
+    height: "height",
+    rows: "rows",
+    columns: "columns",
+};
+
+/// One grid of the reply in points, or an error if it cannot be a grid of pieces on `page`. `what` names it in
+/// the error ("the grid", "grid 2").
+fn grid(v: &Value, f: GridFields, page: PageSize, what: &str) -> Result<GridProposal> {
+    let x = in_unit(f.x, field(v, f.x)?)?;
+    let y = in_unit(f.y, field(v, f.y)?)?;
+    let w = field(v, f.width)?;
+    let h = field(v, f.height)?;
+    if !(w > 0.0 && h > 0.0) {
+        return Err(invalid(format!("{what} has no size")));
+    }
+    in_unit(&format!("the right edge of {what}"), x + w)?;
+    in_unit(&format!("the bottom edge of {what}"), y + h)?;
+    let rows = whole(f.rows, field(v, f.rows)?, MAX_GRID)?;
+    let columns = whole(f.columns, field(v, f.columns)?, MAX_GRID)?;
+    let (gx, gy) = (field(v, "gap_x_mm")?, field(v, "gap_y_mm")?);
+    if !(0.0..=50.0).contains(&gx) || !(0.0..=50.0).contains(&gy) {
+        return Err(invalid(format!(
+            "a gap of {what} is not between 0 and 50 mm"
+        )));
+    }
+    let (bw, bh) = ((x + w).min(1.0) - x, (y + h).min(1.0) - y);
+    let bounds = Rect::new(
+        x * page.width_pt,
+        y * page.height_pt,
+        bw * page.width_pt,
+        bh * page.height_pt,
+    );
+    let min_pt = mm_to_pt(MIN_PIECE_MM);
+    let cell_w = (bounds.width - mm_to_pt(gx) * (columns - 1) as f64) / columns as f64;
+    let cell_h = (bounds.height - mm_to_pt(gy) * (rows - 1) as f64) / rows as f64;
+    if cell_w < min_pt || cell_h < min_pt {
+        return Err(invalid(format!(
+            "the pieces of {what} would be under {MIN_PIECE_MM} mm"
+        )));
+    }
+    Ok(GridProposal {
+        bounds,
+        rows,
+        columns,
+        source_gap_x_mm: gx,
+        source_gap_y_mm: gy,
+    })
+}
+
+/// Whether two blocks share any area (touching edges do not count).
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+}
+
 /// The reply as a detection of at most one proposal, or an error if it cannot be right for `page`.
 pub fn parse_detect(reply: &Value, page: PageSize) -> Result<Detection> {
     let kind = reply
@@ -168,41 +262,54 @@ pub fn parse_detect(reply: &Value, page: PageSize) -> Result<Detection> {
     let kind = match kind {
         "none" => return Ok(Detection::default()),
         "grid" => {
-            let x = in_unit("grid_x", field(reply, "grid_x")?)?;
-            let y = in_unit("grid_y", field(reply, "grid_y")?)?;
-            let w = field(reply, "grid_width")?;
-            let h = field(reply, "grid_height")?;
-            if !(w > 0.0 && h > 0.0) {
-                return Err(invalid("the grid has no size"));
+            let g = grid(reply, GRID_FIELDS, page, "the grid")?;
+            ProposalKind::Grid {
+                bounds: g.bounds,
+                rows: g.rows,
+                columns: g.columns,
+                source_gap_x_mm: g.source_gap_x_mm,
+                source_gap_y_mm: g.source_gap_y_mm,
             }
-            in_unit("the right edge of the grid", x + w)?;
-            in_unit("the bottom edge of the grid", y + h)?;
-            let rows = whole("grid_rows", field(reply, "grid_rows")?, MAX_GRID)?;
-            let columns = whole("grid_columns", field(reply, "grid_columns")?, MAX_GRID)?;
-            let (gx, gy) = (field(reply, "gap_x_mm")?, field(reply, "gap_y_mm")?);
-            if !(0.0..=50.0).contains(&gx) || !(0.0..=50.0).contains(&gy) {
-                return Err(invalid("a gap is not between 0 and 50 mm"));
-            }
-            let (bw, bh) = ((x + w).min(1.0) - x, (y + h).min(1.0) - y);
-            let bounds = Rect::new(
-                x * page.width_pt,
-                y * page.height_pt,
-                bw * page.width_pt,
-                bh * page.height_pt,
-            );
-            let cell_w = (bounds.width - mm_to_pt(gx) * (columns - 1) as f64) / columns as f64;
-            let cell_h = (bounds.height - mm_to_pt(gy) * (rows - 1) as f64) / rows as f64;
-            if cell_w < min_pt || cell_h < min_pt {
+        }
+        "grids" => {
+            let list = reply
+                .get("grids")
+                .and_then(Value::as_array)
+                .ok_or_else(|| AiError::InvalidReply("`grids` is missing".into()))?;
+            if list.is_empty() || list.len() > MAX_GRIDS {
                 return Err(invalid(format!(
-                    "the pieces would be under {MIN_PIECE_MM} mm"
+                    "{} grids: expected 1 to {MAX_GRIDS}",
+                    list.len()
                 )));
             }
-            ProposalKind::Grid {
-                bounds,
-                rows,
-                columns,
-                source_gap_x_mm: gx,
-                source_gap_y_mm: gy,
+            let mut grids: Vec<GridProposal> = Vec::with_capacity(list.len());
+            for (i, v) in list.iter().enumerate() {
+                let g = grid(v, BLOCK_FIELDS, page, &format!("grid {}", i + 1))?;
+                if grids.iter().any(|o| overlaps(o.bounds, g.bounds)) {
+                    return Err(invalid(format!("grid {} overlaps another one", i + 1)));
+                }
+                grids.push(g);
+            }
+            // One block is one grid: the same proposal a "grid" answer gives.
+            if let [g] = grids[..] {
+                ProposalKind::Grid {
+                    bounds: g.bounds,
+                    rows: g.rows,
+                    columns: g.columns,
+                    source_gap_x_mm: g.source_gap_x_mm,
+                    source_gap_y_mm: g.source_gap_y_mm,
+                }
+            } else {
+                // Reading order: top to bottom, then left to right, as the local engines give them.
+                let tol = 0.01 * page.height_pt;
+                grids.sort_by(|a, b| {
+                    if (a.bounds.y - b.bounds.y).abs() <= tol {
+                        a.bounds.x.total_cmp(&b.bounds.x)
+                    } else {
+                        a.bounds.y.total_cmp(&b.bounds.y)
+                    }
+                });
+                ProposalKind::Grids { grids }
             }
         }
         "rects" => {
