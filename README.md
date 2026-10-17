@@ -20,15 +20,9 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 
 ![The Source tab in Split view: the PDF page with its pieces marked on the left, the re-spaced result on the right](assets/screenshots/split-view.png)
 
-<!-- GIF: marking pieces on a page -->
-
 | Print tab | Detect pieces | Several pages |
 | --- | --- | --- |
 | ![The Print tab: the piece library with copies per piece and the sheet it makes](assets/screenshots/print-tab.png) | ![Detect pieces proposing a 2 × 2 grid found from the PDF's own objects](assets/screenshots/detect-pieces.png) | ![A multi-page PDF in the Source tab, with a grid shared by several pages](assets/screenshots/source-tab.png) |
-
-<!-- GIF: the Print tab -->
-
-<!-- GIF: export -->
 
 ## Download
 
@@ -198,6 +192,19 @@ It is installed next to the app: in `Gutterberg.app/Contents/MacOS/` on macOS, i
 and in `/usr/bin` with the `.deb` and `.rpm` packages (the AppImage keeps it inside). Each release also has it on its
 own (`gutterberg-cli-<platform>`), for a machine without the app. It needs nothing else, not even a screen.
 
+## Privacy
+
+Gutterberg works on your computer. Your PDFs, images and projects stay there, and the app has no account, no
+analytics and no tracking. Only two things use the network:
+
+- **The update check**, at most once a day, asks GitHub for a small file, `latest.json`, that names the newest
+  version, and downloads the new version when you say so. It sends nothing about you or your files; GitHub sees the
+  request as it sees any visit to a web page.
+- **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
+  a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
+  backs. Each action shows what it sends and asks first; nothing is sent in the background. Your key is kept in the
+  system keychain. With Ollama running on your own computer, nothing leaves it.
+
 ## Why
 
 > Most print-and-play PDFs pack their cards edge to edge to save paper. That makes them hard to cut: every cut is shared by two cards, a millimetre off spoils both, and there’s nowhere for bleed or cut marks. Gutterberg takes that PDF and gives every piece its own space, at its exact size, with the original artwork untouched. I made it after none of the print shops in my area would take my board game's cards for printing, and I’m sharing it for anyone who’s had the same fight with a craft knife.
@@ -261,6 +268,15 @@ Questions, a PDF that will not cooperate, a layout you are proud of: join the
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a bug? Use the
 [issue form](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose), or Preferences › About › Report on
 GitHub in the app, which fills in your version and system.
+
+## Credits
+
+Gutterberg is built on open-source work, with thanks to [Tauri](https://tauri.app/), Google's
+[PDFium](https://pdfium.googlesource.com/pdfium/) (through [pdfium-render](https://github.com/ajrcarey/pdfium-render)
+and the builds of [pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)),
+[lopdf](https://github.com/J-F-Liu/lopdf), [React](https://react.dev/), [Zustand](https://github.com/pmndrs/zustand) and
+[React Joyride](https://github.com/gilbarbara/react-joyride). The licenses of everything the app ships with are in
+Preferences › About › Third-party licenses and next to each installer.
 
 ## License
 
