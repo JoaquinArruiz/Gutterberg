@@ -39,9 +39,10 @@ word of the heading.
 2. **The repository must be public**, so apps can download `latest.json` and the installers without a token.
 3. Settings › Actions › General › Workflow permissions: **Read and write**.
 
-4. **CLA Assistant** (for contributors), before accepting outside pull requests: install it on the repository
-   from <https://github.com/cla-assistant/cla-assistant> and point it at the contributor agreement. Only I
-   can do this.
+4. **Contributor license agreement**: `.github/workflows/cla.yml` asks the author of every outside pull request to
+   sign [CLA.md](../CLA.md) with a comment, and records the signatures in `signatures/cla.json` on the
+   `cla-signatures` branch. That branch must exist and must not be protected, since the workflow commits to it. If
+   CLA.md changes in a way that matters, raise its version so that new signatures name it.
 
 Builds are not code-signed (no Apple or Windows certificate). The updater works anyway; it checks its own key.
 

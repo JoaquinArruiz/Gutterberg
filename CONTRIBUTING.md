@@ -79,10 +79,14 @@ cargo test --workspace         # the render tests need pdfium: PDFIUM_LIB_PATH=<
 
 ## Contributor license agreement
 
-Gutterberg is under the [PolyForm Noncommercial License 1.0.0](LICENSE), and I can license it for commercial
-use. For that, contributions need a contributor license agreement (CLA). When you open your first pull request, a
-bot ([CLA Assistant](https://github.com/cla-assistant/cla-assistant)) asks you to read and agree to it once, with a
-click. A pull request cannot be merged before that.
+Gutterberg is under the [PolyForm Noncommercial License 1.0.0](LICENSE), and I also license it for commercial use.
+For that, contributions need a contributor license agreement: [CLA.md](CLA.md). You keep the copyright in what you
+contribute, and you allow me to license it under any terms, commercial ones included. When you open your first pull
+request, a bot asks you to read it and sign by posting one comment:
+
+> I have read the CLA Document and I hereby sign the CLA
+
+You only do this once. I merge a pull request only when everyone who has a commit in it has signed.
 
 ## AI-assisted contributions
 
@@ -92,5 +96,5 @@ any other change. Please do not add a tool as an author or co-author in commit m
 
 ## License
 
-By contributing you agree that your contribution is covered by the license above and the CLA. For anything about
+By contributing you agree that your contribution is covered by the license above and by [CLA.md](CLA.md). For anything about
 commercial use, contact joaquinarruiz@gmail.com.
