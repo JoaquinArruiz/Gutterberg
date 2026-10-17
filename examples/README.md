@@ -1,8 +1,10 @@
 # Examples
 
-Thirteen small PDFs to try Gutterberg on, from the plain case to the awkward ones. Every piece is a poker-sized
-card (63 × 88 mm) unless a file says otherwise, and each one says which way is up ("▲ TOP"), so you can see at a
-glance what turning and rotating do. All of them were made for this project: there is no one's game in here.
+Seventeen small PDFs and a folder of images to try Gutterberg on, from the plain case to the awkward ones. In files
+01 to 13 every piece is a poker-sized card (63 × 88 mm) unless a file says otherwise, and each one says which way is
+up ("▲ TOP"), so you can see at a glance what turning and rotating do. Files 14 to 17 and the images are pieces of
+a made-up card game, Lanternfall: cards, round tokens and hex tiles that look like the real thing. All of them were
+made for this project: there is no one's game in here.
 
 Open one with File › Open PDF (`Ctrl/Cmd+O`). In the Source tab, draw the **Grid region** (tool `V`) around the
 pieces and set the rows and columns, or press **Detect pieces** to have them proposed. **Source gap** is the space
@@ -24,6 +26,12 @@ already between the pieces in the PDF, and **Output gap** (Print tab) is the spa
 | [`11-backs.pdf`](11-backs.pdf) | The backs of file 10 in a PDF of their own, columns mirrored as double-sided files have them |
 | [`12-common-back.pdf`](12-common-back.pdf) | One back for every front, in a PDF of its own |
 | [`13-three-sizes.pdf`](13-three-sizes.pdf) | One page with pieces of three sizes and two orientations |
+| [`14-tcg-cards.pdf`](14-tcg-cards.pdf) | A card game: 18 fronts on two pages and their backs on two more |
+| [`15-round-tokens.pdf`](15-round-tokens.pdf) | 48 round tokens, 30 mm across, 6 × 8 |
+| [`16-hex-tiles.pdf`](16-hex-tiles.pdf) | 24 hexagonal terrain tiles, 4 × 6, 2 mm apart |
+| [`17-game-kit.pdf`](17-game-kit.pdf) | A landscape page with cards, hex tiles, tokens and a back lying on its side |
+| [`images/`](images/) | Cards, a back, tokens and hex tiles as 300 dpi PNG images |
+| [`images/generic/`](images/generic/) | Blank card templates in eight colors and a back, as 300 dpi PNG images |
 
 ## 01 · Default 3 × 3 on A4
 
@@ -146,3 +154,54 @@ pieces have strong borders, so their edges are easy to see.
   the arrow keys move what is picked, `Ctrl/Cmd+D` copies it, and dragging snaps to the page and the other pieces.
 - **Result:** every piece is in the piece library at its own size (the landscape one stays landscape), and pieces
   of each size go on sheets of their own.
+
+## 14 · A card game
+
+Lanternfall, a made-up trading card game: 18 cards of six colors (63 × 88 mm, 3 × 3 per A4 page, edge to edge) on
+pages 1 and 2, and one back repeated on pages 3 and 4.
+
+- **How:** draw a 3 × 3 grid on page 1 (or Detect pieces) and use "Apply this grid to…" for the other pages. Skip
+  pages 3 and 4 as fronts and pair them as backs in the Duplex section. Set an Output gap of 3 mm and switch on
+  Cut marks.
+- **Result:** every card keeps its size and its vector art, with room to cut between them.
+
+## 15 · Round tokens
+
+48 round tokens, 30 mm across, in 6 columns and 8 rows whose squares touch: coins, hearts, shields, stars, drops
+and damage counters, one kind per row.
+
+- **How:** draw a 6 × 8 grid over them, Source gap 0 mm, and choose an Output gap.
+- **Result:** pieces are rectangles, so each token is cut out and printed with its square around it; the circles
+  come out 30 mm across and evenly spaced.
+
+## 16 · Hex tiles
+
+24 flat-topped hexagonal terrain tiles (forest, lake, mountain, plains, desert, swamp), 46 mm from corner to corner
+and 39.8 mm high, 4 × 6 with 2 mm between their rectangles, labelled A1 to F4.
+
+- **How:** draw a 4 × 6 grid over them with a Source gap of 2 mm, or Detect pieces.
+- **Result:** every tile keeps its size inside its rectangle; the corners of the rectangle stay white.
+
+## 17 · A game kit on one page
+
+A landscape A4 page with three cards (touching), two hex tiles, twelve 25 mm tokens (2 mm apart) and a card back
+lying on its side.
+
+- **How:** draw a grid over each group (1 × 3 for the cards, 6 × 2 for the tokens, 1 × 2 for the tiles), and mark
+  the back with the Piece tool (`C`), turned 90°.
+- **Result:** every kind of piece shows up in the piece library at its own size, and each size gets sheets of its
+  own.
+
+## Images
+
+The [`images/`](images/) folder has the same pieces as pictures, at 300 dpi: nine cards and their back
+(745 × 1040 px, 63 × 88 mm), three hex tiles (544 × 471 px, 46 × 39.8 mm) and three tokens (355 × 355 px, 30 mm).
+
+- **How:** add the card images as pieces and set their size once to 63 × 88 mm; add the tokens and tiles
+  separately with their own size.
+- **Result:** the images are placed as they are, never resampled, at the size you set.
+
+The [`images/generic/`](images/generic/) folder has eight blank card templates, one per color (red, blue, green,
+yellow, purple, black, white, colorless), with "Card Name", placeholder art and placeholder rules text, and a plain
+back: 745 × 1040 px, 63 × 88 mm at 300 dpi. They show how a card made as an image goes onto sheets, without being any
+particular game.
