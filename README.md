@@ -9,7 +9,9 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 
 [![CI](https://github.com/JoaquinArruiz/Gutterberg/actions/workflows/ci.yml/badge.svg)](https://github.com/JoaquinArruiz/Gutterberg/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/JoaquinArruiz/Gutterberg)](https://github.com/JoaquinArruiz/Gutterberg/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/JoaquinArruiz/Gutterberg/total)](https://github.com/JoaquinArruiz/Gutterberg/releases)
+[![Downloads](https://img.shields.io/github/downloads/joaquinarruiz/gutterberg/total)](https://github.com/JoaquinArruiz/Gutterberg/releases)
+[![GitHub stars](https://img.shields.io/github/stars/joaquinarruiz/gutterberg?style=flat)](https://github.com/JoaquinArruiz/Gutterberg/stargazers)
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/ytBFE9TtRY)
 ![Platforms: Windows, macOS, Linux](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
 
