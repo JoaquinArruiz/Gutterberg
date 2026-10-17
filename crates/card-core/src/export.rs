@@ -20,7 +20,7 @@
 use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
-use crate::finish::{bleed_regions, plan_and_finish, Finishing, SheetMarks};
+use crate::finish::{bleed_regions, plan_and_finish, Finishing, MarkLine, SheetMarks};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
@@ -361,6 +361,31 @@ pub fn page_sizes(doc: &Document) -> Vec<Result<PageSize>> {
 /// the output page are an error, never shrunk.
 fn fitting_layout(frame: &PageFrame, grid: &GridLayout) -> Result<LayoutResult> {
     calculate_fitting_layout(frame.size(), grid)
+}
+
+/// Whether `output` is the same file as `input`, after resolving symlinks and `..`.
+/// The output may not exist yet, so its folder is resolved instead.
+pub fn same_file(input: &Path, output: &Path) -> bool {
+    let resolved = output.canonicalize().or_else(|_| {
+        let name = output.file_name().ok_or(std::io::ErrorKind::InvalidInput)?;
+        let dir = output
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        dir.canonicalize().map(|d| d.join(name))
+    });
+    match (input.canonicalize(), resolved) {
+        (Ok(a), Ok(b)) => a == b,
+        _ => input == output,
+    }
+}
+
+/// The output would overwrite a PDF it is made from.
+pub fn same_file_error() -> ErrorInfo {
+    ErrorInfo::new(
+        "same_file",
+        "choose a different file than the one that is open",
+    )
 }
 
 /// A page that would make the export fail, found before anything is written.
@@ -726,6 +751,13 @@ fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
     let mut ops = format!("q\n{r} {g} {b} RG\n{} w\n", fmt(marks.width_pt));
+    if !marks.dash.is_empty() {
+        let dash: Vec<String> = marks.dash.iter().map(|&d| fmt(d)).collect();
+        ops.push_str(&format!("[{}] 0 d\n", dash.join(" ")));
+    }
+    if marks.line == MarkLine::Dotted {
+        ops.push_str("1 J\n");
+    }
     for l in &marks.lines {
         ops.push_str(&format!(
             "{} {} m {} {} l S\n",

@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { providerHost } from "../../lib/ai";
 import { cancelRun, confirmRun } from "../../lib/ai-actions";
-import { formatDecimal } from "../../lib/measurement";
 import { useAiStore } from "../../stores/ai-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { Button } from "../ui/Button";
@@ -21,23 +21,34 @@ export function pageRanges(pages: number[]): string {
 }
 
 /**
- * The notice every AI action stops at: which server gets what (which pages, as pictures or as text), what it
- * will roughly cost, and Send or Cancel. Nothing has been sent when this is on screen.
+ * The notice an AI action stops at: which server gets what (which pages or pieces, as pictures or as text), and
+ * Send or Cancel. Nothing has been sent when this is on screen. "Don't ask again" stops it for this server only,
+ * once the user presses Send; Preferences › AI Mode › Ask before sending brings it back.
  */
 export function AiConfirmDialog() {
   const { t } = useTranslation();
   const enabled = usePreferencesStore((s) => s.prefs.ai.enabled);
   const run = useAiStore((s) => s.confirm);
-  const skip = useAiStore((s) => s.skipDetectConfirm);
-  const setSkip = useAiStore((s) => s.setSkipDetectConfirm);
+  const [dontAsk, setDontAsk] = useState(false);
   const ref = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (run && !d.open) d.showModal();
+    if (run && !d.open) {
+      setDontAsk(false);
+      d.showModal();
+    }
     if (!run && d.open) d.close();
   }, [run]);
+
+  const send = () => {
+    if (dontAsk) {
+      const prefs = usePreferencesStore.getState();
+      prefs.setAiTrustedHost(providerHost(prefs.prefs.ai));
+    }
+    void confirmRun();
+  };
 
   // With AI Mode off there is nothing of this in the page at all.
   if (!enabled) return null;
@@ -62,38 +73,31 @@ export function AiConfirmDialog() {
             </span>
           </p>
           <p data-testid="ai-what">
-            {run.task === "detect"
-              ? e.sends_images
-                ? t("ai.confirm.detectImage", { page: run.pages[0] + 1, size: 1000 })
-                : t("ai.confirm.detectText")
-              : e.sends_images
-                ? t("ai.confirm.sortImages", {
-                    count: run.pages.length,
-                    range: pageRanges(run.pages),
-                    size: 320,
-                    requests: e.requests,
-                  })
-                : t("ai.confirm.sortText", {
-                    count: run.pages.length,
-                    range: pageRanges(run.pages),
-                    requests: e.requests,
-                  })}
+            {run.task === "pair"
+              ? t("ai.confirm.pairImages", { count: e.images, size: 256 })
+              : run.task === "detect"
+                ? e.sends_images
+                  ? t("ai.confirm.detectImage", { page: run.pages[0] + 1, size: 1000 })
+                  : t("ai.confirm.detectText")
+                : e.sends_images
+                  ? t("ai.confirm.sortImages", {
+                      count: run.pages.length,
+                      range: pageRanges(run.pages),
+                      size: 320,
+                      requests: e.requests,
+                    })
+                  : t("ai.confirm.sortText", {
+                      count: run.pages.length,
+                      range: pageRanges(run.pages),
+                      requests: e.requests,
+                    })}
           </p>
-          <p className="text-[var(--muted)]" data-testid="ai-estimate">
-            {t("ai.confirm.estimate", {
-              input: e.input_tokens.toLocaleString(),
-              output: e.output_tokens.toLocaleString(),
-            })}{" "}
-            {e.cost_usd === null
-              ? t("ai.confirm.noCost")
-              : t("ai.confirm.cost", { cost: formatDecimal(Math.max(e.cost_usd, 0.01), 2) })}
-          </p>
-          {run.task === "detect" && <Checkbox checked={skip} onChange={setSkip} label={t("ai.confirm.dontAsk")} />}
+          <Checkbox checked={dontAsk} onChange={setDontAsk} label={t("ai.confirm.dontAsk", { host: e.host })} />
           <div className="flex justify-end gap-2">
             <Button size="md" onClick={cancelRun}>
               {t("ai.confirm.cancel")}
             </Button>
-            <Button size="md" variant="ai" onClick={() => void confirmRun()}>
+            <Button size="md" variant="ai" onClick={send}>
               {t("ai.confirm.send")}
             </Button>
           </div>

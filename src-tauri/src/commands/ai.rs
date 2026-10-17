@@ -4,12 +4,13 @@
 
 use crate::state::{internal, AppState};
 use card_ai::estimate::{estimate, Estimate};
+use card_ai::pairing::{pair_request, PieceSide, PIECE_LONG_SIDE_PX};
 use card_ai::sort::{sort_requests, PageLabel, PageSummary, SortInput};
 use card_ai::tasks::detect_request;
 use card_ai::{
     AiError, Image, KeyStore, ProviderConfig, ProviderKind, Runner, UreqTransport, Usage,
 };
-use card_core::card::DocumentId;
+use card_core::card::{DocumentId, OrientedRect};
 use card_core::detect::Detection;
 use card_core::units::pt_to_mm;
 use card_core::ErrorInfo;
@@ -267,6 +268,112 @@ pub async fn ai_sort_pages(
         };
         let (labels, usage) = runner.sort(input).map_err(to_info)?;
         Ok(AiSort { labels, usage })
+    })
+    .await
+    .map_err(internal)?
+}
+
+/// One piece of the library, as Pair backs with AI sends it: where it is and the short name the model is given.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PairPiece {
+    pub document_id: DocumentId,
+    pub page_index: usize,
+    pub source: OrientedRect,
+    pub name: String,
+}
+
+/// A small picture of each piece, in the order given, with its name. Pictures only: pairing cannot be done from text.
+fn pair_input(
+    state: &AppState,
+    app: &AppHandle,
+    pieces: Vec<PairPiece>,
+    send_images: bool,
+) -> Result<Vec<(String, Image)>, ErrorInfo> {
+    if !send_images {
+        return Err(to_info(AiError::PairingNeedsImages));
+    }
+    if pieces.len() > card_ai::pairing::MAX_PIECES {
+        return Err(to_info(AiError::TooManyPieces {
+            count: pieces.len(),
+            max: card_ai::pairing::MAX_PIECES,
+        }));
+    }
+    let worker = state.worker(app)?;
+    let mut images: Vec<Option<Image>> = vec![None; pieces.len()];
+    let mut documents: Vec<DocumentId> = pieces.iter().map(|p| p.document_id).collect();
+    documents.sort_unstable();
+    documents.dedup();
+    for document in documents {
+        let (at, rects): (Vec<usize>, Vec<(usize, OrientedRect)>) = pieces
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| p.document_id == document)
+            .map(|(i, p)| (i, (p.page_index, p.source)))
+            .unzip();
+        let rendered = worker.render_pieces(document, rects, PIECE_LONG_SIDE_PX)?;
+        for (i, r) in at.into_iter().zip(rendered) {
+            images[i] = Some(Image {
+                mime: "image/png".into(),
+                bytes: r.png,
+                width: r.width,
+                height: r.height,
+            });
+        }
+    }
+    Ok(pieces
+        .into_iter()
+        .zip(images)
+        .filter_map(|(p, image)| image.map(|image| (p.name, image)))
+        .collect())
+}
+
+/// What Pair backs with AI would send and cost, before anything is sent.
+#[tauri::command]
+pub async fn ai_estimate_pairing(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    pieces: Vec<PairPiece>,
+    config: ProviderConfig,
+    send_images: bool,
+) -> Result<Estimate, ErrorInfo> {
+    state.ai_gate.check().map_err(to_info)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let shared = app.state::<AppState>();
+        let input = pair_input(&shared, &app, pieces, send_images)?;
+        let request = pair_request(input).map_err(to_info)?;
+        Ok(estimate(&[request], &config))
+    })
+    .await
+    .map_err(internal)?
+}
+
+#[derive(Serialize)]
+pub struct AiPairing {
+    pub pieces: Vec<PieceSide>,
+    pub usage: Usage,
+}
+
+/// Which pieces are fronts and backs, and the back of each front. The answer is a proposal; nothing is applied.
+#[tauri::command]
+pub async fn ai_pair_backs(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    pieces: Vec<PairPiece>,
+    config: ProviderConfig,
+    send_images: bool,
+) -> Result<AiPairing, ErrorInfo> {
+    state.ai_gate.check().map_err(to_info)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let shared = app.state::<AppState>();
+        let input = pair_input(&shared, &app, pieces, send_images)?;
+        let runner = Runner {
+            gate: &shared.ai_gate,
+            config: &config,
+            keys: &*shared.ai_keys,
+            transport: &UreqTransport,
+        };
+        let (pieces, usage) = runner.pair(input).map_err(to_info)?;
+        Ok(AiPairing { pieces, usage })
     })
     .await
     .map_err(internal)?

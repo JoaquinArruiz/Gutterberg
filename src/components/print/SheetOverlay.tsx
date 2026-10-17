@@ -47,6 +47,8 @@ export function SheetOverlay({ sheet, k }: { sheet: OutputSheet; k: number }) {
           y2={y2 * k}
           stroke={`rgb(${marks.color.join(",")})`}
           strokeWidth={Math.max(1, marks.width_pt * k)}
+          strokeDasharray={marks.dash?.length ? marks.dash.map((d) => d * k).join(" ") : undefined}
+          strokeLinecap={marks.line === "dotted" ? "round" : undefined}
         />
       ))}
       {folds.map(([x1, y1, x2, y2], i) => (

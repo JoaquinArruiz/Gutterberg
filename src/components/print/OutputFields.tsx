@@ -40,7 +40,7 @@ export function SheetSizeFields() {
   );
   return (
     <>
-      <FieldRow label={t("print.page.sizeLabel")}>
+      <FieldRow label={t("print.page.sizeLabel")} data-hint-target="sheet-size">
         <Select
           fill
           label={t("print.page.sizeAria")}
@@ -84,7 +84,7 @@ export function OutputPageFields() {
   return (
     <>
       {L.pageMode !== "same" && L.pageMode !== "fit" && (
-        <FieldRow label={t("print.page.orientation")}>
+        <FieldRow label={t("print.page.orientation")} data-hint-target="sheet-orientation">
           <Segmented
             fill
             label={t("print.page.orientation")}

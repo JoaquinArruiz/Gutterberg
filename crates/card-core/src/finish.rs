@@ -45,10 +45,21 @@ pub enum MarkStyle {
     Gaps,
 }
 
+/// How a cut mark is stroked.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MarkLine {
+    #[default]
+    Solid,
+    Dashed,
+    Dotted,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MarkOptions {
     pub style: MarkStyle,
+    pub line: MarkLine,
     pub width_mm: f64,
     /// `#rrggbb`.
     pub color: String,
@@ -61,6 +72,7 @@ impl Default for MarkOptions {
     fn default() -> Self {
         Self {
             style: MarkStyle::Off,
+            line: MarkLine::Solid,
             width_mm: 0.25,
             color: "#000000".into(),
             length_mm: 3.0,
@@ -189,6 +201,12 @@ pub struct SheetBleed {
 pub struct SheetMarks {
     pub width_pt: f64,
     pub color: [u8; 3],
+    #[serde(default)]
+    pub line: MarkLine,
+    /// The dash pattern in points, on and off lengths in turn; empty for a solid line. A dotted line has
+    /// dashes of length 0 drawn with round caps, so each is a dot as wide as the line.
+    #[serde(default)]
+    pub dash: Vec<f64>,
     /// `[x1, y1, x2, y2]`.
     pub lines: Vec<[f64; 4]>,
 }
@@ -424,11 +442,27 @@ fn marks_for(
     if lines.is_empty() {
         return Ok(None);
     }
+    let width_pt = mm_to_pt(options.width_mm);
     Ok(Some(SheetMarks {
-        width_pt: mm_to_pt(options.width_mm),
+        width_pt,
         color: parse_color(&options.color)?,
+        line: options.line,
+        dash: dash_pattern(options.line, width_pt),
         lines,
     }))
+}
+
+/// The dash pattern of a mark `width_pt` wide: dashes of 2 mm with 1 mm gaps, dots 0.75 mm apart, both
+/// stretched for a thick line so the gaps never close up.
+pub fn dash_pattern(line: MarkLine, width_pt: f64) -> Vec<f64> {
+    match line {
+        MarkLine::Solid => Vec::new(),
+        MarkLine::Dashed => vec![
+            mm_to_pt(2.0).max(4.0 * width_pt),
+            mm_to_pt(1.0).max(2.0 * width_pt),
+        ],
+        MarkLine::Dotted => vec![0.0, mm_to_pt(0.75).max(2.5 * width_pt)],
+    }
 }
 
 // ---------------------------------------------------------------------------------------------

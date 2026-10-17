@@ -72,6 +72,13 @@
       "note": "These do not stop the export."
     }
   },
+  "helpMenu": {
+    "label": "Help",
+    "tutorials": "Tutorials…",
+    "shortcuts": "Keyboard shortcuts",
+    "welcome": "Welcome tour",
+    "report": "Report a problem"
+  },
   "files": {
     "pdfFilter": "PDF",
     "suffixSpaced": "spaced",
@@ -481,8 +488,14 @@
         "ticks": "Ticks in the margins",
         "gaps": "Lines in the gaps"
       },
+      "line": "Line",
+      "lines": {
+        "solid": "Solid",
+        "dashed": "Dashed",
+        "dotted": "Dotted"
+      },
       "width": "Line width",
-      "color": "Colour",
+      "color": "Color",
       "length": "Tick length",
       "offset": "Distance from the piece",
       "note": "Marks are printed on the front sheets only. Ticks start past the bleed."
@@ -548,7 +561,7 @@
       "calibrate": "Calibration sheet…",
       "calibration": {
         "title": "Calibration sheet",
-        "intro": "Many printers move the back of a sheet by a millimetre or two. This sheet shows by how much, so the backs line up with the fronts.",
+        "intro": "Many printers move the back of a sheet by a millimeter or two. This sheet shows by how much, so the backs line up with the fronts.",
         "step1": "Save the sheet and print it on both sides of one piece of paper, at actual size (100%, not “fit to page”). Use the same paper and printer settings as for your pieces.",
         "step2": "Hold the paper up to a light with the back facing you. At each crosshair of the front, see where its lines cross the rulers of the back.",
         "step3": "Type the numbers where the lines cross the rulers: the horizontal ruler gives X, the vertical one Y. Numbers to the right and downward are positive.",
@@ -556,7 +569,7 @@
         "saved": "Saved to {{path}}",
         "readingX": "Reading on the horizontal ruler (X)",
         "readingY": "Reading on the vertical ruler (Y)",
-        "cornersNote": "Read the centre first. If the corners give clearly different numbers, the printer also turns or scales the back, and an offset cannot fix that.",
+        "cornersNote": "Read the center first. If the corners give clearly different numbers, the printer also turns or scales the back, and an offset cannot fix that.",
         "replaces": "These numbers replace the current back offset.",
         "label": {
           "title": "Gutterberg · duplex calibration",
@@ -582,6 +595,14 @@
         "besideHint": "Fronts in one half of each page, backs in the other, to fold (gutterfold).",
         "otherPdf": "Backs in another PDF",
         "otherPdfHint": "Page 1 of the fronts with page 1 of the backs, page 2 with 2…, piece by piece."
+      },
+      "ai": {
+        "title": "By picture, with AI",
+        "hint": "AI looks at every piece and finds its back, for backs no rule can find: a back per deck, or backs in another order.",
+        "button": "Find backs with AI",
+        "running": "Looking at the pieces…",
+        "sends": "Sends a small picture of every piece to {{provider}}",
+        "ask": "Nothing is sent until you press Find backs with AI. You can check the pairs in the piece library after applying."
       },
       "backsPdf": "PDF with the backs",
       "commonBack": "Use it as the common back",
@@ -770,7 +791,8 @@
       "copyFailed": "Couldn't copy. Select the text above and copy it yourself.",
       "report": "Report on GitHub",
       "discord": "Discord",
-      "discordSoon": "Coming soon"
+      "tutorials": "Tutorials",
+      "tutorialsNote": "Step-by-step walkthroughs that you start when you need them. Picking one closes Preferences."
     },
     "updates": {
       "current": "Version",
@@ -893,6 +915,232 @@
       }
     }
   },
+  "tutorials": {
+    "title": "Tutorials",
+    "hint": "Pick one and it starts.",
+    "search": "Search tutorials",
+    "noMatch": "No tutorial matches that.",
+    "close": "End tutorial",
+    "closeTitle": "End the tutorial",
+    "groups": {
+      "source": "Source tab",
+      "print": "Print tab",
+      "duplex": "Duplex (Print tab)",
+      "app": "App"
+    },
+    "needs": {
+      "document": {
+        "title": "Open a PDF first",
+        "text": "This tutorial works on a PDF that is open. Open one, and the tutorial goes on from here.",
+        "action": "Open PDF…"
+      },
+      "pieces": {
+        "title": "Mark some pieces first",
+        "text": "This tutorial needs pieces to work on, and none are marked yet. The “Mark pieces and export” tutorial shows how.",
+        "action": "Start “Mark pieces and export”"
+      }
+    },
+    "steps": {
+      "goPrint": {
+        "title": "Open the Print tab",
+        "text": "This is done in the Print tab. Open it from the tabs at the top.",
+        "action": "Open the Print tab"
+      },
+      "goSource": {
+        "title": "Open the Source tab",
+        "text": "This is done in the Source tab, where the pieces are marked on the pages. Open it from the tabs at the top.",
+        "action": "Open the Source tab"
+      }
+    },
+    "resize-pieces": {
+      "title": "Make pieces bigger or smaller",
+      "summary": "Give pieces a real size or a percentage, without touching the PDF.",
+      "pick": {
+        "title": "Pick the pieces",
+        "text": "Click the piece you want to resize in the piece library. Select all picks every piece shown, and the selected ones are resized together."
+      },
+      "size": {
+        "title": "Set the size",
+        "text": "In Selected pieces, type a new Width or Height: the other side follows while the chain between them is linked. Or type a Scale in percent: 100% is the size on the page."
+      },
+      "sheet": {
+        "title": "Check the sheet",
+        "text": "The sheet preview shows the pieces at their new size. Pieces are never shrunk to fit: if they do not fit, you get a message to change the sheet instead. “Back to the size on the page” undoes it."
+      }
+    },
+    "align-backs": {
+      "title": "Line up fronts and backs",
+      "summary": "Correct the printer's drift between the two sides of a sheet with a calibration sheet.",
+      "duplex": {
+        "title": "Turn on the backs",
+        "text": "Open the Duplex section, turn on Print backs and keep Backs on “On the other side”. In Flip on, choose the edge your printer turns the paper over on.",
+        "action": "Open the Duplex section"
+      },
+      "calibrate": {
+        "title": "Print the calibration sheet",
+        "text": "Press Calibration sheet…, then Save the sheet… and print it on both sides of one piece of paper at actual size (100%, not “fit to page”), with the same paper and printer settings as for your pieces. If you don't see the button, check that Backs is “On the other side”."
+      },
+      "read": {
+        "title": "Read the two numbers",
+        "text": "Hold the paper up to a light with the back facing you. See where the lines of the front's crosshair cross the rulers of the back, and type the numbers in the dialog: the horizontal ruler gives X, the vertical one Y, and right and down are positive. Then press Apply."
+      },
+      "offset": {
+        "title": "Check Back offset",
+        "text": "Apply puts the numbers in Back offset X and Y. Print your pieces again and see whether the backs line up; you can fine-tune the offset here by hand."
+      }
+    },
+    "gutterfold": {
+      "title": "Print gutterfold, or turn it into double-sided",
+      "summary": "Print each back beside its front to fold or cut apart, or pair the backs and print double-sided.",
+      "backs": {
+        "title": "Print the backs beside the fronts",
+        "text": "Open the Duplex section, turn on Print backs and set Backs to “Beside the front”: each back is printed next to its front, to fold (gutterfold).",
+        "action": "Open the Duplex section"
+      },
+      "pairs": {
+        "title": "Fold or cut apart",
+        "text": "Pairs says what each front and back become. Fold keeps them as one piece, with a dashed line at the fold and cut marks around the pair. Cut apart leaves them as two pieces side by side, with no fold line, for quick builds that are not double-sided. Fold (Back, when cut apart) sets whether the back goes to the right or below."
+      },
+      "double": {
+        "title": "Or make it double-sided",
+        "text": "If your file has the backs beside the fronts and you want a double-sided print instead, press Pair backs automatically…, choose “Beside each other on the page” and Apply, then set Backs to “On the other side”."
+      }
+    },
+    "pair-backs": {
+      "title": "Pair fronts with their backs",
+      "summary": "Let Gutterberg find each piece's back from where it is in the file.",
+      "open": {
+        "title": "Open the pairing",
+        "text": "Open the Duplex section, turn on Print backs and press Pair backs automatically….",
+        "action": "Open the Duplex section"
+      },
+      "rule": {
+        "title": "Say where the backs are",
+        "text": "Under “Where the backs are”, pick the rule that matches your file: Alternating pages (page 1 with 2, 3 with 4…), Backs after fronts, Beside each other on the page, or Backs in another PDF. Options such as mirrored or upside-down backs appear when they apply. Press Apply when the dialog counts the pairs you expect."
+      },
+      "check": {
+        "title": "Check the pairs",
+        "text": "A piece with a back shows it in the piece library, and Selected pieces › Back says which one it is. Pieces left without a pair keep what they had; select one and use Pick back… to set its back by hand."
+      }
+    },
+    "paper-size": {
+      "title": "Choose the paper size",
+      "summary": "Print on A4, Letter, A3 or another size, in portrait or landscape.",
+      "size": {
+        "title": "Choose the paper",
+        "text": "In the Sheet section, open Size and choose the paper: A4, Letter, A3, A5, Legal, Tabloid / Ledger, Custom, Same as source or Auto-fit to pieces. Pieces keep their size whichever you pick.",
+        "action": "Open the Sheet section"
+      },
+      "orientation": {
+        "title": "Portrait or landscape",
+        "text": "In the Page section, Orientation turns the sheet (it isn't there for Same as source or Auto-fit to pieces). The margins are there too, and the sheet preview shows the result.",
+        "action": "Open the Page section"
+      }
+    },
+    "cut-marks": {
+      "title": "Add cut marks",
+      "summary": "Print lines that show where to cut, solid, dashed or dotted.",
+      "style": {
+        "title": "Choose where the marks go",
+        "text": "Open the Cut marks section and choose a Style: Ticks in the margins draws short lines at every edge, outside the pieces; Lines in the gaps runs a line down the middle of each gap between them.",
+        "action": "Open the Cut marks section"
+      },
+      "line": {
+        "title": "Solid, dashed or dotted",
+        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Line width and Color are below, and ticks also have a length and a distance from the piece."
+      },
+      "sheet": {
+        "title": "Check the sheet",
+        "text": "The sheet preview draws the marks as they will print. They go on the front sheets only. If a gap is too narrow for a line, or marks fall outside the page, the Cut marks section says so and how to fix it."
+      }
+    },
+    "find-piece": {
+      "title": "Find a piece on the sheet",
+      "summary": "Show each piece's reference on the sheet and look it up in the piece library.",
+      "show": {
+        "title": "Show the references",
+        "text": "Press Show piece references above the sheet to write each piece's reference (its page and position, like p3 · r1 c2) on it. It is only on screen: the exported PDF doesn't have them."
+      },
+      "library": {
+        "title": "Find it in the library",
+        "text": "The piece library shows the same reference under each piece. Click that piece to select it and change its copies, size or back."
+      }
+    },
+    "several-grids": {
+      "title": "Mark pieces of different sizes on one page",
+      "summary": "Draw one grid for each size of piece on the same page.",
+      "first": {
+        "title": "Mark the first size",
+        "text": "Choose the Grid tool (G), drag a rectangle round the pieces of one size, and set its columns and rows."
+      },
+      "add": {
+        "title": "Add the next grid",
+        "text": "Press Add grid in the Grids and pieces panel, then drag a rectangle round the pieces of the next size. A page can hold up to 9 grids."
+      },
+      "name": {
+        "title": "Name and color them",
+        "text": "Double-click a grid's name in the list to rename it, and click the dot at its left to choose its color. Each grid keeps its own rows, columns and gap."
+      },
+      "pick": {
+        "title": "Pick either one",
+        "text": "With the Select tool (V), press any grid on the page to pick it, drag it or resize it from its handles. Pressing its name in the list picks it too."
+      }
+    },
+    "images-as-pieces": {
+      "title": "Use images as pieces",
+      "summary": "Turn image files, such as scans or card art, into pieces of a size you choose.",
+      "open": {
+        "title": "Add the images",
+        "text": "Open the File menu and choose Add images…, or drag the image files onto the window."
+      },
+      "size": {
+        "title": "Choose the size",
+        "text": "Under Piece size, choose the size the images print at (a preset, the size the image says it is, or Custom) and say whether they include bleed. Images are never stretched or resampled. Press Add images."
+      },
+      "library": {
+        "title": "They are pieces now",
+        "text": "Each image is a piece in the piece library of the Print tab, ready to get copies, a back and a place on the sheets."
+      }
+    },
+    "mark-and-export": {
+      "title": "Mark pieces and export",
+      "summary": "From a PDF to cut-ready sheets: mark the pieces, choose copies and export."
+    },
+    "update": {
+      "title": "Update Gutterberg",
+      "summary": "Check for a newer version and install it.",
+      "open": {
+        "title": "Open Updates",
+        "text": "Preferences › Updates shows the version you have.",
+        "action": "Open Updates"
+      },
+      "check": {
+        "title": "Check for updates",
+        "text": "Press Check for updates. It says if you are up to date."
+      },
+      "install": {
+        "title": "Install it",
+        "text": "If a newer version is available, it is listed with what's new. Press Download and install, and Restart now when it is ready. If the project has changes that are not saved, Gutterberg asks to save them first."
+      }
+    },
+    "report-problem": {
+      "title": "Report a problem",
+      "summary": "Copy the log and open the GitHub form with your version filled in.",
+      "menu": {
+        "title": "Open Report a problem",
+        "text": "Open the ? Help menu and choose Report a problem. It opens Preferences › About, on “Found a bug?”.",
+        "action": "Open “Found a bug?”"
+      },
+      "log": {
+        "title": "Copy the log",
+        "text": "If the app closed by itself or showed an error, press Copy log. It has no PDFs, but an error can mention a file name, so look it over before you share it. Copy app info copies the version and system."
+      },
+      "form": {
+        "title": "Report it on GitHub",
+        "text": "Press Report on GitHub. After asking, it opens the issue form in your browser with your version and system filled in. Say what you did, step by step, what you expected, and paste the log."
+      }
+    }
+  },
   "errors": {
     "at_page": "Page {{page}}: {{error}}",
     "does_not_fit": "The laid-out pieces need {{needed_w_mm}} × {{needed_h_mm}} mm but the sheet is only {{page_w_mm}} × {{page_h_mm}} mm.",
@@ -928,6 +1176,8 @@
     "ai_invalid_reply": "The reply could not be read: {{detail}}. Nothing was changed.",
     "ai_invalid_proposal": "The proposal does not fit: {{detail}}. Nothing was changed.",
     "ai_text_only_needs_objects": "This page has no objects to describe. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_pairing_needs_images": "Pair backs with AI looks at the pieces, so it needs pictures. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_too_many_pieces": "There are {{count}} pieces, and Pair backs with AI can look at {{max}} at most. Skip the pages you don't need in the Source tab, or pair with a rule.",
     "ai_config": "{{detail}}",
     "image_unsupported": "“{{name}}” can't be used. Images can be PNG, JPEG or WebP.",
     "image_too_large": "“{{name}}” is too large ({{megapixels}} megapixels, {{mb}} MB). The limits are 100 megapixels and 200 MB.",
@@ -1029,7 +1279,7 @@
     "discard": "Discard",
     "notes": {
       "missing_cells": "Some places of the grid have no object: the last row may not be full.",
-      "crop_marks": "Crop marks in the margins line up with the grid.",
+      "crop_marks": "Cut marks in the margins line up with the grid.",
       "few_objects": "Only a few objects back this, so check it.",
       "uneven_sizes": "The pieces differ in size.",
       "touches_edge": "A piece touches the edge of the page.",
@@ -1055,7 +1305,7 @@
     "settings": {
       "title": "AI Mode (experimental)",
       "enable": "Use AI Mode (experimental)",
-      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one and confirm.",
+      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one.",
       "provider": "Provider",
       "model": "Model",
       "baseUrl": "Address",
@@ -1071,8 +1321,11 @@
       "keyNote": "The key goes straight to the system keychain. It is never shown again and never saved in a project or in these preferences.",
       "privacy": "Privacy",
       "sendImages": "Send page images",
-      "sendImagesOn": "Pages are sent as pictures. Before every action you see which pages go to which server.",
+      "sendImagesOn": "Pages are sent as pictures.",
       "sendImagesOff": "Text only: no picture is ever sent. The model gets sizes, counts of objects and the start of each page's text.",
+      "askFirst": "Ask before sending",
+      "askFirstOn": "Before every AI action, a notice shows what will be sent and to which server, and waits for Send.",
+      "askFirstOff": "No notice for {{host}}: AI actions send right away. A different provider or address is asked about again.",
       "test": "Connection",
       "testButton": "Test connection",
       "testing": "Testing…",
@@ -1088,10 +1341,8 @@
       "detectText": "Text only: no picture is sent. The model gets the page size and the boxes of its images and rectangles.",
       "sortImages": "{{count}} pages ({{range}}) will be sent as small pictures, about {{size}} px, in {{requests}} requests.",
       "sortText": "Text only: no picture is sent. {{count}} pages ({{range}}) are described to the model (size, counts of objects, start of the text) in {{requests}} requests.",
-      "estimate": "About {{input}} input tokens and up to {{output}} output tokens.",
-      "cost": "About ${{cost}} at list prices (approximate).",
-      "noCost": "No price is known for this model.",
-      "dontAsk": "Don't ask again before detecting on one page, until I close the app",
+      "pairImages": "{{count}} pieces will be sent as small pictures, about {{size}} px each, in one request.",
+      "dontAsk": "Don't ask again before sending to {{host}}",
       "send": "Send",
       "cancel": "Cancel"
     },
@@ -1102,7 +1353,7 @@
     },
     "sort": {
       "title": "Sort pages",
-      "note": "Labels every page (cards, backs, rules, cover, other) so pages without pieces can be skipped. Nothing changes until you apply it.",
+      "note": "Labels every page (pieces, backs, rules, cover, other) so pages without pieces can be skipped. Nothing changes until you apply it.",
       "button": "Sort pages with AI",
       "estimating": "Preparing…",
       "running": "Sorting…",
@@ -1111,7 +1362,7 @@
       "skipFor": "Skip page {{n}}",
       "skip": "Skip",
       "labels": {
-        "cards": "Cards",
+        "cards": "Pieces",
         "backs": "Backs",
         "rules": "Rules",
         "cover": "Cover",

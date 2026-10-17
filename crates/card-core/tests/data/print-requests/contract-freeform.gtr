@@ -1,0 +1,128 @@
+{
+  "format": "gutterberg-project",
+  "version": 7,
+  "documents": [
+    {
+      "kind": "pdf",
+      "id": 0,
+      "path": "/games/b.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pageCount": 1,
+      "groups": [
+        {
+          "kind": "grid",
+          "pages": {
+            "first": 0,
+            "last": 0
+          },
+          "grids": [
+            {
+              "grid": {
+                "rows": 1,
+                "columns": 2,
+                "sourceGapXMm": 0,
+                "sourceGapYMm": 0,
+                "sourceGapLinked": true
+              },
+              "selection": {
+                "x": 0.1,
+                "y": 0.1,
+                "width": 0.6,
+                "height": 0.2
+              }
+            }
+          ]
+        }
+      ],
+      "freeform": {
+        "0": [
+          {
+            "center": {
+              "x": 0.3,
+              "y": 0.6
+            },
+            "width": 0.3047619047619048,
+            "height": 0.301010101010101,
+            "angle_deg": 7
+          },
+          {
+            "center": {
+              "x": 0.7,
+              "y": 0.6
+            },
+            "width": 0.3,
+            "height": 0.2962962962962963,
+            "angle_deg": -3.5
+          }
+        ]
+      },
+      "viewedPage": 0
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 2,
+    "gapYMm": 2,
+    "gapLinked": true,
+    "pageMode": "a4",
+    "orientation": "portrait",
+    "customWidthMm": 210,
+    "customHeightMm": 297,
+    "margins": {
+      "top": 5,
+      "right": 5,
+      "bottom": 5,
+      "left": 5
+    }
+  },
+  "edits": {
+    "turns": {
+      "f:0:0:1": 90
+    },
+    "scales": {
+      "f:0:0:0": 0.984375
+    },
+    "order": [
+      "f:0:0:1",
+      "f:0:0:0",
+      "g:0:0:0:0",
+      "g:0:0:0:1"
+    ],
+    "backs": {}
+  },
+  "plan": {
+    "mode": "all",
+    "quantities": {},
+    "autoFill": false,
+    "order": "grouped",
+    "groupBySize": false,
+    "sheetGrid": "same",
+    "rows": 3,
+    "columns": 3,
+    "finish": {
+      "marks": {
+        "style": "off",
+        "widthMm": 0.25,
+        "color": "#000000",
+        "lengthMm": 3,
+        "offsetMm": 1
+      },
+      "bleed": {
+        "mm": 0,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": false,
+        "layout": "duplex",
+        "fold": "vertical",
+        "foldGapMm": 0,
+        "cutApart": false,
+        "backUpsideDown": null,
+        "flip": "long",
+        "offsetXMm": 0,
+        "offsetYMm": 0,
+        "commonBack": null
+      }
+    }
+  }
+}

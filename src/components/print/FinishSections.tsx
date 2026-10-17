@@ -12,12 +12,14 @@ import {
   FOLDS,
   type Fold,
   MARK_LENGTH_RANGE,
+  MARK_LINES,
   MARK_OFFSET_RANGE,
   MARK_STYLES,
   MARK_WIDTH_RANGE,
   MAX_BLEED_MM,
   MAX_DUPLEX_OFFSET_MM,
   MAX_FOLD_GAP_MM,
+  type MarkLine,
   type MarkStyle,
   type SheetWarning,
 } from "../../lib/finish";
@@ -68,6 +70,7 @@ export function MarksSection() {
     <CollapsibleSection
       id="print.marks"
       title={t("print.sections.marks")}
+      hintTarget="marks-section"
       defaultOpen={false}
       info={t("print.marks.note")}
     >
@@ -82,6 +85,17 @@ export function MarksSection() {
       </FieldRow>
       {on && (
         <>
+          <div data-hint-target="mark-line">
+            <FieldRow label={t("print.marks.line")}>
+              <Segmented<MarkLine>
+                fill
+                label={t("print.marks.line")}
+                value={marks.line}
+                onChange={(line) => setMarks({ line })}
+                options={MARK_LINES.map((value) => ({ value, label: t(`print.marks.lines.${value}`) }))}
+              />
+            </FieldRow>
+          </div>
           <MeasurementInput
             label={t("print.marks.width")}
             precise
@@ -175,7 +189,12 @@ export function DuplexSection() {
   const common = duplex.commonBack ? cards.find((c) => cardIdKey(c.id) === duplex.commonBack) : undefined;
   const [pairing, setPairing] = useState(false);
   return (
-    <CollapsibleSection id="print.duplex" title={t("print.sections.duplex")} defaultOpen={false}>
+    <CollapsibleSection
+      id="print.duplex"
+      title={t("print.sections.duplex")}
+      defaultOpen={false}
+      hintTarget="duplex-section"
+    >
       <Switch
         checked={duplex.on}
         onChange={(on) => setDuplex({ on })}
@@ -194,7 +213,7 @@ export function DuplexSection() {
             />
           </FieldRow>
           {duplex.layout === "gutterfold" ? <GutterfoldFields /> : <DuplexFields />}
-          <FieldRow label={null}>
+          <FieldRow label={null} data-hint-target="pair-backs-button">
             <Button onClick={() => setPairing(true)}>{t("print.pairing.open")}</Button>
             <InfoTip text={t("print.pairing.openHint")} />
           </FieldRow>
@@ -242,24 +261,26 @@ function DuplexFields() {
           options={FLIPS.map((value) => ({ value, label: t(`print.duplex.flips.${value}`) }))}
         />
       </FieldRow>
-      <MeasurementInput
-        label={t("print.duplex.offsetX")}
-        info={t("print.duplex.offsetNote")}
-        precise
-        min={-MAX_DUPLEX_OFFSET_MM}
-        max={MAX_DUPLEX_OFFSET_MM}
-        value={duplex.offsetXMm}
-        onChange={(offsetXMm) => setDuplex({ offsetXMm })}
-      />
-      <MeasurementInput
-        label={t("print.duplex.offsetY")}
-        precise
-        min={-MAX_DUPLEX_OFFSET_MM}
-        max={MAX_DUPLEX_OFFSET_MM}
-        value={duplex.offsetYMm}
-        onChange={(offsetYMm) => setDuplex({ offsetYMm })}
-      />
-      <FieldRow label={null}>
+      <div className="flex flex-col gap-1.5" data-hint-target="back-offset">
+        <MeasurementInput
+          label={t("print.duplex.offsetX")}
+          info={t("print.duplex.offsetNote")}
+          precise
+          min={-MAX_DUPLEX_OFFSET_MM}
+          max={MAX_DUPLEX_OFFSET_MM}
+          value={duplex.offsetXMm}
+          onChange={(offsetXMm) => setDuplex({ offsetXMm })}
+        />
+        <MeasurementInput
+          label={t("print.duplex.offsetY")}
+          precise
+          min={-MAX_DUPLEX_OFFSET_MM}
+          max={MAX_DUPLEX_OFFSET_MM}
+          value={duplex.offsetYMm}
+          onChange={(offsetYMm) => setDuplex({ offsetYMm })}
+        />
+      </div>
+      <FieldRow label={null} data-hint-target="calibrate-button">
         <Button onClick={() => setCalibrating(true)}>{t("print.duplex.calibrate")}</Button>
       </FieldRow>
       <CalibrationDialog open={calibrating} onClose={() => setCalibrating(false)} />
@@ -289,7 +310,7 @@ function GutterfoldFields() {
   const apart = duplex.cutApart;
   return (
     <>
-      <FieldRow label={t("print.duplex.pairs")} info={t("print.duplex.pairsNote")}>
+      <FieldRow label={t("print.duplex.pairs")} info={t("print.duplex.pairsNote")} data-hint-target="gutterfold-pairs">
         <Segmented<PairCut>
           fill
           label={t("print.duplex.pairs")}

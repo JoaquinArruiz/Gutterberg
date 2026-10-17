@@ -15,6 +15,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/32x32.png";
 import { EXPERIMENTAL } from "../../lib/experimental";
+import { emitHintEvent } from "../../lib/hint-events";
 import {
   DECIMAL_PREFERENCES,
   type DecimalPreference,
@@ -171,6 +172,15 @@ export function PreferencesDialog() {
     if (!open && d.open) d.close();
     if (!open) setConfirmReset(false);
   }, [open]);
+
+  // Tutorials that send the user to a section move on when it opens.
+  useEffect(() => {
+    // Opened from a link, the section is the link's once it has landed there.
+    const wanted = useUiStore.getState().prefsSection;
+    if (!open || (wanted && wanted !== section)) return;
+    if (section === "Updates") emitHintEvent("prefs-opened:updates");
+    if (section === "About") emitHintEvent("prefs-opened:about");
+  }, [open, section]);
 
   const hiddenModes = WORKSPACE_MODES.filter((m) => !visibleModes.includes(m));
 

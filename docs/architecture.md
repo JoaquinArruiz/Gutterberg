@@ -28,6 +28,7 @@ Source PDFs ─► Source tab ─► extract_cards ─► piece library
 | Part | Where | What it is |
 | --- | --- | --- |
 | `card-core` | `crates/card-core/` | Geometry, layout, the sheet engine, PDF export (`lopdf`), rendering (`pdfium-render`), detection, images, the project file, permission flags. No Tauri and no UI. |
+| `card-cli` | `crates/card-cli/` | `gutterberg-cli`, the command line: exports or checks a saved project without the app. Only `card-core` and `lopdf`; no pdfium, no window. |
 | `card-ai` | `crates/card-ai/` | The optional AI Mode: provider adapters, prompts, reply checks. The only crate that sends a user's data over the network. |
 | Tauri shell | `src-tauri/` | The window and the glue. `src/commands/*` are thin IPC wrappers around `card-core` and `card-ai`; it also owns the system keychain, the updater, the file association and the render thread's state. |
 | Frontend | `src/` | React 19 and TypeScript. Zustand stores in `src/stores/`, pure helpers in `src/lib/`, components in `src/components/`, texts in `src/locales/`. |
@@ -108,6 +109,23 @@ placing a piece: `R(turn) · S(scale, scale_y) · R(-source angle)` about the pi
 its slot. The piece is stretched along its own sides before it is turned; with equal factors it is a plain rotation
 and scale.
 
+### The print request (`print_request`)
+
+The Print tab's plan, as the project saves it, becomes the planner's input in one place. `print_request` reads the
+parts of a project body that printing needs (`PrintProject`: the documents' page groups and freeform pieces, the
+piece edits, the plan and the output settings, in the UI's camelCase and normalized coordinates) and builds the
+`PrintRequest`: the page groups in points (a page's freeform pieces become a one-page group right after its grid
+pieces), the per-piece settings in the user's order, the sheet layout ("same as source" only for the default plan;
+freeform, edited, image or gutterfold pieces need the planner) and the finishing, with backs that name a gone piece
+left out. Values are pulled back into what the interface allows, as opening a project does, so a hand-edited file
+prints the same in the app and from the command line.
+
+The app sends its live stores in that shape (`printProject` in `src/lib/print-request.ts`) to `compute_sheets`,
+`validate_print` and `export_print`, with the page sizes it shows; the command line reads it from the file, with the
+page sizes in the PDFs (`lopdf`). The two agree on every example PDF (`crates/card-cli/tests/export.rs` compares the
+bytes with pdfium's sizes when pdfium is there). `tests/print_request.rs` checks the request against the one the
+TypeScript built before the step moved here, for nine projects (`tests/data/print-requests/`).
+
 ### Export (`export`)
 
 Each source page becomes a Form XObject named `/S{document}_{page}`, stored once however many pieces and copies use it.
@@ -132,7 +150,9 @@ matter:
 ### Finishing (`finish`)
 
 - **Cut marks:** ticks in the margins at every piece edge, or lines down the middle of each gap (too narrow a gap
-  gives a warning and no line). Drawn as strokes, last.
+  gives a warning and no line). Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
+  dash pattern in points on `SheetMarks.dash` (dots are dashes of length 0 with round caps), so the preview and the
+  export read the same pattern.
 - **Bleed:** taken either by mirroring each piece's own edge (4 strips and 4 corners, as vectors, using the piece's
   oriented edge so tilted pieces work) or from the gap that is already in the source. A bleed bigger than half a piece
   is an error; a source gap smaller than the bleed is a page issue that blocks export.
@@ -254,6 +274,22 @@ rebuilt on open.
 - The file association (`.gtr`, type `dev.joaquinarruiz.gutterberg.project`) opens a project at startup (command-line
   argument on Windows and Linux, the "opened" event on macOS) through the same open path, with the same checks.
 
+## The command line (`card-cli`)
+
+`gutterberg-cli export my-game.gtr -o sheets.pdf` writes what the app's Export writes for that project;
+`gutterberg-cli check my-game.gtr` plans the same sheets and lists what would stop the export, writing nothing.
+It reads the project with `read_project` (so an older one is migrated and a newer one refused, with the app's error
+codes), finds the PDFs at their saved paths and checks their hashes: a PDF that is gone stops it, and one that changed
+stops it unless `--force` (the app asks in both cases). An images document's PDF is rebuilt in the system's temporary
+folder; a missing image leaves its page blank with a warning, as in the app. Settings are never changed from the
+command line. Messages are in English, each error with its code.
+
+It is a separate binary rather than a subcommand of the app: the app is a GUI program on Windows (no console to print
+to), and a binary with only `card-core` also runs on a machine with no screen. Its version is the app's
+(`build.rs` reads `src-tauri/Cargo.toml`). The release workflow builds it for each target and puts it next to the app
+in the installers (Tauri's `externalBin`, added only for the release by `src-tauri/tauri.cli.conf.json`, so
+`pnpm tauri dev` and `cargo test` do not need it), and attaches it to the release on its own.
+
 ## Coordinates and units
 
 The interface works in normalised coordinates (0 to 1 of the page, top-left origin); `layout.rs` works in points
@@ -360,8 +396,9 @@ Preferences; everything that needs a document appears when one is open.
 
 The **welcome tour** is four short clips (masters in `assets/welcome/`, encoded by `scripts/encode-welcome.sh` into
 `public/welcome/`) in a dialog that opens once over the start screen. Help tips wait while it is open. Preferences ›
-Help holds the tour, the tip reset, the shortcuts and "Found a bug?", which copies the app info or opens the GitHub
-issue form after asking, with the version and system filled in.
+Help holds the tour, the tip reset, the shortcuts and the tutorials; Preferences › About holds "Found a bug?", which
+copies the app info or opens the GitHub issue form after asking, with the version and system filled in, or the
+Discord invitation. Every address the app opens is in `src/lib/external-links.ts` and in the opener permission.
 
 The tour's clips are cropped to their 4:3 picture (`crop=1440:1080:240:0` in the encode script; the masters have black
 at the sides, so a future export of the Figma frames should be 4:3) and shown beside the text; below about 720 px
@@ -370,6 +407,24 @@ wide the dialog stacks with the clip on top. The keyboard shortcuts sheet is the
 so a shortcut added or changed in a `keydown` handler changes there too; `shortcuts.test.tsx` checks the catalog and
 the texts have the same ids. `ShortcutsList` (the sheet and Preferences › Help) has a sticky search field that filters by
 the translated text and the key names (`Mod` also matches Ctrl, Cmd and Command; `Alt` also Option).
+
+**Tutorials.** A tutorial is a walkthrough that the user starts, not one the app picks: the catalog `src/lib/tutorials.ts`
+has an id, a group (Source, Print, Duplex, App), what it `needs` (nothing, a PDF, or a PDF with pieces) and its steps,
+which are `HintStep`s with the same targets, events and actions as a tip; the texts are `tutorials.<id>.…` in both
+languages (`mark-and-export` reuses the steps of `first-pdf-tour` and `print-stage-intro` instead of repeating them).
+`HintCard.tsx` holds what a tip and a tutorial share, the card and the Joyride spotlight (`HintStepView`) and the
+`advanceOn` subscription; `HintToast` and `TutorialHost` decide when and what to show. `ui-store` holds the running
+tutorial (`tutorial: { id, step }`) and starts it from the list (`startTutorial`, which also closes the list and
+Preferences); one `TutorialHost` is mounted in `App.tsx`. It ignores `help.tipsOn` and the closed tips, and holds every
+tip while it runs (`hintsHeld`, as for the welcome tour, and a check in `useHint`), and for a moment after. Done, the ×
+and `Esc` end it. If its need is not met, `TutorialHost` shows the need (`NEEDS_STEPS`: Open PDF…, or start “Mark pieces
+and export”) in place of the step, and goes on by itself when the PDF or the pieces are there; a tutorial never opens
+a sample or changes the project. A step for a place the user is already in (the Print tab) is skipped. A modal dialog
+(Preferences, the calibration sheet, the pairing, the image size) covers the page, so while one is open the card sits
+inside it instead of pointing at something behind it. Nothing is saved: no preference or project field, so tutorials
+do not change either version. The list (`TutorialsList`: a sticky search field over the translated title and summary,
+ignoring case and accents) is in the Tutorials dialog, opened from the `?` Help menu in the toolbar (`HelpMenu`, which
+also has the shortcuts, the welcome tour and Report a problem), and in Preferences › Help above the tips switch.
 
 ## Languages (`i18n`)
 
@@ -382,19 +437,29 @@ screen changes language with the app.
 ## AI Mode (`card-ai`)
 
 Optional, off and hidden by default (the one Preferences entry is the switch). Buttons with fixed prompts, no chat:
-**Detect with AI** is a second engine behind the Detect pieces button, and **Sort pages** labels every page (cards,
-backs, rules, cover, other) and offers to skip the ones without pieces. A result is always an editable proposal.
+**Detect with AI** is a second engine behind the Detect pieces button (one grid, several grids or rectangles, the
+shapes the local engines propose), **Sort pages** labels every page (cards, backs, rules, cover, other) and offers to
+skip the ones without pieces, and **Pair backs with AI** (a choice in Pair backs automatically…) sends a picture of
+each piece of the library, cut out by `render_pieces_in` at 256 px, named by where it is, and gets back which pieces
+are fronts, which are backs and the back of each front (`card-ai/src/pairing.rs`, then `pairingFromSides` in
+`src/lib/pairing.ts`). It is one request, so a front and its back are seen together, of at most 100 pieces, and needs
+pictures. A result is always an editable proposal, or for pairing, a summary to apply or not.
 
 - **Providers:** Anthropic, OpenAI-compatible, Gemini and Ollama, behind one request shape. Replies are validated
-  (inside the page, plausible sizes and counts, every page labelled exactly once); an unusable reply changes nothing.
+  (inside the page, plausible sizes and counts, grids that do not overlap, every page labelled and every piece
+  answered exactly once, a front's back a piece called a back); an unusable reply changes nothing.
 - **The switch is checked in Rust.** `Gate` is set from the preference and checked before the keychain is read and
   before anything is sent, so a stale interface cannot send while it is off (tested with a local listener).
 - **Keys** live only in the system keychain (`keyring`: Keychain, Credential Manager, Secret Service), written and
   read in Rust. The interface can ask whether a key exists, set it and delete it; it can never read it. A keychain
   that fails means AI Mode cannot send; there is no fallback.
-- **Every action asks first** (provider, server, whether pages go as pictures or text, requests, tokens, cost when
-  known) and sends nothing until the user says so. Only plain `http://` to local or private addresses is accepted.
-- Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), never the PDF.
+- **An action asks first** (provider, server, whether pages or pieces go as pictures or text, how many requests) and
+  sends nothing until the user presses Send. "Don't ask again" in that notice saves the server (`ai.trustedHost`)
+  once Send is pressed; only that server skips the notice, so another provider or address is asked about again, and
+  Preferences › AI Mode › Ask before sending clears it. No price is shown: list prices change and a stale one would
+  mislead. Only plain `http://` to local or private addresses is accepted.
+- Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
+  pieces for pairing, never the PDF.
 
 ## Updates and releases
 
@@ -442,7 +507,7 @@ macOS keeps its storage under the bundle identifier whatever the override says, 
 itself is not changed after a release: it is the app's identity for the installers, the updater and the `.gtr` file type.
 
 The window (`PreferencesDialog`) has one section per subject: General (unit, language, decimals), Workspace (the views),
-Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tips, shortcuts),
+Layout (the panels of each tab), Display (theme, Live preview, rulers, the Select tool after a grid), AI Mode, Help (tour, tutorials, tips, shortcuts),
 Updates and About (version, links, bug report, license). A setting shows one short line at most; a longer explanation
 goes behind an InfoTip next to its title (`Field`'s `info`). A link into Preferences (a help tip's "Open Preferences")
 names the section and the setting (`setPrefsOpen(true, section, target)`); the `Field` with that `target` scrolls into
@@ -465,7 +530,8 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. Number fields also take arithmetic (`src/lib/arithmetic.ts`: a small parser for `+ - * /` and parentheses, never `eval`). |
 | Project file | `.gtr`, JSON with a `gutterberg-project` signature and a version, checked on open: not a project / older, migrate / newer, refuse. |
 | Locked PDFs | Locked against printing or modifying: refused. Other restrictions: kept on the output. Never stripped. |
-| AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; every action asks first. |
+| AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; asks before sending to a server until told not to. |
+| Command line | A separate binary, `gutterberg-cli`, with export and check only; settings change in the app. |
 | Help tips | One catalog; tours point at the interface with React Joyride (MIT); shown at the moment of need, never as a long tour at first launch except the short welcome. |
 | Images | Each import is a one-page-per-image PDF; pixels never resampled; the user picks the size, never stretched. |
 | Logo | The logo for light backgrounds, a dark variant, and an app icon on a bone-coloured plate (not pure white). |

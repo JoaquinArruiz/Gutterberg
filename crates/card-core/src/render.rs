@@ -228,6 +228,46 @@ pub fn render_page_fit_in(
     )))
 }
 
+/// The width and height a PNG says it has (its IHDR chunk), or 0 x 0 for bytes that are not a PNG.
+fn png_size(png: &[u8]) -> (u32, u32) {
+    let at = |i: usize| {
+        png.get(i..i + 4)
+            .map(|b| u32::from_be_bytes([b[0], b[1], b[2], b[3]]))
+            .unwrap_or(0)
+    };
+    (at(16), at(20))
+}
+
+/// Each piece as a PNG whose longer side is about `long_side_px`: the box around the piece (`(page index, its
+/// rectangle in points, top-left origin)`), as it looks on its page. For pictures of the pieces themselves, such as
+/// the ones Pair backs with AI sends.
+pub fn render_pieces_in(
+    doc: &PdfDocument,
+    pieces: &[(usize, crate::card::OrientedRect)],
+    long_side_px: u32,
+) -> Result<Vec<RenderedPage>> {
+    let long = long_side_px.clamp(16, 2048) as f64;
+    pieces
+        .iter()
+        .map(|(page_index, rect)| {
+            let page = get_page(doc, *page_index)?;
+            let (w, h) = (page.width().value as f64, page.height().value as f64);
+            let corners = rect.corners();
+            let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+            for c in corners {
+                (x0, y0, x1, y1) = (x0.min(c.x), y0.min(c.y), x1.max(c.x), y1.max(c.y));
+            }
+            let region = crate::geometry::Rect::new(x0 / w, y0 / h, (x1 - x0) / w, (y1 - y0) / h);
+            // The page width at which the region's longer side is `long` pixels.
+            let across = region.width.max(region.height * h / w).max(1e-6);
+            let full_width = (long / across).round().clamp(16.0, 32768.0) as u32;
+            let png = render_region_png_in(doc, *page_index, region, full_width)?;
+            let (width, height) = png_size(&png);
+            Ok(RenderedPage { png, width, height })
+        })
+        .collect()
+}
+
 /// Render only `region` (normalized, top-left origin) of a page as a PNG, at the
 /// scale where the whole page would be `full_width_px` wide. Only the region's
 /// pixels are allocated and encoded, so a high zoom stays fast (used by the

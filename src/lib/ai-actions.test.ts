@@ -29,7 +29,6 @@ const anEstimate: Estimate = {
   output_tokens: 2048,
   host: "api.anthropic.com",
   sends_images: true,
-  cost_usd: 0.04,
 };
 const usage = { input_tokens: 1800, output_tokens: 90 };
 const gridDetection = {
@@ -56,7 +55,6 @@ beforeEach(() => {
   useDocumentStore.getState().setDocuments([{ id: 0, path: "/x.pdf", pages: Array(6).fill(A4), hash: "" }], 0);
   useLayoutStore.getState().resetDocument(6);
   ai().clear();
-  ai().setSkipDetectConfirm(false);
   useEditorStore.getState().setDraft(null);
 });
 
@@ -95,13 +93,20 @@ describe("detecting with AI", () => {
     expect(useEditorStore.getState().draft).toBeNull();
   });
 
-  it("can skip the question for the session, and then goes straight to the provider", async () => {
+  it("goes straight to the provider once told not to ask about its server, and asks again for another one", async () => {
     detect.mockResolvedValue({ detection: gridDetection, usage });
-    ai().setSkipDetectConfirm(true);
+    usePreferencesStore.getState().setAiTrustedHost("api.anthropic.com");
     await askDetect();
     expect(estimate).not.toHaveBeenCalled();
     expect(detect).toHaveBeenCalledTimes(1);
     expect(useEditorStore.getState().draft).not.toBeNull();
+
+    estimate.mockResolvedValue({ ...anEstimate, host: "localhost:11434" });
+    usePreferencesStore.getState().setAiProvider("ollama");
+    await askDetect();
+    expect(estimate).toHaveBeenCalledTimes(1);
+    expect(ai().confirm?.provider).toBe("ollama");
+    expect(detect).toHaveBeenCalledTimes(1);
   });
 
   it("keeps an error and changes nothing", async () => {

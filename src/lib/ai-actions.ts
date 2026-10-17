@@ -1,18 +1,36 @@
 // AI Mode from the UI (M19): ask, confirm, run, and keep the answer as a proposal. Every action first
-// works out what would be sent and waits for a yes; none changes the project. Applying a proposal is
-// the user's choice, and for Sort pages it is `layout-store.applySkips`: one undo step.
+// works out what would be sent and waits for a yes, unless the user said not to be asked again about that
+// server; none changes the project. Applying a proposal is
+// the user's choice, and for Sort pages it is `layout-store.applySkips`: one undo step. Pair backs with AI is
+// applied by its dialog, like the other pairing rules.
 
 import { useAiStore } from "../stores/ai-store";
 import { useDocumentStore } from "../stores/document-store";
 import { useEditorStore } from "../stores/editor-store";
 import { useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
-import { type AiTask, aiDetectPieces, aiEstimate, aiSortPages, skippedByDefault } from "./ai-api";
+import { skipsNotice } from "./ai";
+import {
+  type AiTask,
+  aiDetectPieces,
+  aiEstimate,
+  aiEstimatePairing,
+  aiPairBacks,
+  aiSortPages,
+  type PairPiece,
+  skippedByDefault,
+} from "./ai-api";
+import { cardIdKey, documentLetter } from "./card";
 import { toAppError } from "./errors";
+import { pieceName } from "./pairing";
+import type { Card } from "./sheet-api";
 
 const ai = () => useAiStore.getState();
 
-async function ask(task: AiTask, documentId: number, pages: number[]): Promise<void> {
+const noticeSkipped = () => skipsNotice(usePreferencesStore.getState().prefs.ai);
+
+async function ask(task: "detect" | "sort", documentId: number, pages: number[]): Promise<void> {
+  if (noticeSkipped()) return execute(task, documentId, pages);
   ai().setError(task, null);
   ai().setUsage(task, null);
   ai().setEstimating(true);
@@ -27,15 +45,14 @@ async function ask(task: AiTask, documentId: number, pages: number[]): Promise<v
   }
 }
 
-/** Detect pieces on the viewed page with the AI engine: confirm first, unless the user turned that off for the session. */
+/** Detect pieces on the viewed page with the AI engine. */
 export async function askDetect(): Promise<void> {
   const { activeId, currentPage } = useDocumentStore.getState();
   useEditorStore.getState().setDraft(null);
-  if (ai().skipDetectConfirm) return execute("detect", activeId, [currentPage]);
   return ask("detect", activeId, [currentPage]);
 }
 
-/** Label every page of the PDF being edited: always confirmed first. */
+/** Label every page of the PDF being edited. */
 export async function askSort(): Promise<void> {
   const { activeId, pages } = useDocumentStore.getState();
   ai().setSort(null);
@@ -46,11 +63,57 @@ export async function askSort(): Promise<void> {
   );
 }
 
-async function execute(task: AiTask, documentId: number, pages: number[]): Promise<void> {
+/**
+ * Pair backs with AI: a small picture of each of `cards` (the piece library). `documents`
+ * are the project's PDFs in order, for the letter each piece is named with.
+ */
+export async function askPair(cards: Card[], documents: number[]): Promise<void> {
+  const task = "pair";
+  ai().setError(task, null);
+  ai().setUsage(task, null);
+  ai().setPairing(null);
+  const sent: PairPiece[] = cards.map((c) => ({
+    document_id: c.id.document_id,
+    page_index: c.id.page_index,
+    source: c.source,
+    name: pieceName(c, documentLetter(documents, c.id.document_id)),
+  }));
+  const keys = cards.map((c) => cardIdKey(c.id));
+  const { activeId } = useDocumentStore.getState();
+  if (noticeSkipped()) return execute(task, activeId, [], { keys, sent });
+  ai().setEstimating(true);
+  try {
+    const estimate = await aiEstimatePairing(sent);
+    const provider = usePreferencesStore.getState().prefs.ai.provider;
+    ai().setConfirm({ task, documentId: activeId, pages: [], pieces: { keys, sent }, estimate, provider });
+  } catch (e) {
+    ai().setError(task, toAppError(e));
+  } finally {
+    ai().setEstimating(false);
+  }
+}
+
+/** Drops what Pair backs with AI answered (the dialog closed, or the answer was applied). */
+export function discardPairing(): void {
+  ai().setPairing(null);
+  if (ai().error?.task === "pair") ai().setError("pair", null);
+}
+
+async function execute(
+  task: AiTask,
+  documentId: number,
+  pages: number[],
+  pieces?: { keys: string[]; sent: PairPiece[] },
+): Promise<void> {
   ai().setRunning(true);
   ai().setError(task, null);
   try {
-    if (task === "detect") {
+    if (task === "pair") {
+      if (!pieces) return;
+      const answer = await aiPairBacks(pieces.sent);
+      ai().setPairing({ keys: pieces.keys, sides: answer.pieces });
+      ai().setUsage(task, answer.usage);
+    } else if (task === "detect") {
       const { detection, usage } = await aiDetectPieces(documentId, pages[0]);
       // The user moved on while it ran: the answer is for a page no longer in front of them.
       const now = useDocumentStore.getState();
@@ -81,7 +144,7 @@ export async function confirmRun(): Promise<void> {
   const run = ai().confirm;
   if (!run) return;
   ai().setConfirm(null);
-  await execute(run.task, run.documentId, run.pages);
+  await execute(run.task, run.documentId, run.pages, run.pieces);
 }
 
 /** The user said no: nothing was sent. */

@@ -5,6 +5,24 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.0.0 (2026-10-17)
+
+Gutterberg has done what I built it for since the first versions: take a print-and-play PDF, find the pieces and lay them out again with real gutters, without touching the art. 1.0.0 says it is ready. It adds the two things people asked about most once that worked. When a publisher updates a PDF, a saved project can now be exported again without opening the app, with a command line, `gutterberg-cli`, that writes the same PDF as the app. And help no longer only comes as tips at the right moment: twelve Tutorials, started from a new Help menu, walk through a task on the real controls when you need it. Cut marks can also be dashed or dotted, and AI Mode learns two things: finding several grids on a page, and pairing backs by looking at the pieces.
+
+### Added
+
+- A command line, `gutterberg-cli`, installed next to the app and attached to each release on its own: `gutterberg-cli export my-game.gtr -o sheets.pdf` writes the same PDF as the app's Export for that project, and `gutterberg-cli check my-game.gtr` lists what would stop the export without writing anything. A PDF or image that is not the file the project was saved with stops it unless `--force`; a PDF that is gone stops it; a missing image leaves its page blank, as in the app. Settings are not changed from the command line. It needs no pdfium and no screen.
+- Tutorials: step-by-step walkthroughs that you start when you need them, from the new `?` Help menu in the toolbar (Tutorials…, Keyboard shortcuts, Welcome tour and Report a problem, there with or without a PDF open) or from Preferences › Help, above the tips switch. The Tutorials list is grouped by tab (Source tab, Print tab, Duplex, App) and has a search field that ignores case and accents. Picking one starts it: a card points at the real control with a spotlight, with Back and Next, and moves on by itself when you do the step; Done, the ×, or `Esc` end it. There are twelve: Make pieces bigger or smaller, Line up fronts and backs, Print gutterfold or turn it into double-sided, Pair fronts with their backs, Choose the paper size, Add cut marks, Find a piece on the sheet, Mark pieces of different sizes on one page, Use images as pieces, Mark pieces and export, Update Gutterberg and Report a problem.
+- Cut marks can be dashed or dotted: Print settings › Cut marks › Line (Solid, Dashed or Dotted), for ticks and for lines in the gaps. The sheet preview and the export draw them the same way, still as vector lines, and the command line exports them as saved in the project. Projects without the setting open with solid lines.
+- A tutorial works with help tips turned off, no help tip shows while one runs, and nothing about it is saved. One that needs a PDF, or a PDF with pieces, says so and offers Open PDF… or the Mark pieces and export tutorial; it never opens a file or changes the project by itself.
+- Detect with AI can find several grids on one page, like the other engines: a page with blocks of pieces of different sizes gets one proposal with a grid per block, and applying it makes them the page's grids, in one undo step.
+- Pair backs with AI: with AI Mode on, Pair backs automatically… has By picture, with AI, for backs no rule can find, such as a back per deck or backs in another order. Find backs with AI sends a small picture of every piece (up to 100), and the dialog shows how many fronts got a back before you apply it. Applying gives each front its back, turns only the backs that are upside down, and stops printing every piece found to be a back, in one undo step.
+- The Discord button in Preferences › About › Found a bug? opens Gutterberg's Discord server (after showing its address, like every link), to ask questions, share layouts and talk about what comes next.
+
+### Changed
+
+- The notice before an AI action no longer shows tokens or a price, which went stale as list prices changed and was only known for one model. It still names the server and what is sent, and its "Don't ask again" now works for every AI action and is kept: it stops the notice for that server only, so a new provider or address is asked about again. Preferences › AI Mode › Ask before sending turns the notice back on.
+
 ## 0.16.0 (2026-10-15)
 
 ### Added

@@ -72,6 +72,13 @@
       "note": "Esto no impide la exportación."
     }
   },
+  "helpMenu": {
+    "label": "Ayuda",
+    "tutorials": "Tutoriales…",
+    "shortcuts": "Atajos de teclado",
+    "welcome": "Recorrido de bienvenida",
+    "report": "Reportar un problema"
+  },
   "files": {
     "pdfFilter": "PDF",
     "suffixSpaced": "espaciado",
@@ -481,6 +488,12 @@
         "ticks": "Marcas en los márgenes",
         "gaps": "Líneas en las separaciones"
       },
+      "line": "Línea",
+      "lines": {
+        "solid": "Continua",
+        "dashed": "Discontinua",
+        "dotted": "Punteada"
+      },
       "width": "Grosor de la línea",
       "color": "Color",
       "length": "Largo de la marca",
@@ -582,6 +595,14 @@
         "besideHint": "Frentes en una mitad de cada página y dorsos en la otra, para doblar (gutterfold).",
         "otherPdf": "Dorsos en otro PDF",
         "otherPdfHint": "La página 1 de los frentes con la página 1 de los dorsos, la 2 con la 2…, pieza por pieza."
+      },
+      "ai": {
+        "title": "Por imagen, con IA",
+        "hint": "La IA mira cada pieza y encuentra su dorso, para dorsos que ninguna regla encuentra: un dorso por mazo, o dorsos en otro orden.",
+        "button": "Buscar dorsos con IA",
+        "running": "Mirando las piezas…",
+        "sends": "Envía una imagen pequeña de cada pieza a {{provider}}",
+        "ask": "No se envía nada hasta que pulses Buscar dorsos con IA. Después de aplicar, puedes revisar las parejas en la biblioteca de piezas."
       },
       "backsPdf": "PDF con los dorsos",
       "commonBack": "Usarlo como dorso común",
@@ -770,7 +791,8 @@
       "copyFailed": "No se pudo copiar. Selecciona el texto de arriba y cópialo tú.",
       "report": "Reportar en GitHub",
       "discord": "Discord",
-      "discordSoon": "Próximamente"
+      "tutorials": "Tutoriales",
+      "tutorialsNote": "Recorridos paso a paso que empiezas cuando los necesitas. Al elegir uno se cierra Preferencias."
     },
     "updates": {
       "current": "Versión",
@@ -893,6 +915,232 @@
       }
     }
   },
+  "tutorials": {
+    "title": "Tutoriales",
+    "hint": "Elige uno y empieza.",
+    "search": "Buscar tutoriales",
+    "noMatch": "Ningún tutorial coincide.",
+    "close": "Terminar tutorial",
+    "closeTitle": "Terminar el tutorial",
+    "groups": {
+      "source": "Pestaña Origen",
+      "print": "Pestaña Imprimir",
+      "duplex": "Doble cara (pestaña Imprimir)",
+      "app": "Aplicación"
+    },
+    "needs": {
+      "document": {
+        "title": "Abre un PDF primero",
+        "text": "Este tutorial trabaja sobre un PDF abierto. Abre uno y el tutorial continúa desde aquí.",
+        "action": "Abrir PDF…"
+      },
+      "pieces": {
+        "title": "Marca algunas piezas primero",
+        "text": "Este tutorial necesita piezas con las que trabajar y todavía no hay ninguna marcada. El tutorial «Marcar piezas y exportar» te muestra cómo.",
+        "action": "Empezar «Marcar piezas y exportar»"
+      }
+    },
+    "steps": {
+      "goPrint": {
+        "title": "Abre la pestaña Imprimir",
+        "text": "Esto se hace en la pestaña Imprimir. Ábrela desde las pestañas de arriba.",
+        "action": "Abrir la pestaña Imprimir"
+      },
+      "goSource": {
+        "title": "Abre la pestaña Origen",
+        "text": "Esto se hace en la pestaña Origen, donde se marcan las piezas en las páginas. Ábrela desde las pestañas de arriba.",
+        "action": "Abrir la pestaña Origen"
+      }
+    },
+    "resize-pieces": {
+      "title": "Hacer las piezas más grandes o más pequeñas",
+      "summary": "Dales a las piezas un tamaño real o un porcentaje, sin tocar el PDF.",
+      "pick": {
+        "title": "Elige las piezas",
+        "text": "Haz clic en la biblioteca de piezas en la pieza que quieres cambiar de tamaño. Seleccionar todas elige todas las piezas que se muestran, y las seleccionadas cambian de tamaño juntas."
+      },
+      "size": {
+        "title": "Define el tamaño",
+        "text": "En Piezas seleccionadas, escribe un nuevo Ancho o Alto: el otro lado lo sigue mientras la cadena entre ambos esté enlazada. O escribe una Escala en porcentaje: 100% es el tamaño que tiene en la página."
+      },
+      "sheet": {
+        "title": "Revisa la hoja",
+        "text": "La vista previa de la hoja muestra las piezas con su nuevo tamaño. Las piezas nunca se reducen para que quepan: si no caben, aparece un mensaje para que cambies la hoja. «Volver al tamaño de la página» lo deshace."
+      }
+    },
+    "align-backs": {
+      "title": "Alinear frentes y dorsos",
+      "summary": "Corrige el desfase de la impresora entre los dos lados de una hoja con una hoja de calibración.",
+      "duplex": {
+        "title": "Activa los dorsos",
+        "text": "Abre la sección Doble cara, activa Imprimir dorsos y deja Dorsos en «Del otro lado». En Voltear por el borde, elige el borde por el que tu impresora da vuelta el papel.",
+        "action": "Abrir la sección Doble cara"
+      },
+      "calibrate": {
+        "title": "Imprime la hoja de calibración",
+        "text": "Pulsa Hoja de calibración…, luego Guardar la hoja… e imprímela por los dos lados de una misma hoja de papel a tamaño real (100%, no «ajustar a la página»), con el mismo papel y los mismos ajustes de impresora que para tus piezas. Si no ves el botón, comprueba que Dorsos esté en «Del otro lado»."
+      },
+      "read": {
+        "title": "Lee los dos números",
+        "text": "Sostén el papel contra una luz con el dorso hacia ti. Mira dónde cruzan las reglas del dorso las líneas de la mira del frente y escribe los números en el cuadro: la regla horizontal da X, la vertical da Y, y hacia la derecha y hacia abajo son positivos. Luego pulsa Aplicar."
+      },
+      "offset": {
+        "title": "Revisa el desfase del dorso",
+        "text": "Aplicar pone los números en Desfase del dorso en X y en Y. Imprime tus piezas otra vez y comprueba si los dorsos quedan alineados; puedes afinar el desfase aquí a mano."
+      }
+    },
+    "gutterfold": {
+      "title": "Imprimir gutterfold, o convertirlo en doble cara",
+      "summary": "Imprime cada dorso junto a su frente para doblar o cortar por separado, o empareja los dorsos e imprime a doble cara.",
+      "backs": {
+        "title": "Imprime los dorsos junto a los frentes",
+        "text": "Abre la sección Doble cara, activa Imprimir dorsos y pon Dorsos en «Junto al frente»: cada dorso se imprime al lado de su frente, para doblar (gutterfold).",
+        "action": "Abrir la sección Doble cara"
+      },
+      "pairs": {
+        "title": "Doblar o cortar por separado",
+        "text": "Pares dice en qué se convierten cada frente y su dorso. Doblar los deja como una sola pieza, con una línea de puntos en el doblez y marcas de corte alrededor del par. Cortar por separado los deja como dos piezas una al lado de la otra, sin línea de doblez, para armados rápidos que no son de doble cara. Doblez (Dorso, al cortar por separado) define si el dorso va a la derecha o debajo."
+      },
+      "double": {
+        "title": "O hazlo de doble cara",
+        "text": "Si tu archivo tiene los dorsos junto a los frentes y prefieres una impresión de doble cara, pulsa Emparejar dorsos automáticamente…, elige «Uno junto al otro en la página» y Aplicar, y luego pon Dorsos en «Del otro lado»."
+      }
+    },
+    "pair-backs": {
+      "title": "Emparejar frentes con sus dorsos",
+      "summary": "Deja que Gutterberg encuentre el dorso de cada pieza según dónde está en el archivo.",
+      "open": {
+        "title": "Abre el emparejamiento",
+        "text": "Abre la sección Doble cara, activa Imprimir dorsos y pulsa Emparejar dorsos automáticamente….",
+        "action": "Abrir la sección Doble cara"
+      },
+      "rule": {
+        "title": "Indica dónde están los dorsos",
+        "text": "En «Dónde están los dorsos», elige la regla que coincide con tu archivo: Páginas alternadas (la 1 con la 2, la 3 con la 4…), Dorsos después de los frentes, Uno junto al otro en la página o Dorsos en otro PDF. Opciones como dorsos en espejo o invertidos aparecen cuando corresponden. Pulsa Aplicar cuando el cuadro cuente los pares que esperas."
+      },
+      "check": {
+        "title": "Revisa los pares",
+        "text": "Una pieza con dorso lo muestra en la biblioteca de piezas, y Piezas seleccionadas › Dorso dice cuál es. Las piezas que quedan sin par conservan lo que tenían; selecciona una y usa Elegir dorso… para asignarle el dorso a mano."
+      }
+    },
+    "paper-size": {
+      "title": "Elegir el tamaño del papel",
+      "summary": "Imprime en A4, Carta, A3 u otro tamaño, en vertical u horizontal.",
+      "size": {
+        "title": "Elige el papel",
+        "text": "En la sección Hoja, abre Tamaño y elige el papel: A4, Carta, A3, A5, Legal, Tabloide / Ledger, Personalizado, Igual que el origen o Ajustar a las piezas automáticamente. Las piezas conservan su tamaño elijas lo que elijas.",
+        "action": "Abrir la sección Hoja"
+      },
+      "orientation": {
+        "title": "Vertical u horizontal",
+        "text": "En la sección Página, Orientación gira la hoja (no aparece con Igual que el origen ni con Ajustar a las piezas automáticamente). Ahí también están los márgenes, y la vista previa de la hoja muestra el resultado.",
+        "action": "Abrir la sección Página"
+      }
+    },
+    "cut-marks": {
+      "title": "Agregar marcas de corte",
+      "summary": "Imprime líneas que muestran por dónde cortar: continuas, discontinuas o punteadas.",
+      "style": {
+        "title": "Elige dónde van las marcas",
+        "text": "Abre la sección Marcas de corte y elige un Estilo: Marcas en los márgenes dibuja líneas cortas en cada borde, fuera de las piezas; Líneas en las separaciones traza una línea por el centro de cada separación entre ellas.",
+        "action": "Abrir la sección Marcas de corte"
+      },
+      "line": {
+        "title": "Continua, discontinua o punteada",
+        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Debajo están el Grosor de la línea y el Color, y las marcas en los márgenes también tienen un largo y una distancia a la pieza."
+      },
+      "sheet": {
+        "title": "Revisa la hoja",
+        "text": "La vista previa de la hoja dibuja las marcas tal como se imprimirán. Van solo en las hojas del frente. Si una separación es muy angosta para una línea, o hay marcas fuera de la página, la sección Marcas de corte lo avisa y dice cómo arreglarlo."
+      }
+    },
+    "find-piece": {
+      "title": "Encontrar una pieza en la hoja",
+      "summary": "Muestra la referencia de cada pieza en la hoja y búscala en la biblioteca de piezas.",
+      "show": {
+        "title": "Muestra las referencias",
+        "text": "Pulsa Mostrar referencias de las piezas sobre la hoja para escribir en ella la referencia de cada pieza (su página y posición, como p3 · r1 c2). Solo se ve en pantalla: el PDF exportado no las tiene."
+      },
+      "library": {
+        "title": "Búscala en la biblioteca",
+        "text": "La biblioteca de piezas muestra la misma referencia bajo cada pieza. Haz clic en esa pieza para seleccionarla y cambiar sus copias, su tamaño o su dorso."
+      }
+    },
+    "several-grids": {
+      "title": "Marcar piezas de distintos tamaños en una página",
+      "summary": "Dibuja una cuadrícula para cada tamaño de pieza de la misma página.",
+      "first": {
+        "title": "Marca el primer tamaño",
+        "text": "Elige la Herramienta Cuadrícula (G), arrastra un rectángulo alrededor de las piezas de un tamaño e indica sus columnas y filas."
+      },
+      "add": {
+        "title": "Agrega la siguiente cuadrícula",
+        "text": "Pulsa Agregar cuadrícula en el panel Cuadrículas y piezas y arrastra un rectángulo alrededor de las piezas del siguiente tamaño. Una página admite hasta 9 cuadrículas."
+      },
+      "name": {
+        "title": "Ponles nombre y color",
+        "text": "Haz doble clic en el nombre de una cuadrícula de la lista para cambiarlo y clic en el punto de su izquierda para elegir su color. Cada cuadrícula conserva sus propias filas, columnas y separación."
+      },
+      "pick": {
+        "title": "Elige cualquiera",
+        "text": "Con la herramienta Seleccionar (V), pulsa cualquier cuadrícula de la página para elegirla, moverla o cambiar su tamaño desde sus controles. Pulsar su nombre en la lista también la elige."
+      }
+    },
+    "images-as-pieces": {
+      "title": "Usar imágenes como piezas",
+      "summary": "Convierte archivos de imagen, como escaneos o ilustraciones de cartas, en piezas del tamaño que elijas.",
+      "open": {
+        "title": "Agrega las imágenes",
+        "text": "Abre el menú Archivo y elige Agregar imágenes…, o arrastra los archivos de imagen a la ventana."
+      },
+      "size": {
+        "title": "Elige el tamaño",
+        "text": "En Tamaño de la pieza, elige el tamaño con el que se imprimen las imágenes (uno predefinido, el que dice la propia imagen o Personalizado) e indica si incluyen sangrado. Las imágenes nunca se estiran ni se remuestrean. Pulsa Agregar imágenes."
+      },
+      "library": {
+        "title": "Ya son piezas",
+        "text": "Cada imagen es una pieza en la biblioteca de piezas de la pestaña Imprimir, lista para tener copias, un dorso y un lugar en las hojas."
+      }
+    },
+    "mark-and-export": {
+      "title": "Marcar piezas y exportar",
+      "summary": "De un PDF a hojas listas para cortar: marca las piezas, elige las copias y exporta."
+    },
+    "update": {
+      "title": "Actualizar Gutterberg",
+      "summary": "Busca una versión más nueva e instálala.",
+      "open": {
+        "title": "Abre Actualizaciones",
+        "text": "Preferencias › Actualizaciones muestra la versión que tienes.",
+        "action": "Abrir Actualizaciones"
+      },
+      "check": {
+        "title": "Busca actualizaciones",
+        "text": "Pulsa Buscar actualizaciones. Te dice si ya tienes la última."
+      },
+      "install": {
+        "title": "Instálala",
+        "text": "Si hay una versión más nueva, aparece con las novedades. Pulsa Descargar e instalar y, cuando esté lista, Reiniciar ahora. Si el proyecto tiene cambios sin guardar, Gutterberg te pide guardarlos antes."
+      }
+    },
+    "report-problem": {
+      "title": "Reportar un problema",
+      "summary": "Copia el registro y abre el formulario de GitHub con tu versión ya escrita.",
+      "menu": {
+        "title": "Abre Reportar un problema",
+        "text": "Abre el menú de ayuda ? y elige Reportar un problema. Se abre Preferencias › Acerca de, en «¿Encontraste un error?».",
+        "action": "Abrir «¿Encontraste un error?»"
+      },
+      "log": {
+        "title": "Copia el registro",
+        "text": "Si la aplicación se cerró sola o mostró un error, pulsa Copiar registro. No incluye tus PDF, pero un error puede mencionar el nombre de un archivo, así que revísalo antes de compartirlo. Copiar datos de la aplicación copia la versión y el sistema."
+      },
+      "form": {
+        "title": "Repórtalo en GitHub",
+        "text": "Pulsa Reportar en GitHub. Después de preguntarte, abre el formulario en tu navegador con tu versión y tu sistema ya escritos. Cuenta qué hiciste, paso a paso, qué esperabas, y pega el registro."
+      }
+    }
+  },
   "errors": {
     "at_page": "Página {{page}}: {{error}}",
     "does_not_fit": "Las piezas dispuestas necesitan {{needed_w_mm}} × {{needed_h_mm}} mm, pero la hoja mide solo {{page_w_mm}} × {{page_h_mm}} mm.",
@@ -928,6 +1176,8 @@
     "ai_invalid_reply": "No se pudo leer la respuesta: {{detail}}. No se cambió nada.",
     "ai_invalid_proposal": "La propuesta no encaja: {{detail}}. No se cambió nada.",
     "ai_text_only_needs_objects": "Esta página no tiene objetos que describir. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_pairing_needs_images": "Emparejar dorsos con IA mira las piezas, así que necesita imágenes. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_too_many_pieces": "Hay {{count}} piezas, y Emparejar dorsos con IA puede mirar {{max}} como máximo. Omite las páginas que no necesitas en la pestaña Origen, o empareja con una regla.",
     "ai_config": "{{detail}}",
     "image_unsupported": "«{{name}}» no se puede usar. Las imágenes pueden ser PNG, JPEG o WebP.",
     "image_too_large": "«{{name}}» es demasiado grande ({{megapixels}} megapíxeles, {{mb}} MB). Los límites son 100 megapíxeles y 200 MB.",
@@ -1055,7 +1305,7 @@
     "settings": {
       "title": "Modo IA (experimental)",
       "enable": "Usar el Modo IA (experimental)",
-      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno y confirmes.",
+      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno.",
       "provider": "Proveedor",
       "model": "Modelo",
       "baseUrl": "Dirección",
@@ -1071,8 +1321,11 @@
       "keyNote": "La clave va directo al llavero del sistema. No se vuelve a mostrar y nunca se guarda en un proyecto ni en estas preferencias.",
       "privacy": "Privacidad",
       "sendImages": "Enviar imágenes de las páginas",
-      "sendImagesOn": "Las páginas se envían como imágenes. Antes de cada acción ves qué páginas van a qué servidor.",
+      "sendImagesOn": "Las páginas se envían como imágenes.",
       "sendImagesOff": "Solo texto: nunca se envía una imagen. El modelo recibe tamaños, cantidad de objetos y el comienzo del texto de cada página.",
+      "askFirst": "Preguntar antes de enviar",
+      "askFirstOn": "Antes de cada acción con IA, un aviso muestra qué se enviará y a qué servidor, y espera a que pulses Enviar.",
+      "askFirstOff": "Sin aviso para {{host}}: las acciones con IA se envían de inmediato. Si cambias de proveedor o de dirección, se vuelve a preguntar.",
       "test": "Conexión",
       "testButton": "Probar conexión",
       "testing": "Probando…",
@@ -1088,10 +1341,8 @@
       "detectText": "Solo texto: no se envía ninguna imagen. El modelo recibe el tamaño de la página y los recuadros de sus imágenes y rectángulos.",
       "sortImages": "{{count}} páginas ({{range}}) se enviarán como imágenes pequeñas, de unos {{size}} px, en {{requests}} solicitudes.",
       "sortText": "Solo texto: no se envía ninguna imagen. Se describen al modelo {{count}} páginas ({{range}}) (tamaño, cantidad de objetos, comienzo del texto) en {{requests}} solicitudes.",
-      "estimate": "Unos {{input}} tokens de entrada y hasta {{output}} de salida.",
-      "cost": "Unos ${{cost}} a precios de lista (aproximado).",
-      "noCost": "No se conoce el precio de este modelo.",
-      "dontAsk": "No preguntar de nuevo al detectar en una página, hasta que cierre la aplicación",
+      "pairImages": "Se enviarán {{count}} piezas como imágenes pequeñas, de unos {{size}} px cada una, en una solicitud.",
+      "dontAsk": "No volver a preguntar antes de enviar a {{host}}",
       "send": "Enviar",
       "cancel": "Cancelar"
     },
@@ -1102,7 +1353,7 @@
     },
     "sort": {
       "title": "Ordenar páginas",
-      "note": "Etiqueta cada página (cartas, dorsos, reglas, portada, otra) para poder omitir las que no tienen piezas. No cambia nada hasta que lo apliques.",
+      "note": "Etiqueta cada página (piezas, dorsos, reglas, portada, otra) para poder omitir las que no tienen piezas. No cambia nada hasta que lo apliques.",
       "button": "Ordenar páginas con IA",
       "estimating": "Preparando…",
       "running": "Ordenando…",

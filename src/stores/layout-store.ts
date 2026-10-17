@@ -591,7 +591,10 @@ export const useLayoutStore = create<LayoutState>()(
       setGapY: (mm) => set({ gapYMm: gap(mm) }),
       // Linking snaps the vertical value to the horizontal one.
       setGapLinked: (gapLinked) => set((s) => ({ gapLinked, ...(gapLinked && { gapYMm: s.gapXMm }) })),
-      setPageMode: (pageMode) => set({ pageMode }),
+      setPageMode: (pageMode) => {
+        set({ pageMode });
+        emitHintEvent("sheet-size-changed");
+      },
       setOrientation: (orientation) => set({ orientation }),
       setCustomSize: (w, h) =>
         set((s) => ({

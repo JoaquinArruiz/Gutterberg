@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toAppError } from "../../lib/errors";
+import { emitHintEvent } from "../../lib/hint-events";
 import {
   DEFAULT_BLEED_MM,
   formatBytes,
@@ -40,7 +41,10 @@ export function ImageSizeDialog() {
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (pending && !d.open) d.showModal();
+    if (pending && !d.open) {
+      d.showModal();
+      emitHintEvent("images-dialog-opened");
+    }
     if (!pending && d.open) d.close();
   }, [pending]);
 
@@ -153,6 +157,7 @@ function ImageSizeForm({
       bleed: bleedOn,
       bleedMm,
     });
+    emitHintEvent("images-added");
     onDone({ placements });
   };
 

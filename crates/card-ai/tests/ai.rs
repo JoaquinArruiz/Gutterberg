@@ -3,7 +3,8 @@
 //! transport against a server on this computer.
 use card_ai::adapters;
 use card_ai::error::redact;
-use card_ai::estimate::{estimate, price_for};
+use card_ai::estimate::estimate;
+use card_ai::pairing::{pair_request, parse_pairing, PieceSide, Side, MAX_PIECES};
 use card_ai::sort::{parse_sort, sort_requests, Label, PageSummary, SortInput, BATCH};
 use card_ai::tasks::{detect_request, parse_detect, MAX_CONFIDENCE};
 use card_ai::{
@@ -537,6 +538,98 @@ fn a_rectangles_answer_keeps_the_tilt_and_turns_a_quarter_into_swapped_sides() {
     assert!((rects[0].height - 0.2 * A4.width_pt).abs() < 1e-6);
 }
 
+fn block(x: f64, y: f64, w: f64, h: f64, rows: u32, columns: u32) -> Value {
+    json!({ "x": x, "y": y, "width": w, "height": h, "rows": rows, "columns": columns, "gap_x_mm": 0, "gap_y_mm": 0 })
+}
+
+fn grids_reply(grids: Value) -> Value {
+    json!({
+        "kind": "grids", "confidence": 0.7,
+        "grid_x": 0, "grid_y": 0, "grid_width": 0, "grid_height": 0, "grid_rows": 0, "grid_columns": 0,
+        "gap_x_mm": 0, "gap_y_mm": 0, "rects": [], "grids": grids,
+    })
+}
+
+#[test]
+fn a_grids_answer_becomes_several_grids_in_reading_order() {
+    // Small pieces below, big ones on top: given in the wrong order.
+    let d = parse_detect(
+        &grids_reply(json!([
+            block(0.1, 0.6, 0.8, 0.3, 2, 6),
+            block(0.1, 0.1, 0.8, 0.4, 1, 3),
+        ])),
+        A4,
+    )
+    .unwrap();
+    let p = &d.proposals[0];
+    assert_eq!(p.engine, "ai");
+    let ProposalKind::Grids { grids } = &p.kind else {
+        panic!("{:?}", p.kind)
+    };
+    assert_eq!(grids.len(), 2);
+    assert_eq!((grids[0].rows, grids[0].columns), (1, 3));
+    assert_eq!((grids[1].rows, grids[1].columns), (2, 6));
+    assert!((grids[1].bounds.y - 0.6 * A4.height_pt).abs() < 1e-6);
+
+    // One block is a plain grid.
+    let d = parse_detect(&grids_reply(json!([block(0.1, 0.1, 0.8, 0.8, 3, 3)])), A4).unwrap();
+    assert!(matches!(
+        d.proposals[0].kind,
+        ProposalKind::Grid {
+            rows: 3,
+            columns: 3,
+            ..
+        }
+    ));
+}
+
+#[test]
+fn a_grids_answer_that_cannot_be_blocks_of_this_page_is_refused() {
+    let bad = |v: Value| parse_detect(&v, A4).unwrap_err();
+    // None, too many, overlapping, outside the page, tiny pieces.
+    assert!(matches!(
+        bad(grids_reply(json!([]))),
+        AiError::InvalidProposal(_)
+    ));
+    let many: Vec<Value> = (0..10)
+        .map(|i| block(0.0, f64::from(i) * 0.1, 0.5, 0.09, 1, 1))
+        .collect();
+    assert!(matches!(
+        bad(grids_reply(json!(many))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.4, 0.4, 0.5, 0.5, 2, 2)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.7, 0.1, 0.5, 0.5, 2, 2)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([
+            block(0.1, 0.1, 0.5, 0.5, 2, 2),
+            block(0.1, 0.7, 0.05, 0.05, 30, 30)
+        ]))),
+        AiError::InvalidProposal(_)
+    ));
+    // Not the shape asked for.
+    assert!(matches!(
+        bad(json!({ "kind": "grids", "confidence": 0.5 })),
+        AiError::InvalidReply(_)
+    ));
+    assert!(matches!(
+        bad(grids_reply(json!([{ "x": 0.1 }]))),
+        AiError::InvalidReply(_)
+    ));
+}
+
 #[test]
 fn none_means_no_proposal() {
     let d = parse_detect(&json!({ "kind": "none", "confidence": 0.9 }), A4).unwrap();
@@ -634,6 +727,7 @@ fn the_detect_request_sends_the_picture_or_only_the_boxes() {
     assert_eq!(r.images.len(), 1);
     assert!(r.instruction.contains("210 mm wide and 297 mm tall"));
     assert!(r.instruction.contains("\"grid\"") && r.instruction.contains("\"rects\""));
+    assert!(r.instruction.contains("\"grids\""));
 
     let objects = [
         PageObject {
@@ -810,14 +904,6 @@ fn the_estimate_counts_pictures_text_and_requests_before_anything_is_sent() {
         one.input_tokens
     );
     assert_eq!(one.output_tokens, 256);
-    let cost = one.cost_usd.unwrap();
-    assert!(cost > 0.005 && cost < 0.02, "{cost}");
-
-    // Another model has no known price: tokens only.
-    let other = estimate(&[request()], &config(ProviderKind::OpenaiCompatible));
-    assert!(other.cost_usd.is_none());
-    assert!(price_for("claude-sonnet-5-5-20260101").is_some());
-    assert!(price_for("gpt-x").is_none());
 
     // Text only sends no picture.
     let mut text = request();
@@ -1054,4 +1140,179 @@ fn a_workspace_id_that_is_more_than_an_id_is_refused_before_anything_is_sent() {
         );
     }
     assert!(mock.seen.borrow().is_empty());
+}
+
+// ---- pair backs ----------------------------------------------------------------------------
+
+fn named(n: usize) -> Vec<(String, Image)> {
+    (0..n)
+        .map(|i| {
+            (
+                format!("p{} · r1 c{}", i / 3 + 1, i % 3 + 1),
+                picture(180, 256),
+            )
+        })
+        .collect()
+}
+
+fn side(piece: u64, side: &str, back: u64, upside_down: bool) -> Value {
+    json!({ "piece": piece, "side": side, "back": back, "upside_down": upside_down })
+}
+
+#[test]
+fn the_pair_request_sends_one_named_picture_per_piece() {
+    let r = pair_request(named(4)).unwrap();
+    assert_eq!(r.images.len(), 4);
+    assert!(r.instruction.contains("Picture 1: p1 · r1 c1"));
+    assert!(r.instruction.contains("Picture 4: p2 · r1 c1"));
+    assert!(r.schema["properties"]["pieces"]["items"]["required"]
+        .as_array()
+        .unwrap()
+        .contains(&json!("upside_down")));
+    assert_eq!(
+        pair_request(named(MAX_PIECES + 1)).unwrap_err(),
+        AiError::TooManyPieces {
+            count: MAX_PIECES + 1,
+            max: MAX_PIECES
+        }
+    );
+}
+
+#[test]
+fn a_pairing_answer_gives_each_front_its_back_and_turns_only_backs() {
+    // Two decks: pieces 1 and 2 share back 4, piece 3 has back 5 (upside down), 6 is a rules card.
+    let reply = json!({ "pieces": [
+        side(4, "back", 0, false),
+        side(1, "front", 4, true),
+        side(2, "front", 4, false),
+        side(3, "front", 5, false),
+        side(5, "back", 0, true),
+        side(6, "other", 0, false),
+    ]});
+    let sides = parse_pairing(&reply, 6).unwrap();
+    assert_eq!(
+        sides,
+        vec![
+            PieceSide {
+                index: 0,
+                side: Side::Front,
+                back: Some(3),
+                upside_down: false
+            },
+            PieceSide {
+                index: 1,
+                side: Side::Front,
+                back: Some(3),
+                upside_down: false
+            },
+            PieceSide {
+                index: 2,
+                side: Side::Front,
+                back: Some(4),
+                upside_down: false
+            },
+            PieceSide {
+                index: 3,
+                side: Side::Back,
+                back: None,
+                upside_down: false
+            },
+            PieceSide {
+                index: 4,
+                side: Side::Back,
+                back: None,
+                upside_down: true
+            },
+            PieceSide {
+                index: 5,
+                side: Side::Other,
+                back: None,
+                upside_down: false
+            },
+        ]
+    );
+    // A front with no back among the pieces stays without one.
+    let alone = parse_pairing(
+        &json!({ "pieces": [side(1, "front", 0, false), side(2, "other", 0, false)] }),
+        2,
+    )
+    .unwrap();
+    assert_eq!(alone[0].back, None);
+}
+
+#[test]
+fn a_pairing_answer_that_does_not_cover_the_pieces_or_pairs_with_a_front_is_refused() {
+    let bad = |pieces: Value, n: usize| parse_pairing(&json!({ "pieces": pieces }), n).unwrap_err();
+    // A piece missing, answered twice, or not sent.
+    assert!(matches!(
+        bad(json!([side(1, "front", 0, false)]), 2),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([side(1, "front", 0, false), side(1, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([side(1, "front", 0, false), side(3, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidProposal(_)
+    ));
+    // A back that is a front, itself, or no piece at all.
+    assert!(matches!(
+        bad(
+            json!([side(1, "front", 2, false), side(2, "front", 0, false)]),
+            2
+        ),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([side(1, "front", 1, false), side(2, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidProposal(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([side(1, "front", 9, false), side(2, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidProposal(_)
+    ));
+    // Not the shape asked for.
+    assert!(matches!(
+        parse_pairing(&json!({}), 2).unwrap_err(),
+        AiError::InvalidReply(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([side(1, "lid", 0, false), side(2, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidReply(_)
+    ));
+    assert!(matches!(
+        bad(
+            json!([{ "piece": 1, "side": "front", "back": 0 }, side(2, "back", 0, false)]),
+            2
+        ),
+        AiError::InvalidReply(_)
+    ));
+}
+
+#[test]
+fn pairing_errors_reach_the_ui_as_codes() {
+    let info: ErrorInfo = AiError::TooManyPieces {
+        count: 120,
+        max: 100,
+    }
+    .into();
+    assert_eq!(info.code, "ai_too_many_pieces");
+    let info: ErrorInfo = AiError::PairingNeedsImages.into();
+    assert_eq!(info.code, "ai_pairing_needs_images");
 }

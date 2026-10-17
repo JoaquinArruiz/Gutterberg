@@ -1,0 +1,117 @@
+{
+  "format": "gutterberg-project",
+  "version": 7,
+  "documents": [
+    {
+      "kind": "pdf",
+      "id": 0,
+      "path": "/games/a.pdf",
+      "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "pageCount": 3,
+      "groups": [
+        {
+          "kind": "skip",
+          "pages": {
+            "first": 0,
+            "last": 0
+          }
+        },
+        {
+          "kind": "grid",
+          "pages": {
+            "first": 1,
+            "last": 1
+          },
+          "grids": [
+            {
+              "grid": {
+                "rows": 1,
+                "columns": 3,
+                "sourceGapXMm": 0,
+                "sourceGapYMm": 0,
+                "sourceGapLinked": true
+              },
+              "selection": {
+                "x": 0.1,
+                "y": 0.2,
+                "width": 0.8,
+                "height": 0.3
+              }
+            }
+          ]
+        },
+        {
+          "kind": "skip",
+          "pages": {
+            "first": 2,
+            "last": 2
+          }
+        }
+      ],
+      "freeform": {},
+      "viewedPage": 0
+    }
+  ],
+  "activeDocument": 0,
+  "output": {
+    "gapXMm": 3,
+    "gapYMm": 4,
+    "gapLinked": false,
+    "pageMode": "a4",
+    "orientation": "portrait",
+    "customWidthMm": 210,
+    "customHeightMm": 297,
+    "margins": {
+      "top": 1,
+      "right": 2,
+      "bottom": 3,
+      "left": 4
+    }
+  },
+  "edits": {
+    "turns": {},
+    "scales": {},
+    "order": [],
+    "backs": {
+      "g:0:1:0:1": "g:0:1:0:2"
+    }
+  },
+  "plan": {
+    "mode": "custom",
+    "quantities": {
+      "g:0:1:0:0": 4,
+      "g:0:1:0:2": 1
+    },
+    "autoFill": true,
+    "order": "interleaved",
+    "groupBySize": true,
+    "sheetGrid": "custom",
+    "rows": 2,
+    "columns": 3,
+    "finish": {
+      "marks": {
+        "style": "ticks",
+        "widthMm": 0.5,
+        "color": "#ff0000",
+        "lengthMm": 4,
+        "offsetMm": 1.5
+      },
+      "bleed": {
+        "mm": 2,
+        "source": "mirror"
+      },
+      "duplex": {
+        "on": true,
+        "layout": "duplex",
+        "fold": "vertical",
+        "foldGapMm": 0,
+        "cutApart": false,
+        "backUpsideDown": null,
+        "flip": "short",
+        "offsetXMm": 0.5,
+        "offsetYMm": -0.5,
+        "commonBack": "g:0:1:0:0"
+      }
+    }
+  }
+}

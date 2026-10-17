@@ -4,7 +4,8 @@ use card_core::card::{CardId, OrientedRect, PageGroup, PageGroupKind, PageRange}
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
     bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BleedOptions, BleedSource,
-    DuplexOptions, FinishOptions, Finishing, Flip, MarkOptions, MarkStyle, SheetWarning, Side,
+    DuplexOptions, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, SheetWarning,
+    Side,
 };
 use card_core::geometry::{PageSize, Point};
 use card_core::layout::GridLayout;
@@ -362,6 +363,48 @@ fn the_export_paints_bleed_then_pieces_then_marks_and_never_rasterises() {
         o,
         lopdf::Object::Stream(s) if s.dict.get(b"Subtype").and_then(|s| s.as_name()).map(|n| n == b"Image").unwrap_or(false)
     )));
+}
+
+#[test]
+fn marks_are_solid_unless_dashed_or_dotted_is_chosen() {
+    let docs = [source()];
+    let content_with = |line: MarkLine| {
+        let mut options = marks(MarkStyle::Gaps);
+        options.marks.line = line;
+        let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+        let (out, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+        let marks = out[0].marks.clone().unwrap();
+        let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+        (marks, first_page_content(&pdf))
+    };
+    let (solid, content) = content_with(MarkLine::Solid);
+    assert!(solid.dash.is_empty());
+    assert!(!content.contains(" d\n") && !content.contains("1 J"));
+
+    let (dashed, content) = content_with(MarkLine::Dashed);
+    assert_eq!(dashed.dash.len(), 2);
+    assert!(close(dashed.dash[0], mm_to_pt(2.0)));
+    assert!(close(dashed.dash[1], mm_to_pt(1.0)));
+    assert!(content.contains("] 0 d\n"), "a dash pattern");
+    assert!(!content.contains("1 J"));
+
+    let (dotted, content) = content_with(MarkLine::Dotted);
+    assert_eq!(dotted.dash[0], 0.0, "dots are dashes of length 0");
+    assert!(content.contains("[0 "), "a dot pattern");
+    assert!(
+        content.contains("1 J"),
+        "with round caps, so each dot shows"
+    );
+    assert_eq!(dotted.lines, solid.lines, "the style never moves a mark");
+}
+
+#[test]
+fn the_dash_pattern_opens_up_for_a_thick_line() {
+    let thick = mm_to_pt(2.0);
+    let dashes = card_core::finish::dash_pattern(MarkLine::Dashed, thick);
+    assert!(dashes[1] >= 2.0 * thick, "the gaps stay open");
+    let dots = card_core::finish::dash_pattern(MarkLine::Dotted, thick);
+    assert!(dots[1] > thick, "the dots do not touch");
 }
 
 #[test]

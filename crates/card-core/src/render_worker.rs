@@ -10,14 +10,14 @@
 //! [`Error::Superseded`]. Thumbnails and page layers are never dropped (each is a different
 //! page or pane), but thumbnails run last so they never delay the interactive kinds.
 
-use crate::card::DocumentId;
+use crate::card::{DocumentId, OrientedRect};
 use crate::detect::read::{read_objects, read_page_data, read_summary, PageSummary};
 use crate::detect::{default_engines, detect_page, page_edges, Detection, PageEdges, PageObject};
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::render::{
-    bind_pdfium, document_info_in, render_page_fit_in, render_page_png_in, render_region_png_in,
-    DocumentInfo, RenderedPage,
+    bind_pdfium, document_info_in, render_page_fit_in, render_page_png_in, render_pieces_in,
+    render_region_png_in, DocumentInfo, RenderedPage,
 };
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 use std::collections::{HashMap, VecDeque};
@@ -65,6 +65,13 @@ enum Work {
     Summaries(DocumentId, Vec<usize>, Reply<Vec<PageSummary>>),
     /// Pages as PNGs with a given long side, each within a byte limit.
     Fit(DocumentId, Vec<usize>, u32, usize, Reply<Vec<RenderedPage>>),
+    /// Pieces (page and rectangle) as PNGs with a given long side.
+    Pieces(
+        DocumentId,
+        Vec<(usize, OrientedRect)>,
+        u32,
+        Reply<Vec<RenderedPage>>,
+    ),
 }
 
 struct Msg {
@@ -194,6 +201,18 @@ impl RenderWorker {
         })
     }
 
+    /// Each of `pieces` (page index and rectangle in points) as a PNG whose longer side is about `long_side_px`.
+    pub fn render_pieces(
+        &self,
+        document_id: DocumentId,
+        pieces: Vec<(usize, OrientedRect)>,
+        long_side_px: u32,
+    ) -> Result<Vec<RenderedPage>> {
+        self.send(RenderKind::Page, |r| {
+            Work::Pieces(document_id, pieces, long_side_px, r)
+        })
+    }
+
     /// Blocks until rendered (or superseded).
     pub fn render_region(
         &self,
@@ -298,6 +317,13 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                         .map(|&p| render_page_fit_in(d, p, long_side, max_bytes))
                         .collect()
                 }));
+            }
+            Work::Pieces(id, pieces, long_side, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| render_pieces_in(d, &pieces, long_side)),
+                );
             }
             Work::Region(id, index, region, width, reply) => {
                 let _ = reply.send(if stale {

@@ -1,34 +1,11 @@
 use crate::state::{internal, AppState};
 use card_core::card::DocumentId;
-use card_core::export::{export_pdf, validate_export_file, ExportJob, PageIssue, PageJob};
+use card_core::export::{
+    export_pdf, same_file, same_file_error, validate_export_file, ExportJob, PageIssue, PageJob,
+};
 use card_core::ErrorInfo;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use tauri::State;
-
-/// Whether `output` is the same file as `input`, after resolving symlinks and `..`.
-/// The output may not exist yet, so its folder is resolved instead.
-pub(crate) fn same_file(input: &Path, output: &Path) -> bool {
-    let resolved = output.canonicalize().or_else(|_| {
-        let name = output.file_name().ok_or(std::io::ErrorKind::InvalidInput)?;
-        let dir = output
-            .parent()
-            .filter(|p| !p.as_os_str().is_empty())
-            .unwrap_or(Path::new("."));
-        dir.canonicalize().map(|d| d.join(name))
-    });
-    match (input.canonicalize(), resolved) {
-        (Ok(a), Ok(b)) => a == b,
-        _ => input == output,
-    }
-}
-
-/// The output would overwrite the PDF that is open.
-pub(crate) fn same_file_error() -> ErrorInfo {
-    ErrorInfo::new(
-        "same_file",
-        "choose a different file than the one that is open",
-    )
-}
 
 /// Export an open PDF: one output page per job, each with its own grid, writing
 /// `output_path`. Pages without a job (skipped pages) are left out. Returns the number of

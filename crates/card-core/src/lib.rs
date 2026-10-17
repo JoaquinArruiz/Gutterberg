@@ -14,6 +14,7 @@ pub mod finish;
 pub mod geometry;
 pub mod images;
 pub mod layout;
+pub mod print_request;
 pub mod project;
 pub mod render;
 pub mod render_worker;

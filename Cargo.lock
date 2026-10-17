@@ -485,6 +485,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "card-cli"
+version = "0.1.0"
+dependencies = [
+ "card-core",
+ "image",
+ "lopdf",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "card-core"
 version = "0.1.0"
 dependencies = [
@@ -1755,7 +1766,7 @@ dependencies = [
 
 [[package]]
 name = "gutterberg"
-version = "0.16.0"
+version = "1.0.0"
 dependencies = [
  "card-ai",
  "card-core",

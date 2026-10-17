@@ -15,6 +15,7 @@ included. `CONTRIBUTING.md` is the human version.
 
 - `crates/card-core/`: geometry, layout, the sheet engine, PDF export (lopdf), rendering (pdfium-render),
   detection, images and the project file. No Tauri or UI dependency.
+- `crates/card-cli/`: `gutterberg-cli`, the command line that exports or checks a saved project. Only `card-core`.
 - `crates/card-ai/`: the optional AI Mode: provider adapters, prompts and reply checks. The only crate that sends
   a user's data over the network.
 - `src-tauri/`: Tauri shell; `src/commands/*` are thin IPC wrappers around `card-core`. It also holds the updater
@@ -78,6 +79,7 @@ and type names) stay as they are.
 | **sheet** | **hoja** | One page of the output PDF | "output page" in the UI |
 | **source gap / output gap** | **separación de origen / separación de salida** | Space between pieces already in the PDF / wanted in the output | |
 | **help tip** | **consejo** | A hint toast or tour step | |
+| **tutorial** | **tutorial** | A walkthrough of one task that the user starts from the Tutorials list; unlike a help tip, it is never shown on its own | |
 | **front / back** | **frente / dorso** | The two sides of a piece, and of a duplex sheet | obverse / reverse, face |
 | **cut marks** | **marcas de corte** | Lines on the sheet that show where to cut | crop marks, trim marks |
 | **bleed** | **sangrado** | Art that extends past a piece's edge | |

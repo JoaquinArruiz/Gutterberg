@@ -9,7 +9,9 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 
 [![CI](https://github.com/JoaquinArruiz/Gutterberg/actions/workflows/ci.yml/badge.svg)](https://github.com/JoaquinArruiz/Gutterberg/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/JoaquinArruiz/Gutterberg)](https://github.com/JoaquinArruiz/Gutterberg/releases/latest)
-[![Downloads](https://img.shields.io/github/downloads/JoaquinArruiz/Gutterberg/total)](https://github.com/JoaquinArruiz/Gutterberg/releases)
+[![Downloads](https://img.shields.io/github/downloads/joaquinarruiz/gutterberg/total)](https://github.com/JoaquinArruiz/Gutterberg/releases)
+[![GitHub stars](https://img.shields.io/github/stars/joaquinarruiz/gutterberg?style=flat)](https://github.com/JoaquinArruiz/Gutterberg/stargazers)
+[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/ytBFE9TtRY)
 ![Platforms: Windows, macOS, Linux](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)
 [![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue)](LICENSE)
 
@@ -18,17 +20,19 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 
-![The Source tab in Split view: the PDF page with its pieces marked on the left, the re-spaced result on the right](assets/screenshots/split-view.png)
+![The Source tab in Split view: a 3 × 3 page of cards with its grid marked on the left, and the same cards re-spaced with gutters on the right](assets/screenshots/split-view.png)
 
-<!-- GIF: marking pieces on a page -->
+| Several grids on one page | Detect pieces |
+| --- | --- |
+| ![Two grids of different sizes on one page, in their own colors, grouped in a folder in the Grids and pieces panel](assets/screenshots/several-grids.png) | ![Detect pieces proposing seven pieces, crooked and of different sizes, found on a scan](assets/screenshots/detect-pieces.png) |
 
-| Print tab | Detect pieces | Several pages |
-| --- | --- | --- |
-| ![The Print tab: the piece library with copies per piece and the sheet it makes](assets/screenshots/print-tab.png) | ![Detect pieces proposing a 2 × 2 grid found from the PDF's own objects](assets/screenshots/detect-pieces.png) | ![A multi-page PDF in the Source tab, with a grid shared by several pages](assets/screenshots/source-tab.png) |
+| Print tab with cut marks | Gutterfold |
+| --- | --- |
+| ![The Print tab: the piece library and a sheet of cards with dashed cut lines in the gaps](assets/screenshots/print-tab.png) | ![Each card printed with its back beside it, cut apart, with dashed cut marks in the margins](assets/screenshots/gutterfold.png) |
 
-<!-- GIF: the Print tab -->
-
-<!-- GIF: export -->
+| Tutorials | Keyboard shortcuts |
+| --- | --- |
+| ![The Tutorials list in Preferences, grouped by tab, with a search field](assets/screenshots/tutorials.png) | ![The keyboard shortcuts sheet with its search field](assets/screenshots/shortcuts.png) |
 
 ## Download
 
@@ -149,7 +153,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - A piece library with copies per piece, from several PDFs at once; plan the sheets or fill them automatically.
 - Turn pieces, sort them by dragging, and set a real size (for example 63 × 88 mm) or a percentage per piece,
   always a visible, explicit choice. Overflow is reported, never fixed by shrinking.
-- Cut marks, bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
+- Cut marks (ticks in the margins or lines in the gaps, solid, dashed or dotted), bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
   a back per piece, or every back paired automatically from where it is in the file.
 - Converts both ways: a gutterfold file prints double-sided, and a double-sided file prints as gutterfold.
 - Export keeps the original vector content: pieces are placed and clipped, never turned into pictures.
@@ -167,14 +171,50 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 **AI Mode (optional)**
 
-- Experimental, and off and hidden until you turn it on. Detect pieces and Sort pages with an AI engine of your choice
-  (Anthropic, OpenAI-compatible, Gemini or Ollama), with your own key kept in the system keychain. Every action
-  asks first what is sent and what it costs, and every result is a proposal you can edit.
+- Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
+  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your
+  own key kept in the system keychain. Every action shows what is sent and to which server and asks first (until
+  you say not to ask again for that server), and every result is a proposal you can edit.
 
 **Languages and help**
 
 - English and Spanish, a welcome tour, help tips, a keyboard shortcuts sheet and a bug report form that
-  fills in your version and system. The full list of controls is in [docs/controls.md](docs/controls.md).
+  fills in your version and system.
+- Twelve tutorials, from the `?` Help menu, walk you through a task on the real controls: marking pieces and
+  exporting, lining up fronts and backs, gutterfold, cut marks, images as pieces and more.
+- The full list of controls is in [docs/controls.md](docs/controls.md).
+
+## Command line
+
+Gutterberg comes with `gutterberg-cli`, which exports a saved project without opening the app. When a publisher
+updates a print-and-play PDF and the pieces are in the same places, replace the file and run one command:
+
+```sh
+gutterberg-cli export my-game.gtr -o my-game-sheets.pdf
+gutterberg-cli check my-game.gtr        # says what an export would refuse, writes nothing
+```
+
+The PDF is the same one the app's Export writes. If a PDF of the project is not the file it was saved with, the
+command stops and says which one; add `--force` to export anyway. Settings (sheet size, gaps, copies) are the ones in
+the project: change them in the app.
+
+It is installed next to the app: in `Gutterberg.app/Contents/MacOS/` on macOS, in the install folder on Windows,
+and in `/usr/bin` with the `.deb` and `.rpm` packages (the AppImage keeps it inside). Each release also has it on its
+own (`gutterberg-cli-<platform>`), for a machine without the app. It needs nothing else, not even a screen.
+
+## Privacy
+
+Gutterberg works on your computer. Your PDFs, images and projects stay there, and the app has no account, no
+analytics and no tracking. Only two things use the network:
+
+- **The update check**, at most once a day, asks GitHub for a small file, `latest.json`, that names the newest
+  version, and downloads the new version when you say so. It sends nothing about you or your files; GitHub sees the
+  request as it sees any visit to a web page.
+- **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
+  a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
+  backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
+  for that server (Preferences › AI Mode › Ask before sending brings the question back); nothing is sent in the
+  background. Your key is kept in the system keychain. With Ollama running on your own computer, nothing leaves it.
 
 ## Why
 
@@ -225,13 +265,29 @@ How a release is made is in [docs/releasing.md](docs/releasing.md).
 
 ## Roadmap
 
-Next is exporting a saved project from the command line, and signed builds for macOS and Windows.
+Next are signed builds for macOS and Windows, so the system no longer warns you the first time. What comes after is
+shaped by what people ask for: tell me on Discord or in a
+[feature request](https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=feature_request.yml).
+
+## Community
+
+Questions, a PDF that will not cooperate, a layout you are proud of: join the
+**[Gutterberg Discord](https://discord.gg/ytBFE9TtRY)**. The app has the same link in Preferences › About.
 
 ## Contributing
 
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a bug? Use the
 [issue form](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose), or Preferences › About › Report on
 GitHub in the app, which fills in your version and system.
+
+## Credits
+
+Gutterberg is built on open-source work, with thanks to [Tauri](https://tauri.app/), Google's
+[PDFium](https://pdfium.googlesource.com/pdfium/) (through [pdfium-render](https://github.com/ajrcarey/pdfium-render)
+and the builds of [pdfium-binaries](https://github.com/bblanchon/pdfium-binaries)),
+[lopdf](https://github.com/J-F-Liu/lopdf), [React](https://react.dev/), [Zustand](https://github.com/pmndrs/zustand) and
+[React Joyride](https://github.com/gilbarbara/react-joyride). The licenses of everything the app ships with are in
+Preferences › About › Third-party licenses and next to each installer.
 
 ## License
 

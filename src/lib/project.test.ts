@@ -74,7 +74,7 @@ function state(): ProjectState {
       rows: 2,
       columns: 4,
       finish: {
-        marks: { style: "ticks", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
+        marks: { style: "ticks", line: "dashed", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
         bleed: { mm: 2, source: "source" },
         duplex: {
           ...DEFAULT_FINISH.duplex,
@@ -275,6 +275,7 @@ describe("cut marks, bleed and duplex in the file", () => {
     const f = file(state());
     expect(f.version).toBe(PROJECT_VERSION);
     expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source" });
+    expect(f.plan.finish.marks.line).toBe("dashed");
     expect(f.plan.finish.duplex.commonBack).toBe("g:3:0:0:0");
     expect(f.edits.backs).toEqual({ "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" });
   });
@@ -289,6 +290,13 @@ describe("cut marks, bleed and duplex in the file", () => {
     const h = file(state());
     h.plan.finish.marks.style = "dotted";
     expect(() => parseProject(h)).toThrow();
+  });
+
+  it("open with solid cut marks when the file says nothing about the line", () => {
+    const f = file(state());
+    expect(fromProject(parseProject(f)).plan.finish.marks.line).toBe("dashed");
+    delete (f.plan.finish.marks as { line?: string }).line;
+    expect(fromProject(parseProject(f)).plan.finish.marks.line).toBe("solid");
   });
 
   it("are pulled back into range, and backs that are not pieces are dropped", () => {

@@ -19,12 +19,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { t as translate } from "../../i18n";
 import { includedPages } from "../../lib/document-layout";
-import { getLayoutDocuments, useLayoutDocuments } from "../../lib/documents";
+import { getLayoutDocuments, pagesById, useLayoutDocuments } from "../../lib/documents";
 import { type AppError, formatError, toAppError } from "../../lib/errors";
 import { buildExportPlan, mergeIssues } from "../../lib/export-plan";
 import { emitHintEvent } from "../../lib/hint-events";
 import { type ImageWarning, imageWarnings } from "../../lib/image-warnings";
-import { buildPrintRequest } from "../../lib/print-request";
+import { printProject } from "../../lib/print-request";
 import { activateDocument } from "../../lib/project-actions";
 import { exportPrint, validatePrint } from "../../lib/sheet-api";
 import { exportDocument, pickExportPath, validateExport } from "../../lib/tauri";
@@ -42,6 +42,7 @@ import { Button } from "../ui/Button";
 import { PanelsMenu } from "../workspace/PanelsMenu";
 import { DocumentName } from "./DocumentName";
 import { FileMenu } from "./FileMenu";
+import { HelpMenu } from "./HelpMenu";
 
 const TOOLS = [
   { id: "pick", label: "toolbar.tools.pick", key: "V", Icon: MousePointer2 },
@@ -141,9 +142,11 @@ export function EditorToolbar() {
       setStatus({ ok: false, text: () => translate("toolbar.nothingToPrint") });
       return;
     }
-    const req = buildPrintRequest(planOf(print), print.cards, getLayoutDocuments(), layout, layout.cardEdits);
+    const documents = getLayoutDocuments();
+    const project = printProject(planOf(print), documents, layout, layout.cardEdits);
+    const pages = pagesById(documents);
     try {
-      const found = await validatePrint(req);
+      const found = await validatePrint(project, pages);
       if (found.length > 0) {
         setIssues(
           found.map((i) => ({
@@ -175,7 +178,7 @@ export function EditorToolbar() {
     );
     const out = await pickExportPath(source, "print", print.exportName);
     if (!out) return;
-    const n = await exportPrint(req, out);
+    const n = await exportPrint(project, pages, out);
     setStatus({ ok: true, text: () => translate("toolbar.exportedSheets", { count: n, path: out }) });
   };
 
@@ -250,6 +253,7 @@ export function EditorToolbar() {
                 type="button"
                 key={id}
                 title={t("toolbar.toolTitle", { label: t(label), key })}
+                data-hint-target={id === "grid" ? "grid-tool-button" : id === "pick" ? "select-tool-button" : undefined}
                 onClick={() => setTool(id)}
                 className={`${iconBtn} ${tool === id ? "bg-[var(--active)]" : ""}`}
               >
@@ -349,6 +353,7 @@ export function EditorToolbar() {
         </span>
       )}
       <PanelsMenu />
+      <HelpMenu />
       <button
         type="button"
         title={t("toolbar.preferences")}

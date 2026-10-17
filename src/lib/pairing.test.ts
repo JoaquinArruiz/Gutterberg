@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { type CardId, cardIdKey, freeformCardId, gridCardId } from "./card";
 import { NO_EDITS } from "./card-edits";
-import { applyPairing, DEFAULT_PAIRING, lonePiece, type PairingOptions, pairPieces } from "./pairing";
+import {
+  applyPairing,
+  DEFAULT_PAIRING,
+  lonePiece,
+  type PairingOptions,
+  pairingFromSides,
+  pairPieces,
+  pieceName,
+} from "./pairing";
 import type { Card } from "./sheet-api";
 
 const piece = (id: CardId): Card => ({
@@ -202,5 +210,36 @@ describe("applying a pairing", () => {
   it("clears a back's turn when the backs are upright", () => {
     const after = applyPairing({ ...NO_EDITS, turns: { "g:0:1:0:0": 180, "g:0:0:0:0": 90 } }, pairing, false);
     expect(after.turns).toEqual({ "g:0:0:0:0": 90 });
+  });
+});
+
+describe("pairing from an AI answer", () => {
+  const keys = ["a", "b", "c", "d", "e"];
+  const sides = [
+    { index: 0, side: "front" as const, back: 3, upside_down: false },
+    { index: 1, side: "front" as const, back: 3, upside_down: false },
+    { index: 2, side: "front" as const, back: null, upside_down: false },
+    { index: 3, side: "back" as const, back: null, upside_down: true },
+    { index: 4, side: "back" as const, back: null, upside_down: false },
+  ];
+
+  it("gives fronts the back the answer names, shared or not, and keeps every back out of the fronts", () => {
+    const pairing = pairingFromSides(keys, sides);
+    expect(pairing.backs).toEqual({ a: "d", b: "d" });
+    expect(pairing.backPieces).toEqual(["d", "e"]);
+    expect(pairing.turned).toEqual(["d"]);
+    // A front with no back, and nothing else: a back is not "left without a pair".
+    expect(pairing.unpaired).toEqual(["c"]);
+  });
+
+  it("turns only the backs the answer found upside down, whatever the option says", () => {
+    const after = applyPairing(NO_EDITS, pairingFromSides(keys, sides), false);
+    expect(after.turns).toEqual({ d: 180 });
+    expect(after.backs).toEqual({ a: "d", b: "d" });
+  });
+
+  it("names a piece by where it is, in words the model reads", () => {
+    expect(pieceName(g(2, 0, 1), null)).toBe("page 3, grid 1, row 1, column 2");
+    expect(pieceName(f(0, 1, 1), "B")).toBe("PDF B, page 1, piece 2 marked by hand");
   });
 });

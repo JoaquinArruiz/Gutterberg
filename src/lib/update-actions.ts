@@ -6,6 +6,7 @@ import { usePreferencesStore } from "../stores/preferences-store";
 import { useToastStore } from "../stores/toast-store";
 import { useUiStore } from "../stores/ui-store";
 import { useUpdateStore } from "../stores/update-store";
+import { emitHintEvent } from "./hint-events";
 import { saveBeforeRestart } from "./project-actions";
 import { afterUpdate, CHECK_DELAY_MS, CHECK_EVERY_MS, shouldNotify } from "./updates";
 
@@ -30,6 +31,7 @@ export async function checkForUpdates(manual: boolean): Promise<void> {
   const busy = state().status;
   if (busy === "checking" || busy === "downloading") return;
   state().set({ status: "checking", manual, progress: null });
+  if (manual) emitHintEvent("update-check-started");
   try {
     const update = await check();
     prefs().setLastCheck(Date.now());

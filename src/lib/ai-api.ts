@@ -6,7 +6,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 import { usePreferencesStore } from "../stores/preferences-store";
 import { type AiProvider, providerConfig } from "./ai";
-import type { DocumentId } from "./card";
+import type { DocumentId, OrientedRect } from "./card";
 import { DetectionSchema } from "./detect-api";
 
 export const PAGE_LABELS = ["cards", "backs", "rules", "cover", "other"] as const;
@@ -25,7 +25,6 @@ export const EstimateSchema = z.object({
   output_tokens: z.number(),
   host: z.string(),
   sends_images: z.boolean(),
-  cost_usd: z.number().nullable(),
 });
 export type Estimate = z.infer<typeof EstimateSchema>;
 
@@ -71,10 +70,10 @@ export async function aiTestConnection(): Promise<Usage> {
   return UsageSchema.parse(await call("ai_test_connection", { config: settings().config }));
 }
 
-export type AiTask = "detect" | "sort";
+export type AiTask = "detect" | "sort" | "pair";
 
-/** What a run would send and cost, from the very requests it would make. Sends nothing. */
-export async function aiEstimate(task: AiTask, documentId: DocumentId, pages: number[]): Promise<Estimate> {
+/** What a run would send, from the very requests it would make. Sends nothing. */
+export async function aiEstimate(task: "detect" | "sort", documentId: DocumentId, pages: number[]): Promise<Estimate> {
   const { config, sendImages } = settings();
   return EstimateSchema.parse(await call("ai_estimate", { task, documentId, pages, config, sendImages }));
 }
@@ -89,4 +88,26 @@ export async function aiSortPages(documentId: DocumentId, pages: number[]) {
   const { config, sendImages } = settings();
   const raw = await call<unknown>("ai_sort_pages", { documentId, pages, config, sendImages });
   return z.object({ labels: z.array(LabelledPageSchema), usage: UsageSchema }).parse(raw);
+}
+
+/** A piece as Pair backs with AI sends it: where it is (to cut its picture out) and the name the model reads. */
+export type PairPiece = { document_id: DocumentId; page_index: number; source: OrientedRect; name: string };
+
+const AiSideSchema = z.object({
+  index: z.number().int().min(0),
+  side: z.enum(["front", "back", "other"]),
+  back: z.number().int().min(0).nullable(),
+  upside_down: z.boolean(),
+});
+
+/** What Pair backs with AI would send. Sends nothing. */
+export async function aiEstimatePairing(pieces: PairPiece[]): Promise<Estimate> {
+  const { config, sendImages } = settings();
+  return EstimateSchema.parse(await call("ai_estimate_pairing", { pieces, config, sendImages }));
+}
+
+export async function aiPairBacks(pieces: PairPiece[]) {
+  const { config, sendImages } = settings();
+  const raw = await call<unknown>("ai_pair_backs", { pieces, config, sendImages });
+  return z.object({ pieces: z.array(AiSideSchema), usage: UsageSchema }).parse(raw);
 }

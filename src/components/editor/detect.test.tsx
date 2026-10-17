@@ -141,7 +141,7 @@ describe("the draft on the page", () => {
     render(all());
     await detectWith({ proposals: [grid({ notes: ["missing_cells", "crop_marks"] })], reasons: [] });
     expect(screen.getByText(/the last row may not be full/)).toBeTruthy();
-    expect(screen.getByText(/Crop marks in the margins line up/)).toBeTruthy();
+    expect(screen.getByText(/Cut marks in the margins line up/)).toBeTruthy();
   });
 
   it("applies on the button and on Enter, and leaves nothing behind", async () => {

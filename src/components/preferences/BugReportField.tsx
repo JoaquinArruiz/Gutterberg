@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { type AppInfo, formatAppInfo, loadAppInfo, loadLog } from "../../lib/app-info";
 import { bugReportUrl, DISCORD_URL, openExternalLink } from "../../lib/external-links";
+import { emitHintEvent } from "../../lib/hint-events";
 import { DiscordIcon, GitHubIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
 import { Field } from "./Field";
@@ -56,6 +57,7 @@ export function BugReportField() {
       if (!text.trim()) return setLog("empty");
       await navigator.clipboard.writeText(text);
       setLog("copied");
+      emitHintEvent("log-copied");
       clearTimeout(logTimer.current);
       logTimer.current = setTimeout(() => setLog(null), COPIED_FOR_MS);
     } catch {
@@ -75,7 +77,7 @@ export function BugReportField() {
   };
 
   return (
-    <Field label={t("preferences.help.bug")} info={t("preferences.help.logNote")}>
+    <Field label={t("preferences.help.bug")} info={t("preferences.help.logNote")} target="bugReport">
       <p>{t("preferences.help.bugIntro")}</p>
       <ul className="list-disc pl-5 text-[var(--muted)]">
         <li>{t("preferences.help.bugVersion")}</li>
@@ -103,16 +105,9 @@ export function BugReportField() {
           <GitHubIcon />
           {t("preferences.help.report")}
         </Button>
-        <Button
-          size="md"
-          className="flex items-center gap-2"
-          disabled={DISCORD_URL === null}
-          title={DISCORD_URL === null ? t("preferences.help.discordSoon") : undefined}
-          onClick={() => DISCORD_URL && void openExternalLink(DISCORD_URL)}
-        >
+        <Button size="md" className="flex items-center gap-2" onClick={() => void openExternalLink(DISCORD_URL)}>
           <DiscordIcon />
           {t("preferences.help.discord")}
-          {DISCORD_URL === null && <span className="font-normal opacity-70">{t("preferences.help.discordSoon")}</span>}
         </Button>
       </div>
       {log === "empty" && <p className="text-[var(--muted)]">{t("preferences.help.logEmpty")}</p>}

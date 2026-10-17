@@ -1,7 +1,9 @@
 # Releasing Gutterberg
 
 How a new version gets to people. Pushing a tag builds the app for Windows, macOS (Apple silicon and
-Intel) and Linux and leaves a **draft** GitHub release; installed apps only see it once you publish it.
+Intel) and Linux and leaves a **draft** GitHub release; installed apps only see it once you publish it. The
+command line, `gutterberg-cli`, is built in the same run: it goes into every installer and is attached to the
+release on its own (`gutterberg-cli-<target>`), with the app's version.
 
 ## Versions
 
@@ -21,6 +23,11 @@ The version lives in two files you edit, `package.json` and `src-tauri/Cargo.tom
 Write notes there as you work. At release time the heading becomes `## 1.1.0 (2026-11-02)` and an empty
 `## Unreleased` goes above it. The workflow copies the section of the tag's version into the release text
 and `latest.json` (what the app shows under "What's new"). English only.
+
+From 1.0.0 on, the section opens with a short paragraph on why the version exists and what it changes, before
+the usual lists, so it also reaches the release text and "What's new". A version may get a name later; it would go
+after the date, `## 1.1.0 (2026-11-02) · Name`, since `scripts/check-release.sh` finds the section by the second
+word of the heading.
 
 ## Once, before the first release
 

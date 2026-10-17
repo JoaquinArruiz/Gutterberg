@@ -1,22 +1,13 @@
-// The print stage's plan, and how it becomes the request the Rust planner takes. The plan only
-// records what the user chose; where cards land is decided in Rust (`card_core::sheet`).
+// The print stage's plan, and what the Rust planner builds the print request from. The plan only records what
+// the user chose; the request (`card_core::print_request`) and where pieces land (`card_core::sheet`) are decided in
+// Rust, for the preview, the export and the command line alike.
 
-import { gridPayload, type OutputSettings, outputPage } from "../stores/layout-store";
+import type { OutputSettings } from "../stores/layout-store";
 import { cardIdKey, type DocumentId } from "./card";
-import { applyEdits, type CardEdits, hasCardEdits, NO_EDITS } from "./card-edits";
-import { orientedToPoints } from "./coordinates";
-import { type FreeformCards, hasRegion, type PageGroup } from "./document-layout";
-import { DEFAULT_FINISH, type Finish, finishingPayload, gutterfoldOn } from "./finish";
-import type {
-  Card,
-  CardSetting,
-  PaginateOptionsPayload,
-  PrintLayoutPayload,
-  PrintRequest,
-  RustDocumentWithPages,
-  RustGroup,
-  SheetPagePayload,
-} from "./sheet-api";
+import { type CardEdits, hasCardEdits } from "./card-edits";
+import type { FreeformCards, PageGroup } from "./document-layout";
+import { DEFAULT_FINISH, type Finish } from "./finish";
+import type { Card } from "./sheet-api";
 import type { PageSize } from "./tauri";
 
 /** Every card once, in order (today's behaviour), or only the cards given a quantity. */
@@ -67,47 +58,6 @@ export type LayoutDocument = {
 };
 
 /**
- * Page groups in the Rust shape. Grid groups with no region drawn yet have no cards and are left out; in the others a
- * grid with no region is null, so the grids after it keep their numbers. A page's freeform cards become a one-page
- * freeform group right after that page's grid cards, so the cards come out in page order.
- */
-export function toRustGroups(
-  groups: PageGroup[],
-  pages: PageSize[],
-  output: OutputSettings,
-  freeform: FreeformCards = {},
-): RustGroup[] {
-  const out: RustGroup[] = [];
-  for (const g of groups) {
-    if (g.kind === "skip") {
-      out.push({ pages: g.pages, kind: "skip" });
-      continue;
-    }
-    const grids = hasRegion(g)
-      ? g.grids.map((r) => (r.selection ? gridPayload(r.selection, r.grid, output) : null))
-      : null;
-    let start = g.pages.first;
-    const flush = (end: number) => {
-      if (grids && end >= start) out.push({ pages: { first: start, last: end }, kind: "grid", grids });
-    };
-    for (let p = g.pages.first; p <= g.pages.last; p++) {
-      const own = freeform[p];
-      const size = pages[p];
-      if (!own?.length || !size) continue;
-      flush(p);
-      out.push({
-        pages: { first: p, last: p },
-        kind: "freeform",
-        cards: own.map((c) => orientedToPoints(c, size)),
-      });
-      start = p + 1;
-    }
-    flush(g.pages.last);
-  }
-  return out;
-}
-
-/**
  * Whether the plan needs the card planner: freeform cards, cards turned, resized or reordered, or pieces of an images
  * document (whose source page is the image itself, so a sheet the size of the source would hold only that piece).
  */
@@ -121,91 +71,42 @@ export const imageDocumentIds = (documents: Pick<LayoutDocument, "id" | "images"
 /**
  * The sheet grid the plan really uses. "Same as source" is the default plan only (every card
  * once, in order, each source page on its own sheet), so any other plan falls back to Auto. `planner`
- * is true when cards are freeform, turned, resized or reordered (`plannerRequired`).
+ * is true when cards are freeform, turned, resized or reordered (`plannerRequired`). Only for what the Print inspector
+ * shows: the request itself is built in Rust (`card_core::print_request::effective_grid`), with the same rule.
  */
 export function effectiveGrid(plan: PrintPlan, planner = false): SheetGridMode {
   return plan.sheetGrid === "same" && (plan.mode !== "all" || plan.autoFill || planner) ? "auto" : plan.sheetGrid;
 }
 
-/**
- * The per-card settings the planner needs, in print order: in custom mode a quantity for every card (0 =
- * not printed); in "all cards" mode none, unless cards are turned, resized or reordered (`edited`), when
- * every card is listed once. `cards` carry the user's turn, scale and order (`applyEdits`).
- */
-export function planSettings(plan: PrintPlan, cards: Card[], edited = false): CardSetting[] {
-  if (plan.mode === "all" && !edited) return [];
-  return cards.map((c) => ({
-    id: c.id,
-    quantity: plan.mode === "all" ? 1 : (plan.quantities[cardIdKey(c.id)] ?? 0),
-    turn: c.turn,
-    scale: c.scale,
-    ...(c.scale_y != null ? { scale_y: c.scale_y } : {}),
-  }));
-}
+/** The output settings alone, from the layout store or anything holding them. */
+export const outputSettings = (s: OutputSettings): OutputSettings => ({
+  gapXMm: s.gapXMm,
+  gapYMm: s.gapYMm,
+  gapLinked: s.gapLinked,
+  pageMode: s.pageMode,
+  orientation: s.orientation,
+  customWidthMm: s.customWidthMm,
+  customHeightMm: s.customHeightMm,
+  margins: s.margins,
+});
 
-function sheetPage(output: OutputSettings): SheetPagePayload {
-  if (output.pageMode === "same") return { kind: "same_as_source" };
-  if (output.pageMode === "fit") return { kind: "fit" };
-  const size = outputPage(output);
-  return size ? { kind: "size", ...size } : { kind: "same_as_source" };
-}
+/** A document in the project's shape, as `card_core::print_request::ProjectDocument` reads it. */
+export type PrintDocument = { id: DocumentId; kind: "pdf" | "images"; groups: PageGroup[]; freeform: FreeformCards };
 
-/** The project's PDFs in the shape the Rust commands take (with the page sizes the preview plans from). */
-export function toRustDocuments(documents: LayoutDocument[], output: OutputSettings): RustDocumentWithPages[] {
-  return documents.map((d) => ({
-    document_id: d.id,
-    pages: d.pages,
-    groups: toRustGroups(d.groups, d.pages, output, d.freeform),
-  }));
-}
+/** The parts of the project the request is built from (`card_core::print_request::PrintProject`): what is saved. */
+export type PrintProject = { documents: PrintDocument[]; output: OutputSettings; edits: CardEdits; plan: PrintPlan };
 
-export function buildPrintRequest(
+export const printDocuments = (documents: LayoutDocument[]): PrintDocument[] =>
+  documents.map((d) => ({ id: d.id, kind: d.images ? "images" : "pdf", groups: d.groups, freeform: d.freeform }));
+
+/** The project as Rust builds the print request from it, from the live stores' values. */
+export function printProject(
   plan: PrintPlan,
-  cards: Card[],
   documents: LayoutDocument[],
   output: OutputSettings,
-  edits: CardEdits = NO_EDITS,
-): PrintRequest {
-  // `cards` are the engine's, in page order (one document after the other); the user's turns, scales and
-  // order are applied here.
-  const ordered = applyEdits(cards, edits);
-  const edited = hasCardEdits(cards, edits);
-  // Gutterfold slots are planned by the card planner too: "same as source" has no room for the backs.
-  const grid = effectiveGrid(
-    plan,
-    plannerRequired(cards, edits, imageDocumentIds(documents)) || gutterfoldOn(plan.finish),
-  );
-  const layout: PrintLayoutPayload =
-    grid === "same"
-      ? { kind: "same_as_source" }
-      : {
-          kind: "grid",
-          spec: {
-            page: sheetPage(output),
-            rows: grid === "custom" ? plan.rows : null,
-            columns: grid === "custom" ? plan.columns : null,
-            gap_x_mm: output.gapXMm,
-            gap_y_mm: output.gapYMm,
-            margins: {
-              top_mm: output.margins.top,
-              right_mm: output.margins.right,
-              bottom_mm: output.margins.bottom,
-              left_mm: output.margins.left,
-            },
-          },
-        };
-  const options: PaginateOptionsPayload = {
-    order: plan.order,
-    group_by_size: plan.groupBySize,
-    auto_fill: plan.autoFill,
-  };
-  return {
-    documents: toRustDocuments(documents, output).map(({ pages: _pages, ...rest }) => rest),
-    settings: planSettings(plan, ordered, edited),
-    layout,
-    options,
-    finishing: finishingPayload(plan.finish, edits.backs, new Set(cards.map((c) => cardIdKey(c.id))), edits.turns),
-  };
+  edits: CardEdits,
+): PrintProject {
+  return { documents: printDocuments(documents), output: outputSettings(output), edits, plan };
 }
 
 /** How many copies the plan asks for (not counting auto-fill), for the summary line. */

@@ -2,12 +2,12 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useDocumentStore } from "../stores/document-store";
 import { DEFAULT_OUTPUT, useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
-import { usePrintStore } from "../stores/print-store";
+import { planOf, usePrintStore } from "../stores/print-store";
 import { useProjectStore } from "../stores/project-store";
 import { gridCardId } from "./card";
 import { getLayoutDocuments } from "./documents";
 import { appError } from "./errors";
-import { buildPrintRequest } from "./print-request";
+import { printProject } from "./print-request";
 import { PROJECT_FORMAT, PROJECT_VERSION, parseProject } from "./project";
 import {
   activateDocument,
@@ -452,8 +452,8 @@ describe("several PDFs in one project", () => {
     await twoPdfs();
     activateDocument(1);
     layout().setSelection(0, { x: 0, y: 0, width: 1, height: 1 });
-    const req = buildPrintRequest(usePrintStore.getState(), [], getLayoutDocuments(), layout(), layout().cardEdits);
-    expect(req.documents.map((d) => d.document_id)).toEqual([0, 1]);
+    const req = printProject(planOf(usePrintStore.getState()), getLayoutDocuments(), layout(), layout().cardEdits);
+    expect(req.documents.map((d) => d.id)).toEqual([0, 1]);
     expect(req.documents[0].groups[0]).toMatchObject({ pages: { first: 0, last: 2 } });
     expect(req.documents[1].groups[0]).toMatchObject({ pages: { first: 0, last: 1 } });
   });
