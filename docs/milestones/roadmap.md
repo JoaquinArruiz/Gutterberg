@@ -1,4 +1,4 @@
-# Roadmap after 0.16.0
+# Roadmap after 1.0.0
 
 The order of the next versions and why. Each version has its own brief in this folder; when a version is released,
 its brief is deleted (see "Planning" in `AGENTS.md`) and its line here goes with it. When the last one is done, this
@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 1.0.0 | `1.0-command-line.md`, `1.0-tutorials.md` | Export a saved project from the command line; tutorials started from a Help menu. The first version with a name and a paragraph on why it exists in `CHANGELOG.md` | unchanged | unchanged |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
 
 The project and preferences numbers assume this order; whichever version changes the format first takes the next
@@ -30,7 +29,7 @@ number.
   line needs that in `card-core`, and moving it is the bulk of the work. Doing it after 0.16.0 moves it once, with
   the final shape of page groups, instead of moving it and then changing it for several grids.
 - **Signing is not a version.** It is mostly me buying certificates and adding secrets; the code side is the
-  release workflow. It lands in whichever release is next once the certificates exist, ideally before a 1.0.0.
+  release workflow. It lands in whichever release is next once the certificates exist.
 
 ## Not planned
 

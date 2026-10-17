@@ -5,6 +5,12 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.0.0 (2026-10-17) · First Proof
+
+### First Proof
+
+Gutterberg has done what I built it for since the first versions: take a print-and-play PDF, find the pieces and lay them out again with real gutters, without touching the art. 1.0.0 says it is ready. It adds the two things people asked about most once that worked. When a publisher updates a PDF, a saved project can now be exported again without opening the app, with a command line, `gutterberg-cli`, that writes the same PDF as the app. And help no longer only comes as tips at the right moment: twelve Tutorials, started from a new Help menu, walk through a task on the real controls when you need it. Cut marks can also be dashed or dotted.
+
 ### Added
 
 - A command line, `gutterberg-cli`, installed next to the app and attached to each release on its own: `gutterberg-cli export my-game.gtr -o sheets.pdf` writes the same PDF as the app's Export for that project, and `gutterberg-cli check my-game.gtr` lists what would stop the export without writing anything. A PDF or image that is not the file the project was saved with stops it unless `--force`; a PDF that is gone stops it; a missing image leaves its page blank, as in the app. Settings are not changed from the command line. It needs no pdfium and no screen.
