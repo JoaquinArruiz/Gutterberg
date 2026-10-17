@@ -596,6 +596,14 @@
         "otherPdf": "Backs in another PDF",
         "otherPdfHint": "Page 1 of the fronts with page 1 of the backs, page 2 with 2…, piece by piece."
       },
+      "ai": {
+        "title": "By picture, with AI",
+        "hint": "AI looks at every piece and finds its back, for backs no rule can find: a back per deck, or backs in another order.",
+        "button": "Find backs with AI",
+        "running": "Looking at the pieces…",
+        "sends": "Sends a small picture of every piece to {{provider}}",
+        "ask": "Nothing is sent until you press Find backs with AI and confirm. You can check the pairs in the piece library after applying."
+      },
       "backsPdf": "PDF with the backs",
       "commonBack": "Use it as the common back",
       "commonBackHint": "That PDF is one single piece: it becomes the back of every front, instead of only those on page 1.",
@@ -1169,6 +1177,8 @@
     "ai_invalid_reply": "The reply could not be read: {{detail}}. Nothing was changed.",
     "ai_invalid_proposal": "The proposal does not fit: {{detail}}. Nothing was changed.",
     "ai_text_only_needs_objects": "This page has no objects to describe. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_pairing_needs_images": "Pair backs with AI looks at the pieces, so it needs pictures. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_too_many_pieces": "There are {{count}} pieces, and Pair backs with AI can look at {{max}} at most. Skip the pages you don't need in the Source tab, or pair with a rule.",
     "ai_config": "{{detail}}",
     "image_unsupported": "“{{name}}” can't be used. Images can be PNG, JPEG or WebP.",
     "image_too_large": "“{{name}}” is too large ({{megapixels}} megapixels, {{mb}} MB). The limits are 100 megapixels and 200 MB.",
@@ -1329,6 +1339,7 @@
       "detectText": "Text only: no picture is sent. The model gets the page size and the boxes of its images and rectangles.",
       "sortImages": "{{count}} pages ({{range}}) will be sent as small pictures, about {{size}} px, in {{requests}} requests.",
       "sortText": "Text only: no picture is sent. {{count}} pages ({{range}}) are described to the model (size, counts of objects, start of the text) in {{requests}} requests.",
+      "pairImages": "{{count}} pieces will be sent as small pictures, about {{size}} px each, in one request.",
       "estimate": "About {{input}} input tokens and up to {{output}} output tokens.",
       "cost": "About ${{cost}} at list prices (approximate).",
       "noCost": "No price is known for this model.",

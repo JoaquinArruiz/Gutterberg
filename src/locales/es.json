@@ -596,6 +596,14 @@
         "otherPdf": "Dorsos en otro PDF",
         "otherPdfHint": "La página 1 de los frentes con la página 1 de los dorsos, la 2 con la 2…, pieza por pieza."
       },
+      "ai": {
+        "title": "Por imagen, con IA",
+        "hint": "La IA mira cada pieza y encuentra su dorso, para dorsos que ninguna regla encuentra: un dorso por mazo, o dorsos en otro orden.",
+        "button": "Buscar dorsos con IA",
+        "running": "Mirando las piezas…",
+        "sends": "Envía una imagen pequeña de cada pieza a {{provider}}",
+        "ask": "No se envía nada hasta que presiones Buscar dorsos con IA y confirmes. Después de aplicar, puedes revisar las parejas en la biblioteca de piezas."
+      },
       "backsPdf": "PDF con los dorsos",
       "commonBack": "Usarlo como dorso común",
       "commonBackHint": "Ese PDF es una sola pieza: pasa a ser el dorso de todos los frentes, y no solo de los de la página 1.",
@@ -1169,6 +1177,8 @@
     "ai_invalid_reply": "No se pudo leer la respuesta: {{detail}}. No se cambió nada.",
     "ai_invalid_proposal": "La propuesta no encaja: {{detail}}. No se cambió nada.",
     "ai_text_only_needs_objects": "Esta página no tiene objetos que describir. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_pairing_needs_images": "Emparejar dorsos con IA mira las piezas, así que necesita imágenes. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_too_many_pieces": "Hay {{count}} piezas, y Emparejar dorsos con IA puede mirar {{max}} como máximo. Omite las páginas que no necesitas en la pestaña Origen, o empareja con una regla.",
     "ai_config": "{{detail}}",
     "image_unsupported": "«{{name}}» no se puede usar. Las imágenes pueden ser PNG, JPEG o WebP.",
     "image_too_large": "«{{name}}» es demasiado grande ({{megapixels}} megapíxeles, {{mb}} MB). Los límites son 100 megapíxeles y 200 MB.",
@@ -1329,6 +1339,7 @@
       "detectText": "Solo texto: no se envía ninguna imagen. El modelo recibe el tamaño de la página y los recuadros de sus imágenes y rectángulos.",
       "sortImages": "{{count}} páginas ({{range}}) se enviarán como imágenes pequeñas, de unos {{size}} px, en {{requests}} solicitudes.",
       "sortText": "Solo texto: no se envía ninguna imagen. Se describen al modelo {{count}} páginas ({{range}}) (tamaño, cantidad de objetos, comienzo del texto) en {{requests}} solicitudes.",
+      "pairImages": "Se enviarán {{count}} piezas como imágenes pequeñas, de unos {{size}} px cada una, en una solicitud.",
       "estimate": "Unos {{input}} tokens de entrada y hasta {{output}} de salida.",
       "cost": "Unos ${{cost}} a precios de lista (aproximado).",
       "noCost": "No se conoce el precio de este modelo.",

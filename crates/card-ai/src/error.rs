@@ -35,6 +35,12 @@ pub enum AiError {
     /// Text only was asked for, but the page has nothing to describe in text.
     #[error("this page has no objects to describe; turn on sending page images")]
     TextOnlyNeedsObjects,
+    /// Pair backs with AI looks at the pieces, so it cannot run text only.
+    #[error("pairing backs needs pictures of the pieces; turn on sending page images")]
+    PairingNeedsImages,
+    /// More pieces than one request can show.
+    #[error("{count} pieces: at most {max} can be paired at once")]
+    TooManyPieces { count: usize, max: usize },
     /// A setting is missing or wrong (an empty model, a bad URL).
     #[error("{0}")]
     Config(String),
@@ -53,6 +59,8 @@ impl AiError {
             AiError::InvalidReply(_) => "ai_invalid_reply",
             AiError::InvalidProposal(_) => "ai_invalid_proposal",
             AiError::TextOnlyNeedsObjects => "ai_text_only_needs_objects",
+            AiError::PairingNeedsImages => "ai_pairing_needs_images",
+            AiError::TooManyPieces { .. } => "ai_too_many_pieces",
             AiError::Config(_) => "ai_config",
         }
     }
@@ -68,6 +76,12 @@ impl From<&AiError> for ErrorInfo {
                     .insert("status".into(), ErrorParam::Number(f64::from(*status)));
                 info.params.insert("detail".into(), text(detail));
             }
+            AiError::TooManyPieces { count, max } => {
+                info.params
+                    .insert("count".into(), ErrorParam::Number(*count as f64));
+                info.params
+                    .insert("max".into(), ErrorParam::Number(*max as f64));
+            }
             AiError::Keychain(d)
             | AiError::Network(d)
             | AiError::Refused(d)
@@ -79,7 +93,8 @@ impl From<&AiError> for ErrorInfo {
             AiError::Disabled
             | AiError::NoKey
             | AiError::Timeout
-            | AiError::TextOnlyNeedsObjects => {}
+            | AiError::TextOnlyNeedsObjects
+            | AiError::PairingNeedsImages => {}
         }
         info
     }

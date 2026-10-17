@@ -1,15 +1,16 @@
-//! Optional AI-assisted detection and page sorting.
+//! Optional AI-assisted detection, page sorting and pairing of backs.
 //!
 //! This is the only crate that talks to the network, and it only does so when a command asks it to
 //! (the shell refuses every request while AI Mode is off). One request is an instruction, some
-//! images and a JSON Schema; the reply is validated here into a `card_core::detect::Proposal` or
-//! page labels, and the project is never touched.
+//! images and a JSON Schema; the reply is validated here into a `card_core::detect::Proposal`, page
+//! labels or the sides of pieces, and the project is never touched.
 
 pub mod adapters;
 pub mod error;
 pub mod estimate;
 pub mod gate;
 pub mod keystore;
+pub mod pairing;
 pub mod provider;
 pub mod run;
 pub mod sort;

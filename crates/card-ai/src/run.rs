@@ -5,7 +5,8 @@
 use crate::error::{AiError, Result};
 use crate::gate::{guarded_send, Gate};
 use crate::keystore::KeyStore;
-use crate::provider::{AiRequest, ProviderConfig, Transport, Usage};
+use crate::pairing::{pair_request, parse_pairing, PieceSide};
+use crate::provider::{AiRequest, Image, ProviderConfig, Transport, Usage};
 use crate::sort::{parse_sort, sort_requests, PageLabel, SortInput};
 use crate::tasks::{detect_request, parse_detect};
 use card_core::detect::{Detection, PageObject};
@@ -88,5 +89,15 @@ impl Runner<'_> {
         }
         labels.sort_by_key(|l| l.page_index);
         Ok((labels, usage))
+    }
+
+    /// Which pieces are fronts, which are backs, and the back of each front, from one picture per piece.
+    pub fn pair(&self, pieces: Vec<(String, Image)>) -> Result<(Vec<PieceSide>, Usage)> {
+        self.gate.check()?;
+        let count = pieces.len();
+        let request = pair_request(pieces)?;
+        let key = self.key()?;
+        let reply = self.send(key.as_deref(), &request)?;
+        Ok((parse_pairing(&reply.json, count)?, reply.usage))
     }
 }

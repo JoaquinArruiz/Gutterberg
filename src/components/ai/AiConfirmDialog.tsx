@@ -62,22 +62,24 @@ export function AiConfirmDialog() {
             </span>
           </p>
           <p data-testid="ai-what">
-            {run.task === "detect"
-              ? e.sends_images
-                ? t("ai.confirm.detectImage", { page: run.pages[0] + 1, size: 1000 })
-                : t("ai.confirm.detectText")
-              : e.sends_images
-                ? t("ai.confirm.sortImages", {
-                    count: run.pages.length,
-                    range: pageRanges(run.pages),
-                    size: 320,
-                    requests: e.requests,
-                  })
-                : t("ai.confirm.sortText", {
-                    count: run.pages.length,
-                    range: pageRanges(run.pages),
-                    requests: e.requests,
-                  })}
+            {run.task === "pair"
+              ? t("ai.confirm.pairImages", { count: e.images, size: 256 })
+              : run.task === "detect"
+                ? e.sends_images
+                  ? t("ai.confirm.detectImage", { page: run.pages[0] + 1, size: 1000 })
+                  : t("ai.confirm.detectText")
+                : e.sends_images
+                  ? t("ai.confirm.sortImages", {
+                      count: run.pages.length,
+                      range: pageRanges(run.pages),
+                      size: 320,
+                      requests: e.requests,
+                    })
+                  : t("ai.confirm.sortText", {
+                      count: run.pages.length,
+                      range: pageRanges(run.pages),
+                      requests: e.requests,
+                    })}
           </p>
           <p className="text-[var(--muted)]" data-testid="ai-estimate">
             {t("ai.confirm.estimate", {

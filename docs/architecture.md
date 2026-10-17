@@ -436,11 +436,17 @@ screen changes language with the app.
 ## AI Mode (`card-ai`)
 
 Optional, off and hidden by default (the one Preferences entry is the switch). Buttons with fixed prompts, no chat:
-**Detect with AI** is a second engine behind the Detect pieces button, and **Sort pages** labels every page (cards,
-backs, rules, cover, other) and offers to skip the ones without pieces. A result is always an editable proposal.
+**Detect with AI** is a second engine behind the Detect pieces button (one grid, several grids or rectangles, the
+shapes the local engines propose), **Sort pages** labels every page (cards, backs, rules, cover, other) and offers to
+skip the ones without pieces, and **Pair backs with AI** (a choice in Pair backs automatically…) sends a picture of
+each piece of the library, cut out by `render_pieces_in` at 256 px, named by where it is, and gets back which pieces
+are fronts, which are backs and the back of each front (`card-ai/src/pairing.rs`, then `pairingFromSides` in
+`src/lib/pairing.ts`). It is one request, so a front and its back are seen together, of at most 100 pieces, and needs
+pictures. A result is always an editable proposal, or for pairing, a summary to apply or not.
 
 - **Providers:** Anthropic, OpenAI-compatible, Gemini and Ollama, behind one request shape. Replies are validated
-  (inside the page, plausible sizes and counts, every page labelled exactly once); an unusable reply changes nothing.
+  (inside the page, plausible sizes and counts, grids that do not overlap, every page labelled and every piece
+  answered exactly once, a front's back a piece called a back); an unusable reply changes nothing.
 - **The switch is checked in Rust.** `Gate` is set from the preference and checked before the keychain is read and
   before anything is sent, so a stale interface cannot send while it is off (tested with a local listener).
 - **Keys** live only in the system keychain (`keyring`: Keychain, Credential Manager, Secret Service), written and
@@ -448,7 +454,8 @@ backs, rules, cover, other) and offers to skip the ones without pieces. A result
   that fails means AI Mode cannot send; there is no fallback.
 - **Every action asks first** (provider, server, whether pages go as pictures or text, requests, tokens, cost when
   known) and sends nothing until the user says so. Only plain `http://` to local or private addresses is accepted.
-- Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), never the PDF.
+- Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
+  pieces for pairing, never the PDF.
 
 ## Updates and releases
 

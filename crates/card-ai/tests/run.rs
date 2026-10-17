@@ -340,3 +340,37 @@ fn one_bad_batch_fails_the_whole_run() {
         Err(AiError::InvalidProposal(_))
     ));
 }
+
+#[test]
+fn pairing_runs_end_to_end_and_stops_before_the_key_when_off() {
+    let answer = json!({ "pieces": [
+        { "piece": 1, "side": "front", "back": 2, "upside_down": false },
+        { "piece": 2, "side": "back", "back": 0, "upside_down": true },
+    ]});
+    let transport = Script::new(vec![Script::ok(answer, (900, 40))]);
+    let (gate, keys) = (on(), keys_with("sk-ant-1"));
+    let cfg = config();
+    let runner = Runner {
+        gate: &gate,
+        config: &cfg,
+        keys: &keys,
+        transport: &transport,
+    };
+    let pieces = vec![
+        ("p1 · r1 c1".to_string(), picture()),
+        ("p2 · r1 c1".to_string(), picture()),
+    ];
+    let (sides, usage) = runner.pair(pieces.clone()).unwrap();
+    assert_eq!(sides[0].back, Some(1));
+    assert!(sides[1].upside_down);
+    assert_eq!(usage.output_tokens, 40);
+    assert_eq!(transport.sent.borrow().len(), 1);
+
+    gate.set(false);
+    assert_eq!(runner.pair(pieces).unwrap_err(), AiError::Disabled);
+    assert_eq!(
+        keys.reads.get(),
+        1,
+        "the keychain was read for the first run only"
+    );
+}

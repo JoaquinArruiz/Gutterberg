@@ -1,7 +1,7 @@
 // Automatic front and back pairing: which piece is the back of which, found from where the pieces are in the
 // source PDF (pages, grids, rows and columns; freeform pieces by their order), so a whole game pairs in one click instead
-// of one "Pick back…" per piece. Pure data over the pieces; the result goes into `CardEdits.backs` and the backs'
-// turns, as one undo step (`PairBacksDialog`).
+// of one "Pick back…" per piece. Pair backs with AI finds them from pictures instead (`pairingFromSides`). Pure data
+// over the pieces; the result goes into `CardEdits.backs` and the backs' turns, as one undo step (`PairBacksDialog`).
 
 import { type CardId, cardIdKey, type DocumentId, gridNumber } from "./card";
 import type { CardEdits } from "./card-edits";
@@ -49,6 +49,10 @@ export type Pairing = {
   unpaired: string[];
   /** The one back that every front shares (`otherPdf` with a single-piece backs PDF); it is in no pair. */
   commonBack?: string;
+  /** Every piece found to be a back, in a pair or not (Pair backs with AI): none of them is printed as a front. */
+  backPieces?: string[];
+  /** The backs to give a half turn, one by one (Pair backs with AI); when set, it decides instead of "upside down". */
+  turned?: string[];
 };
 
 type Grid = Extract<CardId, { kind: "grid" }>;
@@ -190,17 +194,53 @@ export function pairPieces(cards: Card[], options: PairingOptions): Pairing {
   return { backs, unpaired: cards.map(key).filter((k) => !inPairs.has(k)) };
 }
 
+/** What Pair backs with AI says about one piece, by its place in the list that was sent (0-based). */
+export type AiSide = { index: number; side: "front" | "back" | "other"; back: number | null; upside_down: boolean };
+
+/**
+ * What Pair backs with AI is told about a piece: where it is in the file, in plain English whatever the interface
+ * language, since it is read by the model and not shown.
+ */
+export function pieceName(card: Card, letter: string | null): string {
+  const id = card.id;
+  const where =
+    id.kind === "grid"
+      ? `grid ${gridNumber(id) + 1}, row ${id.row + 1}, column ${id.column + 1}`
+      : `piece ${id.index + 1} marked by hand`;
+  return `${letter ? `PDF ${letter}, ` : ""}page ${id.page_index + 1}, ${where}`;
+}
+
+/** The pairing an AI answer gives, for `keys`: the pieces in the order they were sent. */
+export function pairingFromSides(keys: string[], sides: AiSide[]): Pairing {
+  const backs: Record<string, string> = {};
+  const backPieces: string[] = [];
+  const turned: string[] = [];
+  for (const s of sides) {
+    const k = keys[s.index];
+    if (k === undefined) continue;
+    if (s.side === "back") {
+      backPieces.push(k);
+      if (s.upside_down) turned.push(k);
+    }
+    const back = s.back === null ? undefined : keys[s.back];
+    if (s.side === "front" && back !== undefined && back !== k) backs[k] = back;
+  }
+  const inPairs = new Set([...Object.keys(backs), ...backPieces]);
+  return { backs, unpaired: keys.filter((k) => !inPairs.has(k)), backPieces, turned };
+}
+
 /**
  * The edits with the pairing applied: each front gets its back, and each back a half turn when the backs are
- * upside down (or its turn cleared when they are not), and no back of its own. Pieces the pairing does not name
+ * upside down (or, from AI, when that back is; its turn cleared when it is not), and no back of its own. Pieces the pairing does not name
  * keep what they had.
  */
 export function applyPairing(edits: CardEdits, pairing: Pairing, upsideDown: boolean): CardEdits {
   const turns = { ...edits.turns };
   const backs = { ...edits.backs, ...pairing.backs };
   const shared = pairing.commonBack ? [pairing.commonBack] : [];
-  for (const back of [...Object.values(pairing.backs), ...shared]) {
-    if (upsideDown) turns[back] = 180 as Turn;
+  const turned = pairing.turned ? new Set(pairing.turned) : null;
+  for (const back of [...Object.values(pairing.backs), ...shared, ...(pairing.backPieces ?? [])]) {
+    if (turned ? turned.has(back) : upsideDown) turns[back] = 180 as Turn;
     else delete turns[back];
     delete backs[back]; // a back has no back of its own
   }

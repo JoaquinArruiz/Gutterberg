@@ -167,8 +167,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 **AI Mode (optional)**
 
-- Experimental, and off and hidden until you turn it on. Detect pieces and Sort pages with an AI engine of your choice
-  (Anthropic, OpenAI-compatible, Gemini or Ollama), with your own key kept in the system keychain. Every action
+- Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
+  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your own key kept in the system keychain. Every action
   asks first what is sent and what it costs, and every result is a proposal you can edit.
 
 **Languages and help**

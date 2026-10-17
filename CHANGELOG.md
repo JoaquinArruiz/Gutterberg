@@ -8,6 +8,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - Detect with AI can find several grids on one page, like the other engines: a page with blocks of pieces of different sizes gets one proposal with a grid per block, and applying it makes them the page's grids, in one undo step.
+- Pair backs with AI: with AI Mode on, Pair backs automatically… has By picture, with AI, for backs no rule can find, such as a back per deck or backs in another order. Find backs with AI sends a small picture of every piece (up to 100) after asking, as every AI action does, and the dialog shows how many fronts got a back before you apply it. Applying gives each front its back, turns only the backs that are upside down, and stops printing every piece found to be a back, in one undo step.
 
 ## 1.0.0 (2026-10-17)
 
