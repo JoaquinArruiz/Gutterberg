@@ -300,15 +300,14 @@ describe("Preferences › About › Found a bug?", () => {
     expect(screen.getByTestId("app-info").textContent).toContain("only available in the app window");
   });
 
-  it("shows a Discord button with its logo, switched off, saying it is coming soon", async () => {
+  it("shows a Discord button with its logo that opens the invitation", async () => {
     render(<PreferencesDialog />);
     await openAbout();
     const discord = screen.getByRole("button", { name: /Discord/ });
-    expect(discord.hasAttribute("disabled")).toBe(true);
-    expect(discord.textContent).toContain("Coming soon");
+    expect(discord.hasAttribute("disabled")).toBe(false);
     expect(discord.querySelector("svg title")?.textContent).toBe("Discord");
     fireEvent.click(discord);
-    expect(openExternalLink).not.toHaveBeenCalled();
+    expect(openExternalLink).toHaveBeenCalledWith("https://discord.gg/ytBFE9TtRY");
   });
 
   it("is in Spanish when the language is", async () => {
@@ -318,6 +317,5 @@ describe("Preferences › About › Found a bug?", () => {
     await openAbout();
     expect(screen.getByText("¿Encontraste un error?")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Copiar datos de la aplicación" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Discord/ }).textContent).toContain("Próximamente");
   });
 });

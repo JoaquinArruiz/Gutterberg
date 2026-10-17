@@ -89,8 +89,7 @@ describe("the permission to open web addresses", () => {
     if (typeof entry === "string") return;
     expect(entry.identifier).toBe("opener:allow-open-url");
     // The form's address changes with the version and system, so its permission ends in a wildcard.
-    const expected = [...Object.values(EXTERNAL_LINKS), `${BUG_REPORT_URL}&*`];
-    if (DISCORD_URL) expected.push(DISCORD_URL);
+    const expected = [...Object.values(EXTERNAL_LINKS), `${BUG_REPORT_URL}&*`, DISCORD_URL];
     expect(entry.allow?.map((a) => a.url).sort()).toEqual(expected.sort());
   });
 
@@ -153,7 +152,10 @@ describe("the bug report address", () => {
     expect(openUrl).not.toHaveBeenCalled();
   });
 
-  it("has no Discord address yet", () => {
-    expect(DISCORD_URL).toBeNull();
+  it("opens the Discord invitation, which is a permanent discord.gg link", async () => {
+    expect(DISCORD_URL).toBe("https://discord.gg/ytBFE9TtRY");
+    ask.mockResolvedValue(true);
+    await expect(openExternalLink(DISCORD_URL)).resolves.toBe("opened");
+    expect(openUrl).toHaveBeenCalledWith(DISCORD_URL);
   });
 });

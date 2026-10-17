@@ -3,9 +3,9 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { t } from "../i18n";
 
 /**
- * The web addresses the app opens, exactly as written. Together with the bug report address below they are the
- * whole scope of the opener permission in `src-tauri/capabilities/default.json`, so even code that asked for
- * another address could not open it.
+ * The web addresses the app opens, exactly as written. Together with the bug report and Discord addresses below
+ * they are the whole scope of the opener permission in `src-tauri/capabilities/default.json`, so even code that
+ * asked for another address could not open it.
  */
 export const EXTERNAL_LINKS = {
   linkedin: "https://www.linkedin.com/in/joaquinarruiz",
@@ -20,14 +20,14 @@ export const EXTERNAL_LINKS = {
  */
 export const BUG_REPORT_URL = "https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=bug_report.yml";
 
-/** The community's Discord invitation; null until there is one, and the button stays off. */
-export const DISCORD_URL: string | null = null;
+/** The community's Discord invitation, a permanent one. */
+export const DISCORD_URL = "https://discord.gg/ytBFE9TtRY";
 
 /** The issue form's address with the version and the system filled in. */
 export const bugReportUrl = (fields: { version: string; os: string }): string =>
   `${BUG_REPORT_URL}&version=${encodeURIComponent(fields.version)}&os=${encodeURIComponent(fields.os)}`;
 
-const EXACT: readonly string[] = [...Object.values(EXTERNAL_LINKS), ...(DISCORD_URL ? [DISCORD_URL] : [])];
+const EXACT: readonly string[] = [...Object.values(EXTERNAL_LINKS), DISCORD_URL];
 
 /** Whether the app may open `url`: one of the exact addresses, or the bug report form with fields after it. */
 export function isAllowedLink(url: string): boolean {

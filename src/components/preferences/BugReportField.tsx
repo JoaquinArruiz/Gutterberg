@@ -105,16 +105,9 @@ export function BugReportField() {
           <GitHubIcon />
           {t("preferences.help.report")}
         </Button>
-        <Button
-          size="md"
-          className="flex items-center gap-2"
-          disabled={DISCORD_URL === null}
-          title={DISCORD_URL === null ? t("preferences.help.discordSoon") : undefined}
-          onClick={() => DISCORD_URL && void openExternalLink(DISCORD_URL)}
-        >
+        <Button size="md" className="flex items-center gap-2" onClick={() => void openExternalLink(DISCORD_URL)}>
           <DiscordIcon />
           {t("preferences.help.discord")}
-          {DISCORD_URL === null && <span className="font-normal opacity-70">{t("preferences.help.discordSoon")}</span>}
         </Button>
       </div>
       {log === "empty" && <p className="text-[var(--muted)]">{t("preferences.help.logEmpty")}</p>}
