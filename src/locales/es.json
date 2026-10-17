@@ -1353,7 +1353,7 @@
     },
     "sort": {
       "title": "Ordenar páginas",
-      "note": "Etiqueta cada página (cartas, dorsos, reglas, portada, otra) para poder omitir las que no tienen piezas. No cambia nada hasta que lo apliques.",
+      "note": "Etiqueta cada página (piezas, dorsos, reglas, portada, otra) para poder omitir las que no tienen piezas. No cambia nada hasta que lo apliques.",
       "button": "Ordenar páginas con IA",
       "estimating": "Preparando…",
       "running": "Ordenando…",

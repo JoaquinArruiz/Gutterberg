@@ -88,7 +88,7 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(print().finish.marks.widthMm).toBe(2);
     typeNumber(screen.getByRole("textbox", { name: "Tick length" }), "5");
     expect(print().finish.marks.lengthMm).toBe(5);
-    fireEvent.change(screen.getByLabelText("Colour"), { target: { value: "#ff0000" } });
+    fireEvent.change(screen.getByLabelText("Color"), { target: { value: "#ff0000" } });
     expect(print().finish.marks.color).toBe("#ff0000");
     expect(print().finish.marks.line).toBe("solid");
     fireEvent.click(screen.getByRole("radio", { name: "Dotted" }));

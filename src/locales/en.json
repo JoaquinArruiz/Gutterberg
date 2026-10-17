@@ -495,7 +495,7 @@
         "dotted": "Dotted"
       },
       "width": "Line width",
-      "color": "Colour",
+      "color": "Color",
       "length": "Tick length",
       "offset": "Distance from the piece",
       "note": "Marks are printed on the front sheets only. Ticks start past the bleed."
@@ -561,7 +561,7 @@
       "calibrate": "Calibration sheet…",
       "calibration": {
         "title": "Calibration sheet",
-        "intro": "Many printers move the back of a sheet by a millimetre or two. This sheet shows by how much, so the backs line up with the fronts.",
+        "intro": "Many printers move the back of a sheet by a millimeter or two. This sheet shows by how much, so the backs line up with the fronts.",
         "step1": "Save the sheet and print it on both sides of one piece of paper, at actual size (100%, not “fit to page”). Use the same paper and printer settings as for your pieces.",
         "step2": "Hold the paper up to a light with the back facing you. At each crosshair of the front, see where its lines cross the rulers of the back.",
         "step3": "Type the numbers where the lines cross the rulers: the horizontal ruler gives X, the vertical one Y. Numbers to the right and downward are positive.",
@@ -569,7 +569,7 @@
         "saved": "Saved to {{path}}",
         "readingX": "Reading on the horizontal ruler (X)",
         "readingY": "Reading on the vertical ruler (Y)",
-        "cornersNote": "Read the centre first. If the corners give clearly different numbers, the printer also turns or scales the back, and an offset cannot fix that.",
+        "cornersNote": "Read the center first. If the corners give clearly different numbers, the printer also turns or scales the back, and an offset cannot fix that.",
         "replaces": "These numbers replace the current back offset.",
         "label": {
           "title": "Gutterberg · duplex calibration",
@@ -1047,7 +1047,7 @@
       },
       "line": {
         "title": "Solid, dashed or dotted",
-        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Line width and Colour are below, and ticks also have a length and a distance from the piece."
+        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Line width and Color are below, and ticks also have a length and a distance from the piece."
       },
       "sheet": {
         "title": "Check the sheet",
@@ -1279,7 +1279,7 @@
     "discard": "Discard",
     "notes": {
       "missing_cells": "Some places of the grid have no object: the last row may not be full.",
-      "crop_marks": "Crop marks in the margins line up with the grid.",
+      "crop_marks": "Cut marks in the margins line up with the grid.",
       "few_objects": "Only a few objects back this, so check it.",
       "uneven_sizes": "The pieces differ in size.",
       "touches_edge": "A piece touches the edge of the page.",
@@ -1353,7 +1353,7 @@
     },
     "sort": {
       "title": "Sort pages",
-      "note": "Labels every page (cards, backs, rules, cover, other) so pages without pieces can be skipped. Nothing changes until you apply it.",
+      "note": "Labels every page (pieces, backs, rules, cover, other) so pages without pieces can be skipped. Nothing changes until you apply it.",
       "button": "Sort pages with AI",
       "estimating": "Preparing…",
       "running": "Sorting…",
@@ -1362,7 +1362,7 @@
       "skipFor": "Skip page {{n}}",
       "skip": "Skip",
       "labels": {
-        "cards": "Cards",
+        "cards": "Pieces",
         "backs": "Backs",
         "rules": "Rules",
         "cover": "Cover",
