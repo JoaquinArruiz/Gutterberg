@@ -20,6 +20,11 @@ export type AiPrefs = {
   provider: AiProvider;
   /** Off = text only: no picture of any page is ever sent. */
   sendImages: boolean;
+  /**
+   * The server the user said not to be asked about again (`api.anthropic.com`), or empty to ask before every
+   * action. A different server, after a change of provider or address, is asked about again.
+   */
+  trustedHost: string;
   providers: Record<AiProvider, AiProviderSettings>;
 };
 
@@ -45,6 +50,7 @@ export const DEFAULT_AI: AiPrefs = {
   enabled: false,
   provider: "anthropic",
   sendImages: true,
+  trustedHost: "",
   providers: {
     anthropic: { model: DEFAULT_MODEL.anthropic, baseUrl: "", workspaceId: "" },
     openai_compatible: { model: "", baseUrl: "", workspaceId: "" },
@@ -74,6 +80,7 @@ export function normalizeAi(raw: unknown): AiPrefs {
     enabled: r.enabled === true,
     provider: AI_PROVIDERS.includes(r.provider as AiProvider) ? (r.provider as AiProvider) : DEFAULT_AI.provider,
     sendImages: r.sendImages !== false,
+    trustedHost: text(r.trustedHost, ""),
     providers,
   };
 }
@@ -103,3 +110,6 @@ export function providerHost(ai: AiPrefs): string {
   const rest = base.includes("://") ? base.slice(base.indexOf("://") + 3) : base;
   return rest.split("/")[0];
 }
+
+/** Whether an action can go without the notice: the user said not to be asked again about this very server. */
+export const skipsNotice = (ai: AiPrefs): boolean => ai.trustedHost !== "" && ai.trustedHost === providerHost(ai);

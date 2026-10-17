@@ -602,7 +602,7 @@
         "button": "Find backs with AI",
         "running": "Looking at the pieces…",
         "sends": "Sends a small picture of every piece to {{provider}}",
-        "ask": "Nothing is sent until you press Find backs with AI and confirm. You can check the pairs in the piece library after applying."
+        "ask": "Nothing is sent until you press Find backs with AI. You can check the pairs in the piece library after applying."
       },
       "backsPdf": "PDF with the backs",
       "commonBack": "Use it as the common back",
@@ -1305,7 +1305,7 @@
     "settings": {
       "title": "AI Mode (experimental)",
       "enable": "Use AI Mode (experimental)",
-      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one and confirm.",
+      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one.",
       "provider": "Provider",
       "model": "Model",
       "baseUrl": "Address",
@@ -1321,8 +1321,11 @@
       "keyNote": "The key goes straight to the system keychain. It is never shown again and never saved in a project or in these preferences.",
       "privacy": "Privacy",
       "sendImages": "Send page images",
-      "sendImagesOn": "Pages are sent as pictures. Before every action you see which pages go to which server.",
+      "sendImagesOn": "Pages are sent as pictures.",
       "sendImagesOff": "Text only: no picture is ever sent. The model gets sizes, counts of objects and the start of each page's text.",
+      "askFirst": "Ask before sending",
+      "askFirstOn": "Before every AI action, a notice shows what will be sent and to which server, and waits for Send.",
+      "askFirstOff": "No notice for {{host}}: AI actions send right away. A different provider or address is asked about again.",
       "test": "Connection",
       "testButton": "Test connection",
       "testing": "Testing…",
@@ -1339,10 +1342,7 @@
       "sortImages": "{{count}} pages ({{range}}) will be sent as small pictures, about {{size}} px, in {{requests}} requests.",
       "sortText": "Text only: no picture is sent. {{count}} pages ({{range}}) are described to the model (size, counts of objects, start of the text) in {{requests}} requests.",
       "pairImages": "{{count}} pieces will be sent as small pictures, about {{size}} px each, in one request.",
-      "estimate": "About {{input}} input tokens and up to {{output}} output tokens.",
-      "cost": "About ${{cost}} at list prices (approximate).",
-      "noCost": "No price is known for this model.",
-      "dontAsk": "Don't ask again before detecting on one page, until I close the app",
+      "dontAsk": "Don't ask again before sending to {{host}}",
       "send": "Send",
       "cancel": "Cancel"
     },

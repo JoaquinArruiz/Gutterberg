@@ -25,7 +25,6 @@ export const EstimateSchema = z.object({
   output_tokens: z.number(),
   host: z.string(),
   sends_images: z.boolean(),
-  cost_usd: z.number().nullable(),
 });
 export type Estimate = z.infer<typeof EstimateSchema>;
 
@@ -73,7 +72,7 @@ export async function aiTestConnection(): Promise<Usage> {
 
 export type AiTask = "detect" | "sort" | "pair";
 
-/** What a run would send and cost, from the very requests it would make. Sends nothing. */
+/** What a run would send, from the very requests it would make. Sends nothing. */
 export async function aiEstimate(task: "detect" | "sort", documentId: DocumentId, pages: number[]): Promise<Estimate> {
   const { config, sendImages } = settings();
   return EstimateSchema.parse(await call("ai_estimate", { task, documentId, pages, config, sendImages }));
@@ -101,7 +100,7 @@ const AiSideSchema = z.object({
   upside_down: z.boolean(),
 });
 
-/** What Pair backs with AI would send and cost. Sends nothing. */
+/** What Pair backs with AI would send. Sends nothing. */
 export async function aiEstimatePairing(pieces: PairPiece[]): Promise<Estimate> {
   const { config, sendImages } = settings();
   return EstimateSchema.parse(await call("ai_estimate_pairing", { pieces, config, sendImages }));

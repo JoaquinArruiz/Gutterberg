@@ -1,12 +1,9 @@
-//! What a run will cost, worked out from the requests themselves before anything is sent. Tokens are
-//! approximate (a picture costs about width x height / 750, text about a quarter of its characters);
-//! dollars are shown only for a model whose list price is known here.
+//! What a run will send, worked out from the requests themselves before anything is sent. Tokens are
+//! approximate (a picture costs about width x height / 750, text about a quarter of its characters). No price
+//! is worked out: list prices change, and an app that is not updated would show a wrong one.
 
 use crate::provider::{AiRequest, ProviderConfig};
 use serde::{Deserialize, Serialize};
-
-/// List prices in US dollars per million input and output tokens, as of 2026-10: approximate.
-const PRICES: &[(&str, f64, f64)] = &[("claude-sonnet-5-5", 3.0, 15.0)];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Estimate {
@@ -18,19 +15,10 @@ pub struct Estimate {
     pub host: String,
     /// Whether any picture is sent (false = text only).
     pub sends_images: bool,
-    /// Approximate cost, only for models with a known price.
-    pub cost_usd: Option<f64>,
 }
 
 fn image_tokens(width: u32, height: u32) -> u64 {
     (u64::from(width) * u64::from(height)).div_ceil(750)
-}
-
-pub fn price_for(model: &str) -> Option<(f64, f64)> {
-    PRICES
-        .iter()
-        .find(|(m, _, _)| model.starts_with(m))
-        .map(|(_, i, o)| (*i, *o))
 }
 
 pub fn estimate(requests: &[AiRequest], config: &ProviderConfig) -> Estimate {
@@ -48,8 +36,6 @@ pub fn estimate(requests: &[AiRequest], config: &ProviderConfig) -> Estimate {
         // Answers are short: about half of what is allowed.
         output += u64::from(r.max_output_tokens) / 2;
     }
-    let cost_usd =
-        price_for(&config.model).map(|(i, o)| (input as f64 * i + output as f64 * o) / 1_000_000.0);
     Estimate {
         requests: requests.len(),
         images,
@@ -57,6 +43,5 @@ pub fn estimate(requests: &[AiRequest], config: &ProviderConfig) -> Estimate {
         output_tokens: output,
         host: config.host(),
         sends_images: images > 0,
-        cost_usd,
     }
 }

@@ -602,7 +602,7 @@
         "button": "Buscar dorsos con IA",
         "running": "Mirando las piezas…",
         "sends": "Envía una imagen pequeña de cada pieza a {{provider}}",
-        "ask": "No se envía nada hasta que presiones Buscar dorsos con IA y confirmes. Después de aplicar, puedes revisar las parejas en la biblioteca de piezas."
+        "ask": "No se envía nada hasta que pulses Buscar dorsos con IA. Después de aplicar, puedes revisar las parejas en la biblioteca de piezas."
       },
       "backsPdf": "PDF con los dorsos",
       "commonBack": "Usarlo como dorso común",
@@ -1305,7 +1305,7 @@
     "settings": {
       "title": "Modo IA (experimental)",
       "enable": "Usar el Modo IA (experimental)",
-      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno y confirmes.",
+      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno.",
       "provider": "Proveedor",
       "model": "Modelo",
       "baseUrl": "Dirección",
@@ -1321,8 +1321,11 @@
       "keyNote": "La clave va directo al llavero del sistema. No se vuelve a mostrar y nunca se guarda en un proyecto ni en estas preferencias.",
       "privacy": "Privacidad",
       "sendImages": "Enviar imágenes de las páginas",
-      "sendImagesOn": "Las páginas se envían como imágenes. Antes de cada acción ves qué páginas van a qué servidor.",
+      "sendImagesOn": "Las páginas se envían como imágenes.",
       "sendImagesOff": "Solo texto: nunca se envía una imagen. El modelo recibe tamaños, cantidad de objetos y el comienzo del texto de cada página.",
+      "askFirst": "Preguntar antes de enviar",
+      "askFirstOn": "Antes de cada acción con IA, un aviso muestra qué se enviará y a qué servidor, y espera a que pulses Enviar.",
+      "askFirstOff": "Sin aviso para {{host}}: las acciones con IA se envían de inmediato. Si cambias de proveedor o de dirección, se vuelve a preguntar.",
       "test": "Conexión",
       "testButton": "Probar conexión",
       "testing": "Probando…",
@@ -1339,10 +1342,7 @@
       "sortImages": "{{count}} páginas ({{range}}) se enviarán como imágenes pequeñas, de unos {{size}} px, en {{requests}} solicitudes.",
       "sortText": "Solo texto: no se envía ninguna imagen. Se describen al modelo {{count}} páginas ({{range}}) (tamaño, cantidad de objetos, comienzo del texto) en {{requests}} solicitudes.",
       "pairImages": "Se enviarán {{count}} piezas como imágenes pequeñas, de unos {{size}} px cada una, en una solicitud.",
-      "estimate": "Unos {{input}} tokens de entrada y hasta {{output}} de salida.",
-      "cost": "Unos ${{cost}} a precios de lista (aproximado).",
-      "noCost": "No se conoce el precio de este modelo.",
-      "dontAsk": "No preguntar de nuevo al detectar en una página, hasta que cierre la aplicación",
+      "dontAsk": "No volver a preguntar antes de enviar a {{host}}",
       "send": "Enviar",
       "cancel": "Cancelar"
     },

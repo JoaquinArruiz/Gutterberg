@@ -1,5 +1,6 @@
 // AI Mode from the UI (M19): ask, confirm, run, and keep the answer as a proposal. Every action first
-// works out what would be sent and waits for a yes; none changes the project. Applying a proposal is
+// works out what would be sent and waits for a yes, unless the user said not to be asked again about that
+// server; none changes the project. Applying a proposal is
 // the user's choice, and for Sort pages it is `layout-store.applySkips`: one undo step. Pair backs with AI is
 // applied by its dialog, like the other pairing rules.
 
@@ -8,6 +9,7 @@ import { useDocumentStore } from "../stores/document-store";
 import { useEditorStore } from "../stores/editor-store";
 import { useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
+import { skipsNotice } from "./ai";
 import {
   type AiTask,
   aiDetectPieces,
@@ -25,7 +27,10 @@ import type { Card } from "./sheet-api";
 
 const ai = () => useAiStore.getState();
 
+const noticeSkipped = () => skipsNotice(usePreferencesStore.getState().prefs.ai);
+
 async function ask(task: "detect" | "sort", documentId: number, pages: number[]): Promise<void> {
+  if (noticeSkipped()) return execute(task, documentId, pages);
   ai().setError(task, null);
   ai().setUsage(task, null);
   ai().setEstimating(true);
@@ -40,15 +45,14 @@ async function ask(task: "detect" | "sort", documentId: number, pages: number[])
   }
 }
 
-/** Detect pieces on the viewed page with the AI engine: confirm first, unless the user turned that off for the session. */
+/** Detect pieces on the viewed page with the AI engine. */
 export async function askDetect(): Promise<void> {
   const { activeId, currentPage } = useDocumentStore.getState();
   useEditorStore.getState().setDraft(null);
-  if (ai().skipDetectConfirm) return execute("detect", activeId, [currentPage]);
   return ask("detect", activeId, [currentPage]);
 }
 
-/** Label every page of the PDF being edited: always confirmed first. */
+/** Label every page of the PDF being edited. */
 export async function askSort(): Promise<void> {
   const { activeId, pages } = useDocumentStore.getState();
   ai().setSort(null);
@@ -60,7 +64,7 @@ export async function askSort(): Promise<void> {
 }
 
 /**
- * Pair backs with AI: a small picture of each of `cards` (the piece library), always confirmed first. `documents`
+ * Pair backs with AI: a small picture of each of `cards` (the piece library). `documents`
  * are the project's PDFs in order, for the letter each piece is named with.
  */
 export async function askPair(cards: Card[], documents: number[]): Promise<void> {
@@ -75,11 +79,12 @@ export async function askPair(cards: Card[], documents: number[]): Promise<void>
     name: pieceName(c, documentLetter(documents, c.id.document_id)),
   }));
   const keys = cards.map((c) => cardIdKey(c.id));
+  const { activeId } = useDocumentStore.getState();
+  if (noticeSkipped()) return execute(task, activeId, [], { keys, sent });
   ai().setEstimating(true);
   try {
     const estimate = await aiEstimatePairing(sent);
     const provider = usePreferencesStore.getState().prefs.ai.provider;
-    const { activeId } = useDocumentStore.getState();
     ai().setConfirm({ task, documentId: activeId, pages: [], pieces: { keys, sent }, estimate, provider });
   } catch (e) {
     ai().setError(task, toAppError(e));

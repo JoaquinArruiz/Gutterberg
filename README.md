@@ -163,8 +163,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 - Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
   pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your
-  own key kept in the system keychain. Every action asks first what is sent and what it costs, and every result is a
-  proposal you can edit.
+  own key kept in the system keychain. Every action shows what is sent and to which server and asks first (until
+  you say not to ask again for that server), and every result is a proposal you can edit.
 
 **Languages and help**
 
@@ -202,8 +202,9 @@ analytics and no tracking. Only two things use the network:
   request as it sees any visit to a web page.
 - **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
   a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
-  backs. Each action shows what it sends and asks first; nothing is sent in the background. Your key is kept in the
-  system keychain. With Ollama running on your own computer, nothing leaves it.
+  backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
+  for that server (Preferences › AI Mode › Ask before sending brings the question back); nothing is sent in the
+  background. Your key is kept in the system keychain. With Ollama running on your own computer, nothing leaves it.
 
 ## Why
 

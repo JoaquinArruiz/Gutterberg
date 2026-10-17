@@ -453,8 +453,11 @@ pictures. A result is always an editable proposal, or for pairing, a summary to 
 - **Keys** live only in the system keychain (`keyring`: Keychain, Credential Manager, Secret Service), written and
   read in Rust. The interface can ask whether a key exists, set it and delete it; it can never read it. A keychain
   that fails means AI Mode cannot send; there is no fallback.
-- **Every action asks first** (provider, server, whether pages go as pictures or text, requests, tokens, cost when
-  known) and sends nothing until the user says so. Only plain `http://` to local or private addresses is accepted.
+- **An action asks first** (provider, server, whether pages or pieces go as pictures or text, how many requests) and
+  sends nothing until the user presses Send. "Don't ask again" in that notice saves the server (`ai.trustedHost`)
+  once Send is pressed; only that server skips the notice, so another provider or address is asked about again, and
+  Preferences › AI Mode › Ask before sending clears it. No price is shown: list prices change and a stale one would
+  mislead. Only plain `http://` to local or private addresses is accepted.
 - Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
   pieces for pairing, never the PDF.
 
@@ -527,7 +530,7 @@ Decisions that shaped the product, so they are not re-argued by accident.
 | Languages | English and neutral Latin American Spanish; decimal separator is a preference and number fields accept both. Number fields also take arithmetic (`src/lib/arithmetic.ts`: a small parser for `+ - * /` and parentheses, never `eval`). |
 | Project file | `.gtr`, JSON with a `gutterberg-project` signature and a version, checked on open: not a project / older, migrate / newer, refuse. |
 | Locked PDFs | Locked against printing or modifying: refused. Other restrictions: kept on the output. Never stripped. |
-| AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; every action asks first. |
+| AI | Optional, off and hidden by default; fixed prompts, no chat; a second engine behind the same button; results are editable proposals; keys only in the keychain; asks before sending to a server until told not to. |
 | Command line | A separate binary, `gutterberg-cli`, with export and check only; settings change in the app. |
 | Help tips | One catalog; tours point at the interface with React Joyride (MIT); shown at the moment of need, never as a long tour at first launch except the short welcome. |
 | Images | Each import is a one-page-per-image PDF; pixels never resampled; the user picks the size, never stretched. |

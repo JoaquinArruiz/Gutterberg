@@ -38,7 +38,6 @@ const estimate: Estimate = {
   output_tokens: 456,
   host: "api.anthropic.com",
   sends_images: true,
-  cost_usd: 0.01,
 };
 
 beforeEach(() => {

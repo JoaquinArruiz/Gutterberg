@@ -58,7 +58,6 @@ const anEstimate: Estimate = {
   output_tokens: 1900,
   host: "api.anthropic.com",
   sends_images: true,
-  cost_usd: 0.1,
 };
 
 function choose(name: string, option: string) {
@@ -80,7 +79,6 @@ beforeEach(() => {
   useLayoutStore.getState().resetDocument(6);
   useEditorStore.getState().setDraft(null);
   ai().clear();
-  ai().setSkipDetectConfirm(false);
   vi.mocked(aiKeyStatus).mockResolvedValue(false);
 });
 afterEach(cleanup);
@@ -315,6 +313,18 @@ describe("Preferences › AI Mode", () => {
     expect(screen.getByRole("alert").textContent).toContain("The provider answered 401: bad key");
   });
 
+  it("asks before sending until told not to, and the switch brings the question back", () => {
+    prefs().setAiTrustedHost("api.anthropic.com");
+    render(<AiSettings />);
+    const ask = screen.getByRole("switch", { name: /Ask before sending/ });
+    expect(ask.getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByText(/No notice for api.anthropic.com/)).toBeTruthy();
+    fireEvent.click(ask);
+    expect(prefs().prefs.ai.trustedHost).toBe("");
+    fireEvent.click(screen.getByRole("switch", { name: /Ask before sending/ }));
+    expect(prefs().prefs.ai.trustedHost).toBe("api.anthropic.com");
+  });
+
   it("says what text only means", () => {
     render(<AiSettings />);
     expect(screen.getByText(/Pages are sent as pictures/)).toBeTruthy();
@@ -327,7 +337,7 @@ describe("Preferences › AI Mode", () => {
 describe("the notice before anything is sent", () => {
   beforeEach(() => prefs().setAiEnabled(true));
 
-  it("names the server, the pages and the cost for a sort, with Send and Cancel", () => {
+  it("names the server and the pages for a sort, with Send and Cancel, and no cost", () => {
     render(<AiConfirmDialog />);
     act(() =>
       ai().setConfirm({
@@ -346,18 +356,14 @@ describe("the notice before anything is sent", () => {
       "49 pages (3–10, 12–52) will be sent as small pictures",
     );
     expect(screen.getByTestId("ai-what").textContent).toContain("in 3 requests");
-    expect(screen.getByTestId("ai-estimate").textContent).toContain(
-      "About 24,500 input tokens and up to 1,900 output tokens.",
-    );
-    expect(screen.getByTestId("ai-estimate").textContent).toContain("About $0.10 at list prices");
-    // A sort has no "don't ask again".
-    expect(screen.queryByText(/Don't ask again/)).toBeNull();
+    expect(screen.queryByText(/tokens|\$/)).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "Don't ask again before sending to api.anthropic.com" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(ai().confirm).toBeNull();
     expect(dialog.open).toBe(false);
   });
 
-  it("says text only when no picture goes, and offers to stop asking before detecting on one page", () => {
+  it("says text only when no picture goes, and stops asking about that server once Send is pressed", async () => {
     render(<AiConfirmDialog />);
     act(() =>
       ai().setConfirm({
@@ -369,7 +375,6 @@ describe("the notice before anything is sent", () => {
           requests: 1,
           images: 0,
           sends_images: false,
-          cost_usd: null,
           host: "localhost:11434",
         },
         provider: "ollama",
@@ -377,9 +382,27 @@ describe("the notice before anything is sent", () => {
     );
     expect(screen.getByTestId("ai-host").textContent).toBe("localhost:11434");
     expect(screen.getByTestId("ai-what").textContent).toContain("Text only: no picture is sent");
-    expect(screen.getByTestId("ai-estimate").textContent).toContain("No price is known for this model.");
+    vi.mocked(aiDetectPieces).mockResolvedValue({
+      detection: { proposals: [], reasons: [] },
+      usage: { input_tokens: 1, output_tokens: 1 },
+    });
+    prefs().setAiProvider("ollama");
+    fireEvent.click(screen.getByRole("checkbox", { name: /Don't ask again before sending to localhost:11434/ }));
+    // Ticking it is not enough: nothing changes until Send.
+    expect(prefs().prefs.ai.trustedHost).toBe("");
+    fireEvent.click(screen.getByRole("button", { name: "Send" }));
+    await act(async () => {});
+    expect(prefs().prefs.ai.trustedHost).toBe("localhost:11434");
+  });
+
+  it('forgets a ticked "Don\'t ask again" when the user cancels', () => {
+    render(<AiConfirmDialog />);
+    act(() =>
+      ai().setConfirm({ task: "sort", documentId: 0, pages: [0], estimate: anEstimate, provider: "anthropic" }),
+    );
     fireEvent.click(screen.getByRole("checkbox", { name: /Don't ask again/ }));
-    expect(ai().skipDetectConfirm).toBe(true);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(prefs().prefs.ai.trustedHost).toBe("");
   });
 
   it("sends only on Send", async () => {

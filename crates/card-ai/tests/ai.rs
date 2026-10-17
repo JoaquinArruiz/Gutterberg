@@ -3,7 +3,7 @@
 //! transport against a server on this computer.
 use card_ai::adapters;
 use card_ai::error::redact;
-use card_ai::estimate::{estimate, price_for};
+use card_ai::estimate::estimate;
 use card_ai::pairing::{pair_request, parse_pairing, PieceSide, Side, MAX_PIECES};
 use card_ai::sort::{parse_sort, sort_requests, Label, PageSummary, SortInput, BATCH};
 use card_ai::tasks::{detect_request, parse_detect, MAX_CONFIDENCE};
@@ -904,14 +904,6 @@ fn the_estimate_counts_pictures_text_and_requests_before_anything_is_sent() {
         one.input_tokens
     );
     assert_eq!(one.output_tokens, 256);
-    let cost = one.cost_usd.unwrap();
-    assert!(cost > 0.005 && cost < 0.02, "{cost}");
-
-    // Another model has no known price: tokens only.
-    let other = estimate(&[request()], &config(ProviderKind::OpenaiCompatible));
-    assert!(other.cost_usd.is_none());
-    assert!(price_for("claude-sonnet-5-5-20260101").is_some());
-    assert!(price_for("gpt-x").is_none());
 
     // Text only sends no picture.
     let mut text = request();

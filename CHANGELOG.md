@@ -16,8 +16,12 @@ Gutterberg has done what I built it for since the first versions: take a print-a
 - Cut marks can be dashed or dotted: Print settings › Cut marks › Line (Solid, Dashed or Dotted), for ticks and for lines in the gaps. The sheet preview and the export draw them the same way, still as vector lines, and the command line exports them as saved in the project. Projects without the setting open with solid lines.
 - A tutorial works with help tips turned off, no help tip shows while one runs, and nothing about it is saved. One that needs a PDF, or a PDF with pieces, says so and offers Open PDF… or the Mark pieces and export tutorial; it never opens a file or changes the project by itself.
 - Detect with AI can find several grids on one page, like the other engines: a page with blocks of pieces of different sizes gets one proposal with a grid per block, and applying it makes them the page's grids, in one undo step.
-- Pair backs with AI: with AI Mode on, Pair backs automatically… has By picture, with AI, for backs no rule can find, such as a back per deck or backs in another order. Find backs with AI sends a small picture of every piece (up to 100) after asking, as every AI action does, and the dialog shows how many fronts got a back before you apply it. Applying gives each front its back, turns only the backs that are upside down, and stops printing every piece found to be a back, in one undo step.
+- Pair backs with AI: with AI Mode on, Pair backs automatically… has By picture, with AI, for backs no rule can find, such as a back per deck or backs in another order. Find backs with AI sends a small picture of every piece (up to 100), and the dialog shows how many fronts got a back before you apply it. Applying gives each front its back, turns only the backs that are upside down, and stops printing every piece found to be a back, in one undo step.
 - The Discord button in Preferences › About › Found a bug? opens Gutterberg's Discord server (after showing its address, like every link), to ask questions, share layouts and talk about what comes next.
+
+### Changed
+
+- The notice before an AI action no longer shows tokens or a price, which went stale as list prices changed and was only known for one model. It still names the server and what is sent, and its "Don't ask again" now works for every AI action and is kept: it stops the notice for that server only, so a new provider or address is asked about again. Preferences › AI Mode › Ask before sending turns the notice back on.
 
 ## 0.16.0 (2026-10-15)
 

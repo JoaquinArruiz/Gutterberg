@@ -149,6 +149,8 @@ type PreferencesState = {
   setAiEnabled: (enabled: boolean) => void;
   setAiProvider: (provider: AiProvider) => void;
   setAiSendImages: (on: boolean) => void;
+  /** `host` stops the notice before sending to that server; empty asks before every action again. */
+  setAiTrustedHost: (host: string) => void;
   /** The model and address typed for one provider. */
   setAiProviderSettings: (provider: AiProvider, patch: Partial<AiProviderSettings>) => void;
   setUpdateNotify: (notify: UpdateNotify) => void;
@@ -289,6 +291,7 @@ export function createPreferencesStore(storage: KeyValueStorage) {
       setAiEnabled: (enabled) => edit((p) => ({ ...p, ai: { ...p.ai, enabled } })),
       setAiProvider: (provider) => edit((p) => ({ ...p, ai: { ...p.ai, provider } })),
       setAiSendImages: (sendImages) => edit((p) => ({ ...p, ai: { ...p.ai, sendImages } })),
+      setAiTrustedHost: (trustedHost) => edit((p) => ({ ...p, ai: { ...p.ai, trustedHost } })),
       setAiProviderSettings: (provider, patch) =>
         edit((p) => ({
           ...p,

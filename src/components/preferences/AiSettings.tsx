@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AI_PROVIDERS, type AiProvider, DEFAULT_BASE_URL, DEFAULT_MODEL, needsKey } from "../../lib/ai";
+import {
+  AI_PROVIDERS,
+  type AiProvider,
+  DEFAULT_BASE_URL,
+  DEFAULT_MODEL,
+  needsKey,
+  providerHost,
+  skipsNotice,
+} from "../../lib/ai";
 import { aiDeleteKey, aiKeyStatus, aiSetKey, aiTestConnection } from "../../lib/ai-api";
 import { formatError, toAppError } from "../../lib/errors";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -244,6 +252,14 @@ export function AiSettings() {
               onChange={set.setAiSendImages}
               label={t("ai.settings.sendImages")}
               hint={ai.sendImages ? t("ai.settings.sendImagesOn") : t("ai.settings.sendImagesOff")}
+            />
+            <Switch
+              checked={!skipsNotice(ai)}
+              onChange={(on) => set.setAiTrustedHost(on ? "" : providerHost(ai))}
+              label={t("ai.settings.askFirst")}
+              hint={
+                skipsNotice(ai) ? t("ai.settings.askFirstOff", { host: providerHost(ai) }) : t("ai.settings.askFirstOn")
+              }
             />
           </Field>
 
