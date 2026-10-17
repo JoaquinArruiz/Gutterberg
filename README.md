@@ -18,11 +18,19 @@ Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 
-![The Source tab in Split view: the PDF page with its pieces marked on the left, the re-spaced result on the right](assets/screenshots/split-view.png)
+![The Source tab in Split view: a 3 × 3 page of cards with its grid marked on the left, and the same cards re-spaced with gutters on the right](assets/screenshots/split-view.png)
 
-| Print tab | Detect pieces | Several pages |
-| --- | --- | --- |
-| ![The Print tab: the piece library with copies per piece and the sheet it makes](assets/screenshots/print-tab.png) | ![Detect pieces proposing a 2 × 2 grid found from the PDF's own objects](assets/screenshots/detect-pieces.png) | ![A multi-page PDF in the Source tab, with a grid shared by several pages](assets/screenshots/source-tab.png) |
+| Several grids on one page | Detect pieces |
+| --- | --- |
+| ![Two grids of different sizes on one page, in their own colors, grouped in a folder in the Grids and pieces panel](assets/screenshots/several-grids.png) | ![Detect pieces proposing seven pieces, crooked and of different sizes, found on a scan](assets/screenshots/detect-pieces.png) |
+
+| Print tab with cut marks | Gutterfold |
+| --- | --- |
+| ![The Print tab: the piece library and a sheet of cards with dashed cut lines in the gaps](assets/screenshots/print-tab.png) | ![Each card printed with its back beside it, cut apart, with dashed cut marks in the margins](assets/screenshots/gutterfold.png) |
+
+| Tutorials | Keyboard shortcuts |
+| --- | --- |
+| ![The Tutorials list in Preferences, grouped by tab, with a search field](assets/screenshots/tutorials.png) | ![The keyboard shortcuts sheet with its search field](assets/screenshots/shortcuts.png) |
 
 ## Download
 
