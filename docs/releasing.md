@@ -24,11 +24,10 @@ Write notes there as you work. At release time the heading becomes `## 1.1.0 (20
 `## Unreleased` goes above it. The workflow copies the section of the tag's version into the release text
 and `latest.json` (what the app shows under "What's new"). English only.
 
-From 1.0.0 on, every version has a name, which goes after the date: `## 1.1.0 (2026-11-02) · Name`
-(`scripts/check-release.sh` finds the section by the version, the second word of the heading). The section opens
-with `### Name` and a short paragraph on why the version exists and what it changes, then the usual lists, so the
-name and the paragraph also reach the release text and "What's new". The number still follows semver; the name is
-free.
+From 1.0.0 on, the section opens with a short paragraph on why the version exists and what it changes, before
+the usual lists, so it also reaches the release text and "What's new". A version may get a name later; it would go
+after the date, `## 1.1.0 (2026-11-02) · Name`, since `scripts/check-release.sh` finds the section by the second
+word of the heading.
 
 ## Once, before the first release
 
