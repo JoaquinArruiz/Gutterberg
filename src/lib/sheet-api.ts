@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 import type { OutputSettings } from "../stores/layout-store";
 import { CardIdSchema, type DocumentId, OrientedRectSchema } from "./card";
-import { SHEET_WARNINGS } from "./finish";
+import { MARK_LINES, SHEET_WARNINGS } from "./finish";
 import { type LayoutDocument, outputSettings, type PrintProject, printDocuments } from "./print-request";
 import type { PageIssue, PageSize } from "./tauri";
 import { PageIssueSchema } from "./tauri";
@@ -49,6 +49,9 @@ export const OutputSheetSchema = z.object({
     .object({
       width_pt: z.number(),
       color: z.tuple([z.number(), z.number(), z.number()]),
+      line: z.enum(MARK_LINES).optional(),
+      /** On and off lengths in points; empty or absent = solid. */
+      dash: z.array(z.number()).optional(),
       lines: z.array(z.tuple([z.number(), z.number(), z.number(), z.number()])),
     })
     .nullish(),

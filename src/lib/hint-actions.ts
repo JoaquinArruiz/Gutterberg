@@ -17,6 +17,7 @@ const ACTIONS: Record<HintActionId, () => void> = {
   "open-section:print.sheet": () => openSection("print.sheet"),
   "open-section:print.page": () => openSection("print.page"),
   "open-section:print.duplex": () => openSection("print.duplex"),
+  "open-section:print.marks": () => openSection("print.marks"),
   "start-tutorial:mark-and-export": () => useUiStore.getState().startTutorial("mark-and-export"),
 };
 

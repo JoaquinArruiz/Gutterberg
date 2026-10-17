@@ -35,6 +35,7 @@ export type HintActionId =
   | "open-section:print.sheet"
   | "open-section:print.page"
   | "open-section:print.duplex"
+  | "open-section:print.marks"
   | "start-tutorial:mark-and-export";
 
 /** Elements a step can point at; each is marked `data-hint-target="<id>"` in the UI. */
@@ -63,7 +64,9 @@ export type HintTargetId =
   | "gutterfold-pairs"
   | "pair-backs-button"
   | "calibrate-button"
-  | "back-offset";
+  | "back-offset"
+  | "marks-section"
+  | "mark-line";
 
 /** App events that can move a step forward, fired with `emitHintEvent`. */
 export type HintEventId =
@@ -79,6 +82,8 @@ export type HintEventId =
   | "piece-size-changed"
   | "sheet-size-changed"
   | "duplex-changed"
+  | "marks-changed"
+  | "mark-line-changed"
   | "calibration-opened"
   | "pairing-opened"
   | "pairing-applied"

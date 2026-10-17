@@ -12,12 +12,14 @@ import {
   FOLDS,
   type Fold,
   MARK_LENGTH_RANGE,
+  MARK_LINES,
   MARK_OFFSET_RANGE,
   MARK_STYLES,
   MARK_WIDTH_RANGE,
   MAX_BLEED_MM,
   MAX_DUPLEX_OFFSET_MM,
   MAX_FOLD_GAP_MM,
+  type MarkLine,
   type MarkStyle,
   type SheetWarning,
 } from "../../lib/finish";
@@ -68,6 +70,7 @@ export function MarksSection() {
     <CollapsibleSection
       id="print.marks"
       title={t("print.sections.marks")}
+      hintTarget="marks-section"
       defaultOpen={false}
       info={t("print.marks.note")}
     >
@@ -82,6 +85,17 @@ export function MarksSection() {
       </FieldRow>
       {on && (
         <>
+          <div data-hint-target="mark-line">
+            <FieldRow label={t("print.marks.line")}>
+              <Segmented<MarkLine>
+                fill
+                label={t("print.marks.line")}
+                value={marks.line}
+                onChange={(line) => setMarks({ line })}
+                options={MARK_LINES.map((value) => ({ value, label: t(`print.marks.lines.${value}`) }))}
+              />
+            </FieldRow>
+          </div>
           <MeasurementInput
             label={t("print.marks.width")}
             precise

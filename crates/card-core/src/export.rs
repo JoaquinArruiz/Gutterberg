@@ -20,7 +20,7 @@
 use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
-use crate::finish::{bleed_regions, plan_and_finish, Finishing, SheetMarks};
+use crate::finish::{bleed_regions, plan_and_finish, Finishing, MarkLine, SheetMarks};
 use crate::geometry::{PageSize, Rect};
 use crate::layout::{calculate_fitting_layout, GridLayout, LayoutResult};
 use crate::sheet::{
@@ -751,6 +751,13 @@ fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
     let mut ops = format!("q\n{r} {g} {b} RG\n{} w\n", fmt(marks.width_pt));
+    if !marks.dash.is_empty() {
+        let dash: Vec<String> = marks.dash.iter().map(|&d| fmt(d)).collect();
+        ops.push_str(&format!("[{}] 0 d\n", dash.join(" ")));
+    }
+    if marks.line == MarkLine::Dotted {
+        ops.push_str("1 J\n");
+    }
     for l in &marks.lines {
         ops.push_str(&format!(
             "{} {} m {} {} l S\n",

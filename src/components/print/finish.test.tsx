@@ -90,6 +90,11 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(print().finish.marks.lengthMm).toBe(5);
     fireEvent.change(screen.getByLabelText("Colour"), { target: { value: "#ff0000" } });
     expect(print().finish.marks.color).toBe("#ff0000");
+    expect(print().finish.marks.line).toBe("solid");
+    fireEvent.click(screen.getByRole("radio", { name: "Dotted" }));
+    expect(print().finish.marks.line).toBe("dotted");
+    fireEvent.click(screen.getByRole("radio", { name: "Dashed" }));
+    expect(print().finish.marks.line).toBe("dashed");
     // Lines in the gaps have no ticks to size.
     choose("Style", "Lines in the gaps");
     expect(screen.queryByRole("textbox", { name: "Tick length" })).toBeNull();
@@ -278,6 +283,21 @@ describe("Sheet preview with finishing", () => {
     expect(page.getAllByTestId("cut-mark")).toHaveLength(3);
     expect(page.getAllByTestId("bleed-frame")).toHaveLength(2);
     expect(page.getAllByTestId("cut-mark")[0].getAttribute("stroke")).toBe("rgb(255,0,0)");
+    expect(page.getAllByTestId("cut-mark")[0].getAttribute("stroke-dasharray")).toBeNull();
+  });
+
+  it("draws dashed and dotted cut marks with the pattern the engine gave", async () => {
+    const dotted = {
+      width_pt: 0.7,
+      color: [0, 0, 0] as [number, number, number],
+      lines: [[20, 10, 20, 20]] as [number, number, number, number][],
+    };
+    print().setSheets([{ ...sheet(1), marks: { ...dotted, line: "dotted", dash: [0, 2.1] } }], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    const mark = within(screen.getByTestId("sheet-page")).getByTestId("cut-mark");
+    expect(mark.getAttribute("stroke-dasharray")).toMatch(/^0 /);
+    expect(mark.getAttribute("stroke-linecap")).toBe("round");
   });
 
   it("shows the piece references on the sheet only while the switch is pressed", async () => {

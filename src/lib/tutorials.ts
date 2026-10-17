@@ -190,6 +190,34 @@ export const TUTORIALS = {
       },
     ],
   },
+  "cut-marks": {
+    group: "print",
+    needs: "pieces",
+    steps: [
+      goPrint,
+      {
+        title: "tutorials.cut-marks.style.title",
+        text: "tutorials.cut-marks.style.text",
+        action: { label: "tutorials.cut-marks.style.action", run: "open-section:print.marks" },
+        target: "marks-section",
+        placement: "left",
+        advanceOn: "marks-changed",
+      },
+      {
+        title: "tutorials.cut-marks.line.title",
+        text: "tutorials.cut-marks.line.text",
+        target: "mark-line",
+        placement: "left",
+        advanceOn: "mark-line-changed",
+      },
+      {
+        title: "tutorials.cut-marks.sheet.title",
+        text: "tutorials.cut-marks.sheet.text",
+        target: "sheet-preview",
+        placement: "top",
+      },
+    ],
+  },
   "find-piece": {
     group: "print",
     needs: "pieces",

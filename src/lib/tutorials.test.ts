@@ -36,7 +36,7 @@ const stepsOf = (id: (typeof TUTORIAL_IDS)[number]) => TUTORIALS[id].steps as re
 
 describe("tutorial catalog", () => {
   it("has tutorials, each with a group, a need and at least one step", () => {
-    expect(TUTORIAL_IDS.length).toBeGreaterThanOrEqual(11);
+    expect(TUTORIAL_IDS.length).toBeGreaterThanOrEqual(12);
     for (const id of TUTORIAL_IDS) {
       expect(TUTORIAL_GROUPS, id).toContain(TUTORIALS[id].group);
       expect(["nothing", "document", "pieces"], id).toContain(TUTORIALS[id].needs);
@@ -51,6 +51,7 @@ describe("tutorial catalog", () => {
       "gutterfold",
       "pair-backs",
       "paper-size",
+      "cut-marks",
       "find-piece",
       "several-grids",
       "images-as-pieces",

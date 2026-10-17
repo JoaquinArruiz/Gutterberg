@@ -488,6 +488,12 @@
         "ticks": "Ticks in the margins",
         "gaps": "Lines in the gaps"
       },
+      "line": "Line",
+      "lines": {
+        "solid": "Solid",
+        "dashed": "Dashed",
+        "dotted": "Dotted"
+      },
       "width": "Line width",
       "color": "Colour",
       "length": "Tick length",
@@ -1022,6 +1028,23 @@
         "title": "Portrait or landscape",
         "text": "In the Page section, Orientation turns the sheet (it isn't there for Same as source or Auto-fit to pieces). The margins are there too, and the sheet preview shows the result.",
         "action": "Open the Page section"
+      }
+    },
+    "cut-marks": {
+      "title": "Add cut marks",
+      "summary": "Print lines that show where to cut, solid, dashed or dotted.",
+      "style": {
+        "title": "Choose where the marks go",
+        "text": "Open the Cut marks section and choose a Style: Ticks in the margins draws short lines at every edge, outside the pieces; Lines in the gaps runs a line down the middle of each gap between them.",
+        "action": "Open the Cut marks section"
+      },
+      "line": {
+        "title": "Solid, dashed or dotted",
+        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Line width and Colour are below, and ticks also have a length and a distance from the piece."
+      },
+      "sheet": {
+        "title": "Check the sheet",
+        "text": "The sheet preview draws the marks as they will print. They go on the front sheets only. If a gap is too narrow for a line, or marks fall outside the page, the Cut marks section says so and how to fix it."
       }
     },
     "find-piece": {

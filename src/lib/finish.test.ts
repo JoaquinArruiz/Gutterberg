@@ -5,7 +5,14 @@ import { cleanColor, cleanFinish, DEFAULT_FINISH, type Finish, finishingOn, MAX_
 describe("finish settings", () => {
   it("start with everything off", () => {
     expect(finishingOn(DEFAULT_FINISH)).toBe(false);
-    expect(DEFAULT_FINISH.marks).toEqual({ style: "off", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 });
+    expect(DEFAULT_FINISH.marks).toEqual({
+      style: "off",
+      line: "solid",
+      widthMm: 0.25,
+      color: "#000000",
+      lengthMm: 3,
+      offsetMm: 1,
+    });
     expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror" });
     expect(DEFAULT_FINISH.duplex).toEqual({
       on: false,
@@ -24,7 +31,7 @@ describe("finish settings", () => {
 
   it("are pulled back into what the engine accepts", () => {
     const wild: Finish = {
-      marks: { style: "ticks", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3 },
+      marks: { style: "ticks", line: "dotted", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3 },
       bleed: { mm: 99, source: "source" },
       duplex: {
         ...DEFAULT_FINISH.duplex,
@@ -36,7 +43,14 @@ describe("finish settings", () => {
       },
     };
     const clean = cleanFinish(wild);
-    expect(clean.marks).toEqual({ style: "ticks", widthMm: 2, color: "#000000", lengthMm: 1, offsetMm: 0 });
+    expect(clean.marks).toEqual({
+      style: "ticks",
+      line: "dotted",
+      widthMm: 2,
+      color: "#000000",
+      lengthMm: 1,
+      offsetMm: 0,
+    });
     expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source" });
     expect(clean.duplex).toEqual({
       ...DEFAULT_FINISH.duplex,

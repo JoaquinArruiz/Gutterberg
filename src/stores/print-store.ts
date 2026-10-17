@@ -124,8 +124,11 @@ export const usePrintStore = create<PrintState>()(
       setSheetGrid: (sheetGrid) => set({ sheetGrid }),
       setRows: (n) => set({ rows: grid(n) }),
       setColumns: (n) => set({ columns: grid(n) }),
-      setMarks: (patch) =>
-        set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) })),
+      setMarks: (patch) => {
+        set((s) => ({ finish: cleanFinish({ ...s.finish, marks: { ...s.finish.marks, ...patch } }) }));
+        if ("style" in patch) emitHintEvent("marks-changed");
+        if ("line" in patch) emitHintEvent("mark-line-changed");
+      },
       setBleed: (patch) =>
         set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, ...patch } }) })),
       setDuplex: (patch) => {

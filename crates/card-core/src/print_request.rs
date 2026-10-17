@@ -16,8 +16,8 @@ use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, Pa
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use crate::finish::{
-    BackLayout, BackPair, BleedOptions, DuplexOptions, FinishOptions, Finishing, Flip, MarkOptions,
-    MarkStyle, MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
+    BackLayout, BackPair, BleedOptions, DuplexOptions, FinishOptions, Finishing, Flip, MarkLine,
+    MarkOptions, MarkStyle, MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::GridLayout;
@@ -246,6 +246,8 @@ pub struct Finish {
 #[serde(rename_all = "camelCase")]
 pub struct FinishMarks {
     pub style: MarkStyle,
+    #[serde(default)]
+    pub line: MarkLine,
     pub width_mm: f64,
     pub color: String,
     pub length_mm: f64,
@@ -693,6 +695,7 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
         options: FinishOptions {
             marks: MarkOptions {
                 style: m.style,
+                line: m.line,
                 width_mm: clamp_to(
                     m.width_mm,
                     MARK_WIDTH_RANGE.0,
@@ -1069,6 +1072,7 @@ mod tests {
         Finish {
             marks: FinishMarks {
                 style: MarkStyle::Gaps,
+                line: MarkLine::Dashed,
                 width_mm: 0.5,
                 color: "#FF0000".into(),
                 length_mm: 4.0,
@@ -1109,6 +1113,7 @@ mod tests {
         };
         let f = finishing(&finish(), &edits, &known());
         assert_eq!(f.options.marks.color, "#ff0000");
+        assert_eq!(f.options.marks.line, MarkLine::Dashed);
         assert_eq!(f.options.duplex.offset_y_mm, -1.0);
         assert_eq!(f.options.duplex.common_back, parse_piece_key("g:0:0:1:0"));
         assert_eq!(f.options.duplex.common_back_turn, Turn::R90);

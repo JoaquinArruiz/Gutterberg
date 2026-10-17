@@ -7,6 +7,9 @@ import { CARD_KEY } from "./card";
 
 export const MARK_STYLES = ["off", "ticks", "gaps"] as const;
 export type MarkStyle = (typeof MARK_STYLES)[number];
+/** How a cut mark is stroked. */
+export const MARK_LINES = ["solid", "dashed", "dotted"] as const;
+export type MarkLine = (typeof MARK_LINES)[number];
 export const BLEED_SOURCES = ["mirror", "source"] as const;
 export type BleedSource = (typeof BLEED_SOURCES)[number];
 export const FLIPS = ["long", "short"] as const;
@@ -27,7 +30,7 @@ export const MAX_DUPLEX_OFFSET_MM = 10;
 export const MAX_FOLD_GAP_MM = 5;
 
 export type Finish = {
-  marks: { style: MarkStyle; widthMm: number; color: string; lengthMm: number; offsetMm: number };
+  marks: { style: MarkStyle; line: MarkLine; widthMm: number; color: string; lengthMm: number; offsetMm: number };
   bleed: { mm: number; source: BleedSource };
   duplex: {
     on: boolean;
@@ -52,7 +55,7 @@ export type Finish = {
 };
 
 export const DEFAULT_FINISH: Finish = {
-  marks: { style: "off", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 },
+  marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 },
   bleed: { mm: 0, source: "mirror" },
   duplex: {
     on: false,
@@ -71,6 +74,7 @@ export const DEFAULT_FINISH: Finish = {
 export const FinishSchema = z.object({
   marks: z.object({
     style: z.enum(MARK_STYLES),
+    line: z.enum(MARK_LINES).default("solid"),
     widthMm: z.number(),
     color: z.string(),
     lengthMm: z.number(),
@@ -107,6 +111,7 @@ export function cleanFinish(f: Finish): Finish {
   return {
     marks: {
       style: f.marks.style,
+      line: f.marks.line,
       widthMm: clampTo(f.marks.widthMm, ...MARK_WIDTH_RANGE, d.marks.widthMm),
       color: cleanColor(f.marks.color),
       lengthMm: clampTo(f.marks.lengthMm, ...MARK_LENGTH_RANGE, d.marks.lengthMm),

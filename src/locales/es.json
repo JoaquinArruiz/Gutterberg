@@ -488,6 +488,12 @@
         "ticks": "Marcas en los márgenes",
         "gaps": "Líneas en las separaciones"
       },
+      "line": "Línea",
+      "lines": {
+        "solid": "Continua",
+        "dashed": "Discontinua",
+        "dotted": "Punteada"
+      },
       "width": "Grosor de la línea",
       "color": "Color",
       "length": "Largo de la marca",
@@ -1022,6 +1028,23 @@
         "title": "Vertical u horizontal",
         "text": "En la sección Página, Orientación gira la hoja (no aparece con Igual que el origen ni con Ajustar a las piezas automáticamente). Ahí también están los márgenes, y la vista previa de la hoja muestra el resultado.",
         "action": "Abrir la sección Página"
+      }
+    },
+    "cut-marks": {
+      "title": "Agregar marcas de corte",
+      "summary": "Imprime líneas que muestran por dónde cortar: continuas, discontinuas o punteadas.",
+      "style": {
+        "title": "Elige dónde van las marcas",
+        "text": "Abre la sección Marcas de corte y elige un Estilo: Marcas en los márgenes dibuja líneas cortas en cada borde, fuera de las piezas; Líneas en las separaciones traza una línea por el centro de cada separación entre ellas.",
+        "action": "Abrir la sección Marcas de corte"
+      },
+      "line": {
+        "title": "Continua, discontinua o punteada",
+        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Debajo están el Grosor de la línea y el Color, y las marcas en los márgenes también tienen un largo y una distancia a la pieza."
+      },
+      "sheet": {
+        "title": "Revisa la hoja",
+        "text": "La vista previa de la hoja dibuja las marcas tal como se imprimirán. Van solo en las hojas del frente. Si una separación es muy angosta para una línea, o hay marcas fuera de la página, la sección Marcas de corte lo avisa y dice cómo arreglarlo."
       }
     },
     "find-piece": {

@@ -187,6 +187,38 @@ fn a_grid_project_exports_as_the_app_does() {
 }
 
 #[test]
+fn dotted_cut_marks_export_as_the_app_does() {
+    let mut p = project(
+        vec![pdf(
+            0,
+            "01-default-3x3-a4.pdf",
+            1,
+            json!([grid(0, 0, 3, 3)]),
+            json!({}),
+        )],
+        no_edits(),
+        json!({}),
+    );
+    p["plan"]["finish"]["marks"]["line"] = json!("dotted");
+    same_as_the_app(
+        "dotted",
+        &p,
+        &[(0, examples().join("01-default-3x3-a4.pdf"))],
+    );
+    // `dir` would empty the folder `same_as_the_app` wrote to.
+    let out = std::env::temp_dir().join(format!(
+        "gutterberg-cli-test-{}-dotted/cli.pdf",
+        std::process::id()
+    ));
+    let doc = lopdf::Document::load(out).unwrap();
+    let id = *doc.get_pages().values().next().unwrap();
+    assert!(
+        card_core::export::drawn_content(&doc, id).contains("1 J"),
+        "round dots"
+    );
+}
+
+#[test]
 fn fronts_and_backs_of_two_pdfs_and_freeform_pieces_export_as_the_app_does() {
     let tilted = json!({ "0": [{ "center": { "x": 0.5, "y": 0.5 }, "width": 0.3, "height": 0.2, "angle_deg": 4 }] });
     let p = project(
