@@ -396,8 +396,9 @@ Preferences; everything that needs a document appears when one is open.
 
 The **welcome tour** is four short clips (masters in `assets/welcome/`, encoded by `scripts/encode-welcome.sh` into
 `public/welcome/`) in a dialog that opens once over the start screen. Help tips wait while it is open. Preferences ›
-Help holds the tour, the tip reset, the shortcuts and "Found a bug?", which copies the app info or opens the GitHub
-issue form after asking, with the version and system filled in.
+Help holds the tour, the tip reset, the shortcuts and the tutorials; Preferences › About holds "Found a bug?", which
+copies the app info or opens the GitHub issue form after asking, with the version and system filled in, or the
+Discord invitation. Every address the app opens is in `src/lib/external-links.ts` and in the opener permission.
 
 The tour's clips are cropped to their 4:3 picture (`crop=1440:1080:240:0` in the encode script; the masters have black
 at the sides, so a future export of the Figma frames should be 4:3) and shown beside the text; below about 720 px

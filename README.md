@@ -149,7 +149,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - A piece library with copies per piece, from several PDFs at once; plan the sheets or fill them automatically.
 - Turn pieces, sort them by dragging, and set a real size (for example 63 × 88 mm) or a percentage per piece,
   always a visible, explicit choice. Overflow is reported, never fixed by shrinking.
-- Cut marks, bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
+- Cut marks (ticks in the margins or lines in the gaps, solid, dashed or dotted), bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
   a back per piece, or every back paired automatically from where it is in the file.
 - Converts both ways: a gutterfold file prints double-sided, and a double-sided file prints as gutterfold.
 - Export keeps the original vector content: pieces are placed and clipped, never turned into pictures.
@@ -168,13 +168,17 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 **AI Mode (optional)**
 
 - Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
-  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your own key kept in the system keychain. Every action
-  asks first what is sent and what it costs, and every result is a proposal you can edit.
+  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your
+  own key kept in the system keychain. Every action asks first what is sent and what it costs, and every result is a
+  proposal you can edit.
 
 **Languages and help**
 
 - English and Spanish, a welcome tour, help tips, a keyboard shortcuts sheet and a bug report form that
-  fills in your version and system. The full list of controls is in [docs/controls.md](docs/controls.md).
+  fills in your version and system.
+- Twelve tutorials, from the `?` Help menu, walk you through a task on the real controls: marking pieces and
+  exporting, lining up fronts and backs, gutterfold, cut marks, images as pieces and more.
+- The full list of controls is in [docs/controls.md](docs/controls.md).
 
 ## Command line
 
@@ -191,8 +195,8 @@ command stops and says which one; add `--force` to export anyway. Settings (shee
 the project: change them in the app.
 
 It is installed next to the app: in `Gutterberg.app/Contents/MacOS/` on macOS, in the install folder on Windows,
-and in `/usr/bin` with the `.deb` and `.rpm` packages (the AppImage keeps it inside). Each release also has it on its own (`gutterberg-cli-<platform>`), for a
-machine without the app. It needs nothing else, not even a screen.
+and in `/usr/bin` with the `.deb` and `.rpm` packages (the AppImage keeps it inside). Each release also has it on its
+own (`gutterberg-cli-<platform>`), for a machine without the app. It needs nothing else, not even a screen.
 
 ## Why
 
@@ -243,7 +247,14 @@ How a release is made is in [docs/releasing.md](docs/releasing.md).
 
 ## Roadmap
 
-Next is exporting a saved project from the command line, and signed builds for macOS and Windows.
+Next are signed builds for macOS and Windows, so the system no longer warns you the first time. What comes after is
+shaped by what people ask for: tell me on Discord or in a
+[feature request](https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=feature_request.yml).
+
+## Community
+
+Questions, a PDF that will not cooperate, a layout you are proud of: join the
+**[Gutterberg Discord](https://discord.gg/ytBFE9TtRY)**. The app has the same link in Preferences › About.
 
 ## Contributing
 
