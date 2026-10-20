@@ -30,7 +30,16 @@ export const MAX_DUPLEX_OFFSET_MM = 10;
 export const MAX_FOLD_GAP_MM = 5;
 
 export type Finish = {
-  marks: { style: MarkStyle; line: MarkLine; widthMm: number; color: string; lengthMm: number; offsetMm: number };
+  marks: {
+    style: MarkStyle;
+    line: MarkLine;
+    widthMm: number;
+    color: string;
+    lengthMm: number;
+    offsetMm: number;
+    /** Duplex on the other side: marks on the back sheets too, for backs cut on their own. */
+    onBacks: boolean;
+  };
   bleed: { mm: number; source: BleedSource };
   duplex: {
     on: boolean;
@@ -55,7 +64,7 @@ export type Finish = {
 };
 
 export const DEFAULT_FINISH: Finish = {
-  marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1 },
+  marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1, onBacks: false },
   bleed: { mm: 0, source: "mirror" },
   duplex: {
     on: false,
@@ -79,6 +88,7 @@ export const FinishSchema = z.object({
     color: z.string(),
     lengthMm: z.number(),
     offsetMm: z.number(),
+    onBacks: z.boolean().default(false),
   }),
   bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES) }),
   duplex: z.object({
@@ -116,6 +126,7 @@ export function cleanFinish(f: Finish): Finish {
       color: cleanColor(f.marks.color),
       lengthMm: clampTo(f.marks.lengthMm, ...MARK_LENGTH_RANGE, d.marks.lengthMm),
       offsetMm: clampTo(f.marks.offsetMm, ...MARK_OFFSET_RANGE, d.marks.offsetMm),
+      onBacks: f.marks.onBacks,
     },
     bleed: { mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0), source: f.bleed.source },
     duplex: {

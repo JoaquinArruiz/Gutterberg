@@ -74,7 +74,15 @@ function state(): ProjectState {
       rows: 2,
       columns: 4,
       finish: {
-        marks: { style: "ticks", line: "dashed", widthMm: 0.5, color: "#ff0000", lengthMm: 4, offsetMm: 2 },
+        marks: {
+          style: "ticks",
+          line: "dashed",
+          widthMm: 0.5,
+          color: "#ff0000",
+          lengthMm: 4,
+          offsetMm: 2,
+          onBacks: true,
+        },
         bleed: { mm: 2, source: "source" },
         duplex: {
           ...DEFAULT_FINISH.duplex,

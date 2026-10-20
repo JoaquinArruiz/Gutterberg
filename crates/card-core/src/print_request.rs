@@ -252,6 +252,8 @@ pub struct FinishMarks {
     pub color: String,
     pub length_mm: f64,
     pub offset_mm: f64,
+    #[serde(default)]
+    pub on_backs: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -719,6 +721,7 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
                     MARK_OFFSET_RANGE.1,
                     defaults.offset_mm,
                 ),
+                on_backs: m.on_backs,
             },
             bleed: BleedOptions {
                 mm: clamp_to(finish.bleed.mm, 0.0, MAX_BLEED_MM, 0.0),
@@ -1077,6 +1080,7 @@ mod tests {
                 color: "#FF0000".into(),
                 length_mm: 4.0,
                 offset_mm: 2.0,
+                on_backs: true,
             },
             bleed: BleedOptions::default(),
             duplex: FinishDuplex {
@@ -1114,6 +1118,7 @@ mod tests {
         let f = finishing(&finish(), &edits, &known());
         assert_eq!(f.options.marks.color, "#ff0000");
         assert_eq!(f.options.marks.line, MarkLine::Dashed);
+        assert!(f.options.marks.on_backs);
         assert_eq!(f.options.duplex.offset_y_mm, -1.0);
         assert_eq!(f.options.duplex.common_back, parse_piece_key("g:0:0:1:0"));
         assert_eq!(f.options.duplex.common_back_turn, Turn::R90);

@@ -213,8 +213,13 @@ analytics and no tracking. Only two things use the network:
 - **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
   a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
   backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
-  for that server (Preferences › AI Mode › Ask before sending brings the question back); nothing is sent in the
-  background. Your key is kept in the system keychain. With Ollama running on your own computer, nothing leaves it.
+  for that server (Preferences › AI Mode › Ask before sending brings the question back). Your key is kept in the
+  system keychain. With Ollama running on your own computer, nothing leaves it.
+  - While AI Mode is on, choosing a provider in Preferences › AI Mode asks the provider for its list of models, to
+    fill the Model field. That request goes to the same server as the actions, with your key when one is saved
+    (Anthropic and Gemini are only asked once a key is saved), and carries nothing else: no page, picture or project.
+    The list is saved on your computer and used for a week; the provider is asked again only after that, or when you
+    press the reload button next to the field. Apart from this, nothing is sent in the background.
 
 ## Why
 

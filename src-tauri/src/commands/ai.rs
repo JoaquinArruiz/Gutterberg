@@ -4,6 +4,7 @@
 
 use crate::state::{internal, AppState};
 use card_ai::estimate::{estimate, Estimate};
+use card_ai::model_cache::ModelList;
 use card_ai::pairing::{pair_request, PieceSide, PIECE_LONG_SIDE_PX};
 use card_ai::sort::{sort_requests, PageLabel, PageSummary, SortInput};
 use card_ai::tasks::detect_request;
@@ -79,6 +80,38 @@ pub async fn ai_test_connection(
             transport: &UreqTransport,
         }
         .test()
+        .map_err(to_info)
+    })
+    .await
+    .map_err(internal)?
+}
+
+/// The models the chosen provider offers, for the picker in Preferences: the list saved in the app's cache
+/// folder, or (on `refresh`, or when it is a week old) a new one, which sends the key and nothing else.
+#[tauri::command]
+pub async fn ai_list_models(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    config: ProviderConfig,
+    refresh: bool,
+) -> Result<ModelList, ErrorInfo> {
+    let (gate, keys) = (state.ai_gate.clone(), state.ai_keys.clone());
+    let cache = app
+        .path()
+        .app_cache_dir()
+        .map_err(internal)?
+        .join("ai-models.json");
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs());
+    tauri::async_runtime::spawn_blocking(move || {
+        Runner {
+            gate: &gate,
+            config: &config,
+            keys: &*keys,
+            transport: &UreqTransport,
+        }
+        .models_cached(&cache, refresh, now)
         .map_err(to_info)
     })
     .await

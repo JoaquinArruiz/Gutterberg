@@ -5,6 +5,17 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.1.0 (2026-10-20)
+
+### Added
+
+- Cut marks on back sheets: with Backs on the other side, Print settings › Cut marks › Also on back sheets puts the marks around the backs too, following the mirrored layout and the back offset. It is for backs you cut on their own, like tokens glued to both sides of a board or backs printed on separate sheets; it is off by default, since for double-sided printing you cut from the front. Saved projects open with it off, and the command line exports it as saved.
+- AI Mode's Model field lists the chosen provider's models: with AI Mode on, picking a provider in Preferences › AI Mode asks it for its list of models, which costs no tokens (Anthropic and Gemini once a key is saved; OpenAI-compatible servers such as OpenRouter or LM Studio, and Ollama, without one), and typing narrows it down. OpenRouter models that do not read images are marked text only. Any model id can still be typed, and is all there is when the list cannot be loaded. The list is saved on your computer and used for a week, so opening Preferences or restarting the app does not ask again; the reload button next to the field does, and if that fails the saved list stays. The request carries your key and nothing else, and the README's Privacy section now says so.
+
+### Fixed
+
+- Test connection and the AI actions failed with "the answer was cut off" on Gemini models that think before they answer, such as gemini-3.8-flash: their thinking used up the reply's token limit. Gemini now gets room to think, and its thinking tokens count in the tokens shown.
+
 ## 1.0.0 (2026-10-17)
 
 Gutterberg has done what I built it for since the first versions: take a print-and-play PDF, find the pieces and lay them out again with real gutters, without touching the art. 1.0.0 says it is ready. It adds the two things people asked about most once that worked. When a publisher updates a PDF, a saved project can now be exported again without opening the app, with a command line, `gutterberg-cli`, that writes the same PDF as the app. And help no longer only comes as tips at the right moment: twelve Tutorials, started from a new Help menu, walk through a task on the real controls when you need it. Cut marks can also be dashed or dotted, and AI Mode learns two things: finding several grids on a page, and pairing backs by looking at the pieces.

@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  AI_PROVIDERS,
-  type AiProvider,
-  DEFAULT_BASE_URL,
-  DEFAULT_MODEL,
-  needsKey,
-  providerHost,
-  skipsNotice,
-} from "../../lib/ai";
+import { AI_PROVIDERS, type AiProvider, DEFAULT_BASE_URL, needsKey, providerHost, skipsNotice } from "../../lib/ai";
 import { aiDeleteKey, aiKeyStatus, aiSetKey, aiTestConnection } from "../../lib/ai-api";
 import { formatError, toAppError } from "../../lib/errors";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -16,6 +8,7 @@ import { Button } from "../ui/Button";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { Field } from "./Field";
+import { ModelPicker } from "./ModelPicker";
 
 const input =
   "w-full rounded border border-[var(--border)] bg-[var(--bg)] px-2 py-1 outline-none focus-visible:border-[var(--accent)]";
@@ -180,12 +173,7 @@ export function AiSettings() {
           </Field>
 
           <Field label={t("ai.settings.model")}>
-            <TextSetting
-              label={t("ai.settings.model")}
-              value={settings.model}
-              placeholder={DEFAULT_MODEL[provider]}
-              onCommit={(model) => set.setAiProviderSettings(provider, { model })}
-            />
+            <ModelPicker provider={provider} keySaved={saved} />
             <p className="text-[var(--muted)]">{t(`ai.modelHint.${provider}`)}</p>
           </Field>
 

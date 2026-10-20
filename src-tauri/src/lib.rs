@@ -42,6 +42,7 @@ pub fn run() {
             commands::ai::ai_estimate_pairing,
             commands::ai::ai_pair_backs,
             commands::ai::ai_test_connection,
+            commands::ai::ai_list_models,
             commands::calibration::save_calibration_sheet,
             commands::detect::detect_pieces,
             commands::detect::page_edges,
