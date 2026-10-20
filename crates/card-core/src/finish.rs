@@ -66,6 +66,9 @@ pub struct MarkOptions {
     pub length_mm: f64,
     /// Distance from the edge of the piece (plus the bleed) to the start of a tick.
     pub offset_mm: f64,
+    /// Duplex on the other side: marks on the back sheets too, round the backs, for backs that are
+    /// cut on their own instead of through both sides at once. Off, a back sheet has none.
+    pub on_backs: bool,
 }
 
 impl Default for MarkOptions {
@@ -77,6 +80,7 @@ impl Default for MarkOptions {
             color: "#000000".into(),
             length_mm: 3.0,
             offset_mm: 1.0,
+            on_backs: false,
         }
     }
 }
@@ -890,11 +894,15 @@ pub fn finish_sheets(
             bleed_pt,
             &mut warnings,
         )?;
-        let back = if options.duplex.on && !folding {
+        let mut back = if options.duplex.on && !folding {
             back_sheet(&sheet, &options.duplex, &pairs, &by_id)?
         } else {
             None
         };
+        if let Some(b) = back.as_mut().filter(|_| options.marks.on_backs) {
+            let rects: Vec<Rect> = b.placements.iter().map(|p| p.destination).collect();
+            b.marks = marks_for(&rects, b.page, &options.marks, bleed_pt, &mut b.warnings)?;
+        }
         sheet.warnings = warnings;
         out.push(sheet);
         out.extend(back);

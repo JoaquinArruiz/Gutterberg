@@ -498,7 +498,9 @@
       "color": "Color",
       "length": "Largo de la marca",
       "offset": "Distancia a la pieza",
-      "note": "Las marcas se imprimen solo en las hojas del frente. Empiezan después del sangrado."
+      "onBacks": "También en las hojas del dorso",
+      "onBacksHint": "Pone marcas alrededor de los dorsos también, para dorsos que cortas por separado: impresos en hojas aparte o pegados del otro lado de un cartón. Déjalo apagado para cortar los dos lados a la vez desde el frente.",
+      "note": "Las marcas se imprimen en las hojas del frente, y en las del dorso si lo pides. Empiezan después del sangrado."
     },
     "bleed": {
       "amount": "Sangrado",

@@ -498,7 +498,9 @@
       "color": "Color",
       "length": "Tick length",
       "offset": "Distance from the piece",
-      "note": "Marks are printed on the front sheets only. Ticks start past the bleed."
+      "onBacks": "Also on back sheets",
+      "onBacksHint": "Puts marks around the backs too, for backs you cut on their own: printed on separate sheets, or glued to the other side of a board. Leave it off to cut through both sides from the front.",
+      "note": "Marks are printed on the front sheets, and on the back sheets if you ask. Ticks start past the bleed."
     },
     "bleed": {
       "amount": "Bleed",

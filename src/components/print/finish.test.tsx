@@ -100,6 +100,18 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.queryByRole("textbox", { name: "Tick length" })).toBeNull();
   });
 
+  it("offers marks on the back sheets only with backs on the other side", () => {
+    render(<PrintInspector />);
+    fireEvent.click(screen.getByRole("button", { name: "Cut marks" }));
+    choose("Style", "Ticks in the margins");
+    expect(screen.queryByRole("switch", { name: /Also on back sheets/ })).toBeNull();
+    act(() => print().setDuplex({ on: true }));
+    fireEvent.click(screen.getByRole("switch", { name: /Also on back sheets/ }));
+    expect(print().finish.marks.onBacks).toBe(true);
+    act(() => print().setDuplex({ layout: "gutterfold" }));
+    expect(screen.queryByRole("switch", { name: /Also on back sheets/ })).toBeNull();
+  });
+
   it("sets the bleed, its source, and caps it at 5 mm", () => {
     render(<PrintInspector />);
     fireEvent.click(screen.getByRole("button", { name: "Bleed" }));
