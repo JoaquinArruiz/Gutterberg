@@ -152,7 +152,9 @@ matter:
 - **Cut marks:** ticks in the margins at every piece edge, or lines down the middle of each gap (too narrow a gap
   gives a warning and no line). Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
   dash pattern in points on `SheetMarks.dash` (dots are dashes of length 0 with round caps), so the preview and the
-  export read the same pattern.
+  export read the same pattern. Back sheets get none (you cut through both sides from the front, and a printer's
+  drift would put them beside the cut) unless `MarkOptions.on_backs`: then `marks_for` runs on the back placements,
+  so the marks follow the mirroring and the back offset.
 - **Bleed:** taken either by mirroring each piece's own edge (4 strips and 4 corners, as vectors, using the piece's
   oriented edge so tilted pieces work) or from the gap that is already in the source. A bleed bigger than half a piece
   is an error; a source gap smaller than the bleed is a page issue that blocks export.

@@ -562,6 +562,53 @@ fn the_offset_moves_the_whole_back_in_the_printed_sheet() {
 }
 
 #[test]
+fn back_sheets_get_cut_marks_only_when_asked_and_they_follow_the_backs() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let mut options = duplex(Flip::Long, Some(card(0, 0)));
+    options.marks.style = MarkStyle::Ticks;
+    options.duplex.offset_x_mm = 2.0;
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(options.clone())).unwrap();
+    assert!(out[0].marks.is_some());
+    assert!(out[1].marks.is_none());
+
+    options.marks.on_backs = true;
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+    let sorted = |lines: &[[f64; 4]]| {
+        let mut v: Vec<[i64; 4]> = lines
+            .iter()
+            .map(|l| l.map(|n| (n * 1000.0).round() as i64))
+            .collect();
+        v.sort();
+        v
+    };
+    let front = out[0].marks.as_ref().unwrap();
+    let back = out[1].marks.as_ref().unwrap();
+    assert_eq!(back.width_pt, front.width_pt);
+    // The grid is centred, so its mirror is the same block: the back's marks are the front's,
+    // moved by the back offset.
+    let dx = mm_to_pt(2.0);
+    let moved: Vec<[f64; 4]> = front
+        .lines
+        .iter()
+        .map(|&[x1, y1, x2, y2]| [x1 + dx, y1, x2 + dx, y2])
+        .collect();
+    assert_eq!(sorted(&back.lines), sorted(&moved));
+    // The last front has one piece in the top-left corner, so its back has one in the top-right,
+    // with marks round it there.
+    let last = out[5].marks.as_ref().unwrap();
+    let b = out[5].placements[0].destination;
+    assert!(last
+        .lines
+        .iter()
+        .any(|l| close(l[0], b.x) && close(l[2], b.x)));
+    assert!(last
+        .lines
+        .iter()
+        .any(|l| close(l[0], b.x + b.width) && close(l[2], b.x + b.width)));
+}
+
+#[test]
 fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no_back() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);

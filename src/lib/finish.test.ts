@@ -12,6 +12,7 @@ describe("finish settings", () => {
       color: "#000000",
       lengthMm: 3,
       offsetMm: 1,
+      onBacks: false,
     });
     expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror" });
     expect(DEFAULT_FINISH.duplex).toEqual({
@@ -31,7 +32,7 @@ describe("finish settings", () => {
 
   it("are pulled back into what the engine accepts", () => {
     const wild: Finish = {
-      marks: { style: "ticks", line: "dotted", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3 },
+      marks: { style: "ticks", line: "dotted", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3, onBacks: true },
       bleed: { mm: 99, source: "source" },
       duplex: {
         ...DEFAULT_FINISH.duplex,
@@ -50,6 +51,7 @@ describe("finish settings", () => {
       color: "#000000",
       lengthMm: 1,
       offsetMm: 0,
+      onBacks: true,
     });
     expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source" });
     expect(clean.duplex).toEqual({

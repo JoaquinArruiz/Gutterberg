@@ -60,11 +60,12 @@ export function WarningList({ codes }: { codes: SheetWarning[] }) {
   );
 }
 
-/** Cut marks: lines on the front sheets that show where to cut. */
+/** Cut marks: lines on the front sheets (and, if asked, the back sheets) that show where to cut. */
 export function MarksSection() {
   const { t } = useTranslation();
   const marks = usePrintStore((s) => s.finish.marks);
   const setMarks = usePrintStore((s) => s.setMarks);
+  const backSheets = usePrintStore((s) => s.finish.duplex.on && s.finish.duplex.layout === "duplex");
   const on = marks.style !== "off";
   return (
     <CollapsibleSection
@@ -132,6 +133,14 @@ export function MarksSection() {
                 onChange={(offsetMm) => setMarks({ offsetMm })}
               />
             </>
+          )}
+          {backSheets && (
+            <Switch
+              checked={marks.onBacks}
+              onChange={(onBacks) => setMarks({ onBacks })}
+              label={t("print.marks.onBacks")}
+              info={t("print.marks.onBacksHint")}
+            />
           )}
         </>
       )}
