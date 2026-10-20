@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.1.0 (2026-10-20)
+
 ### Added
 
 - Cut marks on back sheets: with Backs on the other side, Print settings › Cut marks › Also on back sheets puts the marks around the backs too, following the mirrored layout and the back offset. It is for backs you cut on their own, like tokens glued to both sides of a board or backs printed on separate sheets; it is off by default, since for double-sided printing you cut from the front. Saved projects open with it off, and the command line exports it as saved.

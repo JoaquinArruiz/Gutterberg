@@ -1,6 +1,6 @@
 [package]
 name = "gutterberg"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 publish = false
 description = "Gutterberg turns print-and-play PDFs and card scans into cut-ready sheets: exact card sizes, clean gutters, and the original artwork untouched."
