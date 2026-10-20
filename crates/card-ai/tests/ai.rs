@@ -81,6 +81,10 @@ impl Transport for Mock {
             body: self.body.clone().into_bytes(),
         })
     }
+
+    fn get(&self, request: &HttpRequest, timeout: Duration) -> card_ai::Result<HttpResponse> {
+        self.post(request, timeout)
+    }
 }
 
 fn sent(mock: &Mock) -> (HttpRequest, Value) {
@@ -169,6 +173,36 @@ fn openai_compatible_gets_a_data_uri_a_strict_schema_and_a_bearer_key_at_any_bas
     );
     assert_eq!(reply.json, json!({ "ok": true }));
     assert_eq!(reply.usage.input_tokens, 900);
+}
+
+#[test]
+fn gemini_leaves_a_thinking_model_room_to_think_and_counts_its_thoughts() {
+    // A thinking model given only the asked-for limit spends it thinking and answers nothing (MAX_TOKENS).
+    let mock = Mock::new(
+        200,
+        json!({ "candidates": [{ "content": { "parts": [
+            { "text": "thinking about it", "thought": true },
+            { "text": "{\"ok\": true}" },
+        ] }, "finishReason": "STOP" }], "usageMetadata": { "promptTokenCount": 8, "candidatesTokenCount": 5, "thoughtsTokenCount": 138 } }),
+    );
+    let reply = send(
+        &config(ProviderKind::Gemini),
+        Some("AQ.test-key"),
+        &request(),
+        &mock,
+    )
+    .unwrap();
+    let (r, body) = sent(&mock);
+    assert!(
+        body["generationConfig"]["maxOutputTokens"]
+            .as_u64()
+            .unwrap()
+            > 512 + 4000
+    );
+    // Keys of the newer "AQ." form go in the same header.
+    assert_eq!(header(&r, "x-goog-api-key"), Some("AQ.test-key"));
+    assert_eq!(reply.json, json!({ "ok": true }));
+    assert_eq!(reply.usage.output_tokens, 143);
 }
 
 #[test]
@@ -995,6 +1029,28 @@ fn the_real_transport_sends_the_key_in_a_header_and_reads_the_answer() {
     assert!(lower.contains("content-type: application/json"));
     assert!(seen.contains("\"tool_choice\""));
     assert!(!seen.lines().next().unwrap().contains("sk-live-key"));
+}
+
+#[test]
+fn the_real_transport_gets_the_model_list_with_the_key_and_no_body() {
+    let reply = json!({ "models": [{ "name": "llava:latest" }] });
+    let (port, server) = serve_once("200 OK", reply.to_string(), Duration::ZERO);
+    let models = card_ai::models::list_models(
+        &ProviderConfig {
+            kind: ProviderKind::OpenaiCompatible,
+            base_url: Some(format!("http://127.0.0.1:{port}/v1")),
+            ..config(ProviderKind::OpenaiCompatible)
+        },
+        Some("sk-list"),
+        &UreqTransport,
+    );
+    let seen = server.join().unwrap();
+    assert!(seen.starts_with("GET /v1/models HTTP/1.1"), "{seen}");
+    assert!(seen
+        .to_lowercase()
+        .contains("authorization: bearer sk-list"));
+    // An Ollama-shaped answer from an OpenAI-compatible address is not a list it reads.
+    assert!(matches!(models, Err(AiError::InvalidReply(_))));
 }
 
 #[test]

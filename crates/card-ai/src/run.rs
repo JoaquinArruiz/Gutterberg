@@ -5,6 +5,8 @@
 use crate::error::{AiError, Result};
 use crate::gate::{guarded_send, Gate};
 use crate::keystore::KeyStore;
+use crate::model_cache::{cache_key, cached, ModelList};
+use crate::models::{list_models, ModelInfo};
 use crate::pairing::{pair_request, parse_pairing, PieceSide};
 use crate::provider::{AiRequest, Image, ProviderConfig, Transport, Usage};
 use crate::sort::{parse_sort, sort_requests, PageLabel, SortInput};
@@ -12,6 +14,7 @@ use crate::tasks::{detect_request, parse_detect};
 use card_core::detect::{Detection, PageObject};
 use card_core::geometry::PageSize;
 use serde_json::json;
+use std::path::Path;
 
 pub struct Runner<'a> {
     pub gate: &'a Gate,
@@ -58,6 +61,32 @@ impl Runner<'_> {
             ));
         }
         Ok(reply.usage)
+    }
+
+    /// The provider's models, for the picker. The key goes with the request when one is saved; without one,
+    /// Anthropic and Gemini are not asked at all.
+    pub fn models(&self) -> Result<Vec<ModelInfo>> {
+        let key = self.list_key()?;
+        list_models(self.config, key.as_deref(), self.transport)
+    }
+
+    /// [`Runner::models`], through the lists saved in `cache` (see [`crate::model_cache`]): the provider is
+    /// asked only on `refresh` or when the saved list is a week old. `now` is in seconds since 1970.
+    pub fn models_cached(&self, cache: &Path, refresh: bool, now: u64) -> Result<ModelList> {
+        let key = self.list_key()?;
+        let id = cache_key(self.config, key.is_some());
+        cached(cache, &id, refresh, now, || {
+            self.gate.check()?;
+            list_models(self.config, key.as_deref(), self.transport)
+        })
+    }
+
+    fn list_key(&self) -> Result<Option<String>> {
+        self.gate.check()?;
+        if !self.config.kind.needs_key() {
+            return Ok(None);
+        }
+        self.keys.get(self.config.kind)
     }
 
     /// Detect pieces on one page: with a picture, or (`image` is None) from the boxes of its objects.

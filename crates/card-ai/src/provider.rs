@@ -91,6 +91,11 @@ impl ProviderConfig {
         if self.model.trim().is_empty() {
             return Err(AiError::Config("choose a model in Preferences".into()));
         }
+        self.check_address()
+    }
+
+    /// The workspace ID and the address, everything but the model (which the model list does not need).
+    pub(crate) fn check_address(&self) -> Result<()> {
         // It goes into a header, so it can hold nothing but an ID.
         if let Some(w) = self.workspace() {
             if w.len() > 100
@@ -184,9 +189,11 @@ pub struct HttpResponse {
     pub body: Vec<u8>,
 }
 
-/// Sends one POST. The real one is [`crate::transport::UreqTransport`]; tests use their own.
+/// Sends one POST, or one GET (the model list; `body` is empty). The real one is
+/// [`crate::transport::UreqTransport`]; tests use their own.
 pub trait Transport {
     fn post(&self, request: &HttpRequest, timeout: Duration) -> Result<HttpResponse>;
+    fn get(&self, request: &HttpRequest, timeout: Duration) -> Result<HttpResponse>;
 }
 
 /// Sends `request` to the provider and returns its JSON answer. `key` is used for the request and nothing

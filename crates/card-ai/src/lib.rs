@@ -1,4 +1,4 @@
-//! Optional AI-assisted detection, page sorting and pairing of backs.
+//! Optional AI-assisted detection, page sorting and pairing of backs, and the list of models to pick from.
 //!
 //! This is the only crate that talks to the network, and it only does so when a command asks it to
 //! (the shell refuses every request while AI Mode is off). One request is an instruction, some
@@ -10,6 +10,8 @@ pub mod error;
 pub mod estimate;
 pub mod gate;
 pub mod keystore;
+pub mod model_cache;
+pub mod models;
 pub mod pairing;
 pub mod provider;
 pub mod run;
@@ -20,6 +22,7 @@ pub mod transport;
 pub use error::{AiError, Result};
 pub use gate::{guarded_send, Gate};
 pub use keystore::{KeyStore, MemoryKeys};
+pub use models::ModelInfo;
 pub use provider::{
     send, AiReply, AiRequest, HttpRequest, HttpResponse, Image, ProviderConfig, ProviderKind,
     Transport, Usage,

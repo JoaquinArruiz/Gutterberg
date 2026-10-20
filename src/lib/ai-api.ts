@@ -70,6 +70,30 @@ export async function aiTestConnection(): Promise<Usage> {
   return UsageSchema.parse(await call("ai_test_connection", { config: settings().config }));
 }
 
+const ModelInfoSchema = z.object({
+  id: z.string(),
+  name: z.string().nullable(),
+  images: z.boolean().nullable(),
+});
+export type ModelInfo = z.infer<typeof ModelInfoSchema>;
+
+const ModelListSchema = z.object({
+  models: z.array(ModelInfoSchema),
+  /** Seconds since 1970. */
+  fetched_at: z.number(),
+  /** Why asking again failed; the saved list is what came back. */
+  refresh_error: z.unknown().nullable(),
+});
+export type ModelList = z.infer<typeof ModelListSchema>;
+
+/**
+ * The models the chosen provider offers: the list Rust saved, unless `refresh` or it is a week old, when the
+ * provider is asked again (with the saved key, if any, and nothing else).
+ */
+export async function aiListModels(refresh = false): Promise<ModelList> {
+  return ModelListSchema.parse(await call("ai_list_models", { config: settings().config, refresh }));
+}
+
 export type AiTask = "detect" | "sort" | "pair";
 
 /** What a run would send, from the very requests it would make. Sends nothing. */

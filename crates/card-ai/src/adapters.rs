@@ -48,7 +48,7 @@ fn body(v: Value) -> Vec<u8> {
 }
 
 /// The provider's own message from an error body, else the start of the body.
-fn error_detail(body: &[u8]) -> String {
+pub(crate) fn error_detail(body: &[u8]) -> String {
     let text = String::from_utf8_lossy(body);
     if let Ok(v) = serde_json::from_str::<Value>(&text) {
         let message = v
@@ -235,6 +235,10 @@ fn gemini_schema(schema: &Value) -> Value {
     }
 }
 
+/// Room for a thinking model's thoughts, which Gemini counts in `maxOutputTokens`: without it a small limit (the
+/// connection test's 64) is spent thinking and the answer comes back empty, cut off. Only the tokens used are billed.
+const GEMINI_THINKING_TOKENS: u32 = 8192;
+
 fn gemini_request(config: &ProviderConfig, key: Option<&str>, request: &AiRequest) -> HttpRequest {
     let mut parts = vec![json!({ "text": request.instruction })];
     parts.extend(
@@ -255,7 +259,7 @@ fn gemini_request(config: &ProviderConfig, key: Option<&str>, request: &AiReques
             "generationConfig": {
                 "responseMimeType": "application/json",
                 "responseSchema": gemini_schema(&request.schema),
-                "maxOutputTokens": request.max_output_tokens,
+                "maxOutputTokens": request.max_output_tokens + GEMINI_THINKING_TOKENS,
             },
         })),
     }
@@ -264,7 +268,9 @@ fn gemini_request(config: &ProviderConfig, key: Option<&str>, request: &AiReques
 fn gemini_reply(v: &Value) -> Result<AiReply> {
     let usage = Usage {
         input_tokens: number(v.pointer("/usageMetadata/promptTokenCount")),
-        output_tokens: number(v.pointer("/usageMetadata/candidatesTokenCount")),
+        // Thoughts are billed as output.
+        output_tokens: number(v.pointer("/usageMetadata/candidatesTokenCount"))
+            + number(v.pointer("/usageMetadata/thoughtsTokenCount")),
     };
     if let Some(reason) = v
         .pointer("/promptFeedback/blockReason")
@@ -292,6 +298,7 @@ fn gemini_reply(v: &Value) -> Result<AiReply> {
         .map(|parts| {
             parts
                 .iter()
+                .filter(|p| p.get("thought").and_then(Value::as_bool) != Some(true))
                 .filter_map(|p| p.get("text").and_then(Value::as_str))
                 .collect()
         })

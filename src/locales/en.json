@@ -1298,6 +1298,19 @@
       "gemini": "Google Gemini",
       "ollama": "Ollama (on this computer)"
     },
+    "models": {
+      "loading": "Loading the models of {{host}}…",
+      "count_one": "{{count}} model from {{host}}, saved on {{date}}. Type to search, or type any model id.",
+      "count_other": "{{count}} models from {{host}}, saved on {{date}}. Type to search, or type any model id.",
+      "refreshFailed": "Showing the list saved on {{date}}: it couldn't be loaded again. {{error}}",
+      "empty": "{{host}} listed no models. Type the model id.",
+      "failed": "Couldn't load the list of models; type the model id. {{error}}",
+      "needsKey": "Save a key to pick from the provider's models, or type the model id.",
+      "placeholder": "Type or pick a model",
+      "show": "Show models",
+      "reload": "Ask the provider for its list of models again",
+      "textOnly": "text only"
+    },
     "modelHint": {
       "anthropic": "A Claude model id, e.g. claude-sonnet-5-5 or claude-haiku-5-5.",
       "openai_compatible": "A model that reads images, with the address of its server, e.g. https://api.openai.com/v1, https://api.x.ai/v1 or http://localhost:1234/v1.",
@@ -1307,7 +1320,7 @@
     "settings": {
       "title": "AI Mode (experimental)",
       "enable": "Use AI Mode (experimental)",
-      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one.",
+      "enableNote": "Adds AI buttons that send pages to a provider you choose, with your own key. Off by default. Nothing is sent unless you press one; while it is on, choosing a provider here asks it for its list of models.",
       "provider": "Provider",
       "model": "Model",
       "baseUrl": "Address",

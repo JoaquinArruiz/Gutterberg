@@ -460,6 +460,13 @@ pictures. A result is always an editable proposal, or for pairing, a summary to 
   once Send is pressed; only that server skips the notice, so another provider or address is asked about again, and
   Preferences › AI Mode › Ask before sending clears it. No price is shown: list prices change and a stale one would
   mislead. Only plain `http://` to local or private addresses is accepted.
+- **The model list** (`card-ai/src/models.rs`) is one GET to the provider's own list (`/v1/models`, `/models`,
+  `/v1beta/models`, `/api/tags`), made when Preferences › AI Mode shows a provider, through the same gate and
+  address checks, with the key if one is saved and no body. Anthropic and Gemini are not asked without a key. The
+  Model field (`ModelPicker.tsx`) filters that list as the user types and keeps any typed id, so a failed or empty
+  list leaves an ordinary text field. Lists are saved in `ai-models.json` in the app's cache folder
+  (`card-ai/src/model_cache.rs`), by provider, address, workspace and whether a key was saved (never the key), and
+  used for a week; only the reload button or an older list asks again, and a failed request shows the saved list.
 - Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
   pieces for pairing, never the PDF.
 

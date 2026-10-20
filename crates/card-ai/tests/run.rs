@@ -65,6 +65,10 @@ impl Transport for Script {
             body: body.to_string().into_bytes(),
         })
     }
+
+    fn get(&self, request: &HttpRequest, timeout: Duration) -> card_ai::Result<HttpResponse> {
+        self.post(request, timeout)
+    }
 }
 
 /// Counts how often a key is read.

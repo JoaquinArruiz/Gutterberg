@@ -1298,6 +1298,19 @@
       "gemini": "Google Gemini",
       "ollama": "Ollama (en esta computadora)"
     },
+    "models": {
+      "loading": "Cargando los modelos de {{host}}…",
+      "count_one": "{{count}} modelo de {{host}}, guardado el {{date}}. Escribe para buscar, o escribe el id de cualquier modelo.",
+      "count_other": "{{count}} modelos de {{host}}, guardados el {{date}}. Escribe para buscar, o escribe el id de cualquier modelo.",
+      "refreshFailed": "Se muestra la lista guardada el {{date}}: no se pudo cargar de nuevo. {{error}}",
+      "empty": "{{host}} no listó ningún modelo. Escribe el id del modelo.",
+      "failed": "No se pudo cargar la lista de modelos; escribe el id del modelo. {{error}}",
+      "needsKey": "Guarda una clave para elegir entre los modelos del proveedor, o escribe el id del modelo.",
+      "placeholder": "Escribe o elige un modelo",
+      "show": "Mostrar modelos",
+      "reload": "Pedir de nuevo al proveedor su lista de modelos",
+      "textOnly": "solo texto"
+    },
     "modelHint": {
       "anthropic": "Un modelo de Claude, p. ej. claude-sonnet-5-5 o claude-haiku-5-5.",
       "openai_compatible": "Un modelo que lea imágenes, con la dirección de su servidor, p. ej. https://api.openai.com/v1, https://api.x.ai/v1 o http://localhost:1234/v1.",
@@ -1307,7 +1320,7 @@
     "settings": {
       "title": "Modo IA (experimental)",
       "enable": "Usar el Modo IA (experimental)",
-      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno.",
+      "enableNote": "Agrega botones de IA que envían páginas a un proveedor que tú eliges, con tu propia clave. Está desactivado por defecto. No se envía nada a menos que pulses uno; mientras está activado, elegir un proveedor aquí le pide su lista de modelos.",
       "provider": "Proveedor",
       "model": "Modelo",
       "baseUrl": "Dirección",

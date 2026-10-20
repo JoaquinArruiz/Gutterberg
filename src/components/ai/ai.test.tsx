@@ -6,6 +6,7 @@ import {
   aiDetectPieces,
   aiEstimate,
   aiKeyStatus,
+  aiListModels,
   aiSetKey,
   aiSortPages,
   aiTestConnection,
@@ -37,6 +38,7 @@ vi.mock("../../lib/ai-api", async (importOriginal) => ({
   aiSetKey: vi.fn(),
   aiDeleteKey: vi.fn(),
   aiTestConnection: vi.fn(),
+  aiListModels: vi.fn(),
   aiEstimate: vi.fn(),
   aiDetectPieces: vi.fn(),
   aiSortPages: vi.fn(),
@@ -80,6 +82,7 @@ beforeEach(() => {
   useEditorStore.getState().setDraft(null);
   ai().clear();
   vi.mocked(aiKeyStatus).mockResolvedValue(false);
+  vi.mocked(aiListModels).mockResolvedValue({ models: [], fetched_at: 0, refresh_error: null });
 });
 afterEach(cleanup);
 
@@ -233,6 +236,75 @@ describe("Preferences › AI Mode", () => {
     expect(prefs().prefs.ai.providers.openai_compatible.baseUrl).toBe("http://localhost:1234/v1");
     // Each provider keeps its own.
     expect(prefs().prefs.ai.providers.anthropic.model).toBe("claude-sonnet-5-5");
+  });
+
+  it("lists the provider's models once a key is saved, narrows them as you type, and saves the one picked", async () => {
+    vi.mocked(aiKeyStatus).mockResolvedValue(true);
+    vi.mocked(aiListModels).mockResolvedValue({
+      models: [
+        { id: "claude-sonnet-5-5", name: "Claude Sonnet 5.5", images: null },
+        { id: "claude-haiku-5-5", name: "Claude Haiku 5.5", images: null },
+      ],
+      fetched_at: 1_800_000_000,
+      refresh_error: null,
+    });
+    render(<AiSettings />);
+    await act(async () => {});
+    expect(aiListModels).toHaveBeenCalledWith(false); // the saved list, if there is one
+    expect(screen.getByText(/2 models from api\.anthropic\.com, saved on/)).toBeTruthy();
+    const model = screen.getByRole("combobox", { name: "Model" });
+    fireEvent.change(model, { target: { value: "haiku" } });
+    const options = screen.getAllByRole("option");
+    expect(options).toHaveLength(1);
+    fireEvent.click(options[0]);
+    expect(prefs().prefs.ai.providers.anthropic.model).toBe("claude-haiku-5-5");
+    // Only the reload button asks the provider again.
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Ask the provider for its list of models again" }));
+    });
+    expect(aiListModels).toHaveBeenLastCalledWith(true);
+    expect(aiListModels).toHaveBeenCalledTimes(2);
+  });
+
+  it("shows the saved list, and says so, when asking again fails", async () => {
+    vi.mocked(aiKeyStatus).mockResolvedValue(true);
+    vi.mocked(aiListModels).mockResolvedValue({
+      models: [{ id: "claude-sonnet-5-5", name: null, images: null }],
+      fetched_at: 1_800_000_000,
+      refresh_error: { code: "ai_network", message: "offline", detail: "offline" },
+    });
+    render(<AiSettings />);
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toMatch(/Showing the list saved on .*Could not reach the provider/);
+    fireEvent.change(screen.getByRole("combobox", { name: "Model" }), { target: { value: "sonnet" } });
+    expect(screen.getAllByRole("option")).toHaveLength(1);
+  });
+
+  it("asks Anthropic for nothing without a key, and an OpenAI-compatible server without one", async () => {
+    render(<AiSettings />);
+    await act(async () => {});
+    expect(aiListModels).not.toHaveBeenCalled();
+    expect(screen.getByText(/Save a key to pick from the provider's models/)).toBeTruthy();
+    choose("Provider", "OpenAI-compatible");
+    await act(async () => {});
+    expect(aiListModels).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the field to type in when the list cannot be loaded", async () => {
+    vi.mocked(aiKeyStatus).mockResolvedValue(true);
+    vi.mocked(aiListModels).mockRejectedValue({
+      code: "ai_network",
+      message: "offline",
+      params: { detail: "offline" },
+    });
+    render(<AiSettings />);
+    await act(async () => {});
+    expect(screen.getByRole("alert").textContent).toMatch(/Couldn't load the list of models/);
+    const model = screen.getByRole("combobox", { name: "Model" });
+    fireEvent.change(model, { target: { value: "claude-custom" } });
+    expect(screen.queryByRole("listbox")).toBeNull();
+    fireEvent.blur(model);
+    expect(prefs().prefs.ai.providers.anthropic.model).toBe("claude-custom");
   });
 
   it("sends a typed key to the keychain, clears the field, and the key is in no preference", async () => {
