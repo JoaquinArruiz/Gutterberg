@@ -20,8 +20,8 @@ const NOTIFY_KEY = {
 
 /**
  * Preferences › Updates: the version you have, a newer one when there is one (with its notes), the button to check
- * and to install, and what the toast should tell you about. This section always shows a newer version; "Tell me
- * about" only decides whether a toast says so.
+ * and to install, and what the toast should tell you about. This section always shows a newer version a check found;
+ * "Tell me about" decides whether a toast says so, and Never also turns the automatic check off.
  */
 export function UpdatesSection() {
   const { t, i18n } = useTranslation();
