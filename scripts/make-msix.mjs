@@ -20,7 +20,6 @@ export const ASSETS = {
   "Square44x44Logo.png": "Square44x44Logo.png",
   "Square71x71Logo.png": "Square71x71Logo.png",
   "Square150x150Logo.png": "Square150x150Logo.png",
-  "Square310x310Logo.png": "Square310x310Logo.png",
 };
 
 // The app's version as MSIX wants it, four numbers: 1.2.0 becomes 1.2.0.0 (the Store keeps the fourth at 0). A

@@ -46,7 +46,8 @@
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">
-        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" Square310x310Logo="Assets\Square310x310Logo.png" />
+        <!-- No large tile: it needs a wide one too, and Windows 11 has no tiles at all. -->
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
       </uap:VisualElements>
       <Extensions>
         <!-- Double-clicking a project opens it: the path arrives as the first argument, as with the MSI. -->
