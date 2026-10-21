@@ -16,7 +16,8 @@ Only two things, and neither sends anything about you or your files to me.
 - **The update check** (only in the copy from GitHub). At most once a day the app asks GitHub for a small file,
   `latest.json`, that names the newest version, and downloads the new version when you say so. GitHub sees the
   request as it sees any visit to a web page ([GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement)).
-  The Microsoft Store copy does not check: the Store updates it.
+  With Preferences › Updates › Tell me about set to Never, the app does not check by itself. The Microsoft Store
+  copy does not check: the Store updates it.
 - **AI Mode**, which is off until you turn it on. It sends what an action needs to the AI provider you chose, with
   your own key: a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the
   pieces for Pair backs. Each action shows what it sends and to which server, and waits for you to press Send,

@@ -168,6 +168,14 @@ describe("the automatic check", () => {
     expect(check).toHaveBeenCalledOnce();
   });
 
+  it("does not run when Tell me about is Never", async () => {
+    vi.useFakeTimers();
+    setUpdates({ notify: "never" });
+    startUpdateChecks();
+    await vi.advanceTimersByTimeAsync(CHECK_DELAY_MS * 2);
+    expect(check).not.toHaveBeenCalled();
+  });
+
   it("never runs in a Microsoft Store copy, which the Store updates", async () => {
     vi.useFakeTimers();
     isStoreInstall.mockResolvedValue(true);
