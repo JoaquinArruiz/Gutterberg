@@ -96,7 +96,9 @@ my individual developer account; its identity is in `src-tauri/msix/AppxManifest
 
 **Each release.** The tag's run packs `Gutterberg_<version>_x64.msix` on the Windows build and keeps it with the run
 (Actions › the run › Artifacts › `microsoft-store`, a zip with the `.msix` inside); it is not on the GitHub release,
-since an unsigned MSIX does not install by double-clicking. Pre-releases get none. If the artifact is missing, the
+since an unsigned MSIX does not install by double-clicking. Pre-releases get none. To get a package without a tag (to try it, or for a first submission), run the
+"Microsoft Store package" workflow by hand from the Actions tab; it also runs on any push that changes the manifest or
+the script. If the artifact is missing, the
 "Pack the Microsoft Store package" step's log says why; the rest of the release is not affected. After publishing the
 GitHub release: in Partner Center, open Gutterberg, **Start update** (or the open submission), **Packages**, drop the
 `.msix`, remove the previous one, and **Submit to the Store**. Certification usually takes one to three days; the
