@@ -62,8 +62,10 @@
         </uap:Extension>
       </Extensions>
     </Application>
-    <!-- The command line: `gutterberg-cli` works in any terminal, as it does next to the MSI's app. Not in Start. -->
-    <Application Id="GutterbergCli" Executable="gutterberg-cli.exe" EntryPoint="Windows.FullTrustApplication">
+    <!-- The command line: `gutterberg-cli` works in any terminal, as it does next to the MSI's app. Not in Start. A
+         console alias needs SupportsMultipleInstances, so that each terminal runs its own copy. -->
+    <Application Id="GutterbergCli" Executable="gutterberg-cli.exe" EntryPoint="Windows.FullTrustApplication"
+      desktop4:SupportsMultipleInstances="true">
       <uap:VisualElements
         DisplayName="Gutterberg command line"
         Description="Exports or checks a saved Gutterberg project."
