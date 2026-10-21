@@ -485,6 +485,14 @@ logic that needs no app (version order including pre-releases, who is told about
 in `src/lib/updates.ts`; `update-actions.ts` talks to the plugins. The toast never installs: its "Update…" button opens Preferences › Updates with the Install button focused, so an update is installed only where its notes (`ReleaseNotes`, in a box of about 14 lines that scrolls) are. Before installing, the version is written down so
 the next start can say whether it worked. Experimental features are switches listed in `src/lib/experimental.ts`.
 
+The Windows build also goes to the Microsoft Store, as an MSIX package that `scripts/make-msix.mjs` makes from the
+same exe with `src-tauri/msix/AppxManifest.xml` (the identity Partner Center gave the product, the `.gtr` file
+association, and an alias so `gutterberg-cli` works in a terminal). The Store signs and updates that package, so the
+app asks Windows whether it runs from a package (`src-tauri/src/store.rs`): when it does, the updater plugin is not
+registered, `app_info` says `store`, and the web side never checks, hides Preferences › Updates and the Update
+Gutterberg tutorial, and adds "(Microsoft Store)" to the app info. One build serves both, so there is nothing to keep
+in step but the manifest.
+
 Third-party notices are collected at release time (`scripts/third-party-licenses.mjs`: `cargo about`, `pnpm
 licenses`, and the licenses pdfium ships with) into `THIRD_PARTY_LICENSES`, built into the app and shown in
 Preferences › About with Gutterberg's own license.

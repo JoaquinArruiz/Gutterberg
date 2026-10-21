@@ -27,6 +27,8 @@ export type AppInfo = {
   language: string;
   /** The pdfium build number; empty when it is not known. */
   pdfium: string;
+  /** Installed from the Microsoft Store. */
+  store?: boolean;
 };
 
 /** A system as people name it: Windows 11 is version 10.0 with a build of 22000 or more. */
@@ -41,9 +43,16 @@ export function describeSystem(kind: string, version: string, architecture: stri
   return architecture ? `${name} (${architecture})` : name;
 }
 
-/** `Gutterberg 1.0.0 · Windows 11 (x86_64) · Language: es · pdfium 8086`, the line to paste into a bug report. */
+/**
+ * `Gutterberg 1.0.0 · Windows 11 (x86_64) · Language: es · pdfium 8086`, the line to paste into a bug report. A Store
+ * copy says so after the version.
+ */
 export function formatAppInfo(info: AppInfo): string {
-  const parts = [`${info.name} ${info.version}`, info.os, `Language: ${info.language}`];
+  const parts = [
+    `${info.name} ${info.version}${info.store ? " (Microsoft Store)" : ""}`,
+    info.os,
+    `Language: ${info.language}`,
+  ];
   if (info.pdfium) parts.push(`pdfium ${info.pdfium}`);
   return parts.join(" · ");
 }
@@ -61,9 +70,23 @@ export async function loadAppInfo(language: string): Promise<AppInfo> {
     Promise.resolve(type()),
     Promise.resolve(osVersion()),
     Promise.resolve(arch()),
-    invoke<{ pdfium: string }>("app_info").catch(() => ({ pdfium: "" })),
+    invoke<{ pdfium: string; store: boolean }>("app_info").catch(() => ({ pdfium: "", store: false })),
   ]);
-  return { name, version, os: describeSystem(kind, systemVersion, architecture), language, pdfium: extra.pdfium };
+  return {
+    name,
+    version,
+    os: describeSystem(kind, systemVersion, architecture),
+    language,
+    pdfium: extra.pdfium,
+    store: extra.store === true,
+  };
+}
+
+/** Whether this copy came from the Microsoft Store, which updates it (false outside the app window). */
+export async function isStoreInstall(): Promise<boolean> {
+  return invoke<{ store?: boolean }>("app_info")
+    .then((info) => info.store === true)
+    .catch(() => false);
 }
 
 /** The app's version, from its own configuration (null until known, and outside the app window). */

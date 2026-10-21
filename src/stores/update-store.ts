@@ -27,6 +27,8 @@ type UpdateState = {
   manual: boolean;
   /** The last check, asked for or not, could not reach the update server. A good check clears it. */
   failed: boolean;
+  /** A Microsoft Store copy: the Store updates it, so there is no check and no Preferences › Updates. */
+  store: boolean;
   set: (patch: Partial<Omit<UpdateState, "set">>) => void;
 };
 
@@ -38,5 +40,6 @@ export const useUpdateStore = create<UpdateState>((set) => ({
   whatsNew: null,
   manual: false,
   failed: false,
+  store: false,
   set: (patch) => set(patch),
 }));

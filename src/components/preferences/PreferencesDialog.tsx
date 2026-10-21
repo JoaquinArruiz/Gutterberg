@@ -45,6 +45,7 @@ import {
 } from "../../lib/workspace-layout";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { type PrefsSection, useUiStore } from "../../stores/ui-store";
+import { useUpdateStore } from "../../stores/update-store";
 import { Button } from "../ui/Button";
 import { Checkbox } from "../ui/Checkbox";
 import { RadioCard, RadioCardGroup } from "../ui/RadioCard";
@@ -154,6 +155,9 @@ export function PreferencesDialog() {
   const ref = useRef<HTMLDialogElement>(null);
   const [section, setSection] = useState<Section>("General");
   const [confirmReset, setConfirmReset] = useState(false);
+  // A Microsoft Store copy is updated by the Store, so it has no Updates section.
+  const fromStore = useUpdateStore((s) => s.store);
+  const sections = fromStore ? SECTIONS.filter((s) => s !== "Updates") : SECTIONS;
 
   const store = usePreferencesStore();
   const { prefs } = store;
@@ -166,7 +170,7 @@ export function PreferencesDialog() {
     if (open) {
       // Opened from a link ("Open Preferences" in a tip)? Land on that section.
       const target = useUiStore.getState().prefsSection;
-      if (target) setSection(target);
+      if (target && !(target === "Updates" && useUpdateStore.getState().store)) setSection(target);
     }
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
@@ -211,7 +215,7 @@ export function PreferencesDialog() {
           className="flex w-44 shrink-0 flex-col border-r border-[var(--border)] p-2"
           aria-label={t("preferences.navLabel")}
         >
-          {[...SECTIONS, "About" as const].map((s) => (
+          {[...sections, "About" as const].map((s) => (
             <Fragment key={s}>
               {s === "About" && <div className="flex-1" />}
               <button
@@ -405,7 +409,7 @@ export function PreferencesDialog() {
 
           {section === "Help" && <HelpSection />}
 
-          {section === "Updates" && <UpdatesSection />}
+          {section === "Updates" && !fromStore && <UpdatesSection />}
 
           {section === "Experimental" && <ExperimentalSection />}
 
