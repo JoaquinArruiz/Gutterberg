@@ -44,6 +44,15 @@ word of the heading.
    `cla-signatures` branch. That branch must exist and must not be protected, since the workflow commits to it. If
    CLA.md changes in a way that matters, raise its version so that new signatures name it.
 
+5. **The Discord release post**: `.github/workflows/discord-release.yml` posts every published release (not
+   pre-releases) in the Discord server's `#announcements`, pinging the Release pings role, and publishes the post to
+   the servers that follow the channel. It needs the secrets `DISCORD_BOT_TOKEN` (Gutterbot's token),
+   `DISCORD_ANNOUNCEMENTS_CHANNEL_ID` and `DISCORD_RELEASE_ROLE_ID` (the last two may be variables instead), and
+   Gutterbot needs View Channel, Send Messages and Manage Messages in `#announcements`. The post is made from the
+   release's lists (Added as New, Changed, Fixed), each bullet cut to its name and first sentence; I can edit it in
+   Discord afterwards. Run the workflow by hand with a tag to see the post (a dry run, the default) or to post a
+   release again.
+
 Builds are not code-signed (no Apple or Windows certificate). The updater works anyway; it checks its own key.
 
 ## To release
@@ -68,7 +77,7 @@ A version has its own branch, `release/1.1.0`, started from `main`; features and
    draft release, and tag again.
 5. Open the draft release and check the files (`.msi`/`.exe`, `.dmg` and `.app.tar.gz`, `.AppImage` and
    `.deb`, their `.sig` files and `latest.json`) and the notes. Press **Publish**. Only then do apps see it:
-   GitHub's `releases/latest` skips drafts and pre-releases.
+   GitHub's `releases/latest` skips drafts and pre-releases. Publishing also posts the release on Discord.
 6. Delete the version branch. A fix for this version is a `release/1.1.1` branch started from `main`.
 
 CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a branch is not built twice. Feature and
