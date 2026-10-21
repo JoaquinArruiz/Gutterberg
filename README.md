@@ -46,6 +46,10 @@ and pick the file for your system:
 | macOS, Intel | `Gutterberg_<version>_x64.dmg` |
 | Linux | `Gutterberg_<version>_amd64.AppImage` (make it executable, then run it), the `.deb` or the `.rpm` |
 
+On Windows you can also get it from the [Microsoft Store](https://apps.microsoft.com/detail/9NLQ61KCDSKZ), which
+installs it without the SmartScreen warning and keeps it up to date. It is the same app. Install one or the other, not
+both.
+
 ### Requirements
 
 | System | What it needs |
@@ -204,10 +208,10 @@ own (`gutterberg-cli-<platform>`), for a machine without the app. It needs nothi
 
 ## Privacy
 
-Gutterberg works on your computer. Your PDFs, images and projects stay there, and the app has no account, no
+The full policy is in [PRIVACY.md](PRIVACY.md). Gutterberg works on your computer. Your PDFs, images and projects stay there, and the app has no account, no
 analytics and no tracking. Only two things use the network:
 
-- **The update check**, at most once a day, asks GitHub for a small file, `latest.json`, that names the newest
+- **The update check** (not in the Microsoft Store copy, which the Store updates), at most once a day, asks GitHub for a small file, `latest.json`, that names the newest
   version, and downloads the new version when you say so. It sends nothing about you or your files; GitHub sees the
   request as it sees any visit to a web page.
 - **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:

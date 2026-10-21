@@ -10,6 +10,7 @@ import {
   tutorialTitleKey,
 } from "../../lib/tutorials";
 import { useUiStore } from "../../stores/ui-store";
+import { useUpdateStore } from "../../stores/update-store";
 
 const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
 
@@ -22,12 +23,15 @@ const fold = (text: string) => text.normalize("NFD").replace(/\p{M}/gu, "").toLo
 export function TutorialsList() {
   const { t } = useTranslation();
   const startTutorial = useUiStore((s) => s.startTutorial);
+  // The Store updates a Store copy, so Update Gutterberg has nothing to show there.
+  const fromStore = useUpdateStore((s) => s.store);
   const [query, setQuery] = useState("");
   const words = fold(query).split(/\s+/).filter(Boolean);
   const groups = TUTORIAL_GROUPS.map((group) => ({
     group,
     ids: TUTORIAL_IDS.filter((id) => {
       if (TUTORIALS[id].group !== group) return false;
+      if (id === "update" && fromStore) return false;
       const haystack = fold(`${t(tutorialTitleKey(id))} ${t(tutorialSummaryKey(id))}`);
       return words.every((w) => haystack.includes(w));
     }),

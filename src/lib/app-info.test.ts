@@ -14,5 +14,8 @@ describe("the app info", () => {
     const info = { name: "Gutterberg", version: "1.0.0", os: "Windows 11 (x86_64)", language: "es", pdfium: "8086" };
     expect(formatAppInfo(info)).toBe("Gutterberg 1.0.0 · Windows 11 (x86_64) · Language: es · pdfium 8086");
     expect(formatAppInfo({ ...info, pdfium: "" })).toBe("Gutterberg 1.0.0 · Windows 11 (x86_64) · Language: es");
+    expect(formatAppInfo({ ...info, store: true })).toBe(
+      "Gutterberg 1.0.0 (Microsoft Store) · Windows 11 (x86_64) · Language: es · pdfium 8086",
+    );
   });
 });

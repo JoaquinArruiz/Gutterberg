@@ -3,6 +3,7 @@ mod commands;
 mod data_dirs;
 mod keychain;
 mod state;
+mod store;
 
 #[cfg(target_os = "macos")]
 use tauri::Emitter;
@@ -69,10 +70,13 @@ pub fn run() {
             commands::render::render_region,
         ])
         .setup(|app| {
-            // Checks for a new version and installs it; the web side drives both from Preferences.
+            // Checks for a new version and installs it; the web side drives both from Preferences. A Store copy is
+            // updated by the Store, so it has no updater.
             #[cfg(desktop)]
-            app.handle()
-                .plugin(tauri_plugin_updater::Builder::new().build())?;
+            if !store::is_store_install() {
+                app.handle()
+                    .plugin(tauri_plugin_updater::Builder::new().build())?;
+            }
             if let Some(path) = project_arg(std::env::args()) {
                 app.state::<state::AppState>().file_opened(path);
             }

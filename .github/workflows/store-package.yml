@@ -1,0 +1,64 @@
+name: Microsoft Store package
+
+# Builds the Windows app and packs the Microsoft Store MSIX (scripts/make-msix.mjs), kept with the run as the
+# microsoft-store artifact. Tags get theirs from release.yml; this one is for trying the package before a tag: it runs
+# by hand, and on a push that changes how the package is made. See "Microsoft Store" in docs/releasing.md.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - src-tauri/msix/**
+      - scripts/make-msix.mjs
+      - .github/workflows/store-package.yml
+
+jobs:
+  msix:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: x86_64-pc-windows-msvc
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Fetch pdfium
+        shell: bash
+        run: scripts/fetch-pdfium.sh win-x64
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-about@0.9.2
+      - name: Collect the third-party licenses
+        shell: bash
+        run: node scripts/third-party-licenses.mjs
+
+      - name: Build the command line
+        shell: bash
+        run: |
+          cargo build --release -p card-cli
+          mkdir -p src-tauri/binaries
+          cp target/release/gutterberg-cli.exe src-tauri/binaries/gutterberg-cli-x86_64-pc-windows-msvc.exe
+
+      # Only the exe: the installers and their updater signatures are release.yml's.
+      - name: Build the app
+        run: pnpm tauri build --no-bundle --config src-tauri/tauri.cli.conf.json
+
+      - name: Pack the Microsoft Store package
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "MSIX=Gutterberg_${version}_x64.msix" >> "$GITHUB_ENV"
+          node scripts/make-msix.mjs --exe target/release/gutterberg.exe \
+            --cli src-tauri/binaries/gutterberg-cli-x86_64-pc-windows-msvc.exe --out "Gutterberg_${version}_x64.msix"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: microsoft-store
+          path: ${{ env.MSIX }}
+          if-no-files-found: error

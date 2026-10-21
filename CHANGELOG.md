@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Gutterberg for Windows is on the Microsoft Store too. The Store copy installs without the SmartScreen warning and the Store keeps it up to date, so it has no update check of its own and no Preferences › Updates; Help › Copy app info says "(Microsoft Store)". Opening `.gtr` files and `gutterberg-cli` work as with the installer from GitHub. A privacy policy, [PRIVACY.md](PRIVACY.md), now says in one place what the app sends and where.
+
 ## 1.1.0 (2026-10-20)
 
 ### Added

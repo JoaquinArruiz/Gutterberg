@@ -5,6 +5,7 @@ import { applyLocale } from "../../i18n";
 import { TUTORIAL_GROUPS, TUTORIAL_IDS, TUTORIALS } from "../../lib/tutorials";
 import { useDocumentStore } from "../../stores/document-store";
 import { useUiStore } from "../../stores/ui-store";
+import { useUpdateStore } from "../../stores/update-store";
 import { HelpMenu } from "../toolbar/HelpMenu";
 import { TutorialsDialog } from "./TutorialsDialog";
 import { TutorialsList } from "./TutorialsList";
@@ -25,6 +26,7 @@ beforeEach(() => {
     hintsHeld: false,
   });
   useDocumentStore.getState().setDocuments([], 0);
+  useUpdateStore.setState({ store: false });
 });
 afterEach(() => {
   cleanup();
@@ -48,6 +50,13 @@ describe("the Tutorials list", () => {
     }
     expect(screen.getByText("Make pieces bigger or smaller")).toBeTruthy();
     expect(screen.getByText("Copy the log and open the GitHub form with your version filled in.")).toBeTruthy();
+  });
+
+  it("leaves out Update Gutterberg in a Microsoft Store copy, which the Store updates", () => {
+    useUpdateStore.setState({ store: true });
+    render(<TutorialsList />);
+    expect(shown()).not.toContain("update");
+    expect(shown()).toHaveLength(TUTORIAL_IDS.length - 1);
   });
 
   it("filters by the title and the summary, ignoring case", () => {
