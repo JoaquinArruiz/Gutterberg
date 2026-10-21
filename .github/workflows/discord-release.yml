@@ -1,0 +1,39 @@
+name: Discord release post
+
+# Publishing a release on GitHub posts it in the Discord server's #announcements, pinging the Release pings role, and
+# publishes the post to the servers that follow the channel. Running it by hand posts an existing release again;
+# it starts as a dry run that only prints the post. See docs/releasing.md.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, for example v1.1.0
+        required: true
+      dry_run:
+        description: Only print the post, send nothing
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  post:
+    if: ${{ github.event_name == 'workflow_dispatch' || !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Post the release in #announcements
+        run: node scripts/discord-release-post.mjs
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_ANNOUNCEMENTS_CHANNEL_ID: ${{ secrets.DISCORD_ANNOUNCEMENTS_CHANNEL_ID || vars.DISCORD_ANNOUNCEMENTS_CHANNEL_ID }}
+          DISCORD_RELEASE_ROLE_ID: ${{ secrets.DISCORD_RELEASE_ROLE_ID || vars.DISCORD_RELEASE_ROLE_ID }}
