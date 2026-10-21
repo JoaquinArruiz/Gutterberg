@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.2.0 (2026-10-21)
+
+1.2.0 is about where Gutterberg comes from and what it says to the internet. On Windows it is now on the Microsoft Store, which installs it without the SmartScreen warning and keeps it up to date. Setting Tell me about to Never now really means the app never checks for updates by itself, and a privacy policy says in one place what the app sends and where.
+
 ### Added
 
 - Gutterberg for Windows is on the Microsoft Store too. The Store copy installs without the SmartScreen warning and the Store keeps it up to date, so it has no update check of its own and no Preferences › Updates; Help › Copy app info says "(Microsoft Store)". Opening `.gtr` files and `gutterberg-cli` work as with the installer from GitHub. A privacy policy, [PRIVACY.md](PRIVACY.md), now says in one place what the app sends and where.
