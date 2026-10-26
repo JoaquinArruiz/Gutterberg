@@ -142,6 +142,11 @@ matter:
 - Page content is decompressed with a size cap, and a decode failure is an error, never a raw copy.
 - The catalog's outlines, named destinations, structure tree, form fields and open action are dropped before
   unreachable objects are pruned, so the old pages really leave the file.
+- What a source says about itself is kept. With one PDF its document information and XMP stay as they are. With
+  several, each text entry of the document information (title, author, copyright, ...) lists every used PDF's value
+  once, in source order, and the dates and producing tools are the first used PDF's. The catalog then drops the first
+  PDF's XMP, which no longer describes the whole file, and each PDF's XMP (or the page's own) goes on the forms of its
+  pages, so no publisher's notice is lost or credited to another file.
 - The file is written to a temporary file in the output folder and renamed, so a failed export leaves nothing, and
   the output may never be the file that is open.
 - `validate_export` and `validate_sheets` run the same checks without writing, one `PageIssue` per failing page

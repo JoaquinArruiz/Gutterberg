@@ -12,7 +12,7 @@ use card_core::sheet::{
 };
 use card_core::units::{mm_to_pt, pt_to_mm};
 use card_core::Error;
-use lopdf::Document;
+use lopdf::{dictionary, Document, Object, Stream};
 
 const A4: PageSize = PageSize {
     width_pt: 595.2756,
@@ -250,6 +250,128 @@ fn cards_from_two_documents_share_a_sheet() {
         let body = String::from_utf8_lossy(&stream.decompressed_content().unwrap()).to_string();
         assert!(body.contains("Tj"), "form {form:?} lost its content");
     }
+}
+
+/// The sample PDF with document information and an XMP stream that name `who`.
+fn signed_sample(who: &str) -> Document {
+    let mut doc = sample_pdf();
+    let info = doc.add_object(dictionary! {
+        "Title" => Object::string_literal(format!("{who}'s cards")),
+        "Author" => lopdf::text_string(who),
+        "Copyright" => Object::string_literal(format!("(c) {who}")),
+        "Producer" => Object::string_literal(format!("{who}'s tool")),
+    });
+    doc.trailer.set("Info", info);
+    let xmp = doc.add_object(Stream::new(
+        dictionary! { "Type" => "Metadata", "Subtype" => "XML" },
+        format!("<x:xmpmeta><dc:rights>(c) {who}</dc:rights></x:xmpmeta>").into_bytes(),
+    ));
+    let catalog = doc.trailer.get(b"Root").unwrap().as_reference().unwrap();
+    doc.get_dictionary_mut(catalog)
+        .unwrap()
+        .set("Metadata", xmp);
+    doc
+}
+
+fn info_text(doc: &Document, key: &[u8]) -> Option<String> {
+    let info = doc.trailer.get(b"Info").ok()?.as_reference().ok()?;
+    let value = doc.get_dictionary(info).ok()?.get(key).ok()?;
+    lopdf::decode_text_string(value).ok()
+}
+
+/// The XMP stream on the form of `document`'s first page, as text.
+fn form_xmp(doc: &Document, page_id: lopdf::ObjectId, document: u32) -> Option<String> {
+    let resources = doc
+        .get_dictionary(page_id)
+        .ok()?
+        .get(b"Resources")
+        .ok()?
+        .as_dict()
+        .ok()?;
+    let xobjects = resources.get(b"XObject").ok()?.as_dict().ok()?;
+    let form = xobjects
+        .get(format!("S{document}_0").as_bytes())
+        .ok()?
+        .as_reference()
+        .ok()?;
+    let xmp = doc
+        .get_object(form)
+        .ok()?
+        .as_stream()
+        .ok()?
+        .dict
+        .get(b"Metadata")
+        .ok()?
+        .as_reference()
+        .ok()?;
+    let stream = doc.get_object(xmp).ok()?.as_stream().ok()?;
+    Some(String::from_utf8_lossy(&stream.content).to_string())
+}
+
+#[test]
+fn one_source_keeps_its_metadata_as_it_is() {
+    let sheets = run(&[(card_in(0, 0, 63.5, 88.0), 1)]);
+    let out = export_sheets(vec![(0, signed_sample("Ana"))], &sheets).unwrap();
+    assert_eq!(info_text(&out, b"Author").as_deref(), Some("Ana"));
+    assert_eq!(info_text(&out, b"Copyright").as_deref(), Some("(c) Ana"));
+    let catalog = out.catalog().unwrap();
+    assert!(catalog.get(b"Metadata").is_ok(), "the document's XMP stays");
+}
+
+#[test]
+fn several_sources_keep_every_author_and_notice() {
+    let sheets = run(&[
+        (card_in(0, 0, 63.5, 88.0), 1),
+        (card_in(1, 0, 63.5, 88.0), 1),
+        (card_in(2, 0, 63.5, 88.0), 1),
+    ]);
+    let sources = vec![
+        (0, signed_sample("Ana")),
+        (1, signed_sample("Bruno")),
+        // A second file by the same author is named once.
+        (2, signed_sample("Ana")),
+    ];
+    let out = export_sheets(sources, &sheets).unwrap();
+    assert_eq!(info_text(&out, b"Author").as_deref(), Some("Ana; Bruno"));
+    assert_eq!(
+        info_text(&out, b"Title").as_deref(),
+        Some("Ana's cards; Bruno's cards")
+    );
+    assert_eq!(
+        info_text(&out, b"Copyright").as_deref(),
+        Some("(c) Ana; (c) Bruno")
+    );
+    // A tool is the first file's, not a list.
+    assert_eq!(info_text(&out, b"Producer").as_deref(), Some("Ana's tool"));
+    // The first file's XMP no longer stands for the whole file; each file's is on its own pages' form.
+    assert!(out.catalog().unwrap().get(b"Metadata").is_err());
+    let page_id = *out.get_pages().values().next().unwrap();
+    assert!(form_xmp(&out, page_id, 0).unwrap().contains("(c) Ana"));
+    assert!(form_xmp(&out, page_id, 1).unwrap().contains("(c) Bruno"));
+
+    // All of it survives saving.
+    let mut bytes = Vec::new();
+    out.clone().save_to(&mut bytes).unwrap();
+    let reloaded = Document::load_mem(&bytes).unwrap();
+    assert_eq!(
+        info_text(&reloaded, b"Author").as_deref(),
+        Some("Ana; Bruno")
+    );
+    assert!(form_xmp(&reloaded, page_id, 1)
+        .unwrap()
+        .contains("(c) Bruno"));
+}
+
+#[test]
+fn a_source_with_nothing_on_the_sheets_is_not_named() {
+    let sheets = run(&[(card_in(1, 0, 63.5, 88.0), 1)]);
+    let sources = vec![(0, signed_sample("Ana")), (1, signed_sample("Bruno"))];
+    let out = export_sheets(sources, &sheets).unwrap();
+    assert_eq!(info_text(&out, b"Author").as_deref(), Some("Bruno"));
+    assert_eq!(
+        info_text(&out, b"Producer").as_deref(),
+        Some("Bruno's tool")
+    );
 }
 
 #[test]

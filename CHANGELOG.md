@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Fixed
+
+- Sheets made from several PDFs keep every PDF's title, author and copyright notice. Before, only the first PDF's were kept, so the file named one author for everyone's pieces.
+
 ## 1.2.0 (2026-10-21)
 
 1.2.0 is about where Gutterberg comes from and what it says to the internet. On Windows it is now on the Microsoft Store, which installs it without the SmartScreen warning and keeps it up to date. Setting Tell me about to Never now really means the app never checks for updates by itself, and a privacy policy says in one place what the app sends and where.
