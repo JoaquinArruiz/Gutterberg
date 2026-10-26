@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Microsoft Store package. scripts/make-msix.mjs fills in {{VERSION}} and packs it with the built app; see
+  "Microsoft Store" in docs/releasing.md. The Identity and PublisherDisplayName are the ones Partner Center gives the
+  product (Product management › Product identity) and must stay exactly as they are.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap5="http://schemas.microsoft.com/appx/manifest/uap/windows10/5"
+  xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap5 desktop4 rescap">
+
+  <Identity
+    Name="joaquinarruiz.Gutterberg"
+    Publisher="CN=11D978E9-4283-4274-B6A5-2A5B34C44A34"
+    Version="{{VERSION}}"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Gutterberg</DisplayName>
+    <PublisherDisplayName>joaquinarruiz</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <!-- WebView2 ships with Windows 11 and with Windows 10 since 1809's updates. -->
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.26100.0" />
+    <!-- The C++ runtime the command line links to; the Store installs it with the app when it is missing. -->
+    <PackageDependency
+      Name="Microsoft.VCLibs.140.00.UWPDesktop"
+      MinVersion="14.0.30704.0"
+      Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Gutterberg" Executable="Gutterberg.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Gutterberg"
+        Description="Turns print-and-play PDFs and card scans into cut-ready sheets."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <!-- No large tile: it needs a wide one too, and Windows 11 has no tiles at all. -->
+        <uap:DefaultTile Square71x71Logo="Assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Double-clicking a project opens it: the path arrives as the first argument, as with the MSI. -->
+        <uap:Extension Category="windows.fileTypeAssociation">
+          <uap:FileTypeAssociation Name="gtr">
+            <uap:DisplayName>Gutterberg project</uap:DisplayName>
+            <uap:Logo>Assets\Square44x44Logo.png</uap:Logo>
+            <uap:SupportedFileTypes>
+              <uap:FileType ContentType="application/vnd.gutterberg.project+json">.gtr</uap:FileType>
+            </uap:SupportedFileTypes>
+          </uap:FileTypeAssociation>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+    <!-- The command line: `gutterberg-cli` works in any terminal, as it does next to the MSI's app. Not in Start. A
+         console alias needs SupportsMultipleInstances, so that each terminal runs its own copy. -->
+    <Application Id="GutterbergCli" Executable="gutterberg-cli.exe" EntryPoint="Windows.FullTrustApplication"
+      desktop4:SupportsMultipleInstances="true">
+      <uap:VisualElements
+        DisplayName="Gutterberg command line"
+        Description="Exports or checks a saved Gutterberg project."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png"
+        AppListEntry="none" />
+      <Extensions>
+        <uap5:Extension Category="windows.appExecutionAlias" Executable="gutterberg-cli.exe" EntryPoint="Windows.FullTrustApplication">
+          <uap5:AppExecutionAlias desktop4:Subsystem="console">
+            <uap5:ExecutionAlias Alias="gutterberg-cli.exe" />
+          </uap5:AppExecutionAlias>
+        </uap5:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <!-- AI Mode, when the user turns it on. -->
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

@@ -6,6 +6,7 @@ import { usePreferencesStore } from "../stores/preferences-store";
 import { useToastStore } from "../stores/toast-store";
 import { useUiStore } from "../stores/ui-store";
 import { useUpdateStore } from "../stores/update-store";
+import { isStoreInstall } from "./app-info";
 import { emitHintEvent } from "./hint-events";
 import { saveBeforeRestart } from "./project-actions";
 import { afterUpdate, CHECK_DELAY_MS, CHECK_EVERY_MS, shouldNotify } from "./updates";
@@ -138,12 +139,15 @@ const EXPORT_RETRY_MS = 60_000;
 
 /**
  * At start: tell how the last update went, then check for a new version about 10 seconds in, at most once a
- * day and never during an export. Returns what stops it.
+ * day and never during an export. With Tell me about set to Never it does not check at all (the user checks in
+ * Preferences), and a Microsoft Store copy never checks: the Store updates it. Returns what stops it.
  */
 export function startUpdateChecks(): () => void {
   let timer: ReturnType<typeof setTimeout> | undefined;
   void reportLastUpdate();
+  void isStoreInstall().then((store) => state().set({ store }));
   const attempt = () => {
+    if (state().store || prefs().prefs.updates.notify === "never") return;
     if (Date.now() - prefs().prefs.updates.lastCheck < CHECK_EVERY_MS) return;
     if (useUiStore.getState().exporting) {
       timer = setTimeout(attempt, EXPORT_RETRY_MS);

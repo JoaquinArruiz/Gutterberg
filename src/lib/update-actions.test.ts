@@ -6,8 +6,9 @@ import { useUpdateStore } from "../stores/update-store";
 import { DEFAULT_PREFERENCES } from "./preferences";
 import { CHECK_DELAY_MS, CHECK_EVERY_MS } from "./updates";
 
-const { getVersion, check, relaunch, saveBeforeRestart } = vi.hoisted(() => ({
+const { getVersion, check, relaunch, saveBeforeRestart, isStoreInstall } = vi.hoisted(() => ({
   getVersion: vi.fn(),
+  isStoreInstall: vi.fn(),
   check: vi.fn(),
   relaunch: vi.fn(),
   saveBeforeRestart: vi.fn(),
@@ -16,6 +17,7 @@ vi.mock("@tauri-apps/api/app", () => ({ getVersion }));
 vi.mock("@tauri-apps/plugin-updater", () => ({ check }));
 vi.mock("@tauri-apps/plugin-process", () => ({ relaunch }));
 vi.mock("./project-actions", () => ({ saveBeforeRestart }));
+vi.mock("./app-info", () => ({ isStoreInstall }));
 
 import { checkForUpdates, installUpdate, reportLastUpdate, restartNow, startUpdateChecks } from "./update-actions";
 
@@ -36,6 +38,7 @@ beforeEach(() => {
   check.mockReset().mockResolvedValue(null);
   relaunch.mockReset().mockResolvedValue(undefined);
   saveBeforeRestart.mockReset().mockResolvedValue(true);
+  isStoreInstall.mockReset().mockResolvedValue(false);
   usePreferencesStore.setState({ prefs: DEFAULT_PREFERENCES });
   useToastStore.setState({ queue: [] });
   useUiStore.setState({ exporting: false, prefsOpen: false, prefsSection: null, focusInstall: false });
@@ -46,6 +49,7 @@ beforeEach(() => {
     whatsNew: null,
     manual: false,
     failed: false,
+    store: false,
   });
 });
 afterEach(() => vi.useRealTimers());
@@ -162,6 +166,23 @@ describe("the automatic check", () => {
     useUiStore.setState({ exporting: false });
     await vi.advanceTimersByTimeAsync(60_000);
     expect(check).toHaveBeenCalledOnce();
+  });
+
+  it("does not run when Tell me about is Never", async () => {
+    vi.useFakeTimers();
+    setUpdates({ notify: "never" });
+    startUpdateChecks();
+    await vi.advanceTimersByTimeAsync(CHECK_DELAY_MS * 2);
+    expect(check).not.toHaveBeenCalled();
+  });
+
+  it("never runs in a Microsoft Store copy, which the Store updates", async () => {
+    vi.useFakeTimers();
+    isStoreInstall.mockResolvedValue(true);
+    startUpdateChecks();
+    await vi.advanceTimersByTimeAsync(CHECK_DELAY_MS * 2);
+    expect(useUpdateStore.getState().store).toBe(true);
+    expect(check).not.toHaveBeenCalled();
   });
 
   it("can be stopped", async () => {

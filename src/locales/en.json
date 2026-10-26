@@ -823,8 +823,8 @@
       "notifyMajor": "Major versions only",
       "notifyMajorHint": "Only big changes, such as 2.0.",
       "notifyNever": "Never",
-      "notifyNeverHint": "I'll check myself.",
-      "tellMeNote": "This only decides whether a message appears. This section always shows a newer version when there is one, and updating installs the newest."
+      "notifyNeverHint": "Gutterberg doesn't check by itself. Use Check for updates when you want to.",
+      "tellMeNote": "Gutterberg checks once a day and this only decides whether a message appears; with Never it doesn't check at all. This section shows a newer version once a check finds one, and updating installs the newest."
     },
     "experimental": {
       "title": "Experimental features",

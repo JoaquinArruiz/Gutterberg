@@ -115,3 +115,24 @@ jobs:
         run: |
           gh api -X POST -H "Content-Type: application/octet-stream" --input "$CLI_ASSET" \
             "https://uploads.github.com/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$(basename "$CLI_ASSET")"
+
+      # The Microsoft Store package, from the app just built: the same exe, which turns its updater off when it runs
+      # from the package, since the Store updates it. It is unsigned (the Store signs it), so it is kept with the run
+      # for me to upload in Partner Center rather than offered on the release (see "Microsoft Store" in
+      # docs/releasing.md). A pre-release has no Store version and is skipped. A failure here does not fail the
+      # release, whose files are already on the draft: the run then has no microsoft-store artifact.
+      - name: Pack the Microsoft Store package
+        if: matrix.platform == 'windows-latest' && !contains(github.ref_name, '-')
+        continue-on-error: true
+        shell: bash
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "MSIX=Gutterberg_${version}_x64.msix" >> "$GITHUB_ENV"
+          node scripts/make-msix.mjs --exe target/release/gutterberg.exe --cli "$CLI_ASSET" --out "Gutterberg_${version}_x64.msix"
+      - uses: actions/upload-artifact@v4
+        if: matrix.platform == 'windows-latest' && !contains(github.ref_name, '-')
+        continue-on-error: true
+        with:
+          name: microsoft-store
+          path: ${{ env.MSIX }}
+          if-no-files-found: error

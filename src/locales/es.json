@@ -823,8 +823,8 @@
       "notifyMajor": "Solo versiones mayores",
       "notifyMajorHint": "Solo los cambios grandes, como la 2.0.",
       "notifyNever": "Nunca",
-      "notifyNeverHint": "Las buscaré yo.",
-      "tellMeNote": "Esto solo decide si aparece un aviso. Esta sección siempre muestra una versión más nueva cuando la hay, y al actualizar se instala la más reciente."
+      "notifyNeverHint": "Gutterberg no las busca solo. Usa Buscar actualizaciones cuando quieras.",
+      "tellMeNote": "Gutterberg busca una vez al día y esto solo decide si aparece un aviso; con Nunca no busca. Esta sección muestra una versión más nueva cuando una búsqueda la encuentra, y al actualizar se instala la más reciente."
     },
     "experimental": {
       "title": "Funciones experimentales",

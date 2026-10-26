@@ -5,6 +5,7 @@ import refractionHubLogo from "../../../assets/brand/refractionhub.svg";
 import { EXTERNAL_LINKS } from "../../lib/external-links";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { useUiStore } from "../../stores/ui-store";
+import { useUpdateStore } from "../../stores/update-store";
 import { PreferencesDialog } from "./PreferencesDialog";
 
 const { getName, getVersion, openExternalLink, licenseTexts } = vi.hoisted(() => ({
@@ -44,6 +45,7 @@ beforeEach(() => {
   });
   usePreferencesStore.getState().resetToDefaults();
   useUiStore.setState({ prefsOpen: false, prefsSection: null, prefsPulse: null });
+  useUpdateStore.setState({ store: false });
 });
 afterEach(() => cleanup());
 
@@ -68,6 +70,14 @@ describe("the Preferences sections", () => {
     expect(buttons[7].querySelector("img")).toBeTruthy();
     // The AI icon is the spark, in the AI colour.
     expect(buttons[4].querySelector("svg")?.getAttribute("class")).toContain("--ai");
+  });
+
+  it("has no Updates section in a Microsoft Store copy, even when a link asks for it", async () => {
+    useUpdateStore.setState({ store: true });
+    render(<PreferencesDialog />);
+    await act(async () => useUiStore.getState().setPrefsOpen(true, "Updates"));
+    expect(sectionButtons().map((b) => b.textContent)).not.toContain("Updates");
+    expect(screen.getByRole("button", { name: "General" }).getAttribute("aria-current")).toBe("true");
   });
 
   it("keeps About alone at the bottom, after a spacer", async () => {
