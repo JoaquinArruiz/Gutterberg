@@ -11,6 +11,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- The mouse wheel scrolls the row of sheets above the Print tab's preview sideways, and the Pages panel when it is docked at the top or bottom. Before, only `Shift`+wheel, a trackpad or the scrollbar moved them.
 - The Print tab's toolbar shows the name Export will offer, such as `my-game-print.pdf` (the project's or the first PDF's name), instead of "New-PDF". Clicking it opens that name to edit, with the cursor at the end; keeping it as it is keeps following the project.
 
 ## 1.2.1 (2026-10-27)

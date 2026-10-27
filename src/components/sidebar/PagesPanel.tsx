@@ -5,6 +5,7 @@ import { isRemoved, pageBadge, removedPages } from "../../lib/document-layout";
 import { activateDocument, addImagesDialog, addPdfDialog, removeActiveDocument } from "../../lib/project-actions";
 import { removePages, restorePages } from "../../lib/removed-pages";
 import { usePageImage } from "../../lib/use-page-image";
+import { useWheelScrollsSideways } from "../../lib/use-wheel-scrolls-sideways";
 import { PAGE_THUMB_HEIGHT, type PanelOrientation } from "../../lib/workspace-layout";
 import { documentName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
@@ -232,6 +233,8 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
   const groups = useLayoutStore((s) => s.groups);
   const [applyOpen, setApplyOpen] = useState(false);
   const vertical = orientation === "vertical";
+  const listRef = useRef<HTMLDivElement>(null);
+  useWheelScrollsSideways(listRef, !vertical);
   return (
     <div className={`flex h-full ${vertical ? "flex-col" : "flex-row items-start"}`}>
       {count > 0 && (
@@ -249,6 +252,7 @@ export function PagesPanel({ orientation }: { orientation: PanelOrientation }) {
         </div>
       )}
       <div
+        ref={listRef}
         className={`flex min-h-0 min-w-0 flex-1 gap-1 pb-2 ${vertical ? "flex-col overflow-y-auto" : "flex-row items-start overflow-x-auto px-1"}`}
         data-testid="pages-list"
       >

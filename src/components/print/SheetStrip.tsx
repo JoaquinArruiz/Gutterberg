@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { OutputSheet } from "../../lib/sheet-api";
+import { useWheelScrollsSideways } from "../../lib/use-wheel-scrolls-sideways";
 import { PlacedCard } from "./PlacedCard";
 import { SheetOverlay } from "./SheetOverlay";
 
@@ -77,8 +78,11 @@ export function SheetStrip({
   onSelect: (i: number) => void;
 }) {
   const tagged = sheets.some((s) => s.side === "back");
+  const ref = useRef<HTMLDivElement>(null);
+  useWheelScrollsSideways(ref);
   return (
     <div
+      ref={ref}
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--panel)] px-2 pb-1 pt-1"
       data-testid="sheet-strip"
     >
