@@ -132,6 +132,12 @@ export function MarksSection() {
                 value={marks.offsetMm}
                 onChange={(offsetMm) => setMarks({ offsetMm })}
               />
+              <Switch
+                checked={marks.innerCrosses}
+                onChange={(innerCrosses) => setMarks({ innerCrosses })}
+                label={t("print.marks.innerCrosses")}
+                info={t("print.marks.innerCrossesHint")}
+              />
             </>
           )}
           {backSheets && (

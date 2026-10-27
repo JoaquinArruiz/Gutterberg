@@ -69,6 +69,10 @@ pub struct MarkOptions {
     /// Duplex on the other side: marks on the back sheets too, round the backs, for backs that are
     /// cut on their own instead of through both sides at once. Off, a back sheet has none.
     pub on_backs: bool,
+    /// Ticks: also a small cross, its arms `length_mm` long, in the middle of each place where a gap
+    /// between columns crosses a gap between rows, so the inside can be cut without a ruler across
+    /// the sheet.
+    pub inner_crosses: bool,
 }
 
 impl Default for MarkOptions {
@@ -81,6 +85,7 @@ impl Default for MarkOptions {
             length_mm: 3.0,
             offset_mm: 1.0,
             on_backs: false,
+            inner_crosses: false,
         }
     }
 }
@@ -370,6 +375,59 @@ fn gaps_along(spans: &mut [(f64, f64)]) -> (Vec<(f64, f64)>, usize) {
     (gaps, touching)
 }
 
+/// The crosses where a gap between columns meets a gap between rows, `length` (points) to each
+/// side of the middle, added to `lines`. Only where a piece has a corner at that crossing, so an
+/// empty end of a short last row gets none past its last piece. Returns false when some gap is
+/// too narrow for a line (or there is none), as the gap lines do.
+fn inner_crosses(
+    rects: &[Rect],
+    options: &MarkOptions,
+    length: f64,
+    lines: &mut Vec<[f64; 4]>,
+) -> bool {
+    let needed = mm_to_pt(options.width_mm + GAP_LINE_CLEARANCE_MM);
+    let (columns, touching_x) = gaps_along(
+        &mut rects
+            .iter()
+            .map(|r| (r.x, r.x + r.width))
+            .collect::<Vec<_>>(),
+    );
+    let (rows, touching_y) = gaps_along(
+        &mut rects
+            .iter()
+            .map(|r| (r.y, r.y + r.height))
+            .collect::<Vec<_>>(),
+    );
+    let mut fits = touching_x == 0 && touching_y == 0;
+    let wide = |gaps: Vec<(f64, f64)>, fits: &mut bool| -> Vec<(f64, f64)> {
+        gaps.into_iter()
+            .filter(|(a, b)| {
+                let ok = b - a >= needed;
+                *fits &= ok;
+                ok
+            })
+            .collect()
+    };
+    let (columns, rows) = (wide(columns, &mut fits), wide(rows, &mut fits));
+    let near = |a: f64, b: f64| (a - b).abs() < EPS;
+    for &(x0, x1) in &columns {
+        for &(y0, y1) in &rows {
+            let cornered = rects.iter().any(|r| {
+                let (rx, ry) = ([r.x, r.x + r.width], [r.y, r.y + r.height]);
+                rx.iter().any(|&x| near(x, x0) || near(x, x1))
+                    && ry.iter().any(|&y| near(y, y0) || near(y, y1))
+            });
+            if !cornered {
+                continue;
+            }
+            let (mx, my) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+            lines.push([mx - length, my, mx + length, my]);
+            lines.push([mx, my - length, mx, my + length]);
+        }
+    }
+    fits
+}
+
 /// Cut marks around `rects`: the pieces, or with gutterfold each folded pair as one.
 fn marks_for(
     rects: &[Rect],
@@ -400,6 +458,9 @@ fn marks_for(
             for y in ys {
                 lines.push([left - start - length, y, left - start, y]);
                 lines.push([right + start, y, right + start + length, y]);
+            }
+            if options.inner_crosses && !inner_crosses(rects, options, length, &mut lines) {
+                push_unique(warnings, SheetWarning::GapTooNarrowForLine);
             }
         }
         MarkStyle::Gaps => {

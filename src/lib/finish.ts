@@ -39,6 +39,8 @@ export type Finish = {
     offsetMm: number;
     /** Duplex on the other side: marks on the back sheets too, for backs cut on their own. */
     onBacks: boolean;
+    /** Ticks: also a cross where a gap between columns meets a gap between rows. */
+    innerCrosses: boolean;
   };
   bleed: { mm: number; source: BleedSource };
   duplex: {
@@ -64,7 +66,16 @@ export type Finish = {
 };
 
 export const DEFAULT_FINISH: Finish = {
-  marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1, onBacks: false },
+  marks: {
+    style: "off",
+    line: "solid",
+    widthMm: 0.25,
+    color: "#000000",
+    lengthMm: 3,
+    offsetMm: 1,
+    onBacks: false,
+    innerCrosses: false,
+  },
   bleed: { mm: 0, source: "mirror" },
   duplex: {
     on: false,
@@ -89,6 +100,7 @@ export const FinishSchema = z.object({
     lengthMm: z.number(),
     offsetMm: z.number(),
     onBacks: z.boolean().default(false),
+    innerCrosses: z.boolean().default(false),
   }),
   bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES) }),
   duplex: z.object({
@@ -127,6 +139,7 @@ export function cleanFinish(f: Finish): Finish {
       lengthMm: clampTo(f.marks.lengthMm, ...MARK_LENGTH_RANGE, d.marks.lengthMm),
       offsetMm: clampTo(f.marks.offsetMm, ...MARK_OFFSET_RANGE, d.marks.offsetMm),
       onBacks: f.marks.onBacks,
+      innerCrosses: f.marks.innerCrosses,
     },
     bleed: { mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0), source: f.bleed.source },
     duplex: {

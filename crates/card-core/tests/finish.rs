@@ -150,6 +150,46 @@ fn ticks_mark_the_inner_cuts_of_pieces_that_touch() {
 }
 
 #[test]
+fn ticks_can_add_a_cross_where_the_gaps_cross() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let mut o = marks(MarkStyle::Ticks);
+    o.marks.inner_crosses = true;
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    let lines = &out[0].marks.as_ref().unwrap().lines;
+    // The 16 ticks, and one cross of two lines in the middle.
+    assert_eq!(lines.len(), 18);
+    let (a, d) = (
+        sheets[0].placements[0].destination,
+        sheets[0].placements[3].destination,
+    );
+    let (mx, my) = ((a.x + a.width + d.x) / 2.0, (a.y + a.height + d.y) / 2.0);
+    let length = mm_to_pt(3.0);
+    assert!(lines.iter().any(|l| close(l[0], mx - length)
+        && close(l[1], my)
+        && close(l[2], mx + length)
+        && close(l[3], my)));
+    assert!(lines.iter().any(|l| close(l[0], mx)
+        && close(l[1], my - length)
+        && close(l[2], mx)
+        && close(l[3], my + length)));
+    assert!(out[0].warnings.is_empty());
+
+    // 3 x 3 has four crossings; without the setting there are none.
+    let sheets = plan(&docs, spec(3, 3, 6.0, 0.0), &[]);
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24 + 8);
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(marks(MarkStyle::Ticks))).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24);
+
+    // Touching pieces leave no room for a cross: the ticks stay, with the narrow-gap warning.
+    let sheets = plan(&docs, spec(2, 2, 0.0, 15.0), &[]);
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(o)).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 12);
+    assert!(out[0].warnings.contains(&SheetWarning::GapTooNarrowForLine));
+}
+
+#[test]
 fn gap_lines_run_down_the_middle_of_wide_gaps_only() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);

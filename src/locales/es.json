@@ -500,6 +500,8 @@
       "offset": "Distancia a la pieza",
       "onBacks": "También en las hojas del dorso",
       "onBacksHint": "Pone marcas alrededor de los dorsos también, para dorsos que cortas por separado: impresos en hojas aparte o pegados del otro lado de un cartón. Déjalo apagado para cortar los dos lados a la vez desde el frente.",
+      "innerCrosses": "También donde se cruzan las separaciones",
+      "innerCrossesHint": "Una pequeña cruz en el medio de cada lugar donde se cruzan las separaciones entre piezas, para cortar el interior sin apoyar una regla de lado a lado de la hoja. Sus brazos miden el largo de la marca. Las separaciones más angostas que la línea no llevan cruz.",
       "note": "Las marcas se imprimen en las hojas del frente, y en las del dorso si lo pides. Empiezan después del sangrado."
     },
     "bleed": {

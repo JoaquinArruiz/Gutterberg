@@ -254,6 +254,8 @@ pub struct FinishMarks {
     pub offset_mm: f64,
     #[serde(default)]
     pub on_backs: bool,
+    #[serde(default)]
+    pub inner_crosses: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -722,6 +724,7 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
                     defaults.offset_mm,
                 ),
                 on_backs: m.on_backs,
+                inner_crosses: m.inner_crosses,
             },
             bleed: BleedOptions {
                 mm: clamp_to(finish.bleed.mm, 0.0, MAX_BLEED_MM, 0.0),
@@ -1081,6 +1084,7 @@ mod tests {
                 length_mm: 4.0,
                 offset_mm: 2.0,
                 on_backs: true,
+                inner_crosses: false,
             },
             bleed: BleedOptions::default(),
             duplex: FinishDuplex {

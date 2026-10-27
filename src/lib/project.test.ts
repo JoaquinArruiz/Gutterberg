@@ -82,6 +82,7 @@ function state(): ProjectState {
           lengthMm: 4,
           offsetMm: 2,
           onBacks: true,
+          innerCrosses: true,
         },
         bleed: { mm: 2, source: "source" },
         duplex: {

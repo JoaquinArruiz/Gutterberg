@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Cut marks where the gaps cross: Print settings › Cut marks › Also where gaps cross (with Ticks in the margins) puts a small cross in the middle of each place where the gaps between pieces cross, so the inside of the sheet can be cut without a ruler laid across it. Its arms are the mark's length; a gap narrower than the line gets none. Projects open with it off, and the command line exports it as saved.
 - See a piece large in the Print tab: hold the right mouse button on a piece in the piece library, on the sheet or in the row of sheets, and it fills the window as it will print, with its name, until you let go. A quick right-click keeps it open until you click or press `Esc`. Handy for pieces that look alike.
 - Preferences › About › Updates: Download page opens Gutterberg's page (https://joaquinarruiz.com.ar/projects/gutterberg), to download it again; the Microsoft Store copy opens its Store page instead. Full changelog opens every version's changes on GitHub, and What's new in (this version) shows this version's notes in the app, without a network. Preferences › Updates has the Download page button too.
 - In the Source tab, `Delete` or `Backspace` removes the page whose thumbnail you clicked, like its Remove page menu item: the page leaves the Pages panel, stays in the PDF and the project, and comes back from Removed pages. The next page's thumbnail is picked, so you can keep pressing it. One page always stays.

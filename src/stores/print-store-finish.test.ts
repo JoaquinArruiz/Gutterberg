@@ -21,7 +21,16 @@ beforeEach(() => {
 describe("cut marks, bleed and duplex in the print store", () => {
   it("start off and are part of the plan", () => {
     expect(planOf(st()).finish).toEqual({
-      marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1, onBacks: false },
+      marks: {
+        style: "off",
+        line: "solid",
+        widthMm: 0.25,
+        color: "#000000",
+        lengthMm: 3,
+        offsetMm: 1,
+        onBacks: false,
+        innerCrosses: false,
+      },
       bleed: { mm: 0, source: "mirror" },
       duplex: {
         on: false,
