@@ -1,6 +1,7 @@
 name: Discord release post
 
-# Publishing a release on GitHub posts it in the Discord server's #announcements, pinging the Release pings role, and
+# Publishing a release on GitHub posts it in the Discord server's #announcements, pinging the roles of the members who
+# asked for that kind of update (every update, only features or only fixes), and
 # publishes the post to the servers that follow the channel. Running it by hand posts an existing release again;
 # it starts as a dry run that only prints the post. See docs/releasing.md.
 on:
@@ -37,3 +38,5 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_ANNOUNCEMENTS_CHANNEL_ID: ${{ secrets.DISCORD_ANNOUNCEMENTS_CHANNEL_ID || vars.DISCORD_ANNOUNCEMENTS_CHANNEL_ID }}
           DISCORD_RELEASE_ROLE_ID: ${{ secrets.DISCORD_RELEASE_ROLE_ID || vars.DISCORD_RELEASE_ROLE_ID }}
+          DISCORD_FEATURE_ROLE_ID: ${{ secrets.DISCORD_FEATURE_ROLE_ID || vars.DISCORD_FEATURE_ROLE_ID }}
+          DISCORD_FIX_ROLE_ID: ${{ secrets.DISCORD_FIX_ROLE_ID || vars.DISCORD_FIX_ROLE_ID }}
