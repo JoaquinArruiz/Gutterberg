@@ -1437,6 +1437,7 @@
       "nextPage": "Página siguiente (la flecha, sin nada elegido)",
       "previousPage": "Página anterior (la flecha, sin nada elegido)",
       "deletePiece": "Eliminar las piezas elegidas (Herramienta Seleccionar o Pieza)",
+      "removePage": "Quitar una página de la vista (con su miniatura elegida en el panel Páginas)",
       "snapRotation": "Girar una pieza en pasos de 15° (mantén pulsada la tecla mientras la giras)",
       "applyProposal": "Aplicar la propuesta",
       "discardProposal": "Descartar la propuesta",

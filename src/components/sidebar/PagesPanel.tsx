@@ -15,6 +15,14 @@ import { ApplyGridDialog } from "./ApplyGridDialog";
 
 const THUMB_WIDTH = 120; // vertical list: fixed width
 
+/** Focuses the viewed page's thumbnail once the list has redrawn, so Delete can go on removing pages. */
+function focusViewedThumb() {
+  requestAnimationFrame(() => {
+    const page = useDocumentStore.getState().currentPage;
+    document.querySelector<HTMLElement>(`[data-page-thumb="${page}"]`)?.focus();
+  });
+}
+
 function Thumbnail({ index, orientation }: { index: number; orientation: PanelOrientation }) {
   const { t } = useTranslation();
   const path = useDocumentStore((s) => s.path);
@@ -51,7 +59,19 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
     >
       <button
         type="button"
-        onClick={() => setCurrentPage(index)}
+        data-page-thumb={index}
+        onClick={(e) => {
+          setCurrentPage(index);
+          // Some web views do not focus a button on a click; the focus is what Delete acts on.
+          e.currentTarget.focus();
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== "Delete" && e.key !== "Backspace") return;
+          // The page, not the picked pieces the same key deletes elsewhere (App.tsx).
+          e.preventDefault();
+          e.stopPropagation();
+          if (removePages([index])) focusViewedThumb();
+        }}
         onContextMenu={(e) => {
           const total = useDocumentStore.getState().pages.length;
           const { groups } = useLayoutStore.getState();

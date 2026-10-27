@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- In the Source tab, `Delete` or `Backspace` removes the page whose thumbnail you clicked, like its Remove page menu item: the page leaves the Pages panel, stays in the PDF and the project, and comes back from Removed pages. The next page's thumbnail is picked, so you can keep pressing it. One page always stays.
+
 ### Changed
 
 - The Print tab's toolbar shows the name Export will offer, such as `my-game-print.pdf` (the project's or the first PDF's name), instead of "New-PDF". Clicking it opens that name to edit, with the cursor at the end; keeping it as it is keeps following the project.

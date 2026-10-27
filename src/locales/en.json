@@ -1437,6 +1437,7 @@
       "nextPage": "Next page (the arrow, with nothing picked)",
       "previousPage": "Previous page (the arrow, with nothing picked)",
       "deletePiece": "Delete the picked pieces (Select or Piece tool)",
+      "removePage": "Remove a page from view (its thumbnail picked in the Pages panel)",
       "snapRotation": "Rotate a piece in 15° steps (hold while turning it)",
       "applyProposal": "Apply the proposal",
       "discardProposal": "Discard the proposal",

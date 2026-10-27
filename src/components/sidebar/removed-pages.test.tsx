@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { isRemoved, isSkipped, removedPages } from "../../lib/document-layout";
 import { stepPage } from "../../lib/removed-pages";
@@ -96,5 +96,28 @@ describe("removed pages", () => {
     useLayoutStore.temporal.getState().undo();
     expect(removedPages(groups())).toEqual([0, 1]);
     expect(useDocumentStore.getState().currentPage).toBe(2);
+  });
+
+  it("removes the page whose thumbnail has the focus with Delete or Backspace, never the last one", () => {
+    render(panel());
+    const thumb = (n: number) => document.querySelector<HTMLElement>(`[data-page-thumb="${n - 1}"]`) as HTMLElement;
+    fireEvent.click(thumb(2));
+    expect(document.activeElement).toBe(thumb(2));
+    fireEvent.keyDown(thumb(2), { key: "Delete" });
+    expect(removedPages(groups())).toEqual([1]);
+    expect(shown()).toEqual([1, 3, 4, 5]);
+    fireEvent.keyDown(thumb(3), { key: "Backspace" });
+    expect(removedPages(groups())).toEqual([1, 2]);
+    act(() => useLayoutStore.getState().removePages([0, 3]));
+    fireEvent.keyDown(thumb(5), { key: "Delete" });
+    expect(shown()).toEqual([5]);
+  });
+
+  it("leaves other keys and other places alone", () => {
+    render(panel());
+    const thumb = document.querySelector<HTMLElement>('[data-page-thumb="0"]') as HTMLElement;
+    fireEvent.keyDown(thumb, { key: "a" });
+    fireEvent.keyDown(document.body, { key: "Delete" });
+    expect(removedPages(groups())).toEqual([]);
   });
 });
