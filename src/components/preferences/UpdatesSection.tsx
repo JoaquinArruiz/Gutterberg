@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppVersion } from "../../lib/app-info";
+import { openExternalLink } from "../../lib/external-links";
 import { checkForUpdates, installUpdate, restartNow } from "../../lib/update-actions";
 import { UPDATE_NOTIFY, type UpdateNotify } from "../../lib/updates";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -9,6 +10,7 @@ import { useUpdateStore } from "../../stores/update-store";
 import { Button } from "../ui/Button";
 import { ReleaseNotes } from "../ui/ReleaseNotes";
 import { Select } from "../ui/Select";
+import { DownloadPageButton } from "./AboutSection";
 import { Field } from "./Field";
 
 const NOTIFY_KEY = {
@@ -113,6 +115,8 @@ export function UpdatesSection() {
           <Button size="md" disabled={busy} onClick={() => void checkForUpdates(true)}>
             {t("preferences.updates.check")}
           </Button>
+          {/* Only the copy from GitHub has this section, so never the Store's page. */}
+          <DownloadPageButton store={false} onOpen={(url) => void openExternalLink(url).catch(() => {})} />
           {installShown && (
             <Button
               ref={installButton}

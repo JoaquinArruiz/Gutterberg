@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Preferences › About › Updates: Download page opens Gutterberg's page (https://joaquinarruiz.com.ar/projects/gutterberg), to download it again; the Microsoft Store copy opens its Store page instead. Full changelog opens every version's changes on GitHub, and What's new in (this version) shows this version's notes in the app, without a network. Preferences › Updates has the Download page button too.
 - In the Source tab, `Delete` or `Backspace` removes the page whose thumbnail you clicked, like its Remove page menu item: the page leaves the Pages panel, stays in the PDF and the project, and comes back from Removed pages. The next page's thumbnail is picked, so you can keep pressing it. One page always stays.
 
 ### Changed

@@ -749,7 +749,13 @@
       "licenseNote": "Gratis para uso personal y no comercial. Para cualquier uso comercial, o si no estás seguro de si tu uso cuenta, escribe a joaquinarruiz@gmail.com. El software se ofrece tal cual, sin garantía.",
       "appLicense": "Licencia de Gutterberg",
       "thirdParty": "Licencias de terceros",
-      "licenseFailed": "No se pudo cargar el texto de la licencia."
+      "licenseFailed": "No se pudo cargar el texto de la licencia.",
+      "updates": "Actualizaciones",
+      "downloadPage": "Página de descarga",
+      "downloadPageNote": "Todas las versiones para cada sistema, si necesitas volver a descargar Gutterberg.",
+      "storePage": "Página en Microsoft Store",
+      "changelog": "Todos los cambios",
+      "whatsNew": "Novedades de la versión {{version}}"
     },
     "footer": {
       "confirm": "¿Restablecer todas las preferencias? Se restauran los ajustes predeterminados de la aplicación. Tu documento no se ve afectado.",

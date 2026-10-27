@@ -749,7 +749,13 @@
       "licenseNote": "Free for personal and noncommercial use. For any commercial use, or if you're not sure whether your use counts, contact joaquinarruiz@gmail.com. The software comes as is, without warranty.",
       "appLicense": "Gutterberg license",
       "thirdParty": "Third-party licenses",
-      "licenseFailed": "The license text could not be loaded."
+      "licenseFailed": "The license text could not be loaded.",
+      "updates": "Updates",
+      "downloadPage": "Download page",
+      "downloadPageNote": "Every version for every system, if you need to download Gutterberg again.",
+      "storePage": "Microsoft Store page",
+      "changelog": "Full changelog",
+      "whatsNew": "What's new in {{version}}"
     },
     "footer": {
       "confirm": "Reset all preferences? This restores the default application settings. Your document is not affected.",
