@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Recovery of unsaved work: while a project has unsaved changes, Gutterberg writes a copy of it every 30 seconds to its own data folder, never over your `.gtr`. If the app crashes or is closed without saving, the next start asks to restore it, including a project that was never saved. A restored project is unsaved and still points at its file. Saving, or closing on purpose, removes the copy.
 - Closing the window with unsaved changes asks first: Save, Don't save or Cancel. Save asks where for a project that was never saved, and cancelling that keeps the window open. Before, the window just closed.
 - Cut marks where the gaps cross: Print settings › Cut marks › Also where gaps cross (with Ticks in the margins) puts a small cross in the middle of each place where the gaps between pieces cross, so the inside of the sheet can be cut without a ruler laid across it. Its arms are the mark's length; a gap narrower than the line gets none. Projects open with it off, and the command line exports it as saved.
 - See a piece large in the Print tab: hold the right mouse button on a piece in the piece library, on the sheet or in the row of sheets, and it fills the window as it will print, with its name, until you let go. A quick right-click keeps it open until you click or press `Esc`. Handy for pieces that look alike.

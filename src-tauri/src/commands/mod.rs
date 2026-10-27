@@ -10,5 +10,6 @@ pub mod licenses;
 pub mod log;
 pub mod opened;
 pub mod project;
+pub mod recovery;
 pub mod render;
 pub mod sheets;

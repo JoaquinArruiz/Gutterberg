@@ -8,12 +8,13 @@ import { gridCardId } from "./card";
 import { getLayoutDocuments } from "./documents";
 import { appError } from "./errors";
 import { printProject } from "./print-request";
-import { PROJECT_FORMAT, PROJECT_VERSION, parseProject } from "./project";
+import { PROJECT_FORMAT, PROJECT_VERSION, type ProjectState, parseProject, toProject } from "./project";
 import {
   activateDocument,
   addPdfDialog,
   confirmClose,
   newProject,
+  offerRecovery,
   openPdfDialog,
   openProjectDialog,
   removeActiveDocument,
@@ -33,6 +34,9 @@ const fake = vi.hoisted(() => ({
   confirms: [] as boolean[],
   /** What the user will answer when closing with unsaved changes. */
   saveAnswers: [] as ("save" | "discard" | "cancel")[],
+  /** Recovery copies an earlier run left, and the ids removed. */
+  recovered: [] as { id: string; info: { path: string | null; written: number }; project: unknown }[],
+  cleared: [] as string[],
   asked: [] as string[],
   pickedPdf: [] as (string | null)[],
   pickedPdfs: [] as string[][],
@@ -60,6 +64,12 @@ vi.mock("./tauri", async (importOriginal) => ({
       locked: pdf.locked ?? null,
     };
   }),
+}));
+
+vi.mock("./recovery", () => ({
+  findRecovery: vi.fn(async () => fake.recovered.shift() ?? null),
+  clearRecovery: vi.fn(async (id: string) => void fake.cleared.push(id)),
+  dropRecoveryCopy: vi.fn(async () => void fake.cleared.push("this run")),
 }));
 
 vi.mock("./project-api", () => ({
@@ -111,6 +121,8 @@ beforeEach(async () => {
   for (const list of [
     fake.confirms,
     fake.saveAnswers,
+    fake.recovered,
+    fake.cleared,
     fake.asked,
     fake.pickedPdf,
     fake.pickedPdfs,
@@ -569,5 +581,51 @@ describe("closing the window", () => {
     await expect(confirmClose()).resolves.toBe(true);
     expect(fake.asked).toEqual(["Save the changes to “kit” before closing?"]);
     expect(modified()).toBe(false);
+  });
+});
+
+describe("unsaved work from a run that ended", () => {
+  async function leftCopy(path: string | null) {
+    await editedProject();
+    const copy = {
+      format: PROJECT_FORMAT,
+      version: PROJECT_VERSION,
+      ...JSON.parse(JSON.stringify(toProject(currentProjectState() as ProjectState))),
+    };
+    fake.confirms.push(true);
+    await newProject();
+    fake.asked.length = 0;
+    fake.recovered.push({ id: "run-old", info: { path, written: 1 }, project: copy });
+  }
+
+  it("is restored on request, unsaved, still pointing at its file, and offered only once", async () => {
+    await leftCopy("/games/kit.gtr");
+    fake.confirms.push(true);
+    await offerRecovery();
+    expect(fake.asked).toEqual(["Gutterberg closed with unsaved changes to “kit”. Restore them?"]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/games/a.pdf"]);
+    expect(layout().gapXMm).toBe(1.5);
+    expect(project().path).toBe("/games/kit.gtr");
+    expect(modified()).toBe(true);
+    expect(fake.cleared).toEqual(["run-old"]);
+    fake.asked.length = 0;
+    await offerRecovery();
+    expect(fake.asked).toEqual([]);
+  });
+
+  it("is deleted when the user says Discard", async () => {
+    await leftCopy(null);
+    fake.confirms.push(false);
+    await offerRecovery();
+    expect(fake.asked).toEqual(["Gutterberg closed with unsaved work on a project that was never saved. Restore it?"]);
+    expect(docs().documents).toEqual([]);
+    expect(fake.cleared).toEqual(["run-old"]);
+  });
+
+  it("is removed for this run when the window is closed on purpose", async () => {
+    await editedProject();
+    fake.saveAnswers.push("discard");
+    await confirmClose();
+    expect(fake.cleared).toEqual(["this run"]);
   });
 });

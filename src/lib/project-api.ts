@@ -61,7 +61,7 @@ export async function notify(message: string): Promise<void> {
   await showMessage(message, { kind: "warning", okLabel: t("common.ok") });
 }
 
-/** A yes/no question in a native dialog. */
-export async function confirm(message: string, okLabel: string): Promise<boolean> {
-  return ask(message, { kind: "warning", okLabel, cancelLabel: t("common.cancel") });
+/** A yes/no question in a native dialog; the second button says Cancel unless told otherwise. */
+export async function confirm(message: string, okLabel: string, cancelLabel = t("common.cancel")): Promise<boolean> {
+  return ask(message, { kind: "warning", okLabel, cancelLabel });
 }

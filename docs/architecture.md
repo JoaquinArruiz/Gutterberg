@@ -281,6 +281,12 @@ rebuilt on open.
   longer fits its saved groups gets that PDF's layout reset, with a notice.
 - The interface's model is camelCase with normalised coordinates, not the Rust shapes; `src/lib/project.ts` has the
   Zod schema and clamps out-of-range values back into what the interface allows.
+- **Unsaved work.** Closing the window with unsaved changes asks Save, Don't save or Cancel (`confirmClose`, from
+  the window's close-requested event). While there are unsaved changes, `src/lib/recovery.ts` writes the project
+  every 30 s to `recovery/<run id>.gtr` in the app's data folder, with a `.json` saying where it was saved and when
+  (`card_core::recovery`). Each run has its own id, so two windows never overwrite each other. A copy not written
+  for 90 s belongs to a run that ended; the next start offers the newest (`offerRecovery`), restored unsaved and
+  still pointing at its file. Saving, closing on purpose, Restore and Discard remove the copy.
 - The file association (`.gtr`, type `dev.joaquinarruiz.gutterberg.project`) opens a project at startup (command-line
   argument on Windows and Linux, the "opened" event on macOS) through the same open path, with the same checks.
 

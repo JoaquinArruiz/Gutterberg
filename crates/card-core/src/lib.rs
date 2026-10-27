@@ -16,6 +16,7 @@ pub mod images;
 pub mod layout;
 pub mod print_request;
 pub mod project;
+pub mod recovery;
 pub mod render;
 pub mod render_worker;
 pub mod sample;

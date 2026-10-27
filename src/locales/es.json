@@ -1233,6 +1233,12 @@
       "save": "Guardar",
       "discard": "No guardar"
     },
+    "recovery": {
+      "message": "Gutterberg se cerró con cambios sin guardar en “{{name}}”. ¿Recuperarlos?",
+      "messageNew": "Gutterberg se cerró con trabajo sin guardar en un proyecto que nunca se guardó. ¿Recuperarlo?",
+      "restore": "Recuperar",
+      "discard": "Descartar"
+    },
     "discard": {
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
       "ok": "Descartar cambios"

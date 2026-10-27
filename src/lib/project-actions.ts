@@ -42,6 +42,7 @@ import {
   type ImagesDocumentState,
   type ProjectDocumentState,
   type ProjectState,
+  parseProject,
   projectSignature,
   toProject,
 } from "./project";
@@ -56,7 +57,8 @@ import {
   readProjectFile,
   writeProjectFile,
 } from "./project-api";
-import { currentProjectState, currentSignature } from "./project-state";
+import { currentProjectState, currentSignature, hasUnsavedChanges } from "./project-state";
+import { clearRecovery, dropRecoveryCopy, findRecovery } from "./recovery";
 import { closePdf, type DocumentInfo, openPdf, pickPdf, pickPdfs } from "./tauri";
 import { clearCardImages } from "./use-card-image";
 import { startSession } from "./workspace";
@@ -74,12 +76,6 @@ async function run(action: () => Promise<void>): Promise<void> {
   }
 }
 
-/** Whether the project on screen has changes that its file (or, never saved, no file) does not hold. */
-export function hasUnsavedChanges(): boolean {
-  const now = currentSignature();
-  return now !== null && now !== useProjectStore.getState().signature;
-}
-
 /** Whether the project may be replaced: nothing to lose, or the user said to discard it. */
 async function confirmDiscard(): Promise<boolean> {
   if (!hasUnsavedChanges()) return true;
@@ -95,7 +91,34 @@ export async function confirmClose(): Promise<boolean> {
   const name = projectName(useProjectStore.getState().path);
   const answer = await askSave(name ? t("project.close.message", { name }) : t("project.close.messageNew"));
   if (answer === "cancel") return false;
-  return answer === "discard" || saveProject();
+  if (answer === "save" && !(await saveProject())) return false;
+  // Closed on purpose: nothing to offer at the next start.
+  await dropRecoveryCopy();
+  return true;
+}
+
+/**
+ * At start: the newest recovery copy left by a run that ended with unsaved changes (a crash, a forced close), if
+ * there is one, is offered. Restore opens it as the project, unsaved, still pointing at its file if it had one;
+ * Discard deletes it. Either way it is not offered again.
+ */
+export async function offerRecovery(): Promise<void> {
+  const found = await findRecovery();
+  if (!found) return;
+  const name = projectName(found.info.path);
+  const restore = await confirm(
+    name ? t("project.recovery.message", { name }) : t("project.recovery.messageNew"),
+    t("project.recovery.restore"),
+    t("project.recovery.discard"),
+  );
+  if (restore) {
+    if (!(await confirmDiscard())) return;
+    await run(async () => {
+      useProjectStore.getState().clearNotices();
+      await load(fromProject(parseProject(found.project)), found.info.path, null);
+    });
+  }
+  await clearRecovery(found.id);
 }
 
 /**
@@ -490,65 +513,72 @@ export async function openProjectDialog(path?: string): Promise<void> {
   if (!file) return;
   await run(async () => {
     useProjectStore.getState().clearNotices();
-    const prefs = usePreferencesStore.getState();
     let project: ProjectState;
     try {
       project = fromProject(await readProjectFile(file));
     } catch (e) {
       // A recent project that is gone is forgotten; any other file stays where it was listed.
-      if (toAppError(e).code === "io") prefs.removeRecentProject(file);
+      if (toAppError(e).code === "io") usePreferencesStore.getState().removeRecentProject(file);
       throw e;
     }
-    const located = await locateDocuments(project.documents);
-    if (!located) return;
-    const files = await Promise.all(
-      located.map(async (l) => {
-        if (l.kind === "pdf") return l;
-        const built = await materializeImages(l.name, l.pages);
-        return { id: l.id, path: built.path, images: built.images };
-      }),
-    );
-    const opened = await swapDocuments(files);
-
-    let { edits, plan } = project;
-    const layouts: Record<DocumentId, DocLayout> = {};
-    const viewed: Record<DocumentId, number> = {};
-    for (const [i, d] of project.documents.entries()) {
-      const n = opened[i].pages.length;
-      const fits = groupsCoverPages(d.groups, n) && Object.keys(d.freeform).every((p) => Number(p) < n);
-      if (fits) {
-        layouts[d.id] = { groups: d.groups, freeform: d.freeform };
-      } else {
-        // The PDF has other pages than when the project was saved: its old layout would not fit it.
-        layouts[d.id] = { groups: defaultGroups(n), freeform: {} };
-        edits = {
-          turns: withoutDocument(edits.turns, d.id),
-          scales: withoutDocument(edits.scales, d.id),
-          ...(edits.scalesY ? { scalesY: withoutDocument(edits.scalesY, d.id) } : {}),
-          order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
-          backs: backsWithoutDocument(edits.backs, d.id),
-        };
-        const common = plan.finish.duplex.commonBack;
-        plan = {
-          ...plan,
-          quantities: withoutDocument(plan.quantities, d.id),
-          finish:
-            common !== null && isCardOfDocument(common, d.id)
-              ? { ...plan.finish, duplex: { ...plan.finish.duplex, commonBack: null } }
-              : plan.finish,
-        };
-        useProjectStore.getState().addNotice("layoutReset", { name: documentName(opened[i]) });
-      }
-      viewed[d.id] = Math.min(d.viewedPage, n - 1);
-    }
-
-    applyLoaded(opened, { activeId: project.activeId, layouts, viewed, output: project.output, edits, plan });
     // What the file says. If a PDF moved or its layout had to be reset, the open project differs from it,
     // so it counts as modified and saving updates the file.
-    useProjectStore.getState().setSaved(file, projectSignature(project));
-    prefs.addRecentProject(file);
-    emitHintEvent("pdf-opened");
+    await load(project, file, projectSignature(project));
   });
+}
+
+/**
+ * Puts `project` on screen in place of the open one, once its PDFs are found and opened. It belongs to `file` (null:
+ * no file yet) and `signature` is what that file holds (null: nothing, so it counts as modified).
+ */
+async function load(project: ProjectState, file: string | null, signature: string | null): Promise<void> {
+  const located = await locateDocuments(project.documents);
+  if (!located) return;
+  const files = await Promise.all(
+    located.map(async (l) => {
+      if (l.kind === "pdf") return l;
+      const built = await materializeImages(l.name, l.pages);
+      return { id: l.id, path: built.path, images: built.images };
+    }),
+  );
+  const opened = await swapDocuments(files);
+
+  let { edits, plan } = project;
+  const layouts: Record<DocumentId, DocLayout> = {};
+  const viewed: Record<DocumentId, number> = {};
+  for (const [i, d] of project.documents.entries()) {
+    const n = opened[i].pages.length;
+    const fits = groupsCoverPages(d.groups, n) && Object.keys(d.freeform).every((p) => Number(p) < n);
+    if (fits) {
+      layouts[d.id] = { groups: d.groups, freeform: d.freeform };
+    } else {
+      // The PDF has other pages than when the project was saved: its old layout would not fit it.
+      layouts[d.id] = { groups: defaultGroups(n), freeform: {} };
+      edits = {
+        turns: withoutDocument(edits.turns, d.id),
+        scales: withoutDocument(edits.scales, d.id),
+        ...(edits.scalesY ? { scalesY: withoutDocument(edits.scalesY, d.id) } : {}),
+        order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
+        backs: backsWithoutDocument(edits.backs, d.id),
+      };
+      const common = plan.finish.duplex.commonBack;
+      plan = {
+        ...plan,
+        quantities: withoutDocument(plan.quantities, d.id),
+        finish:
+          common !== null && isCardOfDocument(common, d.id)
+            ? { ...plan.finish, duplex: { ...plan.finish.duplex, commonBack: null } }
+            : plan.finish,
+      };
+      useProjectStore.getState().addNotice("layoutReset", { name: documentName(opened[i]) });
+    }
+    viewed[d.id] = Math.min(d.viewedPage, n - 1);
+  }
+
+  applyLoaded(opened, { activeId: project.activeId, layouts, viewed, output: project.output, edits, plan });
+  useProjectStore.getState().setSaved(file, signature);
+  if (file) usePreferencesStore.getState().addRecentProject(file);
+  emitHintEvent("pdf-opened");
 }
 
 /** The name a new project file is offered under: the first PDF's, without `.pdf`. */

@@ -44,6 +44,12 @@ export function currentSignature(): string | null {
   return state ? projectSignature(state) : null;
 }
 
+/** Whether the project on screen has changes that its file (or, never saved, no file) does not hold. */
+export function hasUnsavedChanges(): boolean {
+  const now = currentSignature();
+  return now !== null && now !== useProjectStore.getState().signature;
+}
+
 const DEBOUNCE_MS = 150;
 
 /**

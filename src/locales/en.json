@@ -1233,6 +1233,12 @@
       "save": "Save",
       "discard": "Don't save"
     },
+    "recovery": {
+      "message": "Gutterberg closed with unsaved changes to “{{name}}”. Restore them?",
+      "messageNew": "Gutterberg closed with unsaved work on a project that was never saved. Restore it?",
+      "restore": "Restore",
+      "discard": "Discard"
+    },
     "discard": {
       "message": "This project has changes that are not saved. Discard them?",
       "ok": "Discard changes"

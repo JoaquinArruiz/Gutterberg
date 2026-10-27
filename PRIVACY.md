@@ -39,8 +39,9 @@ Only two things, and neither sends anything about you or your files to me.
 
 ## What is kept on your computer, and how to remove it
 
-- Your settings, the log (about half a megabyte at most) and, while AI Mode is on, the provider's list of models
-  (kept for a week). Uninstalling the Microsoft Store copy removes them; for the copy from GitHub they are in the
+- Your settings, the log (about half a megabyte at most), while AI Mode is on the provider's list of models
+  (kept for a week), and while a project has unsaved changes a recovery copy of it in a `recovery` folder (removed
+  when you save, close it on purpose, or restore or discard it at the next start). Uninstalling the Microsoft Store copy removes them; for the copy from GitHub they are in the
   `Gutterberg` folders in `%APPDATA%` and `%LOCALAPPDATA%` on Windows; in `~/Library/Application Support`,
   `~/Library/Caches` and `~/Library/Logs` on macOS; and in `~/.config`, `~/.local/share` and `~/.cache` on Linux.
 - Your API key stays in the keychain until you remove it, even after uninstalling. Remove it first in
@@ -53,7 +54,7 @@ Only two things, and neither sends anything about you or your files to me.
 
 The Microsoft Store and Windows (including the WebView2 component the app draws its window with) follow Microsoft's
 own privacy statement, not this one, and GitHub's statement covers the update check and downloads. The links in
-Preferences (GitHub, Discord, LinkedIn) open in your browser, where those sites' own policies apply.
+Preferences (GitHub, Discord, LinkedIn, the download page and the changelog) open in your browser, where those sites' own policies apply.
 
 ## Children
 
