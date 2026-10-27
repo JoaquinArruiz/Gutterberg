@@ -25,6 +25,7 @@ import { stepPage } from "./lib/removed-pages";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { startUpdateChecks } from "./lib/update-actions";
+import { useCloseGuard } from "./lib/use-close-guard";
 import { useImageDrop } from "./lib/use-image-drop";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { useOpenedFiles } from "./lib/use-opened-files";
@@ -49,6 +50,7 @@ export default function App() {
   useLayoutSync();
   usePrintSync();
   useProjectTracking();
+  useCloseGuard();
   useImageDrop();
   // Before the welcome tour: a project the app was started with is opened first, and the tour waits for it.
   useOpenedFiles();

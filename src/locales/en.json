@@ -1227,6 +1227,12 @@
       "shortcuts": "Keyboard shortcuts…",
       "addImages": "Add images…"
     },
+    "close": {
+      "message": "Save the changes to “{{name}}” before closing?",
+      "messageNew": "This project has never been saved. Save it before closing?",
+      "save": "Save",
+      "discard": "Don't save"
+    },
     "discard": {
       "message": "This project has changes that are not saved. Discard them?",
       "ok": "Discard changes"

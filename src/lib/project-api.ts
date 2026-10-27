@@ -44,6 +44,18 @@ export async function pickProjectToSave(suggestedName: string): Promise<string |
   return picked.toLowerCase().endsWith(`.${PROJECT_EXTENSION}`) ? picked : `${picked}.${PROJECT_EXTENSION}`;
 }
 
+/**
+ * Save, Don't save or Cancel in a native dialog, for a project about to be closed. Some systems answer with the
+ * button's label and some with its role, so both are understood; anything else (the window's ×, `Esc`) is Cancel.
+ */
+export async function askSave(text: string): Promise<"save" | "discard" | "cancel"> {
+  const buttons = { yes: t("project.close.save"), no: t("project.close.discard"), cancel: t("common.cancel") };
+  const answer = await showMessage(text, { kind: "warning", buttons });
+  if (answer === buttons.yes || answer === "Yes") return "save";
+  if (answer === buttons.no || answer === "No") return "discard";
+  return "cancel";
+}
+
 /** A message with an OK button in a native dialog. */
 export async function notify(message: string): Promise<void> {
   await showMessage(message, { kind: "warning", okLabel: t("common.ok") });

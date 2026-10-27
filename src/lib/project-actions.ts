@@ -16,7 +16,7 @@ import { useImageImportStore } from "../stores/image-import-store";
 import { DEFAULT_OUTPUT, type DocLayout, outputSettings, useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
 import { usePrintStore } from "../stores/print-store";
-import { useProjectStore } from "../stores/project-store";
+import { projectName, useProjectStore } from "../stores/project-store";
 import { useToastStore } from "../stores/toast-store";
 import type { DocumentId } from "./card";
 import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
@@ -46,6 +46,7 @@ import {
   toProject,
 } from "./project";
 import {
+  askSave,
   confirm,
   fileExists,
   hashFile,
@@ -73,12 +74,28 @@ async function run(action: () => Promise<void>): Promise<void> {
   }
 }
 
+/** Whether the project on screen has changes that its file (or, never saved, no file) does not hold. */
+export function hasUnsavedChanges(): boolean {
+  const now = currentSignature();
+  return now !== null && now !== useProjectStore.getState().signature;
+}
+
 /** Whether the project may be replaced: nothing to lose, or the user said to discard it. */
 async function confirmDiscard(): Promise<boolean> {
-  const { signature } = useProjectStore.getState();
-  const now = currentSignature();
-  if (now === null || now === signature) return true;
+  if (!hasUnsavedChanges()) return true;
   return confirm(t("project.discard.message"), t("project.discard.ok"));
+}
+
+/**
+ * Before the window closes: a project with unsaved changes asks Save, Don't save or Cancel. Save saves it (asking
+ * where, if it has no file yet) and a cancelled save keeps the window open. Resolves to whether it may close.
+ */
+export async function confirmClose(): Promise<boolean> {
+  if (!hasUnsavedChanges()) return true;
+  const name = projectName(useProjectStore.getState().path);
+  const answer = await askSave(name ? t("project.close.message", { name }) : t("project.close.messageNew"));
+  if (answer === "cancel") return false;
+  return answer === "discard" || saveProject();
 }
 
 /**
@@ -86,9 +103,7 @@ async function confirmDiscard(): Promise<boolean> {
  * file yet). Resolves to whether it may go on; "no" or a cancelled save keeps the app as it is.
  */
 export async function saveBeforeRestart(): Promise<boolean> {
-  const { signature } = useProjectStore.getState();
-  const now = currentSignature();
-  if (now === null || now === signature) return true;
+  if (!hasUnsavedChanges()) return true;
   if (!(await confirm(t("updates.unsaved"), t("updates.saveFirst")))) return false;
   return saveProject();
 }

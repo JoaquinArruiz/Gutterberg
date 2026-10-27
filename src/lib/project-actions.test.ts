@@ -12,6 +12,7 @@ import { PROJECT_FORMAT, PROJECT_VERSION, parseProject } from "./project";
 import {
   activateDocument,
   addPdfDialog,
+  confirmClose,
   newProject,
   openPdfDialog,
   openProjectDialog,
@@ -30,6 +31,8 @@ const fake = vi.hoisted(() => ({
   projects: new Map<string, unknown>(),
   /** What the user will answer next. */
   confirms: [] as boolean[],
+  /** What the user will answer when closing with unsaved changes. */
+  saveAnswers: [] as ("save" | "discard" | "cancel")[],
   asked: [] as string[],
   pickedPdf: [] as (string | null)[],
   pickedPdfs: [] as string[][],
@@ -83,6 +86,10 @@ vi.mock("./project-api", () => ({
     fake.asked.push(message);
     return fake.confirms.shift() ?? false;
   }),
+  askSave: vi.fn(async (message: string) => {
+    fake.asked.push(message);
+    return fake.saveAnswers.shift() ?? "cancel";
+  }),
 }));
 
 const A4 = { width_pt: 595.2756, height_pt: 841.8898 };
@@ -101,7 +108,15 @@ const modified = () => currentSignature() !== project().signature;
 beforeEach(async () => {
   fake.pdfs.clear();
   fake.projects.clear();
-  for (const list of [fake.confirms, fake.asked, fake.pickedPdf, fake.pickedPdfs, fake.pickedProject, fake.saveAs])
+  for (const list of [
+    fake.confirms,
+    fake.saveAnswers,
+    fake.asked,
+    fake.pickedPdf,
+    fake.pickedPdfs,
+    fake.pickedProject,
+    fake.saveAs,
+  ])
     list.length = 0;
   fake.opened.length = 0;
   fake.closed = 0;
@@ -517,3 +532,42 @@ const cardKey = (doc: number, page: number, row: number, column: number) => {
   const id = gridCardId(doc, page, row, column);
   return `g:${id.document_id}:${page}:${row}:${column}`;
 };
+
+describe("closing the window", () => {
+  it("closes without asking when nothing changed", async () => {
+    await expect(confirmClose()).resolves.toBe(true);
+    await editedProject();
+    fake.saveAs.push("/games/kit.gtr");
+    await saveProject();
+    fake.asked.length = 0;
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.asked).toEqual([]);
+  });
+
+  it("asks about unsaved changes: Cancel keeps it open, Don't save closes, Save saves first", async () => {
+    await editedProject();
+    fake.saveAnswers.push("cancel");
+    await expect(confirmClose()).resolves.toBe(false);
+    expect(fake.asked).toEqual(["This project has never been saved. Save it before closing?"]);
+    fake.saveAnswers.push("discard");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.projects.size).toBe(0);
+
+    // Save asks where, and a cancelled save keeps the window open.
+    fake.saveAnswers.push("save");
+    await expect(confirmClose()).resolves.toBe(false);
+    fake.saveAnswers.push("save");
+    fake.saveAs.push("/games/kit.gtr");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.projects.has("/games/kit.gtr")).toBe(true);
+    expect(modified()).toBe(false);
+
+    // A saved project with new changes is named, and saved where it is.
+    layout().setGapX(3);
+    fake.asked.length = 0;
+    fake.saveAnswers.push("save");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.asked).toEqual(["Save the changes to “kit” before closing?"]);
+    expect(modified()).toBe(false);
+  });
+});

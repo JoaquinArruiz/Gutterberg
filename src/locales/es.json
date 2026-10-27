@@ -1227,6 +1227,12 @@
       "shortcuts": "Atajos de teclado…",
       "addImages": "Agregar imágenes…"
     },
+    "close": {
+      "message": "¿Guardar los cambios de “{{name}}” antes de cerrar?",
+      "messageNew": "Este proyecto nunca se guardó. ¿Guardarlo antes de cerrar?",
+      "save": "Guardar",
+      "discard": "No guardar"
+    },
     "discard": {
       "message": "Este proyecto tiene cambios sin guardar. ¿Quieres descartarlos?",
       "ok": "Descartar cambios"
