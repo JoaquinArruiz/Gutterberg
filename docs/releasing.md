@@ -89,8 +89,14 @@ CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a b
 fix branches are merged locally into their version branch (no pull request), so CI checks them when the version branch
 is pushed.
 
-To fix the notes after a release, edit `CHANGELOG.md` and re-run the workflow for that tag (it replaces the
-release's files). Editing the text on GitHub alone does **not** change `latest.json`.
+To fix the notes after a release, edit `CHANGELOG.md`, turn the release back into a draft on GitHub (Edit, then
+Save draft), re-run the workflow for that tag (it replaces the release's files) and publish it again. tauri-action
+stops on a tag whose release is already published, since the workflow asks for a draft. Editing the text on GitHub
+alone does **not** change `latest.json`.
+
+`latest.json` points at each file through the GitHub API (`https://api.github.com/repos/…/releases/assets/<id>`),
+not the download page; the updater asks for the file itself (`Accept: application/octet-stream`) and GitHub
+redirects it there.
 
 ## Microsoft Store
 
