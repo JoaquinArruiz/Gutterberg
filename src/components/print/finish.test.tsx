@@ -124,6 +124,19 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(print().finish.bleed.mm).toBe(5);
   });
 
+  it("colors the sheet and behind the pieces, starting black and white", () => {
+    render(<PrintInspector />);
+    fireEvent.click(screen.getByRole("button", { name: "Background" }));
+    expect(screen.queryByLabelText("Sheet color")).toBeNull();
+    fireEvent.click(screen.getByRole("switch", { name: "Color the sheet" }));
+    expect(print().finish.background).toEqual({ sheet: "#000000", pieces: null });
+    fireEvent.change(screen.getByLabelText("Sheet color"), { target: { value: "#336699" } });
+    fireEvent.click(screen.getByRole("switch", { name: "Color behind pieces" }));
+    expect(print().finish.background).toEqual({ sheet: "#336699", pieces: "#ffffff" });
+    fireEvent.click(screen.getByRole("switch", { name: "Color the sheet" }));
+    expect(print().finish.background.sheet).toBeNull();
+  });
+
   it("switches duplex on, sets the flip and the offsets, and keeps a common back", () => {
     render(<PrintInspector />);
     fireEvent.click(screen.getByRole("button", { name: "Duplex" }));
@@ -335,6 +348,14 @@ describe("Sheet preview with finishing", () => {
     const page = within(screen.getByTestId("sheet-page"));
     expect(page.getAllByTestId("fold-line")).toHaveLength(1);
     expect(page.queryAllByTestId("cut-mark")).toHaveLength(0);
+  });
+
+  it("shows the sheet color and the color behind the pieces the engine gave", async () => {
+    print().setSheets([{ ...sheet(2), background: { sheet: [0, 0, 0], pieces: [255, 255, 0] } }], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    expect(screen.getByTestId("sheet-page").style.background).toBe("rgb(0, 0, 0)");
+    expect(screen.getAllByTestId("placed-card")[0].style.background).toBe("rgb(255, 255, 0)");
   });
 
   it("draws nothing extra when there are no marks and no bleed", async () => {

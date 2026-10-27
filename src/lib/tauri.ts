@@ -136,15 +136,17 @@ export async function renderPage(
   return URL.createObjectURL(new Blob([replyBytes(reply)], { type: "image/png" }));
 }
 
-/** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
+/** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL.
+ * `transparent` leaves what the page does not paint clear instead of white. */
 export async function renderRegion(
   kind: RenderKind,
   documentId: DocumentId,
   pageIndex: number,
   region: NormalizedRect,
   fullWidthPx: number,
+  transparent = false,
 ): Promise<string> {
-  const reply = await invoke<ArrayBuffer | number[]>("render_region", {
+  const reply = await invoke<ArrayBuffer | number[]>(transparent ? "render_piece_region" : "render_region", {
     kind,
     documentId,
     pageIndex,

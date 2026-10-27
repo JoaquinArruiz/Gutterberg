@@ -34,6 +34,21 @@ fn worker_renders_from_open_documents_and_drops_superseded_requests() {
         .render_region(RenderKind::Magnifier, 0, 0, quarter, 2000)
         .unwrap();
     assert_eq!(image::load_from_memory(&png).unwrap().width(), 500);
+    // A piece for the sheet preview leaves what the page does not paint clear: every pixel of the
+    // white render is opaque, and the clear one has see-through pixels where the page is empty.
+    let alpha = |png: &[u8]| -> Vec<u8> {
+        let img = image::load_from_memory(png).unwrap().to_rgba8();
+        img.pixels().map(|p| p.0[3]).collect()
+    };
+    let corner = Rect::new(0.0, 0.0, 0.02, 0.02);
+    let white = w
+        .render_region(RenderKind::Page, 0, 0, corner, 2000)
+        .unwrap();
+    assert!(alpha(&white).iter().all(|&a| a == 255));
+    let clear = w
+        .render_piece_region(RenderKind::Page, 0, 0, corner, 2000)
+        .unwrap();
+    assert!(alpha(&clear).iter().any(|&a| a < 255));
 
     // A burst of magnifier requests: stale ones are dropped, never failed otherwise.
     let full = Rect::new(0.0, 0.0, 1.0, 1.0);

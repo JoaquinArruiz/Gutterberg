@@ -98,7 +98,7 @@ The engine behind every export, in four steps:
    smaller pieces are centred in it), or share one grid if grouping is off. Pieces are laid out row by row, the block
    centred inside the margins. Asking for more rows or columns than fit, or a piece larger than the page, is
    `DoesNotFit`. Auto-fill repeats pieces to fill the last sheet.
-3. **Finish** (`finish`). Cut marks, bleed and duplex backs are added to the planned sheets. With everything off the
+3. **Finish** (`finish`). Cut marks, bleed, background colours and duplex backs are added to the planned sheets. With everything off the
    sheets pass through untouched, and the exported content stream is the same as before.
 4. **Export** (`export`). `export_sheets` builds a PDF from any list of sheets and several source documents.
 
@@ -164,6 +164,11 @@ matter:
 - **Bleed:** taken either by mirroring each piece's own edge (4 strips and 4 corners, as vectors, using the piece's
   oriented edge so tilted pieces work) or from the gap that is already in the source. A bleed bigger than half a piece
   is an error; a source gap smaller than the bleed is a page issue that blocks export.
+- **Background:** `BackgroundOptions` holds two optional colours, `sheet` and `pieces`, carried on every sheet (front
+  and back) as `OutputSheet.background`. Export paints them first, as plain vector fills: the whole page, then one
+  rectangle per placement grown by the bleed; the bleed and the pieces go on top. They only show where the source
+  paints nothing. So the preview can show them, the Print tab's piece crops are rendered with a clear background
+  (`render_region_png_on(.., transparent: true)`), over the sheet or piece colour (white when none).
 - **Duplex:** backs are mirrored left to right for a long-edge flip on a portrait sheet (or a short-edge flip on a
   landscape one), otherwise top to bottom, with the back's turn adjusted so a front corner and its back corner pair
   up. A common back or a back per piece, with an X/Y offset for printer drift. `calibration.rs` writes the sheet that

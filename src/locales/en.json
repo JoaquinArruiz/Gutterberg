@@ -406,6 +406,7 @@
       "page": "Page",
       "marks": "Cut marks",
       "bleed": "Bleed",
+      "background": "Background",
       "duplex": "Duplex"
     },
     "plan": {
@@ -514,6 +515,15 @@
       "mirrorNote": "The edge strip of each piece is drawn again, flipped over the edge. It stays vector.",
       "sourceNote": "Uses what the source PDF has between pieces. Needs at least this much space between them there.",
       "note": "Pieces keep their size: the bleed is extra art around each one. Leave room for it in the output gap and the margins."
+    },
+    "background": {
+      "sheet": "Color the sheet",
+      "sheetHint": "Fills the whole sheet with a color before anything is printed on it, so the paper round the pieces is that color. A dark sheet uses a lot of ink.",
+      "sheetColor": "Sheet color",
+      "pieces": "Color behind pieces",
+      "piecesHint": "A rectangle of this color under each piece and its bleed, so corners and edges the art leaves empty are filled.",
+      "piecesColor": "Color behind pieces",
+      "note": "Plain colors printed under the art. They only show where the source leaves the page empty, and they stay vector."
     },
     "duplex": {
       "on": "Print backs",

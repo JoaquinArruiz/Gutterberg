@@ -10,7 +10,7 @@
 
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use crate::error::{Error, Result};
-use crate::finish::{SheetBleed, SheetMarks, SheetWarning, Side};
+use crate::finish::{SheetBackground, SheetBleed, SheetMarks, SheetWarning, Side};
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::{calculate_fitting_layout, source_cards, GridLayout, LayoutResult};
 use crate::units::{mm_to_pt, pt_to_mm};
@@ -370,6 +370,9 @@ pub struct OutputSheet {
     /// Art painted outside each piece, under the pieces. Zero unless the bleed is on.
     #[serde(default)]
     pub bleed: SheetBleed,
+    /// Plain colours painted first, under the bleed and the pieces.
+    #[serde(default, skip_serializing_if = "SheetBackground::is_none")]
+    pub background: SheetBackground,
     /// Cut marks, drawn over the pieces.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marks: Option<SheetMarks>,
@@ -389,6 +392,7 @@ impl OutputSheet {
             placements,
             side: Side::Front,
             bleed: SheetBleed::default(),
+            background: SheetBackground::default(),
             marks: None,
             warnings: Vec::new(),
             folds: Vec::new(),

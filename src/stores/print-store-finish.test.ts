@@ -44,6 +44,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
         offsetYMm: 0,
         commonBack: null,
       },
+      background: { sheet: null, pieces: null },
     });
   });
 
@@ -55,6 +56,9 @@ describe("cut marks, bleed and duplex in the print store", () => {
     expect(st().finish.marks).toMatchObject({ style: "gaps", widthMm: 2, lengthMm: 3 });
     expect(st().finish.bleed).toEqual({ mm: 2, source: "source" });
     expect(st().finish.duplex).toMatchObject({ on: true, flip: "long", offsetXMm: -10 });
+    st().setBackground({ sheet: "#123ABC" });
+    st().setBackground({ pieces: "not a colour" });
+    expect(st().finish.background).toEqual({ sheet: "#123abc", pieces: null });
   });
 
   it("are reset with the plan and loaded with it", () => {

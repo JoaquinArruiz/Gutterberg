@@ -93,6 +93,7 @@ function state(): ProjectState {
           offsetYMm: -0.5,
           commonBack: "g:3:0:0:0",
         },
+        background: { sheet: "#000000", pieces: "#ffffff" },
       },
     },
   };

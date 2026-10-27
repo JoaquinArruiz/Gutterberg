@@ -44,6 +44,13 @@ export const OutputSheetSchema = z.object({
   side: z.enum(["front", "back"]).optional(),
   /** Art painted outside each piece; absent or 0 = none. */
   bleed: z.object({ mm: z.number(), source: z.enum(["mirror", "source"]).optional() }).optional(),
+  /** Plain colours as RGB, painted under the bleed and the pieces; absent = none. */
+  background: z
+    .object({
+      sheet: z.tuple([z.number(), z.number(), z.number()]).optional(),
+      pieces: z.tuple([z.number(), z.number(), z.number()]).optional(),
+    })
+    .optional(),
   /** Cut marks in points: `[x1, y1, x2, y2]` per line. */
   marks: z
     .object({

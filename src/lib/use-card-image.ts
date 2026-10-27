@@ -18,7 +18,8 @@ export const bucketWidth = (px: number) => Math.max(16, Math.ceil(px / 32) * 32)
 
 /**
  * The image of the area a card is cut from, `widthPx` wide (its bounding box if the source is rotated).
- * Null until rendered. `docKey` is the open file, so another PDF never shows the old cards.
+ * Null until rendered. `docKey` is the open file, so another PDF never shows the old cards. What the page does not
+ * paint is left clear, so whatever is behind the image (white, or the colour behind pieces) shows there.
  */
 export function useCardImage(
   docKey: string | null,
@@ -48,7 +49,7 @@ export function useCardImage(
     const fullWidthPx = Math.min(MAX_FULL_WIDTH_PX, Math.round((width * page.width_pt) / box.width));
     let cancelled = false;
     cache
-      .get(key, () => renderRegion(kind, id.document_id, id.page_index, region, fullWidthPx))
+      .get(key, () => renderRegion(kind, id.document_id, id.page_index, region, fullWidthPx, true))
       .then((u) => !cancelled && setUrl(u))
       .catch(() => {});
     return () => {

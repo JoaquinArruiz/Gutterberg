@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Background colors: Print settings › Background can color the whole sheet (black paper, for example) and put a color behind each piece and its bleed. They are plain vector fills under the art, so they only show where the source leaves the page empty, such as a card's rounded or missing corners. The preview shows them too. Projects open with both off, and the command line exports them as saved.
 - Recovery of unsaved work: while a project has unsaved changes, Gutterberg writes a copy of it every 30 seconds to its own data folder, never over your `.gtr`. If the app crashes or is closed without saving, the next start asks to restore it, including a project that was never saved. A restored project is unsaved and still points at its file. Saving, or closing on purpose, removes the copy.
 - Closing the window with unsaved changes asks first: Save, Don't save or Cancel. Save asks where for a project that was never saved, and cancelling that keeps the window open. Before, the window just closed.
 - Cut marks where the gaps cross: Print settings › Cut marks › Also where gaps cross (with Ticks in the margins) puts a small cross in the middle of each place where the gaps between pieces cross, so the inside of the sheet can be cut without a ruler laid across it. Its arms are the mark's length; a gap narrower than the line gets none. Projects open with it off, and the command line exports it as saved.

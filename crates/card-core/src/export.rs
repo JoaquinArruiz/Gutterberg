@@ -749,6 +749,42 @@ fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [
     ops
 }
 
+/// The operators that fill the sheet's colour over the whole page and the pieces' colour behind
+/// each piece and its bleed. Nothing when neither is set.
+fn background_ops(sheet: &OutputSheet) -> String {
+    let fill = |c: [u8; 3]| c.map(|v| fmt(f64::from(v) / 255.0)).join(" ") + " rg\n";
+    let page = sheet.page;
+    let mut ops = String::new();
+    if let Some(c) = sheet.background.sheet {
+        ops.push_str(&format!(
+            "q\n{}0 0 {} {} re f\nQ\n",
+            fill(c),
+            fmt(page.width_pt),
+            fmt(page.height_pt)
+        ));
+    }
+    if let Some(c) = sheet
+        .background
+        .pieces
+        .filter(|_| !sheet.placements.is_empty())
+    {
+        let bleed = mm_to_pt(sheet.bleed.mm);
+        ops.push_str(&format!("q\n{}", fill(c)));
+        for p in &sheet.placements {
+            let d = p.destination;
+            ops.push_str(&format!(
+                "{} {} {} {} re\n",
+                fmt(d.x - bleed),
+                fmt(page.height_pt - (d.y + d.height + bleed)),
+                fmt(d.width + 2.0 * bleed),
+                fmt(d.height + 2.0 * bleed),
+            ));
+        }
+        ops.push_str("f\nQ\n");
+    }
+    ops
+}
+
 /// The operators that stroke the cut marks of a sheet `out_height` points tall.
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
@@ -881,9 +917,9 @@ fn export_sheets_into(
             xobjects.set(card.as_bytes().to_vec(), card_id);
             prepared.push((name, frame, card));
         }
-        // Bleed first, so a neighbour's bleed never paints over a piece; then the pieces; then
-        // the marks.
-        let mut ops = String::new();
+        // The plain colours first, then the bleed, so a neighbour's bleed never paints over a
+        // piece; then the pieces; then the marks.
+        let mut ops = background_ops(sheet);
         if sheet.bleed.mm > 0.0 {
             for (p, (name, frame, _)) in sheet.placements.iter().zip(&prepared) {
                 ops.push_str(&bleed_ops(name, p, sheet, frame.display_box()));

@@ -63,6 +63,9 @@ export type Finish = {
     /** The piece (by `cardIdKey`) printed behind every piece that has no back of its own. */
     commonBack: string | null;
   };
+  /** Plain colours (`#rrggbb`) under everything: the whole sheet, and behind each piece and its bleed. They show
+   * only where the source leaves the page empty. Null paints nothing, so the paper shows. */
+  background: { sheet: string | null; pieces: string | null };
 };
 
 export const DEFAULT_FINISH: Finish = {
@@ -89,6 +92,7 @@ export const DEFAULT_FINISH: Finish = {
     offsetYMm: 0,
     commonBack: null,
   },
+  background: { sheet: null, pieces: null },
 };
 
 export const FinishSchema = z.object({
@@ -115,6 +119,9 @@ export const FinishSchema = z.object({
     offsetYMm: z.number(),
     commonBack: z.string().nullable(),
   }),
+  background: z
+    .object({ sheet: z.string().nullable(), pieces: z.string().nullable() })
+    .default({ sheet: null, pieces: null }),
 });
 
 const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
@@ -123,6 +130,10 @@ const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
 /** `#rrggbb` in lower case, or the default when `value` is not one. */
 export const cleanColor = (value: string): string =>
   /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : DEFAULT_FINISH.marks.color;
+
+/** `#rrggbb` in lower case, or null (no fill) when `value` is not one. */
+const cleanFill = (value: string | null): string | null =>
+  value !== null && /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : null;
 
 /** Piece keys name a document, a page and a place; only keys of this shape are kept. */
 const KEY = CARD_KEY;
@@ -154,6 +165,7 @@ export function cleanFinish(f: Finish): Finish {
       offsetYMm: clampTo(f.duplex.offsetYMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
       commonBack: f.duplex.commonBack !== null && KEY.test(f.duplex.commonBack) ? f.duplex.commonBack : null,
     },
+    background: { sheet: cleanFill(f.background.sheet), pieces: cleanFill(f.background.pieces) },
   };
 }
 
@@ -168,8 +180,17 @@ export const SHEET_WARNINGS = [
 ] as const;
 export type SheetWarning = (typeof SHEET_WARNINGS)[number];
 
+/** A sheet's background colour (RGB, as the engine returns it) for CSS; `fallback` when there is none. */
+export const fillCss = (rgb: readonly number[] | undefined, fallback = "white"): string =>
+  rgb ? `rgb(${rgb.join(" ")})` : fallback;
+
 /** Whether the backs go beside the fronts, to fold: the plan then needs a sheet grid (not "same as source"). */
 export const gutterfoldOn = (f: Finish): boolean => f.duplex.on && f.duplex.layout === "gutterfold";
 
 /** Whether anything of the finishing is switched on. */
-export const finishingOn = (f: Finish): boolean => f.marks.style !== "off" || f.bleed.mm > 0 || f.duplex.on;
+export const finishingOn = (f: Finish): boolean =>
+  f.marks.style !== "off" ||
+  f.bleed.mm > 0 ||
+  f.duplex.on ||
+  f.background.sheet !== null ||
+  f.background.pieces !== null;

@@ -99,7 +99,7 @@ export function CardThumb({
       className={`relative flex select-none flex-col items-center gap-0.5 rounded p-1 text-[10px] ${selected ? "bg-[var(--accent)]/25 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"} ${printed ? "" : "opacity-45"} ${dragging ? "opacity-40" : ""}`}
     >
       <span className="flex min-h-0 w-full flex-1 items-center justify-center bg-white/5">
-        <span className="relative" style={{ width: boxW, height: boxH }}>
+        <span className="relative bg-white" style={{ width: boxW, height: boxH }}>
           {url && <CardImage url={url} source={card.source} turn={card.turn} aspect={boxW / boxH} />}
         </span>
       </span>

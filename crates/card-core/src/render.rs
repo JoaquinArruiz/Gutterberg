@@ -282,6 +282,18 @@ pub fn render_region_png_in(
     region: crate::geometry::Rect,
     full_width_px: u32,
 ) -> Result<Vec<u8>> {
+    render_region_png_on(doc, page_index, region, full_width_px, false)
+}
+
+/// Like [`render_region_png_in`]; `transparent` leaves what the page does not paint clear instead
+/// of white, so the sheet preview can show the colour behind a piece there, as the export does.
+pub fn render_region_png_on(
+    doc: &PdfDocument,
+    page_index: usize,
+    region: crate::geometry::Rect,
+    full_width_px: u32,
+    transparent: bool,
+) -> Result<Vec<u8>> {
     let page = get_page(doc, page_index)?;
 
     let full_w = full_width_px.clamp(16, 32768) as f64;
@@ -299,7 +311,12 @@ pub fn render_region_png_in(
     let mut bitmap = PdfBitmap::empty(w, h, PdfBitmapFormat::BGRA).map_err(pdfium_err)?;
     let cfg = PdfRenderConfig::new()
         .set_target_size(full_w.round() as i32, full_h.round() as i32)
-        .set_origin(-(x0 as i32), -(y0 as i32));
+        .set_origin(-(x0 as i32), -(y0 as i32))
+        .set_clear_color(if transparent {
+            PdfColor::new(255, 255, 255, 0)
+        } else {
+            PdfColor::WHITE
+        });
     page.render_into_bitmap_with_config(&mut bitmap, &cfg)
         .map_err(pdfium_err)?;
     let img = bitmap.as_image().map_err(pdfium_err)?;

@@ -16,8 +16,8 @@ use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, Pa
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use crate::finish::{
-    BackLayout, BackPair, BleedOptions, DuplexOptions, FinishOptions, Finishing, Flip, MarkLine,
-    MarkOptions, MarkStyle, MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
+    BackLayout, BackPair, BackgroundOptions, BleedOptions, DuplexOptions, FinishOptions, Finishing,
+    Flip, MarkLine, MarkOptions, MarkStyle, MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::GridLayout;
@@ -240,6 +240,8 @@ pub struct Finish {
     pub marks: FinishMarks,
     pub bleed: BleedOptions,
     pub duplex: FinishDuplex,
+    #[serde(default)]
+    pub background: BackgroundOptions,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -674,9 +676,12 @@ fn sheet_page(o: &OutputSettings) -> SheetPage {
 fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Finishing {
     let m = &finish.marks;
     let d = &finish.duplex;
-    let color_ok = m.color.len() == 7
-        && m.color.starts_with('#')
-        && m.color[1..].bytes().all(|b| b.is_ascii_hexdigit());
+    let is_color = |c: &str| {
+        c.len() == 7 && c.starts_with('#') && c[1..].bytes().all(|b| b.is_ascii_hexdigit())
+    };
+    let color_ok = is_color(&m.color);
+    // A colour that is not `#rrggbb` paints nothing rather than failing the plan.
+    let fill = |c: &Option<String>| c.as_deref().filter(|c| is_color(c)).map(str::to_lowercase);
     let defaults = MarkOptions::default();
     let turn_of = |k: &str| edits.turns.get(k).copied().unwrap_or_default();
     let common = d
@@ -752,6 +757,10 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
                 ),
                 common_back: common.and_then(parse_piece_key),
                 common_back_turn: common.map(turn_of).unwrap_or_default(),
+            },
+            background: BackgroundOptions {
+                sheet: fill(&finish.background.sheet),
+                pieces: fill(&finish.background.pieces),
             },
         },
         backs,
@@ -1099,7 +1108,20 @@ mod tests {
                 offset_y_mm: -1.0,
                 common_back: Some("g:0:0:1:0".into()),
             },
+            background: BackgroundOptions::default(),
         }
+    }
+
+    #[test]
+    fn a_background_colour_that_is_not_rrggbb_paints_nothing() {
+        let mut f = finish();
+        f.background = BackgroundOptions {
+            sheet: Some("#00FF00".into()),
+            pieces: Some("green".into()),
+        };
+        let options = finishing(&f, &PieceEdits::default(), &known()).options;
+        assert_eq!(options.background.sheet.as_deref(), Some("#00ff00"));
+        assert_eq!(options.background.pieces, None);
     }
 
     fn known() -> HashSet<String> {

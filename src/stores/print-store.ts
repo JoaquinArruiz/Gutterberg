@@ -62,6 +62,7 @@ type PrintState = PrintPlan & {
   setMarks: (patch: Partial<Finish["marks"]>) => void;
   setBleed: (patch: Partial<Finish["bleed"]>) => void;
   setDuplex: (patch: Partial<Finish["duplex"]>) => void;
+  setBackground: (patch: Partial<Finish["background"]>) => void;
   /** The piece picked in the library to choose a back for the selection; null = not choosing. */
   pickingBack: boolean;
   setPickingBack: (on: boolean) => void;
@@ -135,6 +136,10 @@ export const usePrintStore = create<PrintState>()(
         set((s) => ({ finish: cleanFinish({ ...s.finish, duplex: { ...s.finish.duplex, ...patch } }) }));
         if ("on" in patch || "layout" in patch) emitHintEvent("duplex-changed");
       },
+      setBackground: (patch) =>
+        set((s) => ({
+          finish: cleanFinish({ ...s.finish, background: { ...s.finish.background, ...patch } }),
+        })),
       setPickingBack: (pickingBack) => set({ pickingBack }),
       setFilter: (filter) => set({ filter }),
       clickCard: (key, visible, modifier) => {

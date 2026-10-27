@@ -3,9 +3,9 @@
 use card_core::card::{CardId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
-    bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BleedOptions, BleedSource,
-    DuplexOptions, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, SheetWarning,
-    Side,
+    bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BackgroundOptions,
+    BleedOptions, BleedSource, DuplexOptions, FinishOptions, Finishing, Flip, MarkLine,
+    MarkOptions, MarkStyle, SheetWarning, Side,
 };
 use card_core::geometry::{PageSize, Point};
 use card_core::layout::GridLayout;
@@ -456,6 +456,51 @@ fn a_sheet_without_bleed_or_marks_exports_the_same_stream_as_before() {
     let after = first_page_content(&export_sheets(vec![(0, sample_pdf())], &out).unwrap());
     assert_eq!(before, after);
     assert!(!after.contains("RG"));
+}
+
+#[test]
+fn the_background_colours_are_painted_first_as_plain_fills() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Mirror,
+        },
+        background: BackgroundOptions {
+            sheet: Some("#000000".into()),
+            pieces: Some("#ffffff".into()),
+        },
+        ..FinishOptions::default()
+    };
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+    assert_eq!(out[0].background.sheet, Some([0, 0, 0]));
+    assert_eq!(out[0].background.pieces, Some([255, 255, 255]));
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    assert!(
+        content.starts_with("q\n0 0 0 rg\n0 0 "),
+        "the sheet is filled first: {content}"
+    );
+    // One rectangle per piece, filled once, before anything is drawn.
+    let pieces_at = content.find("1 1 1 rg\n").unwrap();
+    let fill_end = pieces_at + content[pieces_at..].find("f\nQ").unwrap();
+    assert_eq!(content[pieces_at..fill_end].matches(" re\n").count(), 4);
+    assert!(fill_end < content.find(" Do").unwrap());
+}
+
+#[test]
+fn a_bad_background_colour_is_refused() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        background: BackgroundOptions {
+            sheet: Some("black".into()),
+            pieces: None,
+        },
+        ..FinishOptions::default()
+    };
+    assert!(finish_sheets(sheets, &docs, &finishing(options)).is_err());
 }
 
 // ---- duplex ----------------------------------------------------------------------------

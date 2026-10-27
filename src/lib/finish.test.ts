@@ -28,7 +28,9 @@ describe("finish settings", () => {
       offsetYMm: 0,
       commonBack: null,
     });
+    expect(DEFAULT_FINISH.background).toEqual({ sheet: null, pieces: null });
     expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror" } })).toBe(true);
+    expect(finishingOn({ ...DEFAULT_FINISH, background: { sheet: "#000000", pieces: null } })).toBe(true);
   });
 
   it("are pulled back into what the engine accepts", () => {
@@ -52,6 +54,7 @@ describe("finish settings", () => {
         offsetYMm: Number.NaN,
         commonBack: "not a key",
       },
+      background: { sheet: "#00FF00", pieces: "green" },
     };
     const clean = cleanFinish(wild);
     expect(clean.marks).toEqual({
@@ -72,6 +75,7 @@ describe("finish settings", () => {
       offsetXMm: -10,
       commonBack: null,
     });
+    expect(clean.background).toEqual({ sheet: "#00ff00", pieces: null });
     expect(cleanColor("#ABCDEF")).toBe("#abcdef");
     expect(cleanColor("#abc")).toBe("#000000");
   });

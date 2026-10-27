@@ -159,6 +159,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
   always a visible, explicit choice. Overflow is reported, never fixed by shrinking.
 - Cut marks (ticks in the margins, with crosses where the gaps cross if you like, or lines in the gaps, solid, dashed or dotted), bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
   a back per piece, or every back paired automatically from where it is in the file.
+- A color for the whole sheet and behind each piece, for art that leaves its corners or edges empty.
 - Converts both ways: a gutterfold file prints double-sided, and a double-sided file prints as gutterfold.
 - Export keeps the original vector content: pieces are placed and clipped, never turned into pictures.
 

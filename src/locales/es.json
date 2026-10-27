@@ -406,6 +406,7 @@
       "page": "Página",
       "marks": "Marcas de corte",
       "bleed": "Sangrado",
+      "background": "Fondo",
       "duplex": "Doble cara"
     },
     "plan": {
@@ -514,6 +515,15 @@
       "mirrorNote": "La franja del borde de cada pieza se dibuja otra vez, volteada sobre el borde. Sigue siendo vectorial.",
       "sourceNote": "Usa lo que el PDF de origen tiene entre las piezas. Necesita al menos ese espacio entre ellas allí.",
       "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes."
+    },
+    "background": {
+      "sheet": "Colorear la hoja",
+      "sheetHint": "Rellena toda la hoja con un color antes de imprimir nada encima, así el papel alrededor de las piezas queda de ese color. Una hoja oscura gasta mucha tinta.",
+      "sheetColor": "Color de la hoja",
+      "pieces": "Color detrás de las piezas",
+      "piecesHint": "Un rectángulo de este color debajo de cada pieza y su sangrado, para rellenar las esquinas y bordes que el arte deja vacíos.",
+      "piecesColor": "Color detrás de las piezas",
+      "note": "Colores lisos impresos debajo del arte. Solo se ven donde el origen deja la página vacía, y siguen siendo vectoriales."
     },
     "duplex": {
       "on": "Imprimir dorsos",

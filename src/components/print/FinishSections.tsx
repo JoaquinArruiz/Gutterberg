@@ -194,6 +194,49 @@ export function BleedSection() {
   );
 }
 
+/** The colour a fill starts with when it is switched on: black paper for the sheet, white behind the pieces. */
+const FIRST_FILL = { sheet: "#000000", pieces: "#ffffff" } as const;
+
+/** Background: plain colours under the sheet and behind the pieces, for art that leaves corners or edges empty. */
+export function BackgroundSection() {
+  const { t } = useTranslation();
+  const background = usePrintStore((s) => s.finish.background);
+  const setBackground = usePrintStore((s) => s.setBackground);
+  return (
+    <CollapsibleSection
+      id="print.background"
+      title={t("print.sections.background")}
+      defaultOpen={false}
+      info={t("print.background.note")}
+    >
+      {(["sheet", "pieces"] as const).map((which) => {
+        const color = background[which];
+        return (
+          <div key={which} className="space-y-1">
+            <Switch
+              checked={color !== null}
+              onChange={(on) => setBackground({ [which]: on ? FIRST_FILL[which] : null })}
+              label={t(`print.background.${which}`)}
+              info={t(`print.background.${which}Hint`)}
+            />
+            {color !== null && (
+              <FieldRow label={t(`print.background.${which}Color`)}>
+                <input
+                  type="color"
+                  aria-label={t(`print.background.${which}Color`)}
+                  value={color}
+                  onChange={(e) => setBackground({ [which]: e.target.value })}
+                  className="h-6 w-10 cursor-pointer rounded border border-[var(--border)] bg-transparent"
+                />
+              </FieldRow>
+            )}
+          </div>
+        );
+      })}
+    </CollapsibleSection>
+  );
+}
+
 /** Duplex: a back sheet after every front sheet, mirrored so the backs line up when the paper is turned. */
 export function DuplexSection() {
   const { t } = useTranslation();

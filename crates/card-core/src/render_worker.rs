@@ -17,7 +17,7 @@ use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::render::{
     bind_pdfium, document_info_in, render_page_fit_in, render_page_png_in, render_pieces_in,
-    render_region_png_in, DocumentInfo, RenderedPage,
+    render_region_png_on, DocumentInfo, RenderedPage,
 };
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 use std::collections::{HashMap, VecDeque};
@@ -57,7 +57,8 @@ enum Work {
     /// Close one document, or every document when the id is `None`.
     Close(Option<DocumentId>, Reply<()>),
     Page(DocumentId, usize, u32, Reply<Vec<u8>>),
-    Region(DocumentId, usize, Rect, u32, Reply<Vec<u8>>),
+    /// The last value: leave what the page does not paint clear instead of white.
+    Region(DocumentId, usize, Rect, u32, bool, Reply<Vec<u8>>),
     Detect(DocumentId, usize, Reply<Detection>),
     Edges(DocumentId, usize, Reply<PageEdges>),
     /// Objects of one page, for describing it as text.
@@ -223,7 +224,22 @@ impl RenderWorker {
         full_width_px: u32,
     ) -> Result<Vec<u8>> {
         self.send(kind, |r| {
-            Work::Region(document_id, page_index, region, full_width_px, r)
+            Work::Region(document_id, page_index, region, full_width_px, false, r)
+        })
+    }
+
+    /// Like [`Self::render_region`], with what the page does not paint left clear (a piece on the
+    /// sheet preview, over the colour behind it).
+    pub fn render_piece_region(
+        &self,
+        kind: RenderKind,
+        document_id: DocumentId,
+        page_index: usize,
+        region: Rect,
+        full_width_px: u32,
+    ) -> Result<Vec<u8>> {
+        self.send(kind, |r| {
+            Work::Region(document_id, page_index, region, full_width_px, true, r)
         })
     }
 }
@@ -325,13 +341,13 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                         .and_then(|d| render_pieces_in(d, &pieces, long_side)),
                 );
             }
-            Work::Region(id, index, region, width, reply) => {
+            Work::Region(id, index, region, width, transparent, reply) => {
                 let _ = reply.send(if stale {
                     Err(Error::Superseded)
                 } else {
                     docs.get(&id)
                         .ok_or(Error::NoDocument)
-                        .and_then(|d| render_region_png_in(d, index, region, width))
+                        .and_then(|d| render_region_png_on(d, index, region, width, transparent))
                 });
             }
         }

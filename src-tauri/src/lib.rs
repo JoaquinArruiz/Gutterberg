@@ -71,6 +71,7 @@ pub fn run() {
             commands::export::validate_export,
             commands::render::render_page,
             commands::render::render_region,
+            commands::render::render_piece_region,
         ])
         .setup(|app| {
             // Checks for a new version and installs it; the web side drives both from Preferences. A Store copy is

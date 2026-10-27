@@ -71,3 +71,24 @@ pub async fn render_region(
     .map_err(internal)??;
     Ok(Response::new(png))
 }
+
+/// Like `render_region`, with what the page does not paint left clear instead of white: the
+/// pieces of the Print tab, drawn over the sheet's colour behind pieces.
+#[tauri::command]
+pub async fn render_piece_region(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    kind: Kind,
+    document_id: DocumentId,
+    page_index: usize,
+    region: Rect,
+    full_width_px: u32,
+) -> Result<Response, ErrorInfo> {
+    let worker = state.worker(&app)?;
+    let png = tauri::async_runtime::spawn_blocking(move || {
+        worker.render_piece_region(kind.into(), document_id, page_index, region, full_width_px)
+    })
+    .await
+    .map_err(internal)??;
+    Ok(Response::new(png))
+}

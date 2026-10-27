@@ -168,6 +168,17 @@ pub struct FinishOptions {
     pub marks: MarkOptions,
     pub bleed: BleedOptions,
     pub duplex: DuplexOptions,
+    pub background: BackgroundOptions,
+}
+
+/// Plain colours painted under everything: the whole sheet, and a rectangle behind each piece
+/// (with its bleed). They show only where the source leaves the page empty. `#rrggbb`; `None`
+/// paints nothing, so the paper shows.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct BackgroundOptions {
+    pub sheet: Option<String>,
+    pub pieces: Option<String>,
 }
 
 /// `back` is the back of `card`.
@@ -203,6 +214,21 @@ pub struct SheetBleed {
     pub mm: f64,
     #[serde(default)]
     pub source: BleedSource,
+}
+
+/// The plain colours of a sheet, as the exporter paints them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SheetBackground {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<[u8; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pieces: Option<[u8; 3]>,
+}
+
+impl SheetBackground {
+    pub fn is_none(&self) -> bool {
+        self.sheet.is_none() && self.pieces.is_none()
+    }
 }
 
 /// Cut marks of a sheet: stroked lines in points.
@@ -279,7 +305,16 @@ fn validate(options: &FinishOptions) -> Result<()> {
         MAX_DUPLEX_OFFSET_MM,
     )?;
     check_range("the gap at the fold", d.fold_gap_mm, 0.0, MAX_FOLD_GAP_MM)?;
+    sheet_background(&options.background)?;
     Ok(())
+}
+
+fn sheet_background(options: &BackgroundOptions) -> Result<SheetBackground> {
+    let parse = |c: &Option<String>| c.as_deref().map(parse_color).transpose();
+    Ok(SheetBackground {
+        sheet: parse(&options.sheet)?,
+        pieces: parse(&options.pieces)?,
+    })
 }
 
 /// Whether the backs go beside the fronts, to fold.
@@ -804,6 +839,7 @@ fn back_sheet(
     let mut sheet = OutputSheet::new(page, placements);
     sheet.side = Side::Back;
     sheet.bleed = front.bleed;
+    sheet.background = front.background;
     let rects: Vec<Rect> = sheet.placements.iter().map(|p| p.destination).collect();
     bleed_warnings(&sheet, &rects, &mut warnings);
     sheet.warnings = warnings;
@@ -901,8 +937,11 @@ pub fn finish_sheets(
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
     let options = &finishing.options;
     validate(options)?;
-    let wanted =
-        options.marks.style != MarkStyle::Off || options.bleed.mm > 0.0 || options.duplex.on;
+    let background = sheet_background(&options.background)?;
+    let wanted = options.marks.style != MarkStyle::Off
+        || options.bleed.mm > 0.0
+        || options.duplex.on
+        || !background.is_none();
     if !wanted {
         return Ok((sheets, Vec::new()));
     }
@@ -936,6 +975,7 @@ pub fn finish_sheets(
     let mut issues: Vec<PageIssue> = Vec::new();
     for mut sheet in sheets {
         sheet.bleed = bleed;
+        sheet.background = background;
         let mut warnings = Vec::new();
         // With gutterfold a front and its back are one piece of paper: marks and bleed go round
         // the pair (or round each of them, when the pairs are cut apart).

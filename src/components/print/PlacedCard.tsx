@@ -12,7 +12,18 @@ import { usePiecePeek } from "./use-piece-peek";
  * vector content. `kind` is the render priority: the large preview uses "page", thumbnails "thumbnail". A right-click
  * shows it large (`usePiecePeek`).
  */
-export function PlacedCard({ p, k, kind = "page" }: { p: SheetPlacement; k: number; kind?: RenderKind }) {
+export function PlacedCard({
+  p,
+  k,
+  kind = "page",
+  fill = "white",
+}: {
+  p: SheetPlacement;
+  k: number;
+  kind?: RenderKind;
+  /** What shows where the source page paints nothing: white paper, or the colour behind pieces. */
+  fill?: string;
+}) {
   const path = useDocumentStore((s) => documentById(s, p.card_id.document_id)?.path ?? null);
   const page = useDocumentStore((s) => documentById(s, p.card_id.document_id)?.pages[p.card_id.page_index]);
   const d = p.destination;
@@ -36,8 +47,8 @@ export function PlacedCard({ p, k, kind = "page" }: { p: SheetPlacement; k: numb
     <div
       {...peek}
       data-testid="placed-card"
-      className="absolute overflow-hidden bg-white"
-      style={{ left: d.x * k, top: d.y * k, width: d.width * k, height: d.height * k }}
+      className="absolute overflow-hidden"
+      style={{ left: d.x * k, top: d.y * k, width: d.width * k, height: d.height * k, background: fill }}
     >
       {url && <CardImage url={url} source={p.source} turn={p.turn} aspect={d.width / d.height} />}
     </div>
