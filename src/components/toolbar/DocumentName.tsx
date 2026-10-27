@@ -2,8 +2,10 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { removeActiveDocument } from "../../lib/project-actions";
+import { suggestedExportName } from "../../lib/tauri";
 import { documentName, useDocumentStore } from "../../stores/document-store";
 import { usePrintStore } from "../../stores/print-store";
+import { useProjectStore } from "../../stores/project-store";
 import { useUiStore } from "../../stores/ui-store";
 import { Button } from "../ui/Button";
 import { LockBadge } from "./LockBadge";
@@ -30,6 +32,7 @@ export function DocumentName() {
   const [renaming, setRenaming] = useState<string | null>(null);
   const exportName = usePrintStore((s) => s.exportName);
   const setExportName = usePrintStore((s) => s.setExportName);
+  const projectPath = useProjectStore((s) => s.path);
   const [draft, setDraft] = useState<string | null>(null);
   if (!path) return null;
 
@@ -88,11 +91,14 @@ export function DocumentName() {
     );
   }
 
-  const shown = exportName ?? t("files.newPdfName");
+  // What Export offers when no name was chosen: the project's or the PDF's name with "-print".
+  const suggested = suggestedExportName(projectPath ?? documentName({ path, images }), "print");
+  const shown = exportName ?? suggested;
   const commit = () => {
     if (draft === null) return;
     const name = cleanName(draft);
-    setExportName(name === "" || name === t("files.newPdfName") ? null : name);
+    // The suggestion itself is no choice: it keeps following the project and its first PDF.
+    setExportName(name === "" || name === suggested ? null : name);
     setDraft(null);
   };
 
@@ -105,7 +111,8 @@ export function DocumentName() {
           aria-label={t("toolbar.docName.label")}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onFocus={(e) => e.currentTarget.select()}
+          // The caret at the end, nothing selected: a key adds to the name instead of replacing it.
+          onFocus={(e) => e.currentTarget.setSelectionRange(e.currentTarget.value.length, e.currentTarget.value.length)}
           onBlur={commit}
           onKeyDown={(e) => {
             if (e.key === "Enter") commit();

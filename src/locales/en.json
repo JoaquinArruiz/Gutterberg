@@ -83,7 +83,6 @@
     "pdfFilter": "PDF",
     "suffixSpaced": "spaced",
     "suffixPrint": "print",
-    "newPdfName": "New-PDF",
     "fallbackName": "pieces",
     "imageFilter": "Images"
   },

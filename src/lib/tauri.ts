@@ -47,14 +47,21 @@ export async function pickExportPath(
   chosenName?: string | null,
 ): Promise<string | null> {
   const filters = [{ name: t("files.pdfFilter"), extensions: ["pdf"] }];
-  if (chosenName) return save({ defaultPath: `${chosenName}.pdf`, filters });
+  return save({ defaultPath: `${chosenName || suggestedExportName(inputPath, kind)}.pdf`, filters });
+}
+
+/**
+ * The name, without ".pdf", that the save dialog offers when none was chosen: the source's (a PDF or a project)
+ * followed by "-print" or "-spaced". The Print tab's toolbar shows the same name.
+ */
+export function suggestedExportName(inputPath: string, kind: "spaced" | "print" = "spaced"): string {
   const name =
     inputPath
       .split(/[\\/]/)
       .pop()
-      ?.replace(/\.(pdf|gtr)$/i, "") ?? t("files.fallbackName");
+      ?.replace(/\.(pdf|gtr)$/i, "") || t("files.fallbackName");
   const suffix = kind === "print" ? t("files.suffixPrint") : t("files.suffixSpaced");
-  return save({ defaultPath: `${name}-${suffix}.pdf`, filters });
+  return `${name}-${suffix}`;
 }
 
 /** Mirrors card_core::layout::GridLayout. */
