@@ -163,7 +163,13 @@ matter:
   so the marks follow the mirroring and the back offset.
 - **Bleed:** taken either by mirroring each piece's own edge (4 strips and 4 corners, as vectors, using the piece's
   oriented edge so tilted pieces work) or from the gap that is already in the source. A bleed bigger than half a piece
-  is an error; a source gap smaller than the bleed is a page issue that blocks export.
+  is an error; a source gap smaller than the bleed is a page issue that blocks export. The third source, `Edge`, is a
+  plain vector fill of each piece grown by the bleed, under the piece, in the colour of its edge
+  (`OutputSheet.edge_fills`). The colours come from the app, not the engine: `render::edge_colors_in` draws each
+  piece at 128 px and `edge::dominant_color` picks the most common colour (in steps of 16 per channel) of a band
+  just inside its edge, away from the corners. `useEdgeColors` keeps them in the plan (`finish.bleed.edgeColors`, by
+  piece key, outside the undo history) whenever the pieces change, so the saved project carries them and the command
+  line, which has no pdfium, exports the same. A piece without a colour is mirrored.
 - **Background:** `BackgroundOptions` holds two optional colours, `sheet` and `pieces`, carried on every sheet (front
   and back) as `OutputSheet.background`. Export paints them first, as plain vector fills: the whole page, then one
   rectangle per placement grown by the bleed; the bleed and the pieces go on top. They only show where the source
@@ -280,7 +286,7 @@ rebuilt on open.
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
   gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
-  `grid` and `selection` into a list of one in `grids`); the current version is 7. A change to the format adds a version and a migration with a test file.
+  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed, and the number makes an older Gutterberg ask to update); the current version is 8. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A file missing from its saved
   path is first looked for beside the project file (`card_core::sharing::find_beside`: same name and hash, then any

@@ -16,8 +16,9 @@ use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, Pa
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use crate::finish::{
-    BackLayout, BackPair, BackgroundOptions, BleedOptions, DuplexOptions, FinishOptions, Finishing,
-    Flip, MarkLine, MarkOptions, MarkStyle, MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
+    parse_color, BackLayout, BackPair, BackgroundOptions, BleedOptions, BleedSource, DuplexOptions,
+    EdgeColor, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, MAX_BLEED_MM,
+    MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::GridLayout;
@@ -238,10 +239,19 @@ pub struct PrintPlan {
 #[serde(rename_all = "camelCase")]
 pub struct Finish {
     pub marks: FinishMarks,
-    pub bleed: BleedOptions,
+    pub bleed: FinishBleed,
     pub duplex: FinishDuplex,
     #[serde(default)]
     pub background: BackgroundOptions,
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct FinishBleed {
+    pub mm: f64,
+    pub source: BleedSource,
+    /// The `Edge` bleed's colour of each piece (by key), `#rrggbb`, as the app found it.
+    pub edge_colors: BTreeMap<String, String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -700,7 +710,20 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
             })
         })
         .collect();
+    let edge_colors = finish
+        .bleed
+        .edge_colors
+        .iter()
+        .filter(|(k, _)| known.contains(*k))
+        .filter_map(|(k, c)| {
+            Some(EdgeColor {
+                card: parse_piece_key(k)?,
+                color: parse_color(fill(&Some(c.clone()))?.as_str()).ok()?,
+            })
+        })
+        .collect();
     Finishing {
+        edge_colors,
         options: FinishOptions {
             marks: MarkOptions {
                 style: m.style,
@@ -1095,7 +1118,7 @@ mod tests {
                 on_backs: true,
                 inner_crosses: false,
             },
-            bleed: BleedOptions::default(),
+            bleed: FinishBleed::default(),
             duplex: FinishDuplex {
                 on: true,
                 layout: BackLayout::Duplex,
@@ -1110,6 +1133,22 @@ mod tests {
             },
             background: BackgroundOptions::default(),
         }
+    }
+
+    #[test]
+    fn edge_colours_are_kept_for_pieces_that_exist_with_a_real_colour() {
+        let mut f = finish();
+        f.bleed.edge_colors = [
+            ("g:0:0:0:0", "#FF0000"),
+            ("g:0:0:0:1", "red"),
+            ("g:9:0:0:0", "#00ff00"),
+        ]
+        .map(|(k, c)| (k.to_string(), c.to_string()))
+        .into();
+        let colors = finishing(&f, &PieceEdits::default(), &known()).edge_colors;
+        assert_eq!(colors.len(), 1);
+        assert_eq!(colors[0].card, parse_piece_key("g:0:0:0:0").unwrap());
+        assert_eq!(colors[0].color, [255, 0, 0]);
     }
 
     #[test]

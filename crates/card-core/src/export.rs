@@ -785,6 +785,20 @@ fn background_ops(sheet: &OutputSheet) -> String {
     ops
 }
 
+/// The operators of an `Edge` bleed: the piece grown by the bleed, filled with its edge colour.
+fn edge_fill_ops(color: [u8; 3], p: &SheetPlacement, sheet: &OutputSheet) -> String {
+    let [r, g, b] = color.map(|c| fmt(f64::from(c) / 255.0));
+    let bleed = mm_to_pt(sheet.bleed.mm);
+    let d = p.destination;
+    format!(
+        "q\n{r} {g} {b} rg\n{} {} {} {} re f\nQ\n",
+        fmt(d.x - bleed),
+        fmt(sheet.page.height_pt - (d.y + d.height + bleed)),
+        fmt(d.width + 2.0 * bleed),
+        fmt(d.height + 2.0 * bleed),
+    )
+}
+
 /// The operators that stroke the cut marks of a sheet `out_height` points tall.
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
@@ -921,8 +935,11 @@ fn export_sheets_into(
         // piece; then the pieces; then the marks.
         let mut ops = background_ops(sheet);
         if sheet.bleed.mm > 0.0 {
-            for (p, (name, frame, _)) in sheet.placements.iter().zip(&prepared) {
-                ops.push_str(&bleed_ops(name, p, sheet, frame.display_box()));
+            for (i, (p, (name, frame, _))) in sheet.placements.iter().zip(&prepared).enumerate() {
+                match sheet.edge_fills.iter().find(|f| f.placement == i) {
+                    Some(fill) => ops.push_str(&edge_fill_ops(fill.color, p, sheet)),
+                    None => ops.push_str(&bleed_ops(name, p, sheet, frame.display_box())),
+                }
             }
         }
         for (p, (_, frame, card)) in sheet.placements.iter().zip(&prepared) {

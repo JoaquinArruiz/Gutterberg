@@ -84,7 +84,7 @@ function state(): ProjectState {
           onBacks: true,
           innerCrosses: true,
         },
-        bleed: { mm: 2, source: "source" },
+        bleed: { mm: 2, source: "source", edgeColors: {} },
         duplex: {
           ...DEFAULT_FINISH.duplex,
           on: true,
@@ -284,7 +284,7 @@ describe("cut marks, bleed and duplex in the file", () => {
   it("are saved under the plan, with the backs of pieces under the edits", () => {
     const f = file(state());
     expect(f.version).toBe(PROJECT_VERSION);
-    expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source" });
+    expect(f.plan.finish.bleed).toEqual({ mm: 2, source: "source", edgeColors: {} });
     expect(f.plan.finish.marks.line).toBe("dashed");
     expect(f.plan.finish.duplex.commonBack).toBe("g:3:0:0:0");
     expect(f.edits.backs).toEqual({ "g:0:0:0:0": "g:0:0:0:1", "f:0:2:0": "g:3:0:0:0" });
@@ -329,7 +329,7 @@ describe("cut marks, bleed and duplex in the file", () => {
   it("change the signature, so saving notices them", () => {
     const base = projectSignature(state());
     const bled = state();
-    bled.plan = { ...bled.plan, finish: { ...bled.plan.finish, bleed: { mm: 3, source: "source" } } };
+    bled.plan = { ...bled.plan, finish: { ...bled.plan.finish, bleed: { mm: 3, source: "source", edgeColors: {} } } };
     expect(projectSignature(bled)).not.toBe(base);
     const backed = state();
     backed.edits = { ...backed.edits, backs: {} };

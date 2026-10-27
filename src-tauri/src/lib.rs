@@ -74,6 +74,7 @@ pub fn run() {
             commands::render::render_page,
             commands::render::render_region,
             commands::render::render_piece_region,
+            commands::render::edge_colors,
         ])
         .setup(|app| {
             // Checks for a new version and installs it; the web side drives both from Preferences. A Store copy is

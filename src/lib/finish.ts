@@ -10,7 +10,7 @@ export type MarkStyle = (typeof MARK_STYLES)[number];
 /** How a cut mark is stroked. */
 export const MARK_LINES = ["solid", "dashed", "dotted"] as const;
 export type MarkLine = (typeof MARK_LINES)[number];
-export const BLEED_SOURCES = ["mirror", "source"] as const;
+export const BLEED_SOURCES = ["mirror", "source", "edge"] as const;
 export type BleedSource = (typeof BLEED_SOURCES)[number];
 export const FLIPS = ["long", "short"] as const;
 export type Flip = (typeof FLIPS)[number];
@@ -42,7 +42,13 @@ export type Finish = {
     /** Ticks: also a cross where a gap between columns meets a gap between rows. */
     innerCrosses: boolean;
   };
-  bleed: { mm: number; source: BleedSource };
+  bleed: {
+    mm: number;
+    source: BleedSource;
+    /** Edge: the colour (`#rrggbb`) of each piece's edge, by `cardIdKey`, found from a small render
+     * (`useEdgeColors`). A piece without one is mirrored. */
+    edgeColors: Record<string, string>;
+  };
   duplex: {
     on: boolean;
     layout: BackLayout;
@@ -79,7 +85,7 @@ export const DEFAULT_FINISH: Finish = {
     onBacks: false,
     innerCrosses: false,
   },
-  bleed: { mm: 0, source: "mirror" },
+  bleed: { mm: 0, source: "mirror", edgeColors: {} },
   duplex: {
     on: false,
     layout: "duplex",
@@ -106,7 +112,11 @@ export const FinishSchema = z.object({
     onBacks: z.boolean().default(false),
     innerCrosses: z.boolean().default(false),
   }),
-  bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES) }),
+  bleed: z.object({
+    mm: z.number(),
+    source: z.enum(BLEED_SOURCES),
+    edgeColors: z.record(z.string(), z.string()).default({}),
+  }),
   duplex: z.object({
     on: z.boolean(),
     layout: z.enum(BACK_LAYOUTS).default("duplex"),
@@ -152,7 +162,16 @@ export function cleanFinish(f: Finish): Finish {
       onBacks: f.marks.onBacks,
       innerCrosses: f.marks.innerCrosses,
     },
-    bleed: { mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0), source: f.bleed.source },
+    bleed: {
+      mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0),
+      source: f.bleed.source,
+      edgeColors: Object.fromEntries(
+        Object.entries(f.bleed.edgeColors).flatMap(([k, c]) => {
+          const color = cleanFill(c);
+          return KEY.test(k) && color !== null ? [[k, color]] : [];
+        }),
+      ),
+    },
     duplex: {
       on: f.duplex.on,
       layout: f.duplex.layout,

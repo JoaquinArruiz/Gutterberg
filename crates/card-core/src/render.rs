@@ -260,6 +260,55 @@ pub fn render_pieces_in(
         .collect()
 }
 
+/// The colour of each piece's edge, `(page index, area in points)`, for the `Edge` bleed: the
+/// piece is drawn small, on white, and the most common colour in a band just inside its edge wins
+/// (`crate::edge`).
+pub fn edge_colors_in(
+    doc: &PdfDocument,
+    pieces: &[(usize, crate::card::OrientedRect)],
+) -> Result<Vec<[u8; 3]>> {
+    /// Pixels on the longer side of the piece's bounding box.
+    const LONG_PX: f64 = 128.0;
+    pieces
+        .iter()
+        .map(|(page_index, rect)| {
+            let page = get_page(doc, *page_index)?;
+            let (w, h) = (page.width().value as f64, page.height().value as f64);
+            let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+            for c in rect.corners() {
+                (x0, y0, x1, y1) = (x0.min(c.x), y0.min(c.y), x1.max(c.x), y1.max(c.y));
+            }
+            let scale = LONG_PX / (x1 - x0).max(y1 - y0).max(1e-6);
+            let (bw, bh) = (
+                ((x1 - x0) * scale).ceil().clamp(1.0, 4096.0) as i32,
+                ((y1 - y0) * scale).ceil().clamp(1.0, 4096.0) as i32,
+            );
+            let mut bitmap = PdfBitmap::empty(bw, bh, PdfBitmapFormat::BGRA).map_err(pdfium_err)?;
+            let cfg = PdfRenderConfig::new()
+                .set_target_size(
+                    (w * scale).round().clamp(1.0, 32768.0) as i32,
+                    (h * scale).round().clamp(1.0, 32768.0) as i32,
+                )
+                .set_origin(-(x0 * scale).round() as i32, -(y0 * scale).round() as i32);
+            page.render_into_bitmap_with_config(&mut bitmap, &cfg)
+                .map_err(pdfium_err)?;
+            let img = bitmap.as_image().map_err(pdfium_err)?.to_rgb8();
+            let samples: Vec<[u8; 3]> = crate::edge::band_points(rect)
+                .iter()
+                .filter_map(|p| {
+                    let (px, py) = ((p.x - x0) * scale, (p.y - y0) * scale);
+                    let inside = px >= 0.0 && py >= 0.0;
+                    inside
+                        .then(|| img.get_pixel_checked(px as u32, py as u32))
+                        .flatten()
+                        .map(|c| c.0)
+                })
+                .collect();
+            Ok(crate::edge::dominant_color(&samples))
+        })
+        .collect()
+}
+
 /// Render only `region` (normalized, top-left origin) of a page as a PNG, at the
 /// scale where the whole page would be `full_width_px` wide. Only the region's
 /// pixels are allocated and encoded, so a high zoom stays fast (used by the

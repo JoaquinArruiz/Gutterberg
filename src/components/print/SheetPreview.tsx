@@ -16,7 +16,7 @@ import { RefreshButton } from "../editor/RefreshPreviewButton";
 import { HintToast } from "../ui/HintToast";
 import { WarningList } from "./FinishSections";
 import { PlacedCard } from "./PlacedCard";
-import { SheetOverlay } from "./SheetOverlay";
+import { EdgeFills, SheetOverlay } from "./SheetOverlay";
 import { SheetReferences } from "./SheetReferences";
 import { SheetStrip } from "./SheetStrip";
 
@@ -96,6 +96,7 @@ export function SheetPreview() {
         style={{ ...style, background: fillCss(sheet.background?.sheet) }}
         data-testid="sheet-page"
       >
+        <EdgeFills sheet={sheet} k={k} />
         {sheet.placements.map((p, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
           <PlacedCard key={i} p={p} k={k} fill={fillCss(sheet.background?.pieces)} />

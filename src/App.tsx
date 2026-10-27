@@ -34,6 +34,7 @@ import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { startUpdateChecks } from "./lib/update-actions";
 import { useCloseGuard } from "./lib/use-close-guard";
+import { useEdgeColors } from "./lib/use-edge-colors";
 import { useImageDrop } from "./lib/use-image-drop";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { useOpenedFiles } from "./lib/use-opened-files";
@@ -60,6 +61,7 @@ export default function App() {
   useProjectTracking();
   useCloseGuard();
   useRecoveryCopy();
+  useEdgeColors();
   // A run that ended with unsaved changes left a copy: offered once, at start.
   useEffect(() => void offerRecovery().catch(() => {}), []);
   useImageDrop();

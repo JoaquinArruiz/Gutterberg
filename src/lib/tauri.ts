@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
 import { t } from "../i18n";
-import type { DocumentId } from "./card";
+import type { DocumentId, OrientedRect } from "./card";
 import type { NormalizedRect } from "./coordinates";
 import { forgetPageEdges } from "./edges-api";
 import { isSupersededError } from "./errors";
@@ -134,6 +134,13 @@ export async function renderPage(
 ): Promise<string> {
   const reply = await invoke<ArrayBuffer | number[]>("render_page", { kind, documentId, pageIndex, widthPx });
   return URL.createObjectURL(new Blob([replyBytes(reply)], { type: "image/png" }));
+}
+
+/** The colour (`#rrggbb`) of the edge of each piece, in the order given, for the Edge bleed. Worked out locally. */
+export async function edgeColors(
+  pieces: { documentId: DocumentId; pageIndex: number; source: OrientedRect }[],
+): Promise<string[]> {
+  return invoke<string[]>("edge_colors", { pieces });
 }
 
 /** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL.

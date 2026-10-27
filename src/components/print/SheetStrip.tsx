@@ -4,7 +4,7 @@ import { fillCss } from "../../lib/finish";
 import type { OutputSheet } from "../../lib/sheet-api";
 import { useWheelScrollsSideways } from "../../lib/use-wheel-scrolls-sideways";
 import { PlacedCard } from "./PlacedCard";
-import { SheetOverlay } from "./SheetOverlay";
+import { EdgeFills, SheetOverlay } from "./SheetOverlay";
 
 const THUMB_HEIGHT = 84;
 
@@ -57,6 +57,7 @@ function SheetThumb({
         className="relative shadow shadow-black/40"
         style={{ width, height: THUMB_HEIGHT, background: fillCss(sheet.background?.sheet) }}
       >
+        {visible && <EdgeFills sheet={sheet} k={k} />}
         {visible &&
           sheet.placements.map((p, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity

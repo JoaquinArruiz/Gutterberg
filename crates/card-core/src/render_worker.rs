@@ -16,8 +16,8 @@ use crate::detect::{default_engines, detect_page, page_edges, Detection, PageEdg
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::render::{
-    bind_pdfium, document_info_in, render_page_fit_in, render_page_png_in, render_pieces_in,
-    render_region_png_on, DocumentInfo, RenderedPage,
+    bind_pdfium, document_info_in, edge_colors_in, render_page_fit_in, render_page_png_in,
+    render_pieces_in, render_region_png_on, DocumentInfo, RenderedPage,
 };
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 use std::collections::{HashMap, VecDeque};
@@ -73,6 +73,8 @@ enum Work {
         u32,
         Reply<Vec<RenderedPage>>,
     ),
+    /// The edge colour of each piece (page and rectangle), for the `Edge` bleed.
+    EdgeColors(DocumentId, Vec<(usize, OrientedRect)>, Reply<Vec<[u8; 3]>>),
 }
 
 struct Msg {
@@ -214,6 +216,17 @@ impl RenderWorker {
         })
     }
 
+    /// The colour of the edge of each of `pieces` (page index and rectangle in points).
+    pub fn edge_colors(
+        &self,
+        document_id: DocumentId,
+        pieces: Vec<(usize, OrientedRect)>,
+    ) -> Result<Vec<[u8; 3]>> {
+        self.send(RenderKind::Page, |r| {
+            Work::EdgeColors(document_id, pieces, r)
+        })
+    }
+
     /// Blocks until rendered (or superseded).
     pub fn render_region(
         &self,
@@ -339,6 +352,13 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                     docs.get(&id)
                         .ok_or(Error::NoDocument)
                         .and_then(|d| render_pieces_in(d, &pieces, long_side)),
+                );
+            }
+            Work::EdgeColors(id, pieces, reply) => {
+                let _ = reply.send(
+                    docs.get(&id)
+                        .ok_or(Error::NoDocument)
+                        .and_then(|d| edge_colors_in(d, &pieces)),
                 );
             }
             Work::Region(id, index, region, width, transparent, reply) => {

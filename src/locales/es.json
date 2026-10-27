@@ -510,10 +510,12 @@
       "source": "Se toma de",
       "sources": {
         "mirror": "Reflejar el borde",
-        "source": "La separación de origen"
+        "source": "La separación de origen",
+        "edge": "Color del borde"
       },
       "mirrorNote": "La franja del borde de cada pieza se dibuja otra vez, volteada sobre el borde. Sigue siendo vectorial.",
       "sourceNote": "Usa lo que el PDF de origen tiene entre las piezas. Necesita al menos ese espacio entre ellas allí.",
+      "edgeNote": "El sangrado de cada pieza se rellena con el color más común a lo largo de su borde, calculado en esta computadora. Es un relleno vectorial liso, bueno para bordes de un solo color; una pieza cuyo borde aún no tiene color se refleja.",
       "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes."
     },
     "background": {

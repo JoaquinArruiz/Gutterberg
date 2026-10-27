@@ -84,6 +84,7 @@ fn the_bleed_is_the_edge_of_the_piece_mirrored_and_the_back_sits_in_the_mirrored
             ..FinishOptions::default()
         },
         backs: Vec::new(),
+        edge_colors: Vec::new(),
     };
     let (out, issues) = finish_sheets(sheets, &docs, &finishing).unwrap();
     assert!(issues.is_empty());

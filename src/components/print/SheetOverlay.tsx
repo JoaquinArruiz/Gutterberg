@@ -68,3 +68,31 @@ export function SheetOverlay({ sheet, k }: { sheet: OutputSheet; k: number }) {
     </svg>
   );
 }
+
+/**
+ * The Edge bleed as the export paints it, under the pieces: each piece grown by the bleed, filled with its edge
+ * colour. `k` is screen px per point.
+ */
+export function EdgeFills({ sheet, k }: { sheet: OutputSheet; k: number }) {
+  const bleed = mmToPt(sheet.bleed?.mm ?? 0);
+  const fills = sheet.edge_fills ?? [];
+  if (bleed <= 0 || fills.length === 0) return null;
+  return fills.map(({ placement, color }) => {
+    const d = sheet.placements[placement]?.destination;
+    if (!d) return null;
+    return (
+      <div
+        key={placement}
+        data-testid="edge-fill"
+        className="pointer-events-none absolute"
+        style={{
+          left: (d.x - bleed) * k,
+          top: (d.y - bleed) * k,
+          width: (d.width + 2 * bleed) * k,
+          height: (d.height + 2 * bleed) * k,
+          background: `rgb(${color.join(" ")})`,
+        }}
+      />
+    );
+  });
+}

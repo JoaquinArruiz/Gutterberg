@@ -15,7 +15,7 @@ describe("finish settings", () => {
       onBacks: false,
       innerCrosses: false,
     });
-    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror" });
+    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror", edgeColors: {} });
     expect(DEFAULT_FINISH.duplex).toEqual({
       on: false,
       layout: "duplex",
@@ -29,7 +29,7 @@ describe("finish settings", () => {
       commonBack: null,
     });
     expect(DEFAULT_FINISH.background).toEqual({ sheet: null, pieces: null });
-    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror" } })).toBe(true);
+    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror", edgeColors: {} } })).toBe(true);
     expect(finishingOn({ ...DEFAULT_FINISH, background: { sheet: "#000000", pieces: null } })).toBe(true);
   });
 
@@ -45,7 +45,11 @@ describe("finish settings", () => {
         onBacks: true,
         innerCrosses: true,
       },
-      bleed: { mm: 99, source: "source" },
+      bleed: {
+        mm: 99,
+        source: "source",
+        edgeColors: { "g:0:0:0:0": "#ABCDEF", "g:0:0:0:1": "blue", nonsense: "#000000" },
+      },
       duplex: {
         ...DEFAULT_FINISH.duplex,
         on: true,
@@ -67,7 +71,7 @@ describe("finish settings", () => {
       onBacks: true,
       innerCrosses: true,
     });
-    expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source" });
+    expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source", edgeColors: { "g:0:0:0:0": "#abcdef" } });
     expect(clean.duplex).toEqual({
       ...DEFAULT_FINISH.duplex,
       on: true,

@@ -118,8 +118,10 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.queryByText("Taken from")).toBeNull();
     typeNumber(screen.getByRole("textbox", { name: "Bleed" }), "2");
     expect(print().finish.bleed.mm).toBe(2);
-    fireEvent.click(screen.getByRole("radio", { name: "The source gap" }));
+    choose("Taken from", "The source gap");
     expect(print().finish.bleed.source).toBe("source");
+    choose("Taken from", "Edge color");
+    expect(print().finish.bleed.source).toBe("edge");
     typeNumber(screen.getByRole("textbox", { name: "Bleed" }), "20");
     expect(print().finish.bleed.mm).toBe(5);
   });
@@ -356,6 +358,20 @@ describe("Sheet preview with finishing", () => {
     await act(async () => {});
     expect(screen.getByTestId("sheet-page").style.background).toBe("rgb(0, 0, 0)");
     expect(screen.getAllByTestId("placed-card")[0].style.background).toBe("rgb(255, 255, 0)");
+  });
+
+  it("fills the Edge bleed of each piece with the color the engine gave, under the pieces", async () => {
+    print().setSheets(
+      [{ ...sheet(2), bleed: { mm: 2, source: "edge" }, edge_fills: [{ placement: 1, color: [200, 10, 10] }] }],
+      null,
+    );
+    render(<SheetPreview />);
+    await act(async () => {});
+    const page = screen.getByTestId("sheet-page");
+    const fills = within(page).getAllByTestId("edge-fill");
+    expect(fills).toHaveLength(1);
+    expect(fills[0].style.background).toBe("rgb(200, 10, 10)");
+    expect(page.firstElementChild).toBe(fills[0]);
   });
 
   it("draws nothing extra when there are no marks and no bleed", async () => {

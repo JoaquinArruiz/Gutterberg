@@ -98,6 +98,9 @@ pub enum BleedSource {
     Mirror,
     /// Use what the source PDF has in the gap around the piece.
     Source,
+    /// A plain fill of the colour of the piece's edge (`Finishing::edge_colors`, found by the
+    /// app from a small render), under the piece. A piece without a colour is mirrored.
+    Edge,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -192,12 +195,21 @@ pub struct BackPair {
     pub turn: Turn,
 }
 
-/// What the finishing needs from the user: the options and the backs chosen per piece.
+/// The colour of a piece's edge, for the `Edge` bleed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EdgeColor {
+    pub card: CardId,
+    pub color: [u8; 3],
+}
+
+/// What the finishing needs from the user: the options, the backs chosen per piece, and the
+/// colours of the pieces' edges for the `Edge` bleed.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Finishing {
     pub options: FinishOptions,
     pub backs: Vec<BackPair>,
+    pub edge_colors: Vec<EdgeColor>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -214,6 +226,31 @@ pub struct SheetBleed {
     pub mm: f64,
     #[serde(default)]
     pub source: BleedSource,
+}
+
+/// The `Edge` bleed of one placement: a fill of `color` over the piece grown by the bleed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EdgeFill {
+    /// Index into the sheet's placements.
+    pub placement: usize,
+    pub color: [u8; 3],
+}
+
+/// The `Edge` bleed fills of a sheet's placements that have a colour; empty for another bleed.
+fn edge_fills(sheet: &OutputSheet, colors: &HashMap<CardId, [u8; 3]>) -> Vec<EdgeFill> {
+    if sheet.bleed.source != BleedSource::Edge || sheet.bleed.mm <= 0.0 {
+        return Vec::new();
+    }
+    sheet
+        .placements
+        .iter()
+        .enumerate()
+        .filter_map(|(placement, p)| {
+            colors
+                .get(&p.card_id)
+                .map(|&color| EdgeFill { placement, color })
+        })
+        .collect()
 }
 
 /// The plain colours of a sheet, as the exporter paints them.
@@ -952,6 +989,11 @@ pub fn finish_sheets(
         .iter()
         .map(|p| (p.card, (p.back, p.turn)))
         .collect();
+    let colors: HashMap<CardId, [u8; 3]> = finishing
+        .edge_colors
+        .iter()
+        .map(|e| (e.card, e.color))
+        .collect();
     let bleed = SheetBleed {
         mm: options.bleed.mm,
         source: options.bleed.source,
@@ -1004,6 +1046,10 @@ pub fn finish_sheets(
             let rects: Vec<Rect> = b.placements.iter().map(|p| p.destination).collect();
             b.marks = marks_for(&rects, b.page, &options.marks, bleed_pt, &mut b.warnings)?;
         }
+        if let Some(b) = back.as_mut() {
+            b.edge_fills = edge_fills(b, &colors);
+        }
+        sheet.edge_fills = edge_fills(&sheet, &colors);
         sheet.warnings = warnings;
         out.push(sheet);
         out.extend(back);

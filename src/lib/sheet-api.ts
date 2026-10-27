@@ -5,7 +5,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 import type { OutputSettings } from "../stores/layout-store";
 import { CardIdSchema, type DocumentId, OrientedRectSchema } from "./card";
-import { MARK_LINES, SHEET_WARNINGS } from "./finish";
+import { BLEED_SOURCES, MARK_LINES, SHEET_WARNINGS } from "./finish";
 import { type LayoutDocument, outputSettings, type PrintProject, printDocuments } from "./print-request";
 import type { PageIssue, PageSize } from "./tauri";
 import { PageIssueSchema } from "./tauri";
@@ -43,7 +43,11 @@ export const OutputSheetSchema = z.object({
   /** A sheet is a front unless duplex is on (M16). */
   side: z.enum(["front", "back"]).optional(),
   /** Art painted outside each piece; absent or 0 = none. */
-  bleed: z.object({ mm: z.number(), source: z.enum(["mirror", "source"]).optional() }).optional(),
+  bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES).optional() }).optional(),
+  /** Edge bleed: a plain fill of `color` (RGB) under placement `placement`, grown by the bleed. */
+  edge_fills: z
+    .array(z.object({ placement: z.number(), color: z.tuple([z.number(), z.number(), z.number()]) }))
+    .optional(),
   /** Plain colours as RGB, painted under the bleed and the pieces; absent = none. */
   background: z
     .object({

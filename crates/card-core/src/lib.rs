@@ -8,6 +8,7 @@ pub mod access;
 pub mod calibration;
 pub mod card;
 pub mod detect;
+pub mod edge;
 pub mod error;
 pub mod export;
 pub mod finish;

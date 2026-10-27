@@ -1,8 +1,10 @@
 //! Needs the pdfium shared library; skipped (with a note) when unavailable.
 //! One test only: pdfium binds once per process, and the worker owns that binding.
-use card_core::geometry::Rect;
+use card_core::card::OrientedRect;
+use card_core::geometry::{Point, Rect};
 use card_core::render_worker::{RenderKind, RenderWorker};
-use card_core::sample::{sample_pdf, sample_pdf_pages};
+use card_core::sample::{sample_pdf, sample_pdf_pages, A4_MM, CARD_MM};
+use card_core::units::mm_to_pt;
 use card_core::Error;
 use std::sync::Arc;
 
@@ -49,6 +51,35 @@ fn worker_renders_from_open_documents_and_drops_superseded_requests() {
         .render_piece_region(RenderKind::Page, 0, 0, corner, 2000)
         .unwrap();
     assert!(alpha(&clear).iter().any(|&a| a < 255));
+    // The edge colour of an empty corner of the page is the paper's.
+    let corner_piece = OrientedRect {
+        center: Point { x: 6.0, y: 6.0 },
+        width: 8.0,
+        height: 8.0,
+        angle_deg: 0.0,
+    };
+    assert_eq!(
+        w.edge_colors(0, vec![(0, corner_piece)]).unwrap(),
+        vec![[255, 255, 255]]
+    );
+    // The first sample card is filled (0.356, 0.744, 0.5), with a black outline and a white circle.
+    let (cw, ch) = (mm_to_pt(CARD_MM.0), mm_to_pt(CARD_MM.1));
+    let (pw, ph) = (mm_to_pt(A4_MM.0), mm_to_pt(A4_MM.1));
+    let first = OrientedRect {
+        center: Point {
+            x: (pw - 3.0 * cw) / 2.0 + cw / 2.0,
+            y: (ph - 3.0 * ch) / 2.0 + ch / 2.0,
+        },
+        width: cw,
+        height: ch,
+        angle_deg: 0.0,
+    };
+    let [color] = w.edge_colors(0, vec![(0, first)]).unwrap()[..] else {
+        panic!("one colour");
+    };
+    for (got, want) in color.iter().zip([91, 190, 128]) {
+        assert!(got.abs_diff(want) <= 3, "{color:?}");
+    }
 
     // A burst of magnifier requests: stale ones are dropped, never failed otherwise.
     let full = Rect::new(0.0, 0.0, 1.0, 1.0);

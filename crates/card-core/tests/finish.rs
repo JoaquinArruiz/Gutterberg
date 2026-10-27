@@ -4,7 +4,7 @@ use card_core::card::{CardId, OrientedRect, PageGroup, PageGroupKind, PageRange}
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
     bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BackgroundOptions,
-    BleedOptions, BleedSource, DuplexOptions, FinishOptions, Finishing, Flip, MarkLine,
+    BleedOptions, BleedSource, DuplexOptions, EdgeColor, FinishOptions, Finishing, Flip, MarkLine,
     MarkOptions, MarkStyle, SheetWarning, Side,
 };
 use card_core::geometry::{PageSize, Point};
@@ -66,6 +66,7 @@ fn finishing(options: FinishOptions) -> Finishing {
     Finishing {
         options,
         backs: Vec::new(),
+        edge_colors: Vec::new(),
     }
 }
 
@@ -490,6 +491,37 @@ fn the_background_colours_are_painted_first_as_plain_fills() {
 }
 
 #[test]
+fn the_edge_bleed_fills_each_piece_with_its_colour_and_mirrors_one_without() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Edge,
+        },
+        ..FinishOptions::default()
+    };
+    let colors = [(0, 0), (0, 1), (1, 0)].map(|(r, c)| EdgeColor {
+        card: card(r, c),
+        color: [200, 10, 10],
+    });
+    let f = Finishing {
+        edge_colors: colors.to_vec(),
+        ..finishing(options)
+    };
+    let (out, issues) = finish_sheets(sheets, &docs, &f).unwrap();
+    assert!(issues.is_empty());
+    assert_eq!(out[0].edge_fills.len(), 3);
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    // Three plain fills; the fourth piece is mirrored (8 regions), and every piece is drawn once.
+    assert_eq!(content.matches(" rg\n").count(), 3);
+    assert_eq!(content.matches(" Do").count(), 8 + 4);
+    let fill = content.find(" rg\n").unwrap();
+    assert!(fill < content.find("re W n").unwrap(), "under the pieces");
+}
+
+#[test]
 fn a_bad_background_colour_is_refused() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
@@ -710,6 +742,7 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             back: card(1, 1),
             turn: Turn::R0,
         }],
+        edge_colors: Vec::new(),
     };
     let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
     assert_eq!(out.len(), 4);
@@ -723,6 +756,7 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             back: card(1, 1),
             turn: Turn::R0,
         }],
+        edge_colors: Vec::new(),
     };
     let docs2 = [source()];
     let (out, _) = finish_sheets(plan(&docs2, spec(2, 2, 6.0, 15.0), &[]), &docs2, &f).unwrap();
@@ -741,6 +775,7 @@ fn a_back_turned_by_the_user_is_turned_that_much_more_on_the_back_sheet() {
             back: card(1, 1),
             turn,
         }],
+        edge_colors: Vec::new(),
     };
     let (plain, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R0)).unwrap();
     let (turned, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R180)).unwrap();

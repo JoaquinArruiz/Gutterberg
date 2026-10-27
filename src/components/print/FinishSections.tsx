@@ -176,11 +176,8 @@ export function BleedSection() {
         onChange={(mm) => setBleed({ mm })}
       />
       {bleed.mm > 0 && (
-        <FieldRow
-          label={t("print.bleed.source")}
-          info={bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")}
-        >
-          <Segmented<BleedSource>
+        <FieldRow label={t("print.bleed.source")} info={t(`print.bleed.${bleed.source}Note`)}>
+          <Select<BleedSource>
             fill
             label={t("print.bleed.source")}
             value={bleed.source}

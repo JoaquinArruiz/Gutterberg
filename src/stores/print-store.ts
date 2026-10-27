@@ -63,6 +63,8 @@ type PrintState = PrintPlan & {
   setBleed: (patch: Partial<Finish["bleed"]>) => void;
   setDuplex: (patch: Partial<Finish["duplex"]>) => void;
   setBackground: (patch: Partial<Finish["background"]>) => void;
+  /** The Edge bleed's colours, found by `useEdgeColors`. Not an undo step of its own: they follow the pieces. */
+  setEdgeColors: (colors: Record<string, string>) => void;
   /** The piece picked in the library to choose a back for the selection; null = not choosing. */
   pickingBack: boolean;
   setPickingBack: (on: boolean) => void;
@@ -140,6 +142,15 @@ export const usePrintStore = create<PrintState>()(
         set((s) => ({
           finish: cleanFinish({ ...s.finish, background: { ...s.finish.background, ...patch } }),
         })),
+      setEdgeColors: (colors) => {
+        const now = usePrintStore.getState().finish.bleed.edgeColors;
+        const keys = Object.keys(colors);
+        if (keys.length === Object.keys(now).length && keys.every((k) => now[k] === colors[k])) return;
+        const history = usePrintStore.temporal.getState();
+        history.pause();
+        set((s) => ({ finish: cleanFinish({ ...s.finish, bleed: { ...s.finish.bleed, edgeColors: colors } }) }));
+        history.resume();
+      },
       setPickingBack: (pickingBack) => set({ pickingBack }),
       setFilter: (filter) => set({ filter }),
       clickCard: (key, visible, modifier) => {
