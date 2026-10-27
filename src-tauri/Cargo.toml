@@ -19,6 +19,8 @@ card-core = { path = "../crates/card-core" }
 card-ai = { path = "../crates/card-ai" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+# The pictures of Fill with AI cross the IPC as text.
+base64 = "0.22"
 pdfium-render = "0.9"
 # Where the log goes (src/app_log.rs) and where the old data folders were (src/data_dirs.rs).
 dirs = "7"

@@ -1,4 +1,5 @@
-//! Optional AI-assisted detection, page sorting and pairing of backs, and the list of models to pick from.
+//! Optional AI-assisted detection, page sorting, pairing of backs and filling of the bleed, and the list of
+//! models to pick from.
 //!
 //! This is the only crate that talks to the network, and it only does so when a command asks it to
 //! (the shell refuses every request while AI Mode is off). One request is an instruction, some
@@ -8,6 +9,7 @@
 pub mod adapters;
 pub mod error;
 pub mod estimate;
+pub mod fill;
 pub mod gate;
 pub mod keystore;
 pub mod model_cache;

@@ -48,6 +48,8 @@ const fake = vi.hoisted(() => ({
   /** Readmes written: project path -> text. */
   readmes: new Map<string, string>(),
   informed: [] as string[],
+  /** Save As copying the AI fills: from, to and the file names. */
+  copiedFills: [] as { from: string; to: string; names: string[] }[],
 }));
 
 vi.mock("@tauri-apps/api/app", () => ({ getVersion: vi.fn(async () => "1.3.0") }));
@@ -109,6 +111,11 @@ vi.mock("./project-api", () => ({
     return project.replace(/\.gtr$/, "-Gutterberg-readme.txt");
   }),
   inform: vi.fn(async (message: string) => void fake.informed.push(message)),
+  copyProjectFills: vi.fn(async (from: string, to: string, names: string[]) => {
+    fake.copiedFills.push({ from, to, names });
+    return names.length;
+  }),
+  missingFills: vi.fn(async (_project: string, names: string[]) => names.filter((n) => n.startsWith("gone"))),
   pickProjectToOpen: vi.fn(async () => fake.pickedProject.shift() ?? null),
   pickProjectToSave: vi.fn(async () => fake.saveAs.shift() ?? null),
   notify: vi.fn(async () => {}),
@@ -138,6 +145,7 @@ const modified = () => currentSignature() !== project().signature;
 beforeEach(async () => {
   fake.pdfs.clear();
   fake.projects.clear();
+  fake.copiedFills.length = 0;
   fake.readmes.clear();
   fake.informed.length = 0;
   for (const list of [
@@ -311,6 +319,30 @@ describe("saving and opening", () => {
     expect(await saveProjectAs()).toBe(true);
     expect(project().path).toBe("/projects/two.gtr");
     expect(usePreferencesStore.getState().prefs.files.recent).toEqual(["/projects/two.gtr", "/projects/one.gtr"]);
+  });
+
+  it("takes the AI fills along on Save As, and says when a fill's picture is gone on open", async () => {
+    fake.pickedPdf.push("/games/a.pdf");
+    await openPdfDialog();
+    usePrintStore.getState().setBleed({
+      mm: 3,
+      source: "ai",
+      aiFills: {
+        "g:0:0:0:0": { file: "g-0-0-0-0-aa.png", inset: 30 },
+        "g:0:0:0:1": { file: "gone-bb.png", inset: 30 },
+      },
+    });
+    fake.saveAs.push("/projects/one.gtr");
+    expect(await saveProject()).toBe(true);
+    expect(fake.copiedFills).toEqual([]);
+    fake.saveAs.push("/projects/two.gtr");
+    expect(await saveProjectAs()).toBe(true);
+    expect(fake.copiedFills).toEqual([
+      { from: "/projects/one.gtr", to: "/projects/two.gtr", names: ["g-0-0-0-0-aa.png", "gone-bb.png"] },
+    ]);
+    await openProjectDialog("/projects/two.gtr");
+    expect(noticeKeys()).toEqual(["fillsMissing"]);
+    expect(usePrintStore.getState().finish.bleed.aiFills["g:0:0:0:0"]).toEqual({ file: "g-0-0-0-0-aa.png", inset: 30 });
   });
 
   it("saves nothing while no PDF is open", async () => {

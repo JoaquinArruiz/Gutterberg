@@ -21,15 +21,7 @@ export function ProjectNotices() {
           className={`flex items-start gap-2 border-b border-[var(--border)] px-3 py-1.5 ${n.tone === "error" ? "bg-red-500/15 text-red-300" : "bg-amber-400/15 text-amber-200"}`}
         >
           <span className="min-w-0 flex-1">
-            {n.error
-              ? formatError(n.error)
-              : n.key === "pdfChanged"
-                ? t("project.notices.pdfChanged", n.values)
-                : n.key === "imageChanged"
-                  ? t("project.notices.imageChanged", n.values)
-                  : n.key === "imagesMissing"
-                    ? t("project.notices.imagesMissing", n.values)
-                    : t("project.notices.layoutReset", n.values)}
+            {n.error ? formatError(n.error) : t(`project.notices.${n.key ?? "layoutReset"}`, n.values)}
           </span>
           <button
             type="button"

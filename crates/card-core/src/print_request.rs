@@ -17,8 +17,8 @@ use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use crate::finish::{
     parse_color, BackLayout, BackPair, BackgroundOptions, BleedOptions, BleedSource, DuplexOptions,
-    EdgeColor, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, MAX_BLEED_MM,
-    MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
+    EdgeColor, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, PieceFill,
+    MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
 use crate::layout::GridLayout;
@@ -57,6 +57,10 @@ pub struct PrintProject {
     pub output: OutputSettings,
     pub edits: PieceEdits,
     pub plan: PrintPlan,
+    /// Where the pictures of Fill with AI are (`fill::fills_dir` of the project's file); not in the file
+    /// itself, which can move. None: the project has no file, so it has no pictures.
+    #[serde(default)]
+    pub fills_dir: Option<String>,
 }
 
 /// What a document is made of.
@@ -252,6 +256,17 @@ pub struct FinishBleed {
     pub source: BleedSource,
     /// The `Edge` bleed's colour of each piece (by key), `#rrggbb`, as the app found it.
     pub edge_colors: BTreeMap<String, String>,
+    /// The `Ai` bleed's picture of each piece (by key), in the project's fills folder.
+    pub ai_fills: BTreeMap<String, AiFill>,
+}
+
+/// A picture of Fill with AI, as the project lists it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AiFill {
+    /// The file's name in the fills folder.
+    pub file: String,
+    /// The band's width in the picture, in pixels.
+    pub inset: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -683,7 +698,12 @@ fn sheet_page(o: &OutputSettings) -> SheetPage {
 /// The finishing for a request. `known` are the keys of the pieces that exist: a back that names a piece that is
 /// gone is left out rather than failing the plan. A back turned in the library is turned that much more on the
 /// sheet, so it faces like its front.
-fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Finishing {
+fn finishing(
+    finish: &Finish,
+    edits: &PieceEdits,
+    known: &HashSet<String>,
+    fills_dir: Option<&str>,
+) -> Finishing {
     let m = &finish.marks;
     let d = &finish.duplex;
     let is_color = |c: &str| {
@@ -722,8 +742,35 @@ fn finishing(finish: &Finish, edits: &PieceEdits, known: &HashSet<String>) -> Fi
             })
         })
         .collect();
+    // Only a plain name inside the fills folder, and only a file that is there: a missing picture is mirrored.
+    let image_fills = fills_dir
+        .map(|dir| {
+            finish
+                .bleed
+                .ai_fills
+                .iter()
+                .filter(|(k, _)| known.contains(*k))
+                .filter_map(|(k, f)| {
+                    let name = Path::new(&f.file).file_name()?;
+                    if name.to_string_lossy() != f.file {
+                        return None;
+                    }
+                    let path = Path::new(dir).join(name);
+                    if !path.is_file() {
+                        return None;
+                    }
+                    Some(PieceFill {
+                        card: parse_piece_key(k)?,
+                        path: path.to_string_lossy().into_owned(),
+                        inset: f.inset,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
     Finishing {
         edge_colors,
+        image_fills,
         options: FinishOptions {
             marks: MarkOptions {
                 style: m.style,
@@ -883,7 +930,7 @@ pub fn print_request(
             auto_fill: p.plan.auto_fill,
             fold: None,
         },
-        finishing: finishing(&p.plan.finish, &p.edits, &known),
+        finishing: finishing(&p.plan.finish, &p.edits, &known, p.fills_dir.as_deref()),
         ..request
     })
 }
@@ -1145,7 +1192,7 @@ mod tests {
         ]
         .map(|(k, c)| (k.to_string(), c.to_string()))
         .into();
-        let colors = finishing(&f, &PieceEdits::default(), &known()).edge_colors;
+        let colors = finishing(&f, &PieceEdits::default(), &known(), None).edge_colors;
         assert_eq!(colors.len(), 1);
         assert_eq!(colors[0].card, parse_piece_key("g:0:0:0:0").unwrap());
         assert_eq!(colors[0].color, [255, 0, 0]);
@@ -1158,7 +1205,7 @@ mod tests {
             sheet: Some("#00FF00".into()),
             pieces: Some("green".into()),
         };
-        let options = finishing(&f, &PieceEdits::default(), &known()).options;
+        let options = finishing(&f, &PieceEdits::default(), &known(), None).options;
         assert_eq!(options.background.sheet.as_deref(), Some("#00ff00"));
         assert_eq!(options.background.pieces, None);
     }
@@ -1180,7 +1227,7 @@ mod tests {
             backs: [("g:0:0:0:0".into(), "g:0:0:0:1".into())].into(),
             ..PieceEdits::default()
         };
-        let f = finishing(&finish(), &edits, &known());
+        let f = finishing(&finish(), &edits, &known(), None);
         assert_eq!(f.options.marks.color, "#ff0000");
         assert_eq!(f.options.marks.line, MarkLine::Dashed);
         assert!(f.options.marks.on_backs);
@@ -1209,7 +1256,7 @@ mod tests {
             .into(),
             ..PieceEdits::default()
         };
-        let f = finishing(&gone, &edits, &known());
+        let f = finishing(&gone, &edits, &known(), None);
         assert!(f.backs.is_empty());
         assert_eq!(f.options.duplex.common_back, None);
     }

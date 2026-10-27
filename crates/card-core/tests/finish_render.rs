@@ -4,6 +4,7 @@ use card_core::card::{CardId, PageGroup, PageGroupKind, PageRange};
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
     finish_sheets, BleedOptions, BleedSource, DuplexOptions, FinishOptions, Finishing, Flip,
+    PieceFill,
 };
 use card_core::render::{bind_pdfium, render_page_png};
 use card_core::sample::{sample_grid, sample_pdf};
@@ -85,6 +86,7 @@ fn the_bleed_is_the_edge_of_the_piece_mirrored_and_the_back_sits_in_the_mirrored
         },
         backs: Vec::new(),
         edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (out, issues) = finish_sheets(sheets, &docs, &finishing).unwrap();
     assert!(issues.is_empty());
@@ -146,4 +148,104 @@ fn the_bleed_is_the_edge_of_the_piece_mirrored_and_the_back_sits_in_the_mirrored
     let want = src_at(2.0, 2.0, inset, inset);
     let got = at(&back, b.x + inset, b.y + inset);
     assert!(near(got, want), "back {got:?} is not {want:?}");
+}
+
+#[test]
+fn an_ai_fill_paints_the_bleed_band_and_the_piece_stays_on_top() {
+    let Ok(pdfium) = bind_pdfium(&[]) else {
+        assert!(
+            std::env::var_os("CI").is_none(),
+            "pdfium not available in CI"
+        );
+        eprintln!("SKIPPED pdfium render: pdfium not available (set PDFIUM_LIB_PATH)");
+        return;
+    };
+    let dir = std::env::temp_dir().join(format!("card-core-ai-fill-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let page = page_size(&sample_pdf(), 0).unwrap();
+    let docs = [DocumentSource {
+        document_id: 0,
+        pages: vec![page],
+        groups: vec![PageGroup {
+            pages: PageRange { first: 0, last: 0 },
+            kind: PageGroupKind::grid(sample_grid(0.0)),
+        }],
+    }];
+    let spec = SheetSpec {
+        page: SheetPage::SameAsSource,
+        rows: Some(2),
+        columns: Some(2),
+        gap_x_mm: 8.0,
+        gap_y_mm: 8.0,
+        margins: Margins::default(),
+    };
+    let sheets = plan_print_in(
+        &docs,
+        &[],
+        &PrintLayout::Grid { spec },
+        &PaginateOptions::default(),
+    )
+    .unwrap();
+    // A blue band 30 px wide round a 635 x 880 px piece (63.5 x 88 mm): the band is 3 mm, the bleed.
+    let (inset, w, h) = (30u32, 635u32, 880u32);
+    let band = image::RgbaImage::from_fn(w + 2 * inset, h + 2 * inset, |x, y| {
+        let inside = (inset..w + inset).contains(&x) && (inset..h + inset).contains(&y);
+        image::Rgba(if inside {
+            [0, 0, 0, 0]
+        } else {
+            [0, 0, 220, 255]
+        })
+    });
+    let fill = dir.join("fill.png");
+    band.save(&fill).unwrap();
+    let first_card = sheets[0].placements[0].card_id;
+    let finishing = Finishing {
+        options: FinishOptions {
+            bleed: BleedOptions {
+                mm: 3.0,
+                source: BleedSource::Ai,
+            },
+            ..FinishOptions::default()
+        },
+        backs: Vec::new(),
+        edge_colors: Vec::new(),
+        image_fills: vec![PieceFill {
+            card: first_card,
+            path: fill.to_string_lossy().into_owned(),
+            inset,
+        }],
+    };
+    let (out, issues) = finish_sheets(sheets, &docs, &finishing).unwrap();
+    assert!(issues.is_empty());
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let out_path = dir.join("out.pdf");
+    pdf.clone().save(&out_path).unwrap();
+
+    let width_px = page.width_pt.round() as u32 * 2;
+    let png = render_page_png(&pdfium, &out_path, 0, width_px).unwrap();
+    let front = image::load_from_memory(&png).unwrap().to_rgba8();
+    let scale = front.width() as f64 / page.width_pt;
+    let at = |x: f64, y: f64| rgb_at(&front, x * scale, y * scale);
+    let (d, inset_pt) = (mm_to_pt(1.5), mm_to_pt(8.0));
+    let first = out[0].placements[0].destination;
+    let second = out[0].placements[1].destination;
+
+    // The first piece's bleed is the picture's band; its own art is on top of it.
+    let blue = [0, 0, 220];
+    assert!(near(at(first.x - d, first.y + inset_pt), blue));
+    assert!(near(
+        at(first.x + first.width + d, first.y + first.height / 2.0),
+        blue
+    ));
+    assert!(near(at(first.x - d, first.y - d), blue));
+    assert!(!near(at(first.x + d, first.y + inset_pt), blue));
+    // Past the bleed it is white again, and the second piece, without a picture, is mirrored.
+    assert!(near(
+        at(first.x - mm_to_pt(4.0), first.y + inset_pt),
+        [255, 255, 255]
+    ));
+    assert!(!near(
+        at(second.x + second.width + d, second.y + inset_pt),
+        blue
+    ));
 }

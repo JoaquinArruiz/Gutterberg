@@ -511,12 +511,14 @@
       "sources": {
         "mirror": "Reflejar el borde",
         "source": "La separación de origen",
-        "edge": "Color del borde"
+        "edge": "Color del borde",
+        "ai": "Rellenar con IA"
       },
       "mirrorNote": "La franja del borde de cada pieza se dibuja otra vez, volteada sobre el borde. Sigue siendo vectorial.",
       "sourceNote": "Usa lo que el PDF de origen tiene entre las piezas. Necesita al menos ese espacio entre ellas allí.",
       "edgeNote": "El sangrado de cada pieza se rellena con el color más común a lo largo de su borde, calculado en esta computadora. Es un relleno vectorial liso, bueno para bordes de un solo color; una pieza cuyo borde aún no tiene color se refleja.",
-      "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes."
+      "note": "Las piezas conservan su tamaño: el sangrado es arte extra alrededor de cada una. Deja espacio para él en la separación de salida y en los márgenes.",
+      "aiNote": "Un modelo de imágenes pinta el sangrado de cada pieza a partir de una imagen de ella, continuando su arte más allá del borde. Solo se conserva la franja fuera de la pieza, y la pieza en sí se sigue imprimiendo desde el original, en vectorial. Las imágenes se guardan en una carpeta junto al archivo del proyecto. Una pieza sin imagen se refleja."
     },
     "background": {
       "sheet": "Colorear la hoja",
@@ -647,6 +649,38 @@
       "bleed_off_page": "El sangrado pasa del borde de la página: deja márgenes más grandes.",
       "back_size_differs": "Un dorso no tiene el mismo tamaño que su frente, así que los cortes no coincidirán.",
       "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado."
+    },
+    "aiFill": {
+      "title": "Rellenar con IA",
+      "open": "Rellenar con IA…",
+      "openSelected_one": "Rellenar con IA {{count}} pieza seleccionada…",
+      "openSelected_other": "Rellenar con IA {{count}} piezas seleccionadas…",
+      "count": "{{count}} de {{total}} piezas tienen relleno con IA; las demás se reflejan.",
+      "text": "Cada pieza se envía como imagen con un marco magenta donde va el sangrado, y el modelo de imágenes pinta el marco. Ves cada resultado antes de que se conserve nada.",
+      "what_one": "Se enviará {{count}} pieza a {{host}} como imagen de unos {{size}} px, para el modelo de imágenes {{model}}: una solicitud de imagen paga.",
+      "what_other": "Se enviarán {{count}} piezas a {{host}} como imágenes de unos {{size}} px, para el modelo de imágenes {{model}}: {{count}} solicitudes de imagen pagas, una por pieza.",
+      "blocked": {
+        "needsBleed": "Primero define un sangrado.",
+        "saveFirst": "Primero guarda el proyecto: las imágenes se guardan en una carpeta junto al archivo del proyecto.",
+        "needsImages": "Rellenar con IA envía imágenes de las piezas. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+        "noProvider": "{{provider}} no puede dibujar imágenes. Elige Gemini o un servidor compatible con OpenAI en Preferencias › Modo IA.",
+        "noModel": "Elige un modelo de imágenes en Preferencias › Modo IA.",
+        "noPieces": "No hay piezas para rellenar.",
+        "tooMany": "Selecciona como máximo {{max}} piezas en la biblioteca (ahora hay {{count}}): cada una es una solicitud paga."
+      },
+      "send_one": "Enviar {{count}} pieza",
+      "send_other": "Enviar {{count}} piezas",
+      "running": "Pintando la pieza {{done}} de {{count}}…",
+      "stop": "Detener",
+      "stopped": "Se detuvo: {{error}}",
+      "review": "Marca los rellenos que quieres conservar. La pieza de la derecha está dibujada sobre su nuevo sangrado, como se imprimirá.",
+      "piece": "Pieza {{n}}",
+      "before": "Tal como se envió",
+      "after": "Con el relleno con IA",
+      "pieceFailed": "Pieza {{n}}: {{error}}",
+      "discard": "Descartar",
+      "apply_one": "Usar {{count}} relleno",
+      "apply_other": "Usar {{count}} rellenos"
     }
   },
   "sheets": {
@@ -1205,7 +1239,11 @@
     "image_unsupported": "«{{name}}» no se puede usar. Las imágenes pueden ser PNG, JPEG o WebP.",
     "image_too_large": "«{{name}}» es demasiado grande ({{megapixels}} megapíxeles, {{mb}} MB). Los límites son 100 megapíxeles y 200 MB.",
     "image_unreadable": "No se puede leer «{{name}}»: {{detail}}",
-    "pdf_locked": "El editor de este PDF no permite cambios. Contáctalo para pedir una versión de impresión y juego sin bloqueo."
+    "pdf_locked": "El editor de este PDF no permite cambios. Contáctalo para pedir una versión de impresión y juego sin bloqueo.",
+    "ai_fill_needs_images": "Rellenar con IA envía imágenes de las piezas. Activa «Enviar imágenes de las páginas» en Preferencias › Modo IA.",
+    "ai_no_image_output": "Este proveedor no puede dibujar imágenes. Usa Gemini o un servidor compatible con OpenAI para Rellenar con IA.",
+    "fill_reply": "La imagen que llegó no se puede usar ({{detail}}).",
+    "fill_tilted": "Esta pieza está inclinada en su página; Rellenar con IA solo funciona con piezas rectas."
   },
   "numberField": {
     "decrease": "Disminuir {{label}}",
@@ -1259,8 +1297,10 @@
         "step3": "Abre {{project}} en Gutterberg (Archivo › Abrir proyecto…).",
         "step4": "Ve a la pestaña Imprimir, revisa las hojas y haz clic en Exportar PDF para guardar un PDF listo para imprimir.",
         "change": "Puedes cambiar lo que quieras antes de exportar: copias, tamaño del papel, separaciones, marcas de corte, sangrado y dorsos.",
-        "madeWith": "Hecho con Gutterberg {{version}}."
-      }
+        "madeWith": "Hecho con Gutterberg {{version}}.",
+        "fills": "la carpeta {{folder}} (las imágenes del sangrado con IA)"
+      },
+      "fills": "El sangrado usa imágenes de Rellenar con IA: comparte también la carpeta «{{folder}}», junto al archivo del proyecto."
     },
     "recovery": {
       "message": "Gutterberg se cerró con cambios sin guardar en “{{name}}”. ¿Recuperarlos?",
@@ -1289,7 +1329,9 @@
       "pdfChanged": "«{{name}}» cambió desde que se guardó el proyecto. Comprueba que las piezas sigan donde las marcaste.",
       "layoutReset": "«{{name}}» tiene un número de páginas distinto al de cuando se guardó el proyecto, así que se restablecieron sus grupos de páginas y sus piezas.",
       "imageChanged": "«{{name}}» cambió desde que se guardó el proyecto. Su página ahora muestra la imagen nueva.",
-      "imagesMissing": "No se encontraron algunas imágenes de «{{name}}». Sus páginas quedan en blanco hasta que vuelvas a agregarlas."
+      "imagesMissing": "No se encontraron algunas imágenes de «{{name}}». Sus páginas quedan en blanco hasta que vuelvas a agregarlas.",
+      "fillsMissing_one": "No se encontró {{count}} imagen de relleno con IA junto al proyecto. Su pieza tiene un sangrado reflejado hasta que la vuelvas a rellenar.",
+      "fillsMissing_other": "No se encontraron {{count}} imágenes de relleno con IA junto al proyecto. Sus piezas tienen un sangrado reflejado hasta que las vuelvas a rellenar."
     }
   },
   "detect": {
@@ -1397,7 +1439,8 @@
       "testOk": "Conectado. Se usaron {{input}} tokens de entrada y {{output}} de salida.",
       "workspace": "ID del espacio de trabajo (opcional)",
       "workspaceNote": "Solo para una clave de API que no está limitada a un espacio de trabajo: el ID del espacio que se usará, enviado en el encabezado anthropic-workspace-id. Déjalo vacío en otro caso.",
-      "testSends": "Envía un mensaje de prueba corto a {{provider}}"
+      "testSends": "Envía un mensaje de prueba corto a {{provider}}",
+      "imageModel": "Modelo de imágenes"
     },
     "confirm": {
       "title": "¿Enviar a {{provider}}?",
@@ -1445,6 +1488,12 @@
       "text": "El Modo IA todavía necesita más pruebas y puede no funcionar como se espera. Puede consumir muchos tokens: cada acción envía páginas a tu proveedor, y los tokens tienen un costo. Úsalo bajo tu propia responsabilidad.",
       "ok": "Aceptar",
       "cancel": "Cancelar"
+    },
+    "imageModelHint": {
+      "anthropic": "Claude no dibuja imágenes, así que Rellenar con IA no está disponible con él.",
+      "openai_compatible": "Para Rellenar con IA: un modelo que edite imágenes con una máscara, p. ej. gpt-image-1 en https://api.openai.com/v1.",
+      "gemini": "Para Rellenar con IA: un modelo de Gemini que dibuje imágenes, p. ej. gemini-2.5-flash-image.",
+      "ollama": "Ollama no dibuja imágenes, así que Rellenar con IA no está disponible con él."
     }
   },
   "shortcuts": {

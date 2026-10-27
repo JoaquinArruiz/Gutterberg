@@ -23,6 +23,7 @@ import type { DocumentId } from "./card";
 import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
 import { defaultGroups } from "./document-layout";
 import { formatError, toAppError } from "./errors";
+import { fillFiles } from "./finish";
 import { emitHintEvent } from "./hint-events";
 import {
   buildImagesDocument,
@@ -36,7 +37,7 @@ import {
   probeImages,
 } from "./images";
 import { usualPaper } from "./paper";
-import { DEFAULT_PLAN, type PrintPlan } from "./print-request";
+import { DEFAULT_PLAN, fillsDir, type PrintPlan } from "./print-request";
 import {
   fromProject,
   groupsCoverPages,
@@ -50,10 +51,12 @@ import {
 import {
   askSave,
   confirm,
+  copyProjectFills,
   fileExists,
   findBeside,
   hashFile,
   inform,
+  missingFills,
   notify,
   pickProjectToOpen,
   pickProjectToSave,
@@ -596,6 +599,12 @@ async function load(project: ProjectState, file: string | null, signature: strin
 
   applyLoaded(opened, { activeId: project.activeId, layouts, viewed, output: project.output, edits, plan });
   useProjectStore.getState().setSaved(file, signature);
+  const fills = fillFiles(plan.finish);
+  if (file && fills.length > 0 && plan.finish.bleed.source === "ai") {
+    // A fill whose picture is gone gets a mirrored bleed; say so rather than let it change quietly.
+    const gone = await missingFills(file, fills).catch(() => []);
+    if (gone.length > 0) useProjectStore.getState().addNotice("fillsMissing", { count: gone.length });
+  }
   if (file) usePreferencesStore.getState().addRecentProject(file);
   emitHintEvent("pdf-opened");
 }
@@ -609,6 +618,7 @@ function suggestedName(): string {
 async function saveTo(path: string): Promise<boolean> {
   const state = currentProjectState();
   if (!state) return false;
+  const before = useProjectStore.getState().path;
   try {
     await writeProjectFile(path, toProject(state));
   } catch (e) {
@@ -616,6 +626,15 @@ async function saveTo(path: string): Promise<boolean> {
     return false;
   }
   useProjectStore.getState().setSaved(path, projectSignature(state));
+  // Save As: the AI fills go with the project, into the folder beside its new file.
+  const fills = fillFiles(state.plan.finish);
+  if (before && before !== path && fills.length > 0) {
+    try {
+      await copyProjectFills(before, path, fills);
+    } catch (e) {
+      useProjectStore.getState().addError(toAppError(e));
+    }
+  }
   usePreferencesStore.getState().addRecentProject(path);
   return true;
 }
@@ -644,12 +663,14 @@ export async function saveForSharing(): Promise<boolean> {
   if (!path || !state) return false;
   const files = projectFiles(state.documents);
   try {
-    const readme = await writeProjectReadme(path, readmeText(path, files, await getVersion()));
+    const fills = fillFiles(state.plan.finish).length > 0;
+    const readme = await writeProjectReadme(path, readmeText(path, files, await getVersion(), fills));
     const elsewhere = filesElsewhere(path, files);
     await inform(
       [
         t("project.share.done", { readme: fileName(readme) }),
         elsewhere.length > 0 ? t("project.share.elsewhere", { files: elsewhere.join(", ") }) : "",
+        fills ? t("project.share.fills", { folder: fileName(fillsDir(path) ?? "") }) : "",
       ]
         .filter(Boolean)
         .join("\n\n"),

@@ -38,6 +38,12 @@ pub enum AiError {
     /// Pair backs with AI looks at the pieces, so it cannot run text only.
     #[error("pairing backs needs pictures of the pieces; turn on sending page images")]
     PairingNeedsImages,
+    /// Fill with AI sends pictures of the pieces, so it cannot run text only.
+    #[error("filling the bleed needs pictures of the pieces; turn on sending page images")]
+    FillNeedsImages,
+    /// The provider has no model that returns a picture.
+    #[error("this provider cannot return pictures; use Gemini or an OpenAI-compatible server")]
+    NoImageOutput,
     /// More pieces than one request can show.
     #[error("{count} pieces: at most {max} can be paired at once")]
     TooManyPieces { count: usize, max: usize },
@@ -61,6 +67,8 @@ impl AiError {
             AiError::TextOnlyNeedsObjects => "ai_text_only_needs_objects",
             AiError::PairingNeedsImages => "ai_pairing_needs_images",
             AiError::TooManyPieces { .. } => "ai_too_many_pieces",
+            AiError::FillNeedsImages => "ai_fill_needs_images",
+            AiError::NoImageOutput => "ai_no_image_output",
             AiError::Config(_) => "ai_config",
         }
     }
@@ -94,7 +102,9 @@ impl From<&AiError> for ErrorInfo {
             | AiError::NoKey
             | AiError::Timeout
             | AiError::TextOnlyNeedsObjects
-            | AiError::PairingNeedsImages => {}
+            | AiError::PairingNeedsImages
+            | AiError::FillNeedsImages
+            | AiError::NoImageOutput => {}
         }
         info
     }

@@ -44,6 +44,18 @@ export const findBeside = (
 export const writeProjectReadme = (project: string, text: string): Promise<string> =>
   invoke<string>("write_project_readme", { project, text });
 
+/** Writes the Fill with AI pictures beside the project at `project`; their file names, in order. */
+export const saveFills = (project: string, fills: { key: string; png: string; hash: string }[]): Promise<string[]> =>
+  invoke<string[]>("save_fills", { project, fills });
+
+/** Copies the fills `names` of the project at `from` beside the project at `to` (Save As). */
+export const copyProjectFills = (from: string, to: string, names: string[]): Promise<number> =>
+  invoke<number>("copy_project_fills", { from, to, names });
+
+/** Of the fills `names` of the project at `project`, the ones whose file is not there. */
+export const missingFills = (project: string, names: string[]): Promise<string[]> =>
+  invoke<string[]>("missing_fills", { project, names });
+
 export async function pickProjectToOpen(): Promise<string | null> {
   const picked = await open({ multiple: false, filters: filters() });
   return typeof picked === "string" ? picked : null;

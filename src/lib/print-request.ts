@@ -94,7 +94,17 @@ export const outputSettings = (s: OutputSettings): OutputSettings => ({
 export type PrintDocument = { id: DocumentId; kind: "pdf" | "images"; groups: PageGroup[]; freeform: FreeformCards };
 
 /** The parts of the project the request is built from (`card_core::print_request::PrintProject`): what is saved. */
-export type PrintProject = { documents: PrintDocument[]; output: OutputSettings; edits: CardEdits; plan: PrintPlan };
+export type PrintProject = {
+  documents: PrintDocument[];
+  output: OutputSettings;
+  edits: CardEdits;
+  plan: PrintPlan;
+  /** The project's fills folder (Fill with AI), from where it is saved; null while it is not. */
+  fillsDir: string | null;
+};
+
+/** The folder beside a project file that holds its Fill with AI pictures (`card_core::fill::fills_dir`). */
+export const fillsDir = (projectPath: string | null): string | null => (projectPath ? `${projectPath}-fills` : null);
 
 export const printDocuments = (documents: LayoutDocument[]): PrintDocument[] =>
   documents.map((d) => ({ id: d.id, kind: d.images ? "images" : "pdf", groups: d.groups, freeform: d.freeform }));
@@ -105,8 +115,15 @@ export function printProject(
   documents: LayoutDocument[],
   output: OutputSettings,
   edits: CardEdits,
+  projectPath: string | null = null,
 ): PrintProject {
-  return { documents: printDocuments(documents), output: outputSettings(output), edits, plan };
+  return {
+    documents: printDocuments(documents),
+    output: outputSettings(output),
+    edits,
+    plan,
+    fillsDir: fillsDir(projectPath),
+  };
 }
 
 /** How many copies the plan asks for (not counting auto-fill), for the summary line. */

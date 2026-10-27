@@ -139,7 +139,7 @@ fn v6_to_v7(body: &mut Body) {
 }
 
 /// Version 8 adds the Edge bleed (`"source": "edge"`, with the colour of each piece's edge in
-/// `edgeColors`). A version 7 project means the same in version 8, so nothing changes; the new
+/// `edgeColors`) and Fill with AI (`"source": "ai"`, with each piece's picture in `aiFills`). A version 7 project means the same in version 8, so nothing changes; the new
 /// number makes an older Gutterberg say "made with a newer version" instead of calling the
 /// project damaged when it meets a bleed it does not know.
 fn v7_to_v8(_body: &mut Body) {}

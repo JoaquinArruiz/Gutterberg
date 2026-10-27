@@ -799,6 +799,44 @@ fn edge_fill_ops(color: [u8; 3], p: &SheetPlacement, sheet: &OutputSheet) -> Str
     )
 }
 
+/// The operators that lay a picture of Fill with AI (`name`, `size` pixels, its piece `inset` pixels in from
+/// every side) on a placement: the piece's area of the picture on the piece, turned with it, the rest
+/// reaching out over the bleed and cut off where the bleed ends.
+fn image_fill_ops(
+    name: &str,
+    size: (u32, u32),
+    inset: u32,
+    p: &SheetPlacement,
+    sheet: &OutputSheet,
+) -> String {
+    let bleed = mm_to_pt(sheet.bleed.mm);
+    let d = p.destination;
+    let page_h = sheet.page.height_pt;
+    let quarter = p.turn.swaps_axes();
+    // The piece's size before its turn, and the picture's size in points at that scale.
+    let (pw, ph) = if quarter {
+        (d.height, d.width)
+    } else {
+        (d.width, d.height)
+    };
+    let inner = |px: u32| f64::from(px.saturating_sub(2 * inset).max(1));
+    let iw = f64::from(size.0) * pw / inner(size.0);
+    let ih = f64::from(size.1) * ph / inner(size.1);
+    let angle = -p.turn.degrees().to_radians();
+    let (sin, cos) = angle.sin_cos();
+    let (a, b, c, dd) = (cos * iw, sin * iw, -sin * ih, cos * ih);
+    let (cx, cy) = (d.x + d.width / 2.0, page_h - (d.y + d.height / 2.0));
+    let (e, f) = (cx - (a + c) / 2.0, cy - (b + dd) / 2.0);
+    format!(
+        "q\n{} {} {} {} re W n\n{} cm\n/{name} Do\nQ\n",
+        fmt(d.x - bleed),
+        fmt(page_h - (d.y + d.height + bleed)),
+        fmt(d.width + 2.0 * bleed),
+        fmt(d.height + 2.0 * bleed),
+        [a, b, c, dd, e, f].map(fmt).join(" "),
+    )
+}
+
 /// The operators that stroke the cut marks of a sheet `out_height` points tall.
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
@@ -880,6 +918,8 @@ fn export_sheets_into(
     let mut forms: HashMap<(DocumentId, usize), (ObjectId, PageFrame)> = HashMap::new();
     // A card (the same page and clip) printed several times draws through one card form.
     let mut card_forms: HashMap<(DocumentId, usize, String), ObjectId> = HashMap::new();
+    // A picture of Fill with AI is embedded once, however many times its piece is printed.
+    let mut fill_images: HashMap<String, (ObjectId, u32, u32)> = HashMap::new();
 
     for sheet in sheets {
         let out = sheet.page;
@@ -939,6 +979,20 @@ fn export_sheets_into(
                 match sheet.edge_fills.iter().find(|f| f.placement == i) {
                     Some(fill) => ops.push_str(&edge_fill_ops(fill.color, p, sheet)),
                     None => ops.push_str(&bleed_ops(name, p, sheet, frame.display_box())),
+                }
+                // A picture of Fill with AI goes over the mirrored bleed, which shows wherever it falls short.
+                if let Some(fill) = sheet.image_fills.iter().find(|f| f.placement == i) {
+                    let (id, w, h) = match fill_images.get(&fill.path) {
+                        Some(v) => *v,
+                        None => {
+                            let v = crate::images::fill_xobject(doc, Path::new(&fill.path))?;
+                            fill_images.insert(fill.path.clone(), v);
+                            v
+                        }
+                    };
+                    let image = format!("F{}_{}", id.0, id.1);
+                    xobjects.set(image.as_bytes().to_vec(), id);
+                    ops.push_str(&image_fill_ops(&image, (w, h), fill.inset, p, sheet));
                 }
             }
         }

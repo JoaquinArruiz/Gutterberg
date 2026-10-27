@@ -24,6 +24,7 @@ import {
   type SheetWarning,
 } from "../../lib/finish";
 import { useLibraryCards } from "../../lib/use-library-cards";
+import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
@@ -35,6 +36,7 @@ import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { CalibrationDialog } from "./CalibrationDialog";
 import { CardThumb } from "./CardThumb";
+import { FillWithAiDialog } from "./FillWithAiDialog";
 import { PairBacksDialog } from "./PairBacksDialog";
 
 /** The warnings of every sheet, once each: what the plan as a whole needs the user to look at. */
@@ -160,6 +162,15 @@ export function BleedSection() {
   const { t } = useTranslation();
   const bleed = usePrintStore((s) => s.finish.bleed);
   const setBleed = usePrintStore((s) => s.setBleed);
+  const aiEnabled = usePreferencesStore((s) => s.prefs.ai.enabled);
+  const selected = usePrintStore(useShallow((s) => s.selection.selected));
+  const cards = useLibraryCards();
+  const [filling, setFilling] = useState(false);
+  // Fill with AI is offered with AI Mode on; a project that already uses it keeps showing it.
+  const sources = BLEED_SOURCES.filter((s) => s !== "ai" || aiEnabled || bleed.source === "ai");
+  // The pieces picked in the library, or every piece.
+  const toFill = selected.length > 0 ? cards.filter((c) => selected.includes(cardIdKey(c.id))) : cards;
+  const filled = cards.filter((c) => cardIdKey(c.id) in bleed.aiFills).length;
   return (
     <CollapsibleSection
       id="print.bleed"
@@ -182,9 +193,26 @@ export function BleedSection() {
             label={t("print.bleed.source")}
             value={bleed.source}
             onChange={(source) => setBleed({ source })}
-            options={BLEED_SOURCES.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
+            options={sources.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
           />
         </FieldRow>
+      )}
+      {bleed.mm > 0 && bleed.source === "ai" && (
+        <>
+          <p className="text-[var(--muted)]" data-testid="ai-fill-count">
+            {t("print.aiFill.count", { count: filled, total: cards.length })}
+          </p>
+          {aiEnabled && (
+            <FieldRow label={null}>
+              <Button variant="ai" onClick={() => setFilling(true)}>
+                {selected.length > 0
+                  ? t("print.aiFill.openSelected", { count: toFill.length })
+                  : t("print.aiFill.open")}
+              </Button>
+            </FieldRow>
+          )}
+          <FillWithAiDialog open={filling} cards={toFill} onClose={() => setFilling(false)} />
+        </>
       )}
       <WarningList codes={["bleed_overlaps_neighbour", "bleed_off_page", "bleed_exceeds_source_gap"]} />
     </CollapsibleSection>

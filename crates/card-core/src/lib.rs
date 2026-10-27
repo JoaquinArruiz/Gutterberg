@@ -11,6 +11,7 @@ pub mod detect;
 pub mod edge;
 pub mod error;
 pub mod export;
+pub mod fill;
 pub mod finish;
 pub mod geometry;
 pub mod images;

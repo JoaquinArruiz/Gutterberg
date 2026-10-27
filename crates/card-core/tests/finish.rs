@@ -5,7 +5,7 @@ use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
     bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BackgroundOptions,
     BleedOptions, BleedSource, DuplexOptions, EdgeColor, FinishOptions, Finishing, Flip, MarkLine,
-    MarkOptions, MarkStyle, SheetWarning, Side,
+    MarkOptions, MarkStyle, PieceFill, SheetWarning, Side,
 };
 use card_core::geometry::{PageSize, Point};
 use card_core::layout::GridLayout;
@@ -67,6 +67,7 @@ fn finishing(options: FinishOptions) -> Finishing {
         options,
         backs: Vec::new(),
         edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     }
 }
 
@@ -522,6 +523,56 @@ fn the_edge_bleed_fills_each_piece_with_its_colour_and_mirrors_one_without() {
 }
 
 #[test]
+fn an_ai_fill_is_laid_over_the_mirrored_bleed_and_under_its_piece_as_a_picture() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let dir = std::env::temp_dir().join(format!("card-core-ai-fill-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("fill.png");
+    image::RgbaImage::from_pixel(70, 90, image::Rgba([0, 0, 200, 255]))
+        .save(&file)
+        .unwrap();
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Ai,
+        },
+        ..FinishOptions::default()
+    };
+    let f = Finishing {
+        image_fills: vec![PieceFill {
+            card: card(0, 0),
+            path: file.to_string_lossy().into_owned(),
+            inset: 5,
+        }],
+        ..finishing(options)
+    };
+    let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
+    assert_eq!(out[0].image_fills.len(), 1);
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    // Every piece is mirrored (8 regions each); the picture comes after the mirrored bleed and before the pieces.
+    let picture = content.find("/F").unwrap();
+    assert_eq!(content[..picture].matches(" Do").count(), 8);
+    assert_eq!(content[picture..].matches(" Do").count(), 1 + 3 * 8 + 4);
+    let images: Vec<_> = pdf
+        .objects
+        .values()
+        .filter_map(|o| match o {
+            lopdf::Object::Stream(s)
+                if s.dict.get(b"Subtype").and_then(|s| s.as_name()).ok() == Some(b"Image") =>
+            {
+                Some(s)
+            }
+            _ => None,
+        })
+        .collect();
+    // The picture and its transparency.
+    assert_eq!(images.len(), 2);
+    assert!(images.iter().any(|s| s.dict.has(b"SMask")));
+}
+
+#[test]
 fn a_bad_background_colour_is_refused() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
@@ -743,6 +794,7 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             turn: Turn::R0,
         }],
         edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
     assert_eq!(out.len(), 4);
@@ -757,6 +809,7 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             turn: Turn::R0,
         }],
         edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let docs2 = [source()];
     let (out, _) = finish_sheets(plan(&docs2, spec(2, 2, 6.0, 15.0), &[]), &docs2, &f).unwrap();
@@ -776,6 +829,7 @@ fn a_back_turned_by_the_user_is_turned_that_much_more_on_the_back_sheet() {
             turn,
         }],
         edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (plain, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R0)).unwrap();
     let (turned, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R180)).unwrap();

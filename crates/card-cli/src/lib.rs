@@ -11,6 +11,8 @@
 
 use card_core::card::DocumentId;
 use card_core::export::{page_sizes, same_file, same_file_error};
+use card_core::fill::fills_dir;
+use card_core::finish::BleedSource;
 use card_core::geometry::PageSize;
 use card_core::images::{images_document, ImageSpec, Placement};
 use card_core::print_request::{
@@ -150,7 +152,9 @@ fn failure(code: &str, message: String) -> ErrorInfo {
 /// `cache` is where the PDF of an images document is built.
 pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo> {
     let body = read_project(path)?;
-    let project = print_project(&body)?;
+    let mut project = print_project(&body)?;
+    let fills = fills_dir(path);
+    project.fills_dir = Some(fills.to_string_lossy().into_owned());
     let files: ProjectFiles =
         serde_json::from_value(serde_json::Value::Object(body)).map_err(|e| {
             failure(
@@ -159,6 +163,21 @@ pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo>
             )
         })?;
     let mut warnings = Vec::new();
+    // The AI fills are exported from the pictures saved beside the project; the AI is never asked here.
+    let bleed = &project.plan.finish.bleed;
+    if bleed.source == BleedSource::Ai {
+        let gone = bleed
+            .ai_fills
+            .values()
+            .filter(|f| !fills.join(&f.file).is_file())
+            .count();
+        if gone > 0 {
+            warnings.push(format!(
+                "{gone} AI fill pictures are not in {}: those pieces get a mirrored bleed",
+                fills.display()
+            ));
+        }
+    }
     let mut paths: HashMap<DocumentId, PathBuf> = HashMap::new();
     let mut names = HashMap::new();
     let changed = |what: &str, name: &str| {

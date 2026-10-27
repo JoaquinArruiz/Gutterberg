@@ -179,7 +179,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 **AI Mode (optional)**
 
 - Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
-  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your
+  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), and paint
+  a piece's bleed with an image model (Gemini or OpenAI-compatible), with your
   own key kept in the system keychain. Every action shows what is sent and to which server and asks first (until
   you say not to ask again for that server), and every result is a proposal you can edit.
 
@@ -220,7 +221,8 @@ stay there, and the app has no account, no analytics and no tracking. Only two t
   not check by itself; the Microsoft Store copy never does, since the Store updates it.
 - **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
   a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
-  backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
+  backs, and a picture of each piece for Fill with AI (one paid image request per piece, after its own dialog; the
+  pictures that come back are saved beside your project). Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
   for that server (Preferences › AI Mode › Ask before sending brings the question back). Your key is kept in the
   system keychain, and stays there after uninstalling until you remove it. AI Mode never sends a PDF whose
   publisher restricted it, and sends your key only over HTTPS (plain http only to this computer or a private

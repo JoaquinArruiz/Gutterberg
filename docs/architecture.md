@@ -11,7 +11,8 @@ are, and writes new sheets with the pieces re-spaced. Two ideas shape everything
 
 - **The original content is never touched.** A piece is the source page placed in the output as a PDF form
   XObject, clipped to the piece's rectangle, moved, turned or scaled with a transformation matrix. Nothing is
-  rasterised on export, so text and vector art stay sharp. Pieces keep their size unless the user explicitly sets a
+  rasterised on export, so text and vector art stay sharp. The one picture an export can add is a Fill with AI band,
+  and only in the bleed, under the piece. Pieces keep their size unless the user explicitly sets a
   real size or a percentage; a layout that does not fit is an error, never a reason to shrink.
 - **One engine, written once.** Geometry lives in Rust, in one place. The interface asks the engine over IPC and
   draws the answer; it never re-derives layout maths. Preview and export run the same planner, so what you see is
@@ -170,6 +171,15 @@ matter:
   just inside its edge, away from the corners. `useEdgeColors` keeps them in the plan (`finish.bleed.edgeColors`, by
   piece key, outside the undo history) whenever the pieces change, so the saved project carries them and the command
   line, which has no pdfium, exports the same. A piece without a colour is mirrored.
+  The fourth, `Ai` (Fill with AI), draws a picture of each piece's band over its mirrored bleed and under the piece
+  (`OutputSheet.image_fills`, `export::image_fill_ops`): the picture's inner area is mapped onto the destination with
+  the placement's turn, and it is clipped to the destination grown by the bleed, so a band the model drew short shows
+  the mirror underneath. This is the one picture an export can add, and only in the bleed: the piece itself is still
+  the original content, drawn on top. The pictures are PNGs in the fills folder beside the project
+  (`<name>.gtr-fills/`, `fill::fills_dir`), listed in `finish.bleed.aiFills` by piece key with the band's width in
+  pixels; the request carries the folder (`PrintProject.fills_dir`, from where the project is saved), and only a
+  plain file name that is there is used, so a missing picture means a mirrored bleed (the app and the command line
+  say so). How they are made is under AI Mode.
 - **Background:** `BackgroundOptions` holds two optional colours, `sheet` and `pieces`, carried on every sheet (front
   and back) as `OutputSheet.background`. Export paints them first, as plain vector fills: the whole page, then one
   rectangle per placement grown by the bleed; the bleed and the pieces go on top. They only show where the source
@@ -286,7 +296,7 @@ rebuilt on open.
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
   gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
-  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed, and the number makes an older Gutterberg ask to update); the current version is 8. A change to the format adds a version and a migration with a test file.
+  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed and Fill with AI, and the number makes an older Gutterberg ask to update); the current version is 8. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A file missing from its saved
   path is first looked for beside the project file (`card_core::sharing::find_beside`: same name and hash, then any
@@ -499,6 +509,17 @@ pictures. A result is always an editable proposal, or for pairing, a summary to 
   used for a week; only the reload button or an older list asks again, and a failed request shows the saved list.
 - Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
   pieces for pairing, never the PDF.
+- **Fill with AI** (Print settings › Bleed › Taken from) is the one action whose answer is a picture, so it has its
+  own requests (`card-ai/src/fill.rs`): Gemini's `generateContent` asking for an image back, and the OpenAI image
+  edits endpoint (`/images/edits`, multipart, with a mask). Anthropic and Ollama cannot draw and are refused before
+  anything is sent. It uses its own model, Preferences › AI Mode › Image model (`imageModel`, per provider). One
+  request per piece, at most 30 a run, straight pieces only, with pictures allowed: `ai_fill_edge` renders the piece
+  at about 1024 px and `card_core::fill::fill_canvas` sets it in a flat magenta frame as wide as the bleed (padded to
+  the edits endpoint's fixed sizes, with a mask opaque over the piece). Of the answer `keep_band` keeps only the
+  frame, at the size it was sent, with the piece's area cleared; a picture of another shape is refused. The dialog
+  shows each piece before and after, and Apply saves the ticked bands (`save_fills`, named by piece key and a hash of
+  what was sent) and sets them as one undo step. Save As copies them beside the new file. The command line exports
+  the saved pictures and never calls a model.
 
 ## Updates and releases
 

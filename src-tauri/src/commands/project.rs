@@ -1,7 +1,10 @@
 use crate::state::internal;
+use base64::{engine::general_purpose::STANDARD, Engine};
+use card_core::fill::{copy_fills, fills_dir, save_fill};
 use card_core::project::{file_hash, read_project, save_project, Body};
 use card_core::sharing::{find_beside, write_readme, Beside};
 use card_core::{Error, ErrorInfo};
+use serde::Deserialize;
 use serde_json::Value;
 use std::path::PathBuf;
 
@@ -67,4 +70,57 @@ pub async fn write_project_readme(project: String, text: String) -> Result<Strin
         .map_err(internal)?
         .map(|p| p.to_string_lossy().into_owned())
         .map_err(Into::into)
+}
+
+/// A picture of Fill with AI to keep: the piece's key, the band (PNG, base64) and the hash of what was sent.
+#[derive(Debug, Deserialize)]
+pub struct NewFill {
+    pub key: String,
+    pub png: String,
+    pub hash: String,
+}
+
+/// Writes `fills` into the fills folder of the project at `project` and returns their file names, in order.
+#[tauri::command]
+pub async fn save_fills(project: String, fills: Vec<NewFill>) -> Result<Vec<String>, ErrorInfo> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let project = PathBuf::from(project);
+        fills
+            .iter()
+            .map(|f| {
+                let png = STANDARD
+                    .decode(&f.png)
+                    .map_err(|e| Error::FillReply(e.to_string()))?;
+                save_fill(&project, &f.key, &png, &f.hash)
+            })
+            .collect::<card_core::Result<Vec<_>>>()
+    })
+    .await
+    .map_err(internal)?
+    .map_err(Into::into)
+}
+
+/// Copies the fills `names` of the project at `from` beside the project at `to` (Save As); how many were copied.
+#[tauri::command]
+pub async fn copy_project_fills(
+    from: String,
+    to: String,
+    names: Vec<String>,
+) -> Result<usize, ErrorInfo> {
+    tauri::async_runtime::spawn_blocking(move || {
+        copy_fills(&PathBuf::from(from), &PathBuf::from(to), &names)
+    })
+    .await
+    .map_err(internal)?
+    .map_err(Into::into)
+}
+
+/// Of the fills `names` of the project at `project`, the ones that are not in its fills folder.
+#[tauri::command]
+pub fn missing_fills(project: String, names: Vec<String>) -> Vec<String> {
+    let dir = fills_dir(&PathBuf::from(project));
+    names
+        .into_iter()
+        .filter(|n| !dir.join(n).is_file())
+        .collect()
 }

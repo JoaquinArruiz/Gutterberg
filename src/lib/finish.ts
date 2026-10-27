@@ -10,7 +10,7 @@ export type MarkStyle = (typeof MARK_STYLES)[number];
 /** How a cut mark is stroked. */
 export const MARK_LINES = ["solid", "dashed", "dotted"] as const;
 export type MarkLine = (typeof MARK_LINES)[number];
-export const BLEED_SOURCES = ["mirror", "source", "edge"] as const;
+export const BLEED_SOURCES = ["mirror", "source", "edge", "ai"] as const;
 export type BleedSource = (typeof BLEED_SOURCES)[number];
 export const FLIPS = ["long", "short"] as const;
 export type Flip = (typeof FLIPS)[number];
@@ -28,6 +28,12 @@ export const MARK_OFFSET_RANGE = [0, 10] as const;
 export const MAX_BLEED_MM = 5;
 export const MAX_DUPLEX_OFFSET_MM = 10;
 export const MAX_FOLD_GAP_MM = 5;
+
+/** A picture of Fill with AI, as the project lists it. */
+export type AiFill = { file: string; inset: number };
+
+/** A fill's file name: plain, in the fills folder (`card_core::fill::fill_name`). */
+const FILL_FILE = /^[A-Za-z0-9-]+\.png$/;
 
 export type Finish = {
   marks: {
@@ -48,6 +54,9 @@ export type Finish = {
     /** Edge: the colour (`#rrggbb`) of each piece's edge, by `cardIdKey`, found from a small render
      * (`useEdgeColors`). A piece without one is mirrored. */
     edgeColors: Record<string, string>;
+    /** Fill with AI: the picture of each piece's band (`file`, in the project's fills folder) and the band's width
+     * in it (`inset`, px), by `cardIdKey`. A piece without one, or whose file is gone, is mirrored. */
+    aiFills: Record<string, AiFill>;
   };
   duplex: {
     on: boolean;
@@ -85,7 +94,7 @@ export const DEFAULT_FINISH: Finish = {
     onBacks: false,
     innerCrosses: false,
   },
-  bleed: { mm: 0, source: "mirror", edgeColors: {} },
+  bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
   duplex: {
     on: false,
     layout: "duplex",
@@ -116,6 +125,7 @@ export const FinishSchema = z.object({
     mm: z.number(),
     source: z.enum(BLEED_SOURCES),
     edgeColors: z.record(z.string(), z.string()).default({}),
+    aiFills: z.record(z.string(), z.object({ file: z.string(), inset: z.number() })).default({}),
   }),
   duplex: z.object({
     on: z.boolean(),
@@ -171,6 +181,11 @@ export function cleanFinish(f: Finish): Finish {
           return KEY.test(k) && color !== null ? [[k, color]] : [];
         }),
       ),
+      aiFills: Object.fromEntries(
+        Object.entries(f.bleed.aiFills).filter(
+          ([k, a]) => KEY.test(k) && FILL_FILE.test(a.file) && Number.isInteger(a.inset) && a.inset > 0,
+        ),
+      ),
     },
     duplex: {
       on: f.duplex.on,
@@ -187,6 +202,9 @@ export function cleanFinish(f: Finish): Finish {
     background: { sheet: cleanFill(f.background.sheet), pieces: cleanFill(f.background.pieces) },
   };
 }
+
+/** The file names of the project's AI fills. */
+export const fillFiles = (f: Finish): string[] => Object.values(f.bleed.aiFills).map((a) => a.file);
 
 /** Codes of `OutputSheet.warnings`, as `card_core::finish::SheetWarning` names them. */
 export const SHEET_WARNINGS = [

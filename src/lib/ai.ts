@@ -12,6 +12,8 @@ export type AiProviderSettings = {
   baseUrl: string;
   /** Anthropic only: for a key that is not scoped to a workspace. Empty = none. */
   workspaceId: string;
+  /** The model that draws for Fill with AI (Gemini and OpenAI-compatible only); empty = not chosen. */
+  imageModel: string;
 };
 
 export type AiPrefs = {
@@ -52,10 +54,10 @@ export const DEFAULT_AI: AiPrefs = {
   sendImages: true,
   trustedHost: "",
   providers: {
-    anthropic: { model: DEFAULT_MODEL.anthropic, baseUrl: "", workspaceId: "" },
-    openai_compatible: { model: "", baseUrl: "", workspaceId: "" },
-    gemini: { model: "", baseUrl: "", workspaceId: "" },
-    ollama: { model: "", baseUrl: "", workspaceId: "" },
+    anthropic: { model: DEFAULT_MODEL.anthropic, baseUrl: "", workspaceId: "", imageModel: "" },
+    openai_compatible: { model: "", baseUrl: "", workspaceId: "", imageModel: "" },
+    gemini: { model: "", baseUrl: "", workspaceId: "", imageModel: "" },
+    ollama: { model: "", baseUrl: "", workspaceId: "", imageModel: "" },
   },
 };
 
@@ -74,6 +76,7 @@ export function normalizeAi(raw: unknown): AiPrefs {
       model: text(s.model, DEFAULT_AI.providers[p].model),
       baseUrl: text(s.baseUrl, ""),
       workspaceId: text(s.workspaceId, ""),
+      imageModel: text(s.imageModel, ""),
     };
   }
   return {
@@ -102,6 +105,22 @@ export function providerConfig(ai: AiPrefs): ProviderConfigPayload {
     base_url: orNull(s.baseUrl),
     workspace_id: ai.provider === "anthropic" ? orNull(s.workspaceId) : null,
   };
+}
+
+/** What the image model field shows when it is empty: a model of that provider that draws. */
+export const IMAGE_MODEL_EXAMPLE: Record<AiProvider, string> = {
+  anthropic: "",
+  openai_compatible: "gpt-image-1",
+  gemini: "gemini-2.5-flash-image",
+  ollama: "",
+};
+
+/** The providers whose models can draw a picture, for Fill with AI. */
+export const drawsPictures = (p: AiProvider): boolean => p === "gemini" || p === "openai_compatible";
+
+/** The settings Fill with AI sends: those of the provider, with its image model. */
+export function imageConfig(ai: AiPrefs): ProviderConfigPayload {
+  return { ...providerConfig(ai), model: ai.providers[ai.provider].imageModel.trim() };
 }
 
 /** The server a request goes to, as the notice names it (`api.anthropic.com`, `localhost:11434`). */

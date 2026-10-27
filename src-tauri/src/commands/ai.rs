@@ -3,6 +3,7 @@
 //! request is made; none returns a key.
 
 use crate::state::{internal, AppState};
+use base64::{engine::general_purpose::STANDARD, Engine};
 use card_ai::estimate::{estimate, Estimate};
 use card_ai::model_cache::ModelList;
 use card_ai::pairing::{pair_request, PieceSide, PIECE_LONG_SIDE_PX};
@@ -425,6 +426,87 @@ pub async fn ai_pair_backs(
         };
         let (pieces, usage) = runner.pair(input).map_err(to_info)?;
         Ok(AiPairing { pieces, usage })
+    })
+    .await
+    .map_err(internal)?
+}
+
+/// Long side of a piece's picture for Fill with AI: about 300 dpi for a playing card, and what the image
+/// models draw at.
+const FILL_LONG_SIDE_PX: u32 = 1024;
+
+/// What Fill with AI made for one piece: the piece as it was sent, the piece over its new band, and the band
+/// alone (PNGs, base64), the band's width in pixels and the hash that names it.
+#[derive(Serialize)]
+pub struct AiEdgeFill {
+    pub before: String,
+    pub after: String,
+    pub fill: String,
+    pub inset: u32,
+    pub hash: String,
+    pub usage: Usage,
+}
+
+/// Paints the bleed of one piece with the image model of `config`. The answer is a proposal: nothing is
+/// saved, and only the band of the model's picture is kept (`card_core::fill`).
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+pub async fn ai_fill_edge(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    document_id: DocumentId,
+    page_index: usize,
+    source: OrientedRect,
+    bleed_mm: f64,
+    config: ProviderConfig,
+    send_images: bool,
+) -> Result<AiEdgeFill, ErrorInfo> {
+    state.ai_gate.check().map_err(to_info)?;
+    if !send_images {
+        return Err(to_info(AiError::FillNeedsImages));
+    }
+    if !card_ai::fill::draws(config.kind) {
+        return Err(to_info(AiError::NoImageOutput));
+    }
+    if source.angle_deg.abs() > 0.01 {
+        return Err(card_core::Error::FillTilted.into());
+    }
+    if !(bleed_mm > 0.0 && bleed_mm <= card_core::finish::MAX_BLEED_MM) {
+        return Err(to_info(AiError::Config("set a bleed first".into())));
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        let shared = app.state::<AppState>();
+        shareable(&shared, document_id)?;
+        let worker = shared.worker(&app)?;
+        let piece = worker
+            .render_pieces(document_id, vec![(page_index, source)], FILL_LONG_SIDE_PX)?
+            .remove(0);
+        let px_per_pt = f64::from(piece.width) / source.width.max(1e-6);
+        let inset = (card_core::units::mm_to_pt(bleed_mm) * px_per_pt)
+            .round()
+            .max(1.0) as u32;
+        let size = (config.kind == ProviderKind::OpenaiCompatible)
+            .then(|| card_ai::fill::edit_size(piece.width + 2 * inset, piece.height + 2 * inset));
+        let canvas = card_core::fill::fill_canvas(&piece.png, inset, size)?;
+        let runner = Runner {
+            gate: &shared.ai_gate,
+            config: &config,
+            keys: &*shared.ai_keys,
+            transport: &UreqTransport,
+        };
+        let (reply, usage) = runner
+            .fill(&canvas.picture, &canvas.mask)
+            .map_err(to_info)?;
+        let band = card_core::fill::keep_band(&reply, &canvas.frame)?;
+        let after = card_core::fill::with_band(&piece.png, &band, inset)?;
+        Ok(AiEdgeFill {
+            before: STANDARD.encode(&piece.png),
+            after: STANDARD.encode(after),
+            fill: STANDARD.encode(band),
+            inset,
+            hash: canvas.hash,
+            usage,
+        })
     })
     .await
     .map_err(internal)?

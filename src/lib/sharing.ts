@@ -21,7 +21,7 @@ export function filesElsewhere(projectFile: string, files: string[]): string[] {
 }
 
 /** The readme of a shared project, in the app's language: what the project is and how to print it. */
-export function readmeText(projectFile: string, files: string[], version: string): string {
+export function readmeText(projectFile: string, files: string[], version: string, fills = false): string {
   const project = fileName(projectFile);
   const title = t("project.share.readme.title", { project });
   const lines = [
@@ -37,6 +37,7 @@ export function readmeText(projectFile: string, files: string[], version: string
     `2. ${t("project.share.readme.step2")}`,
     ...files.map((f) => `   - ${fileName(f)}`),
     `   - ${project}`,
+    ...(fills ? [`   - ${t("project.share.readme.fills", { folder: `${project}-fills` })}`] : []),
     `3. ${t("project.share.readme.step3", { project })}`,
     `4. ${t("project.share.readme.step4")}`,
     "",

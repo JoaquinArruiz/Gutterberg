@@ -15,7 +15,7 @@ describe("finish settings", () => {
       onBacks: false,
       innerCrosses: false,
     });
-    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror", edgeColors: {} });
+    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror", edgeColors: {}, aiFills: {} });
     expect(DEFAULT_FINISH.duplex).toEqual({
       on: false,
       layout: "duplex",
@@ -29,7 +29,9 @@ describe("finish settings", () => {
       commonBack: null,
     });
     expect(DEFAULT_FINISH.background).toEqual({ sheet: null, pieces: null });
-    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror", edgeColors: {} } })).toBe(true);
+    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror", edgeColors: {}, aiFills: {} } })).toBe(
+      true,
+    );
     expect(finishingOn({ ...DEFAULT_FINISH, background: { sheet: "#000000", pieces: null } })).toBe(true);
   });
 
@@ -49,6 +51,12 @@ describe("finish settings", () => {
         mm: 99,
         source: "source",
         edgeColors: { "g:0:0:0:0": "#ABCDEF", "g:0:0:0:1": "blue", nonsense: "#000000" },
+        aiFills: {
+          "g:0:0:0:0": { file: "g-0-0-0-0-ab12.png", inset: 30 },
+          "g:0:0:0:1": { file: "../outside.png", inset: 30 },
+          "g:0:0:0:2": { file: "g-0-0-0-2-cd34.png", inset: 0 },
+          nonsense: { file: "x.png", inset: 30 },
+        },
       },
       duplex: {
         ...DEFAULT_FINISH.duplex,
@@ -71,7 +79,13 @@ describe("finish settings", () => {
       onBacks: true,
       innerCrosses: true,
     });
-    expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source", edgeColors: { "g:0:0:0:0": "#abcdef" } });
+    expect(clean.bleed).toEqual({
+      mm: MAX_BLEED_MM,
+      source: "source",
+      edgeColors: { "g:0:0:0:0": "#abcdef" },
+      // Only a plain file name in the fills folder, with a band, for a real piece.
+      aiFills: { "g:0:0:0:0": { file: "g-0-0-0-0-ab12.png", inset: 30 } },
+    });
     expect(clean.duplex).toEqual({
       ...DEFAULT_FINISH.duplex,
       on: true,

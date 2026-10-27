@@ -120,6 +120,18 @@ impl Runner<'_> {
         Ok((labels, usage))
     }
 
+    /// Fill with AI for one piece: `picture` is the piece in its magenta frame, `mask` the frame (see
+    /// [`crate::fill`]). The picture that comes back is not checked here.
+    pub fn fill(&self, picture: &[u8], mask: &[u8]) -> Result<(Vec<u8>, Usage)> {
+        self.gate.check()?;
+        if !crate::fill::draws(self.config.kind) {
+            return Err(AiError::NoImageOutput);
+        }
+        let key = self.key()?;
+        self.gate.check()?;
+        crate::fill::send_fill(self.config, key.as_deref(), picture, mask, self.transport)
+    }
+
     /// Which pieces are fronts, which are backs, and the back of each front, from one picture per piece.
     pub fn pair(&self, pieces: Vec<(String, Image)>) -> Result<(Vec<PieceSide>, Usage)> {
         self.gate.check()?;

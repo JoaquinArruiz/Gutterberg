@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useLayoutStore } from "../stores/layout-store";
 import { planOf, usePrintStore } from "../stores/print-store";
+import { useProjectStore } from "../stores/project-store";
 import { useUiStore } from "../stores/ui-store";
 import { pagesById, useLayoutDocuments } from "./documents";
 import { printProject } from "./print-request";
@@ -28,6 +29,8 @@ export function usePrintSync() {
     })),
   );
   const plan = usePrintStore(useShallow(planOf));
+  // The AI fills are found beside the project file, so a save under another name plans again.
+  const projectPath = useProjectStore((s) => s.path);
 
   // Entering the Print stage starts a fresh plan, so the preview never shows sheets from before the edits.
   useEffect(() => {
@@ -56,7 +59,7 @@ export function usePrintSync() {
     const { setSheets } = usePrintStore.getState();
     let stale = false;
     const t = setTimeout(() => {
-      computeSheets(printProject(plan, documents, output, edits), pagesById(documents))
+      computeSheets(printProject(plan, documents, output, edits, projectPath), pagesById(documents))
         .then((s) => !stale && setSheets(s, null))
         .catch((e) => !stale && setSheets(null, e));
     }, 30);
@@ -64,5 +67,5 @@ export function usePrintSync() {
       stale = true;
       clearTimeout(t);
     };
-  }, [active, documents, edits, output, plan]);
+  }, [active, documents, edits, output, plan, projectPath]);
 }

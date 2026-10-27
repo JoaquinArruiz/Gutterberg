@@ -101,6 +101,9 @@ pub enum BleedSource {
     /// A plain fill of the colour of the piece's edge (`Finishing::edge_colors`, found by the
     /// app from a small render), under the piece. A piece without a colour is mirrored.
     Edge,
+    /// Fill with AI: a picture of the band round the piece (`Finishing::image_fills`), over the mirrored
+    /// bleed and under the piece. A piece without a picture is mirrored.
+    Ai,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -202,14 +205,24 @@ pub struct EdgeColor {
     pub color: [u8; 3],
 }
 
-/// What the finishing needs from the user: the options, the backs chosen per piece, and the
-/// colours of the pieces' edges for the `Edge` bleed.
+/// The picture of a piece's bleed for the `Ai` bleed: a PNG of the piece plus `inset` pixels on every
+/// side, clear over the piece (`crate::fill::keep_band`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PieceFill {
+    pub card: CardId,
+    pub path: String,
+    pub inset: u32,
+}
+
+/// What the finishing needs from the user: the options, the backs chosen per piece, the colours of
+/// the pieces' edges for the `Edge` bleed and the pictures of their bleed for the `Ai` bleed.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Finishing {
     pub options: FinishOptions,
     pub backs: Vec<BackPair>,
     pub edge_colors: Vec<EdgeColor>,
+    pub image_fills: Vec<PieceFill>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -249,6 +262,34 @@ fn edge_fills(sheet: &OutputSheet, colors: &HashMap<CardId, [u8; 3]>) -> Vec<Edg
             colors
                 .get(&p.card_id)
                 .map(|&color| EdgeFill { placement, color })
+        })
+        .collect()
+}
+
+/// The `Ai` bleed of one placement: the picture at `path`, its piece area laid on the placement.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImageFill {
+    /// Index into the sheet's placements.
+    pub placement: usize,
+    pub path: String,
+    pub inset: u32,
+}
+
+/// The `Ai` bleed pictures of a sheet's placements that have one; empty for another bleed.
+fn image_fills(sheet: &OutputSheet, fills: &HashMap<CardId, (String, u32)>) -> Vec<ImageFill> {
+    if sheet.bleed.source != BleedSource::Ai || sheet.bleed.mm <= 0.0 {
+        return Vec::new();
+    }
+    sheet
+        .placements
+        .iter()
+        .enumerate()
+        .filter_map(|(placement, p)| {
+            fills.get(&p.card_id).map(|(path, inset)| ImageFill {
+                placement,
+                path: path.clone(),
+                inset: *inset,
+            })
         })
         .collect()
 }
@@ -994,6 +1035,11 @@ pub fn finish_sheets(
         .iter()
         .map(|e| (e.card, e.color))
         .collect();
+    let pictures: HashMap<CardId, (String, u32)> = finishing
+        .image_fills
+        .iter()
+        .map(|f| (f.card, (f.path.clone(), f.inset)))
+        .collect();
     let bleed = SheetBleed {
         mm: options.bleed.mm,
         source: options.bleed.source,
@@ -1048,8 +1094,10 @@ pub fn finish_sheets(
         }
         if let Some(b) = back.as_mut() {
             b.edge_fills = edge_fills(b, &colors);
+            b.image_fills = image_fills(b, &pictures);
         }
         sheet.edge_fills = edge_fills(&sheet, &colors);
+        sheet.image_fills = image_fills(&sheet, &pictures);
         sheet.warnings = warnings;
         out.push(sheet);
         out.extend(back);
