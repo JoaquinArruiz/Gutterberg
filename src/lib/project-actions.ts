@@ -2,6 +2,7 @@
 // open; these functions move it between the stores and the disk, and never leave a half-opened project
 // behind: a file is checked, its PDFs are found and read, and only then do the stores change.
 
+import { getVersion } from "@tauri-apps/api/app";
 import { t } from "../i18n";
 import {
   documentName,
@@ -50,15 +51,19 @@ import {
   askSave,
   confirm,
   fileExists,
+  findBeside,
   hashFile,
+  inform,
   notify,
   pickProjectToOpen,
   pickProjectToSave,
   readProjectFile,
   writeProjectFile,
+  writeProjectReadme,
 } from "./project-api";
 import { currentProjectState, currentSignature, hasUnsavedChanges } from "./project-state";
 import { clearRecovery, dropRecoveryCopy, findRecovery } from "./recovery";
+import { filesElsewhere, projectFiles, readmeText } from "./sharing";
 import { closePdf, type DocumentInfo, openPdf, pickPdf, pickPdfs } from "./tauri";
 import { clearCardImages } from "./use-card-image";
 import { startSession } from "./workspace";
@@ -386,17 +391,28 @@ type Located =
   | { kind: "images"; id: DocumentId; name: string; pages: ImagePageInfo[] };
 
 /**
+ * Where to look first for a file of the project: its saved path, or when that is gone, the file beside the project
+ * file (`projectFile`) with its name or its content. A project shared with its PDFs in one folder opens on another
+ * computer without asking for each of them.
+ */
+async function firstPlace(savedPath: string, hash: string, projectFile: string | null): Promise<string> {
+  if (!projectFile || (await fileExists(savedPath))) return savedPath;
+  const found = await findBeside(projectFile, fileName(savedPath), hash).catch(() => null);
+  return found?.path ?? savedPath;
+}
+
+/**
  * Finds the image files of an images document. One that moved is looked for with the user, like a PDF, and
  * taken if it is the same file; one that changed asks before it replaces the old one. An image the user does
  * not find or does not accept keeps its page, blank and marked missing, so the rest of the project works.
  */
-async function locateImages(d: ImagesDocumentState): Promise<ImagePageInfo[]> {
+async function locateImages(d: ImagesDocumentState, projectFile: string | null): Promise<ImagePageInfo[]> {
   const notices = useProjectStore.getState();
   const pages: ImagePageInfo[] = [];
   for (const image of d.images) {
     const name = fileName(image.path);
     const missing = (): ImagePageInfo => ({ ...image, plan: null, missing: true });
-    let path = image.path;
+    let path = await firstPlace(image.path, image.hash, projectFile);
     let page: ImagePageInfo | null = null;
     for (;;) {
       if (!(await fileExists(path))) {
@@ -456,21 +472,24 @@ async function materializeImages(
 }
 
 /**
- * Finds the file of each PDF of a project and checks it is still the same one. A missing file is looked for
- * with the user ("Where is this file now?"), and the new location is taken if its hash matches; if it does
+ * Finds the file of each PDF of a project and checks it is still the same one. A missing file is looked for beside
+ * `projectFile` (the project's own file, if it has one) and then with the user ("Where is this file now?"), and the new location is taken if its hash matches; if it does
  * not, the user is told and chooses. A file at the saved place that has changed is used, with a warning.
  * Returns null if the user gives up, so nothing is opened.
  */
-async function locateDocuments(documents: ProjectDocumentState[]): Promise<Located[] | null> {
+async function locateDocuments(
+  documents: ProjectDocumentState[],
+  projectFile: string | null,
+): Promise<Located[] | null> {
   const notices = useProjectStore.getState();
   const located: Located[] = [];
   for (const d of documents) {
     if (d.kind === "images") {
-      located.push({ kind: "images", id: d.id, name: d.name, pages: await locateImages(d) });
+      located.push({ kind: "images", id: d.id, name: d.name, pages: await locateImages(d, projectFile) });
       continue;
     }
     const name = fileName(d.path);
-    let path = d.path;
+    let path = await firstPlace(d.path, d.hash, projectFile);
     for (;;) {
       if (!(await fileExists(path))) {
         if (!(await confirm(t("project.relink.message", { name }), t("project.relink.ok")))) return null;
@@ -532,7 +551,7 @@ export async function openProjectDialog(path?: string): Promise<void> {
  * no file yet) and `signature` is what that file holds (null: nothing, so it counts as modified).
  */
 async function load(project: ProjectState, file: string | null, signature: string | null): Promise<void> {
-  const located = await locateDocuments(project.documents);
+  const located = await locateDocuments(project.documents, file);
   if (!located) return;
   const files = await Promise.all(
     located.map(async (l) => {
@@ -612,4 +631,32 @@ export async function saveProjectAs(): Promise<boolean> {
   if (useDocumentStore.getState().documents.length === 0) return false;
   const picked = await pickProjectToSave(suggestedName());
   return picked ? saveTo(picked) : false;
+}
+
+/**
+ * File › Save for sharing: saves the project (asking where the first time), writes its readme beside it, and says
+ * which of its files still have to be put in the same folder. Resolves to whether both were written.
+ */
+export async function saveForSharing(): Promise<boolean> {
+  if (!(await saveProject())) return false;
+  const { path } = useProjectStore.getState();
+  const state = currentProjectState();
+  if (!path || !state) return false;
+  const files = projectFiles(state.documents);
+  try {
+    const readme = await writeProjectReadme(path, readmeText(path, files, await getVersion()));
+    const elsewhere = filesElsewhere(path, files);
+    await inform(
+      [
+        t("project.share.done", { readme: fileName(readme) }),
+        elsewhere.length > 0 ? t("project.share.elsewhere", { files: elsewhere.join(", ") }) : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+    return true;
+  } catch (e) {
+    useProjectStore.getState().addError(toAppError(e));
+    return false;
+  }
 }

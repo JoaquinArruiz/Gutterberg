@@ -282,7 +282,12 @@ rebuilt on open.
   gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
   `grid` and `selection` into a list of one in `grids`); the current version is 7. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
-  the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
+  the user is asked "Where is this file now?" if it is gone) before any store changes. A file missing from its saved
+  path is first looked for beside the project file (`card_core::sharing::find_beside`: same name and hash, then any
+  file of that kind with that hash, then the same name for the user to accept), so a project shared in one folder
+  with its PDFs opens on another computer; the command line does the same. File › Save for sharing also writes
+  `<name>-Gutterberg-readme.txt` beside the project (`write_readme`; the text is built in `src/lib/sharing.ts` from
+  the locale), which nothing reads back. The format is unchanged: paths stay absolute. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
 - The interface's model is camelCase with normalised coordinates, not the Rust shapes; `src/lib/project.ts` has the
   Zod schema and clamps out-of-range values back into what the interface allows.

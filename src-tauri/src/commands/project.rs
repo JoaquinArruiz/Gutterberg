@@ -1,5 +1,6 @@
 use crate::state::internal;
 use card_core::project::{file_hash, read_project, save_project, Body};
+use card_core::sharing::{find_beside, write_readme, Beside};
 use card_core::{Error, ErrorInfo};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -42,4 +43,28 @@ pub async fn hash_file(path: String) -> Result<String, ErrorInfo> {
 #[tauri::command]
 pub fn file_exists(path: String) -> bool {
     PathBuf::from(path).is_file()
+}
+
+/// Looks beside the project at `project` for its PDF `name` (by name, then by content): a shared
+/// project whose PDF's saved path is on someone else's computer.
+#[tauri::command]
+pub async fn find_beside_project(
+    project: String,
+    name: String,
+    hash: String,
+) -> Result<Option<Beside>, ErrorInfo> {
+    tauri::async_runtime::spawn_blocking(move || find_beside(&PathBuf::from(project), &name, &hash))
+        .await
+        .map_err(internal)?
+        .map_err(Into::into)
+}
+
+/// Writes the readme of a shared project beside it and returns the readme's path.
+#[tauri::command]
+pub async fn write_project_readme(project: String, text: String) -> Result<String, ErrorInfo> {
+    tauri::async_runtime::spawn_blocking(move || write_readme(&PathBuf::from(project), &text))
+        .await
+        .map_err(internal)?
+        .map(|p| p.to_string_lossy().into_owned())
+        .map_err(Into::into)
 }

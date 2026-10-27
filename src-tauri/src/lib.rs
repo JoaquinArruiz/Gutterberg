@@ -53,6 +53,8 @@ pub fn run() {
             commands::project::save_project_file,
             commands::project::hash_file,
             commands::project::file_exists,
+            commands::project::find_beside_project,
+            commands::project::write_project_readme,
             commands::recovery::write_recovery,
             commands::recovery::clear_recovery,
             commands::recovery::find_recovery,

@@ -367,6 +367,17 @@ fn check_says_what_an_export_writes_or_what_stops_it_and_writes_nothing() {
     let (ok, _, stderr) = cli(&["check", gtr.to_str().unwrap()]);
     assert!(!ok && stderr.contains("(pdf_missing)"), "{stderr}");
 
+    // The same PDF beside the project, under another name: a shared project finds it.
+    std::fs::copy(
+        examples().join("01-default-3x3-a4.pdf"),
+        d.join("cards.pdf"),
+    )
+    .unwrap();
+    let (ok, stdout, stderr) = cli(&["check", gtr.to_str().unwrap()]);
+    assert!(ok, "{stderr}");
+    assert_eq!(stdout.trim(), "ok: an export writes 1 sheet");
+    std::fs::remove_file(d.join("cards.pdf")).unwrap();
+
     // Not a project, and a project from a newer Gutterberg: the app's own codes.
     std::fs::write(d.join("notes.gtr"), "hello").unwrap();
     let (ok, _, stderr) = cli(&["check", d.join("notes.gtr").to_str().unwrap()]);

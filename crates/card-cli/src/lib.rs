@@ -17,6 +17,7 @@ use card_core::print_request::{
     export_files, plan_files, print_project, print_request, PrintRequest,
 };
 use card_core::project::{file_hash, read_project};
+use card_core::sharing::find_beside;
 use card_core::{ErrorInfo, ErrorParam};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -143,7 +144,8 @@ fn failure(code: &str, message: String) -> ErrorInfo {
     ErrorInfo::new(code, &message)
 }
 
-/// Reads the project at `path` and finds its files. A PDF that is gone stops it; a PDF or image that is not the file
+/// Reads the project at `path` and finds its files: at their saved paths, or else beside the project (a shared
+/// project, see `card_core::sharing`). A PDF that is gone stops it; a PDF or image that is not the file
 /// the project was saved with stops it unless `force`. A missing image leaves its page blank, as in the app.
 /// `cache` is where the PDF of an images document is built.
 pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo> {
@@ -162,11 +164,19 @@ pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo>
     let changed = |what: &str, name: &str| {
         format!("{what} {name} is not the file the project was saved with, so the pieces may not be where they were")
     };
+    // The saved path, or a file beside the project when that is gone.
+    let place = |saved: &str, hash: &str| -> Result<PathBuf, ErrorInfo> {
+        let file = PathBuf::from(saved);
+        if file.is_file() {
+            return Ok(file);
+        }
+        Ok(find_beside(path, &file_name(saved), hash)?.map_or(file, |b| b.path))
+    };
     for d in &files.documents {
         match d {
             DocumentFiles::Pdf { id, path, hash } => {
                 let name = file_name(path);
-                let file = PathBuf::from(path);
+                let file = place(path, hash)?;
                 if !file.is_file() {
                     let mut e = failure(
                         "pdf_missing",
@@ -197,7 +207,8 @@ pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo>
                 let mut specs = Vec::with_capacity(images.len());
                 for image in images {
                     let image_name = file_name(&image.path);
-                    let file = Path::new(&image.path);
+                    let file = place(&image.path, &image.hash)?;
+                    let file = file.as_path();
                     let missing = !file.is_file();
                     if missing {
                         warnings.push(format!(
@@ -217,7 +228,7 @@ pub fn load(path: &Path, force: bool, cache: &Path) -> Result<Loaded, ErrorInfo>
                         warnings.push(message);
                     }
                     specs.push(ImageSpec {
-                        path: image.path.clone(),
+                        path: file.to_string_lossy().into_owned(),
                         hash: image.hash.clone(),
                         placement: image.placement,
                         missing,

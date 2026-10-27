@@ -172,6 +172,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 - `.gtr` project files keep everything but the PDFs, which they find again by content even if they moved.
   Double-clicking a project opens it in Gutterberg. Undo and redo cover the whole project.
+- Save for sharing: hand players a `.gtr` beside your PDF, with a readme that says how to print it. Gutterberg finds
+  the PDF next to the project on their computer.
 - PDFs locked by their publisher against printing or changes are not exported; other restrictions are kept.
 
 **AI Mode (optional)**

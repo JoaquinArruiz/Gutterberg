@@ -1232,6 +1232,7 @@
       "addPdf": "Agregar PDF…",
       "save": "Guardar",
       "saveAs": "Guardar como…",
+      "saveForSharing": "Guardar para compartir…",
       "recent": "Proyectos recientes",
       "noRecent": "No hay proyectos recientes",
       "shortcuts": "Atajos de teclado…",
@@ -1242,6 +1243,22 @@
       "messageNew": "Este proyecto nunca se guardó. ¿Guardarlo antes de cerrar?",
       "save": "Guardar",
       "discard": "No guardar"
+    },
+    "share": {
+      "done": "Guardado, con “{{readme}}” al lado. Para compartir el proyecto, entrega juntos el archivo del proyecto, el léeme y sus PDF, en una misma carpeta.",
+      "elsewhere": "Estos archivos están en otra carpeta. Pon una copia junto al proyecto antes de compartirlo: {{files}}",
+      "readme": {
+        "title": "{{project}}: un proyecto de Gutterberg",
+        "what": "Esta carpeta tiene un juego print-and-play y un proyecto de Gutterberg para él ({{project}}). Gutterberg es una aplicación de escritorio gratuita que convierte los PDF print-and-play en hojas fáciles de cortar: cada pieza a su tamaño exacto, con espacio entre ellas y el arte original intacto.",
+        "ready": "El proyecto ya tiene todas las piezas marcadas y un diseño de impresión elegido, así que no hay nada que configurar.",
+        "how": "Cómo imprimirlo:",
+        "step1": "Descarga Gutterberg desde {{link}} e instálalo.",
+        "step2": "Mantén estos archivos juntos en una misma carpeta:",
+        "step3": "Abre {{project}} en Gutterberg (Archivo › Abrir proyecto…).",
+        "step4": "Ve a la pestaña Imprimir, revisa las hojas y haz clic en Exportar PDF para guardar un PDF listo para imprimir.",
+        "change": "Puedes cambiar lo que quieras antes de exportar: copias, tamaño del papel, separaciones, marcas de corte, sangrado y dorsos.",
+        "madeWith": "Hecho con Gutterberg {{version}}."
+      }
     },
     "recovery": {
       "message": "Gutterberg se cerró con cambios sin guardar en “{{name}}”. ¿Recuperarlos?",

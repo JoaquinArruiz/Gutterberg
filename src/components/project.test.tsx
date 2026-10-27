@@ -219,6 +219,7 @@ describe("the File menu", () => {
       "Add images…",
       "SaveCtrl+S",
       "Save as…Ctrl+Shift+S",
+      "Save for sharing…",
       "poker night.gtr",
       "Keyboard shortcuts…?",
     ]);

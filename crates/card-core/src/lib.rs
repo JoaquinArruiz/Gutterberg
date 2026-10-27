@@ -20,6 +20,7 @@ pub mod recovery;
 pub mod render;
 pub mod render_worker;
 pub mod sample;
+pub mod sharing;
 pub mod sheet;
 pub mod units;
 

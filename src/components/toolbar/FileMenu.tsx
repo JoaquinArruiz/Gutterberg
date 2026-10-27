@@ -6,6 +6,7 @@ import {
   newProject,
   openPdfDialog,
   openProjectDialog,
+  saveForSharing,
   saveProject,
   saveProjectAs,
 } from "../../lib/project-actions";
@@ -65,6 +66,7 @@ export function FileMenu() {
           <div className="my-1 border-t border-[var(--border)]" />
           {item(t("project.menu.save"), "Ctrl+S", () => void saveProject(), close, !hasDocument)}
           {item(t("project.menu.saveAs"), "Ctrl+Shift+S", () => void saveProjectAs(), close, !hasDocument)}
+          {item(t("project.menu.saveForSharing"), "", () => void saveForSharing(), close, !hasDocument)}
           <div className="my-1 border-t border-[var(--border)]" />
           <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--muted)]">
             {t("project.menu.recent")}

@@ -119,6 +119,7 @@ vi.mock("./project-api", () => ({
     throw { code: "io", message: "no such file" };
   }),
   fileExists: vi.fn(async (path: string) => fake.images.has(path) || fake.pdfs.has(path)),
+  findBeside: vi.fn(async () => null),
   pickProjectToOpen: vi.fn(async () => null),
   pickProjectToSave: vi.fn(async () => fake.saveAs.shift() ?? null),
   notify: vi.fn(async (message: string) => {

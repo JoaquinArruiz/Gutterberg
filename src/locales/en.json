@@ -1232,6 +1232,7 @@
       "addPdf": "Add PDF…",
       "save": "Save",
       "saveAs": "Save as…",
+      "saveForSharing": "Save for sharing…",
       "recent": "Recent projects",
       "noRecent": "No recent projects",
       "shortcuts": "Keyboard shortcuts…",
@@ -1242,6 +1243,22 @@
       "messageNew": "This project has never been saved. Save it before closing?",
       "save": "Save",
       "discard": "Don't save"
+    },
+    "share": {
+      "done": "Saved, with “{{readme}}” beside it. To share the project, give the project file, the readme and its PDFs together, in one folder.",
+      "elsewhere": "These files are in another folder. Put a copy of them beside the project before you share it: {{files}}",
+      "readme": {
+        "title": "{{project}}: a Gutterberg project",
+        "what": "This folder has a print-and-play game and a Gutterberg project for it ({{project}}). Gutterberg is a free desktop app that turns print-and-play PDFs into sheets that are easy to cut: every piece at its exact size, with space between them, and the original artwork untouched.",
+        "ready": "The project already has every piece marked and a print layout chosen, so there is nothing to set up.",
+        "how": "How to print it:",
+        "step1": "Download Gutterberg from {{link}} and install it.",
+        "step2": "Keep these files together in one folder:",
+        "step3": "Open {{project}} in Gutterberg (File › Open project…).",
+        "step4": "Go to the Print tab, check the sheets, and click Export PDF to save a PDF ready to print.",
+        "change": "You can change anything before exporting: copies, paper size, gaps, cut marks, bleed and backs.",
+        "madeWith": "Made with Gutterberg {{version}}."
+      }
     },
     "recovery": {
       "message": "Gutterberg closed with unsaved changes to “{{name}}”. Restore them?",

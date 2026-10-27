@@ -7,6 +7,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- File › Save for sharing… saves the project and writes `<name>-Gutterberg-readme.txt` beside it, in the app's language: what Gutterberg is, where to download it, and the steps to print (keep the files in one folder, open the project, Print tab, Export PDF). It names any PDF that is in another folder, to put beside the project before sharing. The readme is yours to edit; nothing reads it back.
 - Background colors: Print settings › Background can color the whole sheet (black paper, for example) and put a color behind each piece and its bleed. They are plain vector fills under the art, so they only show where the source leaves the page empty, such as a card's rounded or missing corners. The preview shows them too. Projects open with both off, and the command line exports them as saved.
 - Recovery of unsaved work: while a project has unsaved changes, Gutterberg writes a copy of it every 30 seconds to its own data folder, never over your `.gtr`. If the app crashes or is closed without saving, the next start asks to restore it, including a project that was never saved. A restored project is unsaved and still points at its file. Saving, or closing on purpose, removes the copy.
 - Closing the window with unsaved changes asks first: Save, Don't save or Cancel. Save asks where for a project that was never saved, and cancelling that keeps the window open. Before, the window just closed.
@@ -19,6 +20,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - The mouse wheel scrolls the row of sheets above the Print tab's preview sideways, and the Pages panel when it is docked at the top or bottom. Before, only `Shift`+wheel, a trackpad or the scrollbar moved them.
 - The Print tab's toolbar shows the name Export will offer, such as `my-game-print.pdf` (the project's or the first PDF's name), instead of "New-PDF". Clicking it opens that name to edit, with the cursor at the end; keeping it as it is keeps following the project.
+- Opening a project whose PDF or image is not where it was saved looks beside the project file first, by name and then by content, before asking where it is. A project shared in one folder with its PDFs opens on another computer without asking for each file. The command line does the same.
 
 ## 1.2.1 (2026-10-27)
 

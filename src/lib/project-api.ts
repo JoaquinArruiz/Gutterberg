@@ -32,6 +32,18 @@ export const hashFile = (path: string): Promise<string> => invoke<string>("hash_
 
 export const fileExists = (path: string): Promise<boolean> => invoke<boolean>("file_exists", { path });
 
+/** A file of the project beside the project file `project`: named `name`, or with the SHA-256 `hash`. */
+export const findBeside = (
+  project: string,
+  name: string,
+  hash: string,
+): Promise<{ path: string; same: boolean } | null> =>
+  invoke<{ path: string; same: boolean } | null>("find_beside_project", { project, name, hash });
+
+/** Writes `text` as `<name>-Gutterberg-readme.txt` beside the project file `project`; resolves to its path. */
+export const writeProjectReadme = (project: string, text: string): Promise<string> =>
+  invoke<string>("write_project_readme", { project, text });
+
 export async function pickProjectToOpen(): Promise<string | null> {
   const picked = await open({ multiple: false, filters: filters() });
   return typeof picked === "string" ? picked : null;
@@ -54,6 +66,11 @@ export async function askSave(text: string): Promise<"save" | "discard" | "cance
   if (answer === buttons.yes || answer === "Yes") return "save";
   if (answer === buttons.no || answer === "No") return "discard";
   return "cancel";
+}
+
+/** A message that is not a warning, with an OK button, in a native dialog. */
+export async function inform(message: string): Promise<void> {
+  await showMessage(message, { kind: "info", okLabel: t("common.ok") });
 }
 
 /** A message with an OK button in a native dialog. */

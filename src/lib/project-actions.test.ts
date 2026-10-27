@@ -18,6 +18,7 @@ import {
   openPdfDialog,
   openProjectDialog,
   removeActiveDocument,
+  saveForSharing,
   saveProject,
   saveProjectAs,
 } from "./project-actions";
@@ -44,7 +45,12 @@ const fake = vi.hoisted(() => ({
   saveAs: [] as (string | null)[],
   opened: [] as [number, string][],
   closed: 0,
+  /** Readmes written: project path -> text. */
+  readmes: new Map<string, string>(),
+  informed: [] as string[],
 }));
+
+vi.mock("@tauri-apps/api/app", () => ({ getVersion: vi.fn(async () => "1.3.0") }));
 
 vi.mock("./tauri", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./tauri")>()),
@@ -89,6 +95,20 @@ vi.mock("./project-api", () => ({
     return pdf.hash;
   }),
   fileExists: vi.fn(async (path: string) => fake.pdfs.has(path)),
+  // As the engine does: in the project's folder, by name and content, then by content, then by name.
+  findBeside: vi.fn(async (project: string, name: string, wanted: string) => {
+    const folder = project.slice(0, project.lastIndexOf("/") + 1);
+    const here = [...fake.pdfs].filter(([p]) => p.startsWith(folder) && !p.slice(folder.length).includes("/"));
+    const named = here.find(([p]) => p === folder + name);
+    const found =
+      (named?.[1].hash === wanted ? named : undefined) ?? here.find(([, pdf]) => pdf.hash === wanted) ?? named;
+    return found ? { path: found[0], same: found[1].hash === wanted } : null;
+  }),
+  writeProjectReadme: vi.fn(async (project: string, text: string) => {
+    fake.readmes.set(project, text);
+    return project.replace(/\.gtr$/, "-Gutterberg-readme.txt");
+  }),
+  inform: vi.fn(async (message: string) => void fake.informed.push(message)),
   pickProjectToOpen: vi.fn(async () => fake.pickedProject.shift() ?? null),
   pickProjectToSave: vi.fn(async () => fake.saveAs.shift() ?? null),
   notify: vi.fn(async () => {}),
@@ -118,6 +138,8 @@ const modified = () => currentSignature() !== project().signature;
 beforeEach(async () => {
   fake.pdfs.clear();
   fake.projects.clear();
+  fake.readmes.clear();
+  fake.informed.length = 0;
   for (const list of [
     fake.confirms,
     fake.saveAnswers,
@@ -407,6 +429,38 @@ describe("a PDF that moved or changed", () => {
     expect(docs().documents[0].hash).toBe(hash(9));
   });
 
+  it("finds it beside a shared project, by name or by content, without asking", async () => {
+    await savedWithA();
+    fake.pdfs.delete("/games/a.pdf");
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(1), pages: 3 });
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toEqual([]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/a.pdf"]);
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
+
+    // The project now says another place, so New asks before dropping that.
+    fake.confirms.push(true);
+    await newProject();
+    fake.asked.length = 0;
+    fake.pdfs.delete("/projects/a.pdf");
+    fake.pdfs.set("/projects/renamed.pdf", { hash: hash(1), pages: 3 });
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toEqual([]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/renamed.pdf"]);
+  });
+
+  it("asks before using a file beside the project that has its name but other content", async () => {
+    await savedWithA();
+    fake.pdfs.delete("/games/a.pdf");
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(7), pages: 3 });
+    // Not the same file. Use it anyway? Yes.
+    fake.confirms.push(true);
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toHaveLength(1);
+    expect(noticeKeys()).toEqual(["pdfChanged"]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/a.pdf"]);
+  });
+
   it("resets a layout that no longer fits the PDF's pages, with what hangs on it", async () => {
     await savedWithA();
     fake.pdfs.set("/games/a.pdf", { hash: hash(9), pages: 5 });
@@ -544,6 +598,41 @@ const cardKey = (doc: number, page: number, row: number, column: number) => {
   const id = gridCardId(doc, page, row, column);
   return `g:${id.document_id}:${page}:${row}:${column}`;
 };
+
+describe("saving for sharing", () => {
+  it("saves, writes the readme beside the project, and names the files to put beside it", async () => {
+    await editedProject();
+    fake.saveAs.push("/projects/game.gtr");
+    expect(await saveForSharing()).toBe(true);
+    expect(fake.projects.has("/projects/game.gtr")).toBe(true);
+    const readme = fake.readmes.get("/projects/game.gtr") ?? "";
+    expect(readme).toContain("game.gtr: a Gutterberg project");
+    expect(readme).toContain("   - a.pdf\r\n   - game.gtr");
+    expect(readme).toContain("https://joaquinarruiz.com.ar/projects/gutterberg");
+    expect(readme).toContain("Made with Gutterberg 1.3.0.");
+    expect(readme).not.toMatch(/donat/i);
+    expect(fake.informed).toHaveLength(1);
+    expect(fake.informed[0]).toContain("game-Gutterberg-readme.txt");
+    expect(fake.informed[0]).toContain("another folder");
+    expect(fake.informed[0]).toContain("a.pdf");
+  });
+
+  it("does not ask to move anything when the PDFs are already beside the project", async () => {
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(1), pages: 3 });
+    fake.pickedPdf.push("/projects/a.pdf");
+    await openPdfDialog();
+    fake.saveAs.push("/projects/game.gtr");
+    expect(await saveForSharing()).toBe(true);
+    expect(fake.informed[0]).not.toContain("another folder");
+  });
+
+  it("writes nothing when the save is cancelled", async () => {
+    await editedProject();
+    fake.saveAs.push(null);
+    expect(await saveForSharing()).toBe(false);
+    expect(fake.readmes.size).toBe(0);
+  });
+});
 
 describe("closing the window", () => {
   it("closes without asking when nothing changed", async () => {
