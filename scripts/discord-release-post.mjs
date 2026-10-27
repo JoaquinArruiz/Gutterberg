@@ -1,26 +1,14 @@
 #!/usr/bin/env node
-// Posts a published GitHub release in the Discord server's #announcements channel, pinging the roles of the members
-// who asked for that kind of update, and publishes the post so servers that follow the channel get it too. Run by
-// .github/workflows/discord-release.yml.
+// Posts a published GitHub release in the Discord server's #announcements channel, pinging the Release pings role,
+// and publishes the post so servers that follow the channel get it too. Run by .github/workflows/discord-release.yml.
 // Env: TAG (v1.1.0), GITHUB_REPOSITORY, GITHUB_TOKEN, DISCORD_BOT_TOKEN, DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
-// DISCORD_RELEASE_ROLE_ID (every update), DISCORD_FEATURE_ROLE_ID and DISCORD_FIX_ROLE_ID (only features, only
-// fixes; optional); DRY_RUN=true prints the post instead of sending it.
+// DISCORD_RELEASE_ROLE_ID; DRY_RUN=true prints the post instead of sending it.
 import { pathToFileURL } from "node:url";
 
 // Discord refuses longer messages.
 const LIMIT = 2000;
 
 const SECTIONS = { Added: "✨ New", Changed: "🔄 Changed", Fixed: "🛠️ Fixed" };
-
-// Each kind of update has its own heading and opening line. Changed counts as a feature.
-const KINDS = {
-  both: { head: (v) => `# 🎉 Gutterberg ${v} is out!`, intro: "New features and fixes:" },
-  features: { head: (v) => `# ✨ Gutterberg ${v}: new features`, intro: "Here is what you can do now:" },
-  fixes: {
-    head: (v) => `# 🛠️ Gutterberg ${v}: fixes`,
-    intro: "This version fixes bugs and adds nothing new. Updating is recommended.",
-  },
-};
 
 // The `### Added`, `### Changed` and `### Fixed` lists of a release's notes (CHANGELOG.md's section), as
 // { heading, items } in the order they appear. The paragraph before them and any other heading are left out.
@@ -40,22 +28,6 @@ export function parseNotes(body) {
     }
   }
   return sections.filter((s) => s.items.length);
-}
-
-// What a release brings: "features", "fixes" or "both" (also when the notes have no lists at all).
-export function releaseKind(sections) {
-  const fixes = sections.some((s) => s.heading === SECTIONS.Fixed);
-  const features = sections.some((s) => s.heading !== SECTIONS.Fixed);
-  return features && !fixes ? "features" : fixes && !features ? "fixes" : "both";
-}
-
-// The roles a release pings: every-update always, plus the features or fixes role when the release has those.
-// Roles that aren't set are left out.
-export function rolesFor(kind, roles) {
-  const ids = [roles.all];
-  if (kind !== "fixes") ids.push(roles.features);
-  if (kind !== "features") ids.push(roles.fixes);
-  return ids.filter(Boolean);
 }
 
 // Cuts text to at most `max` characters, on a word, with an ellipsis.
@@ -79,16 +51,13 @@ export function summarize(item, max = 160) {
   return cut(firstSentence(item), max);
 }
 
-// The post: the role pings inside a spoiler (they still notify, but don't clutter the post), a heading and an
-// opening line for the kind of update, a section per list and a link to the release. When it doesn't fit in
+// The post: the role ping, a heading, a section per list and a link to the release. When it doesn't fit in
 // Discord's limit, the bullets get shorter, then the last ones of each list are left for the release page.
-export function buildPost({ tag, url, body, roles = {} }) {
+export function buildPost({ tag, url, body, roleId }) {
   const version = tag.replace(/^v/, "");
-  const sections = parseNotes(body);
-  const kind = releaseKind(sections);
-  const pings = rolesFor(kind, roles).map((id) => `<@&${id}>`);
-  const head = `${pings.length ? `||${pings.join(" ")}||\n` : ""}${KINDS[kind].head(version)}\n${KINDS[kind].intro}`;
+  const head = `${roleId ? `<@&${roleId}>\n` : ""}# Gutterberg ${version} is out!`;
   const foot = `The app offers the update on its own, or [download it from GitHub](<${url}>).`;
+  const sections = parseNotes(body);
   const render = (max, keep) =>
     [
       head,
@@ -131,14 +100,8 @@ async function main(env) {
     { headers: { Authorization: `Bearer ${need("GITHUB_TOKEN")}`, Accept: "application/vnd.github+json" } },
     `Reading the release ${tag}`,
   );
-  const roles = {
-    all: need("DISCORD_RELEASE_ROLE_ID"),
-    features: env.DISCORD_FEATURE_ROLE_ID,
-    fixes: env.DISCORD_FIX_ROLE_ID,
-  };
-  const body = release.body ?? "";
-  const content = buildPost({ tag, url: release.html_url, body, roles });
-  const pinged = rolesFor(releaseKind(parseNotes(body)), roles);
+  const roleId = need("DISCORD_RELEASE_ROLE_ID");
+  const content = buildPost({ tag, url: release.html_url, body: release.body ?? "", roleId });
   if (env.DRY_RUN === "true") {
     console.log(`Dry run, nothing sent. The post (${content.length} characters):\n\n${content}`);
     return;
@@ -148,7 +111,7 @@ async function main(env) {
   const api = "https://discord.com/api/v10";
   const message = await call(
     `${api}/channels/${channel}/messages`,
-    { method: "POST", headers, body: JSON.stringify({ content, allowed_mentions: { parse: [], roles: pinged } }) },
+    { method: "POST", headers, body: JSON.stringify({ content, allowed_mentions: { parse: [], roles: [roleId] } }) },
     "Posting in #announcements",
   );
   console.log(`Posted message ${message.id} in #announcements.`);

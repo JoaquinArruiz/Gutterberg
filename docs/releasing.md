@@ -45,17 +45,13 @@ word of the heading.
    CLA.md changes in a way that matters, raise its version so that new signatures name it.
 
 5. **The Discord release post**: `.github/workflows/discord-release.yml` posts every published release (not
-   pre-releases) in the Discord server's `#announcements` and publishes the post to the servers that follow the
-   channel. Members choose in the server's onboarding (or Channels & Roles) which versions ping them: every update
-   (the Release pings role), only new features (Feature pings) or only fixes (Fix pings). A release with only Added
-   or Changed is a features post and pings Release pings and Feature pings; one with only Fixed is a fixes post and
-   pings Release pings and Fix pings; one with both pings all three. The pings sit in a spoiler at the top. It needs
-   the secrets `DISCORD_BOT_TOKEN` (Gutterbot's token), `DISCORD_ANNOUNCEMENTS_CHANNEL_ID`,
-   `DISCORD_RELEASE_ROLE_ID`, `DISCORD_FEATURE_ROLE_ID` and `DISCORD_FIX_ROLE_ID` (all but the token may be
-   variables instead; without the last two only Release pings is pinged), and Gutterbot needs View Channel, Send
-   Messages and Manage Messages in `#announcements`. The post is made from the release's lists (Added as New,
-   Changed, Fixed), each bullet cut to its name and first sentence; I can edit it in Discord afterwards. Run the
-   workflow by hand with a tag to see the post (a dry run, the default) or to post a release again.
+   pre-releases) in the Discord server's `#announcements`, pinging the Release pings role, and publishes the post to
+   the servers that follow the channel. It needs the secrets `DISCORD_BOT_TOKEN` (Gutterbot's token),
+   `DISCORD_ANNOUNCEMENTS_CHANNEL_ID` and `DISCORD_RELEASE_ROLE_ID` (the last two may be variables instead), and
+   Gutterbot needs View Channel, Send Messages and Manage Messages in `#announcements`. The post is made from the
+   release's lists (Added as New, Changed, Fixed), each bullet cut to its name and first sentence; I can edit it in
+   Discord afterwards. Run the workflow by hand with a tag to see the post (a dry run, the default) or to post a
+   release again.
 
 Builds are not code-signed (no Apple or Windows certificate). The updater works anyway; it checks its own key. The
 Microsoft Store package is the exception: the Store signs it (see "Microsoft Store" below).
