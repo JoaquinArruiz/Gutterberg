@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.2.1 (2026-10-27)
+
+1.2.1 is a safety release that follows a security and legal review before the Microsoft Store. AI Mode now leaves alone any PDF its publisher restricted, the key can no longer be sent in the clear to a look-alike address, the PDF engine and network libraries carry their latest security fixes, sheets made from several PDFs credit every author, and the privacy policy says more about how your data is kept and removed.
+
 ### Changed
 
 - AI Mode no longer sends anything from a PDF whose publisher restricted it (against printing, changes, copying or anything else), and says so.
