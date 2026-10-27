@@ -4,6 +4,7 @@ import { EditorViewport } from "./components/editor/EditorViewport";
 import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { ImageSizeDialog } from "./components/images/ImageSizeDialog";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
+import { PiecePeek } from "./components/print/PiecePeek";
 import { PrintStage } from "./components/print/PrintStage";
 import { StartScreen } from "./components/start/StartScreen";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
@@ -208,6 +209,7 @@ export default function App() {
       <FirstPdfTour />
       <PreferencesDialog />
       <ShortcutsDialog />
+      <PiecePeek />
       <TutorialsDialog />
       <TutorialHost />
       <AiConfirmDialog />

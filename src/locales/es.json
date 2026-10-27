@@ -348,6 +348,7 @@
     "descriptionSeveral": "Copia cuadrículas y sus regiones de piezas de la página {{page}}. Cada destino se convierte en su propio grupo, así que después puedes editarlo por separado."
   },
   "library": {
+    "peek": "{{name}}, en grande",
     "openPdf": "Abre un PDF para ver sus piezas.",
     "show": "Mostrar",
     "filterLabel": "Filtrar piezas por grupo",

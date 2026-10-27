@@ -348,6 +348,7 @@
     "descriptionSeveral": "Copies grids and their piece regions from page {{page}}. Each target becomes its own group, so you can edit it separately afterwards."
   },
   "library": {
+    "peek": "{{name}}, shown large",
     "openPdf": "Open a PDF to see its pieces.",
     "show": "Show",
     "filterLabel": "Filter pieces by group",
