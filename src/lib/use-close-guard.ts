@@ -15,7 +15,10 @@ export function useCloseGuard() {
         .onCloseRequested(async (event) => {
           if (!(await confirmClose())) event.preventDefault();
         })
-        .then((stop) => (live ? (unlisten = stop) : stop()))
+        .then((stop) => {
+          if (live) unlisten = stop;
+          else stop();
+        })
         .catch(() => {});
     } catch {
       // not in the app window
