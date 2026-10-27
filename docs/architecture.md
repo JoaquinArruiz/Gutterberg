@@ -195,6 +195,8 @@ is written, from the pre-flight check, and the interface shows a lock badge from
 other restriction (for example no copying) is kept: the output is encrypted (AES-128, opens without a password)
 with the same flags, or the most restrictive of them when several PDFs share the sheets. A PDF without restrictions
 exports as before. The badge reads the flags through pdfium; the export reads them through `lopdf`.
+AI Mode refuses a PDF with any restriction at all (`access_of_file(..).is_restricted()`, in the AI commands before
+anything is rendered), since it hands the pages, or their text, to another company.
 
 ### Images (`images`)
 

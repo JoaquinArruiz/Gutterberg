@@ -255,3 +255,21 @@ fn an_aes256_pdf_shows_its_lock_when_it_opens() {
     assert_eq!(info.locked.as_deref(), Some("modifying"));
     assert!(!info.access.modify && info.access.print);
 }
+
+#[test]
+fn a_file_reads_as_restricted_for_any_flag_and_unrestricted_when_plain_or_unreadable() {
+    let d = dir("of-file");
+    let plain = source(&d, "plain.pdf", None);
+    assert!(!access::access_of_file(&plain).is_restricted());
+    let no_copy = source(&d, "no-copy.pdf", Some(all() - Permissions::COPYABLE));
+    assert!(access::access_of_file(&no_copy).is_restricted());
+    let no_print = source(&d, "no-print.pdf", Some(all() - Permissions::PRINTABLE));
+    assert_eq!(
+        access::access_of_file(&no_print).refusal(),
+        Some(access::LOCK_PRINTING)
+    );
+    assert_eq!(
+        access::access_of_file(&d.join("missing.pdf")),
+        PdfAccess::default()
+    );
+}

@@ -61,6 +61,10 @@ Microsoft Store package is the exception: the Store signs it (see "Microsoft Sto
 A version has its own branch, `release/1.1.0`, started from `main`; features and fixes are squashed into it with `git merge --squash`
 (see "Branches and releases" in `AGENTS.md`). When it holds everything the version needs:
 
+0. **Security updates first**, on a `fix/` branch into the version branch: pdfium reads every PDF a user opens, so
+   move `tag` in `scripts/fetch-pdfium.sh` to the newest [pdfium-binaries](https://github.com/bblanchon/pdfium-binaries/releases)
+   release and put the five new SHA-256 sums beside it (`sha256sum` of each `.tgz`); then `cargo install cargo-audit`
+   once and `cargo audit`, and `cargo update -p <crate>` whatever it reports with a fix.
 1. On `release/1.1.0`, merge `main` into it. Move the `Unreleased` notes under the new version in `CHANGELOG.md`;
    bump `version` in `package.json` and `src-tauri/Cargo.toml`; run `cargo build` to refresh `Cargo.lock`; delete the
    version's brief from `docs/milestones/` and its row from `roadmap.md`. To check before pushing:

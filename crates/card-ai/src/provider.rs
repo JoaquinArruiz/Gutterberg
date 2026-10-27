@@ -121,20 +121,21 @@ impl ProviderConfig {
     }
 }
 
-/// Loopback and private-network hosts, where plain http keeps the key on the user's own network.
+/// Loopback and private-network hosts, where plain http keeps the key on the user's own network. Only a whole
+/// address counts: `10.0.0.5.example.com` is a name on the internet, whatever it starts with.
 fn is_local_host(host: &str) -> bool {
-    let name = host
-        .rsplit_once(':')
-        .map_or(host, |(h, _)| h)
-        .trim_matches(['[', ']']);
-    if name == "localhost" || name == "::1" || name.ends_with(".local") {
+    // Without the port: `[::1]:8080` -> `::1`, `localhost:1234` -> `localhost`.
+    let name = match host.strip_prefix('[') {
+        Some(rest) => rest.split(']').next().unwrap_or(rest),
+        None => host.rsplit_once(':').map_or(host, |(h, _)| h),
+    };
+    if name == "localhost" || name.ends_with(".local") {
         return true;
     }
-    let parts: Vec<u32> = name.split('.').filter_map(|p| p.parse().ok()).collect();
-    match parts.as_slice() {
-        [127, _, _, _] | [10, _, _, _] | [192, 168, _, _] => true,
-        [172, b, _, _] => (16..=31).contains(b),
-        _ => false,
+    match name.parse::<std::net::IpAddr>() {
+        Ok(std::net::IpAddr::V4(ip)) => ip.is_loopback() || ip.is_private(),
+        Ok(std::net::IpAddr::V6(ip)) => ip.is_loopback(),
+        Err(_) => false,
     }
 }
 

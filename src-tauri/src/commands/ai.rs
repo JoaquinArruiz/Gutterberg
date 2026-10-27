@@ -125,6 +125,19 @@ pub enum Task {
     Sort,
 }
 
+/// Refuses to send anything from a PDF its publisher restricted in any way (printing, changes, copying, ...): AI Mode
+/// hands its pages, or their text, to another company, which the publisher did not allow.
+fn shareable(state: &AppState, document: DocumentId) -> Result<(), ErrorInfo> {
+    let path = state.path(document)?;
+    if card_core::access::access_of_file(&path).is_restricted() {
+        return Err(ErrorInfo::new(
+            "ai_pdf_locked",
+            "the PDF's publisher restricted it, so AI Mode does not send it",
+        ));
+    }
+    Ok(())
+}
+
 /// The picture (or, text only, the boxes) a Detect request needs for one page.
 fn detect_inputs(
     state: &AppState,
@@ -140,6 +153,7 @@ fn detect_inputs(
     ),
     ErrorInfo,
 > {
+    shareable(state, document)?;
     let worker = state.worker(app)?;
     let (size, objects) = worker.page_objects(document, page)?;
     if !send_images {
@@ -165,6 +179,7 @@ fn sort_input(
     pages: Vec<usize>,
     send_images: bool,
 ) -> Result<SortInput, ErrorInfo> {
+    shareable(state, document)?;
     let worker = state.worker(app)?;
     if send_images {
         let rendered =
@@ -336,6 +351,9 @@ fn pair_input(
     let mut documents: Vec<DocumentId> = pieces.iter().map(|p| p.document_id).collect();
     documents.sort_unstable();
     documents.dedup();
+    for document in &documents {
+        shareable(state, *document)?;
+    }
     for document in documents {
         let (at, rects): (Vec<usize>, Vec<(usize, OrientedRect)>) = pieces
             .iter()

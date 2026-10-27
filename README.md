@@ -219,7 +219,9 @@ stay there, and the app has no account, no analytics and no tracking. Only two t
   a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
   backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
   for that server (Preferences › AI Mode › Ask before sending brings the question back). Your key is kept in the
-  system keychain. With Ollama running on your own computer, nothing leaves it.
+  system keychain, and stays there after uninstalling until you remove it. AI Mode never sends a PDF whose
+  publisher restricted it, and sends your key only over HTTPS (plain http only to this computer or a private
+  network). With Ollama running on your own computer, nothing leaves it.
   - While AI Mode is on, choosing a provider in Preferences › AI Mode asks the provider for its list of models, to
     fill the Model field. That request goes to the same server as the actions, with your key when one is saved
     (Anthropic and Gemini are only asked once a key is saved), and carries nothing else: no page, picture or project.

@@ -1,0 +1,11 @@
+# The workflows' actions are pinned to commits (so a moved tag cannot change what runs next to the release secrets);
+# this keeps the pins up to date with a pull request a week.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]

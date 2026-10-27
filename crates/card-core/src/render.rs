@@ -72,7 +72,7 @@ pub fn document_info_in(doc: &PdfDocument, path: &Path) -> Result<DocumentInfo> 
             height_pt: p.height().value as f64,
         })
         .collect::<Vec<_>>();
-    let access = access_in(doc).unwrap_or_else(|| access_from_file(path));
+    let access = access_in(doc).unwrap_or_else(|| crate::access::access_of_file(path));
     Ok(DocumentInfo {
         page_count: pages.len(),
         pages,
@@ -102,14 +102,6 @@ fn access_in(doc: &PdfDocument) -> Option<PdfAccess> {
             && yes(p.can_fill_existing_interactive_form_fields())
             && yes(p.can_add_or_modify_text_annotations())),
     })
-}
-
-/// The permissions as the export reads them (lopdf), for a PDF pdfium-render cannot interpret. A file lopdf cannot
-/// read counts as unrestricted here: the export reads it the same way and stops with its own error.
-fn access_from_file(path: &Path) -> PdfAccess {
-    lopdf::Document::load(path)
-        .map(|d| crate::access::access_of(&d))
-        .unwrap_or_default()
 }
 
 /// Encode quickly: these PNGs are transient UI previews, so favour speed over size.

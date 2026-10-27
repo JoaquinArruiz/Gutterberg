@@ -1168,6 +1168,7 @@
     "project_too_new": "Este proyecto se creó con una versión más reciente de la aplicación (versión de archivo {{found}}; esta versión lee hasta la {{supported}}). Actualiza la aplicación.",
     "project_invalid": "Este archivo de proyecto está dañado o incompleto.",
     "bleed_exceeds_source_gap": "El origen tiene {{gap_mm}} mm entre algunas piezas, menos que los {{bleed_mm}} mm de sangrado que se toman de él.",
+    "ai_pdf_locked": "El editor de este PDF lo restringió, así que el Modo IA no envía sus páginas a ningún lado. Marca las piezas a mano o con Detectar piezas.",
     "ai_disabled": "El Modo IA está desactivado.",
     "ai_no_key": "No hay una clave de API guardada para este proveedor. Agrégala en Preferencias › Modo IA.",
     "ai_keychain": "No se pudo usar el llavero del sistema: {{detail}}",
