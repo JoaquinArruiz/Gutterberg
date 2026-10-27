@@ -88,6 +88,14 @@ pub fn access_of(doc: &Document) -> PdfAccess {
         .unwrap_or_default()
 }
 
+/// What the publisher allows for the PDF at `path`, read as the export reads it. A file that cannot be read counts as
+/// unrestricted: the export reads it the same way and stops with its own error.
+pub fn access_of_file(path: &std::path::Path) -> PdfAccess {
+    Document::load(path)
+        .map(|d| access_of(&d))
+        .unwrap_or_default()
+}
+
 /// Refuses the first source locked against printing or modifying.
 pub fn check_sources(docs: &[(DocumentId, &Document)]) -> Result<()> {
     for (id, doc) in docs {

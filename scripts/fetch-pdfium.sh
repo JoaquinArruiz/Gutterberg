@@ -2,14 +2,14 @@
 # Downloads a prebuilt pdfium into src-tauri/resources/pdfium (Linux x64 by default).
 # Usage: scripts/fetch-pdfium.sh [linux-x64|linux-arm64|mac-x64|mac-arm64|win-x64]
 set -euo pipefail
-tag="chromium/8086"
+tag="chromium/8125"
 target="${1:-linux-x64}"
 case "$target" in
-  linux-x64)   sha="588577cf52dabc1a444988bac841920df54cc2f141801424de97ab04f4fbb935" ;;
-  linux-arm64) sha="e7e2fe4686925618330103cb167950aca5a84bb00fd977a41b86be59dd1480a2" ;;
-  mac-x64)     sha="933a85a138f6027243c56bff8676375c33ceeb767401389415ffc44d689ca85d" ;;
-  mac-arm64)   sha="e98679e052c07edbb5a627980902abb823d4b3f35744d877bd21668bd9fc13ab" ;;
-  win-x64)     sha="1fd8af952832dbb0eb16d9249f68fe09e5f5ebf7c3dd9f6066ea2720cc28487d" ;;
+  linux-x64)   sha="e1c3ce6e270cb5e0c20816b379ad9f2c1309972697c505f508de92bf5e7d6659" ;;
+  linux-arm64) sha="8b8818f2ec57d1b213d952ca6d7f0ffeca9d0110487d0e20ad83ba918bc92efa" ;;
+  mac-x64)     sha="8a5193535b80c7215d8932f6647ae5097465b6dba2811602c21e120c2af112b0" ;;
+  mac-arm64)   sha="4939bd935ac83ddc09a3a4f038bc43a19cea1660316a3667f26cb07a070e139d" ;;
+  win-x64)     sha="9a964261760cff52570aabf038ab346d3a5034dd8b30d0d5fe8861235d356b8b" ;;
   *) echo "unknown target: $target" >&2; exit 1 ;;
 esac
 dest="$(cd "$(dirname "$0")/.." && pwd)/src-tauri/resources/pdfium"

@@ -1,7 +1,7 @@
 use std::fs;
 
 fn main() {
-    // The pdfium build the app is made with is pinned in one place, `scripts/fetch-pdfium.sh` (tag="chromium/8086");
+    // The pdfium build the app is made with is pinned in one place, `scripts/fetch-pdfium.sh` (tag="chromium/8125");
     // "Copy app info" in Preferences › Help reports it.
     let script = "../scripts/fetch-pdfium.sh";
     println!("cargo:rerun-if-changed={script}");

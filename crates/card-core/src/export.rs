@@ -28,9 +28,11 @@ use crate::sheet::{
     PaginateOptions, PrintLayout, SheetPlacement,
 };
 use crate::units::{mm_to_pt, pt_to_mm};
-use lopdf::{dictionary, Dictionary, Document, Object, ObjectId, Stream};
+use lopdf::{
+    decode_text_string, dictionary, text_string, Dictionary, Document, Object, ObjectId, Stream,
+};
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::path::Path;
 
 /// One output page, built from one source page with its own grid. Keeping the
@@ -327,8 +329,8 @@ pub fn export_sheets_file(input: &Path, output: &Path, sheets: &[OutputSheet]) -
     export_sheets_files(&[(DEFAULT_DOCUMENT_ID, input)], output, sheets)
 }
 
-/// Export `sheets` built from several PDFs, each at its `document_id`, writing `output`. The
-/// first file is the base: its metadata is kept.
+/// Export `sheets` built from several PDFs, each at its `document_id`, writing `output`. Every
+/// used file's metadata is kept (see `keep_metadata`).
 pub fn export_sheets_files(
     inputs: &[(DocumentId, &Path)],
     output: &Path,
@@ -810,11 +812,14 @@ fn export_sheets_into(
 
     let mut page_tables: HashMap<DocumentId, BTreeMap<u32, ObjectId>> = HashMap::new();
     page_tables.insert(base_id, doc.get_pages());
+    // What each source says about itself, in source order: see `keep_metadata`.
+    let mut sources = vec![SourceMetadata::read(doc, base_id)];
     for (id, mut other) in others {
         if page_tables.contains_key(&id) {
             return Err(Error::Malformed(format!("document {id} was given twice")));
         }
         other.renumber_objects_with(doc.max_id + 1);
+        sources.push(SourceMetadata::read(&other, id));
         page_tables.insert(id, other.get_pages());
         doc.max_id = doc.max_id.max(other.max_id);
         doc.objects.extend(other.objects);
@@ -844,6 +849,24 @@ fn export_sheets_into(
                         .ok_or(Error::PageOutOfRange(key.1, table.len()))?;
                     let frame = PageFrame::read(doc, src_id, key.1)?;
                     let id = page_to_form(doc, src_id, key.1, &frame)?;
+                    // The page's own XMP metadata, or else its document's, travels with its content.
+                    let xmp = doc
+                        .get_dictionary(src_id)?
+                        .get(b"Metadata")
+                        .and_then(|m| m.as_reference())
+                        .ok()
+                        .or_else(|| {
+                            sources
+                                .iter()
+                                .find(|s| s.document_id == key.0)
+                                .and_then(|s| s.xmp)
+                        });
+                    if let Some(xmp) = xmp {
+                        doc.get_object_mut(id)?
+                            .as_stream_mut()?
+                            .dict
+                            .set("Metadata", xmp);
+                    }
                     forms.insert(key, (id, frame));
                     (id, frame)
                 }
@@ -925,15 +948,127 @@ fn export_sheets_into(
     }
     root.set("Kids", Object::Array(new_page_ids.clone()));
     root.set("Count", new_page_ids.len() as i64);
+    let used: BTreeSet<DocumentId> = forms.keys().map(|(d, _)| *d).collect();
+    keep_metadata(doc, catalog_id, base_id, &sources, &used)?;
     // Old page nodes are now unreachable; drop them (keeps shared fonts/images
     // that the forms still reference).
     doc.prune_objects();
     Ok(())
 }
 
+/// What a source PDF says about itself: its document information (title, author, copyright, ...) and its XMP
+/// metadata stream, by its id once imported.
+struct SourceMetadata {
+    document_id: DocumentId,
+    info: Dictionary,
+    xmp: Option<ObjectId>,
+}
+
+impl SourceMetadata {
+    fn read(doc: &Document, document_id: DocumentId) -> Self {
+        let resolve = |o: &Object| match o {
+            Object::Reference(r) => doc.get_object(*r).ok().cloned(),
+            o => Some(o.clone()),
+        };
+        let mut info = Dictionary::new();
+        if let Some(Object::Dictionary(d)) = doc.trailer.get(b"Info").ok().and_then(resolve) {
+            for (k, v) in d.iter() {
+                if let Some(v) = resolve(v) {
+                    info.set(k.clone(), v);
+                }
+            }
+        }
+        let xmp = doc
+            .catalog()
+            .ok()
+            .and_then(|c| c.get(b"Metadata").ok())
+            .and_then(|m| m.as_reference().ok());
+        Self {
+            document_id,
+            info,
+            xmp,
+        }
+    }
+}
+
+/// Keeps what the sources say about themselves. A sheet file made from one PDF keeps that PDF's document
+/// information and XMP as they are. One made from several gets document information that lists every used source's
+/// title, author, copyright and other text entries once each, in source order, so no source's notice is lost and
+/// none is credited to another's file; its dates and producing tools are the first used source's. The first source's
+/// XMP then no longer describes the whole file, so the catalog drops it: every source's XMP is on the forms that
+/// hold its pages.
+fn keep_metadata(
+    doc: &mut Document,
+    catalog_id: ObjectId,
+    base_id: DocumentId,
+    sources: &[SourceMetadata],
+    used: &BTreeSet<DocumentId>,
+) -> Result<()> {
+    if used.len() <= 1 && used.iter().all(|d| *d == base_id) {
+        return Ok(());
+    }
+    let infos: Vec<&Dictionary> = sources
+        .iter()
+        .filter(|s| used.contains(&s.document_id))
+        .map(|s| &s.info)
+        .collect();
+    let merged = merge_info(&infos);
+    if merged.is_empty() {
+        doc.trailer.remove(b"Info");
+    } else {
+        let id = doc.add_object(merged);
+        doc.trailer.set("Info", id);
+    }
+    doc.get_dictionary_mut(catalog_id)?.remove(b"Metadata");
+    Ok(())
+}
+
+/// The entries that describe one file rather than its content: taken from the first source that has them.
+const OWN_INFO: [&[u8]; 5] = [
+    b"CreationDate",
+    b"ModDate",
+    b"Trapped",
+    b"Producer",
+    b"Creator",
+];
+
+/// Several sources' document information as one: each text entry lists every distinct value, joined by "; ".
+fn merge_info(infos: &[&Dictionary]) -> Dictionary {
+    let mut keys: Vec<&[u8]> = Vec::new();
+    for info in infos {
+        for (k, _) in info.iter() {
+            if !keys.contains(&k.as_slice()) {
+                keys.push(k);
+            }
+        }
+    }
+    let mut out = Dictionary::new();
+    for key in keys {
+        if OWN_INFO.contains(&key) {
+            if let Some(v) = infos.iter().find_map(|i| i.get(key).ok()) {
+                out.set(key.to_vec(), v.clone());
+            }
+            continue;
+        }
+        let mut values: Vec<String> = Vec::new();
+        for info in infos {
+            if let Ok(text) = info.get(key).and_then(decode_text_string) {
+                let text = text.trim().to_string();
+                if !text.is_empty() && !values.contains(&text) {
+                    values.push(text);
+                }
+            }
+        }
+        if !values.is_empty() {
+            out.set(key.to_vec(), text_string(&values.join("; ")));
+        }
+    }
+    out
+}
+
 /// Build a PDF whose pages are `sheets`, from one or more source documents (keyed by the
-/// `document_id` their cards carry). The first source is the base: its metadata is kept and
-/// the others are imported into it. Page content is wrapped as forms, never rasterised.
+/// `document_id` their cards carry). The first source is the base and the others are imported
+/// into it; what they say about themselves is kept (see `keep_metadata`). Page content is wrapped as forms, never rasterised.
 pub fn export_sheets(
     sources: Vec<(DocumentId, Document)>,
     sheets: &[OutputSheet],

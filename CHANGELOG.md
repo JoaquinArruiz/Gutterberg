@@ -5,6 +5,21 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.2.1 (2026-10-27)
+
+1.2.1 is a safety release that follows a security and legal review before the Microsoft Store. AI Mode now leaves alone any PDF its publisher restricted, the key can no longer be sent in the clear to a look-alike address, the PDF engine and network libraries carry their latest security fixes, sheets made from several PDFs credit every author, and the privacy policy says more about how your data is kept and removed.
+
+### Changed
+
+- AI Mode no longer sends anything from a PDF whose publisher restricted it (against printing, changes, copying or anything else), and says so.
+- The privacy policy also says how your data and key are kept safe, what stays on your computer and how to remove it (your AI key stays in the keychain after uninstalling until you delete it), and what free AI tiers may do with what you send.
+- The PDF engine (pdfium) is updated to build 8125, with the security fixes since build 8086, and so are the libraries the app talks to AI providers and GitHub through.
+
+### Fixed
+
+- An address such as `http://10.0.0.5.example.com` no longer counts as a private network in Preferences › AI Mode: plain http is only allowed to a real private or local address, so a key never goes unencrypted to a server on the internet.
+- Sheets made from several PDFs keep every PDF's title, author and copyright notice. Before, only the first PDF's were kept, so the file named one author for everyone's pieces.
+
 ## 1.2.0 (2026-10-21)
 
 1.2.0 is about where Gutterberg comes from and what it says to the internet. On Windows it is now on the Microsoft Store, which installs it without the SmartScreen warning and keeps it up to date. Setting Tell me about to Never now really means the app never checks for updates by itself, and a privacy policy says in one place what the app sends and where.

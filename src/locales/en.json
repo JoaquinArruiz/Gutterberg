@@ -1168,6 +1168,7 @@
     "project_too_new": "This project was made with a newer version of the app (file version {{found}}; this version reads up to {{supported}}). Please update.",
     "project_invalid": "This project file is damaged or incomplete.",
     "bleed_exceeds_source_gap": "The source has {{gap_mm}} mm between some pieces, less than the {{bleed_mm}} mm of bleed taken from it.",
+    "ai_pdf_locked": "This PDF's publisher restricted it, so AI Mode doesn't send its pages anywhere. Mark the pieces by hand or with Detect pieces.",
     "ai_disabled": "AI Mode is off.",
     "ai_no_key": "No API key is saved for this provider. Add one in Preferences › AI Mode.",
     "ai_keychain": "The system keychain could not be used: {{detail}}",

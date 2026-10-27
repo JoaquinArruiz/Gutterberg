@@ -423,6 +423,7 @@ fn settings_that_cannot_work_are_refused_before_anything_is_sent() {
         "http://192.168.1.20:11434",
         "http://10.0.0.5",
         "http://172.20.1.1",
+        "http://[::1]:11434",
     ] {
         c.base_url = Some(ok.into());
         assert!(
@@ -439,11 +440,22 @@ fn settings_that_cannot_work_are_refused_before_anything_is_sent() {
             "{ok}"
         );
     }
-    c.base_url = Some("http://172.32.1.1".into());
-    assert!(matches!(
-        send(&c, Some("k"), &request(), &mock),
-        Err(AiError::Config(_))
-    ));
+    // Outside the private ranges, or a name on the internet that only starts like a private address.
+    for public in [
+        "http://172.32.1.1",
+        "http://10.0.0.5.example.com",
+        "http://127.0.0.1.nip.io:8080",
+        "http://192.168.1.20.evil.example/v1",
+    ] {
+        c.base_url = Some(public.into());
+        assert!(
+            matches!(
+                send(&c, Some("k"), &request(), &mock),
+                Err(AiError::Config(_))
+            ),
+            "{public}"
+        );
+    }
     assert!(mock.seen.borrow().is_empty(), "nothing was sent");
 }
 
