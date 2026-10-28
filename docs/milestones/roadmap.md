@@ -6,7 +6,6 @@ file is deleted too.
 
 | Version | Brief | What it brings | Project file | Preferences |
 | --- | --- | --- | --- | --- |
-| 1.3.0 | `1.3.0.md` | Community requests: cut marks where gaps cross, sheet and piece background colours, edge fill (Edge colour and AI), a readme for shared projects, and smaller Print and Source tab changes | 8 | |
 | any | `signing.md` | Signed builds for macOS and Windows | | |
 
 The project and preferences numbers assume this order; whichever version changes the format first takes the next

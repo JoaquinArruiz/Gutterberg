@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.3.0 (2026-10-28)
+
 ### Added
 
 - File › Save for sharing… saves the project and writes `<name>-Gutterberg-readme.txt` beside it, in the app's language: what Gutterberg is, where to download it, and the steps to print (keep the files in one folder, open the project, Print tab, Export PDF). It names any PDF that is in another folder, to put beside the project before sharing. The readme is yours to edit; nothing reads it back.
