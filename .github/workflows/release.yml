@@ -1,7 +1,8 @@
 name: Release
 
 # Pushing a tag such as v1.1.0 builds the app for every platform and leaves a draft GitHub release with the
-# installers, their updater signatures, latest.json and the notes from CHANGELOG.md. Publishing the draft by hand
+# installers, their updater signatures, latest.json and the notes from CHANGELOG.md (latest.json gets the short
+# summary from release-notes/ instead, for the app's update prompt). Publishing the draft by hand
 # is what makes installed apps see the update. See docs/releasing.md.
 on:
   push:
@@ -130,10 +131,39 @@ jobs:
           version=$(node -p "require('./package.json').version")
           echo "MSIX=Gutterberg_${version}_x64.msix" >> "$GITHUB_ENV"
           node scripts/make-msix.mjs --exe target/release/gutterberg.exe --cli "$CLI_ASSET" --out "Gutterberg_${version}_x64.msix"
+          # The Store's "What's new in this version", from the version's summary, to paste with the upload.
+          node scripts/release-summary.mjs store "$version" whats-new.txt
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.platform == 'windows-latest' && !contains(github.ref_name, '-')
         continue-on-error: true
         with:
           name: microsoft-store
-          path: ${{ env.MSIX }}
+          path: |
+            ${{ env.MSIX }}
+            whats-new.txt
           if-no-files-found: error
+
+  # The update prompt shows latest.json's notes, which tauri-action takes from the release's (the full changelog).
+  # Once every build has added itself to latest.json, its notes become the version's summary from release-notes/;
+  # the release page keeps the full notes. A pre-release keeps them too, since it has no summary.
+  updater-notes:
+    needs: release
+    if: ${{ !contains(github.ref_name, '-') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Put the summary in latest.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # The release is still a draft, which a lookup by tag does not find, so it is found in the list.
+        run: |
+          api="repos/$GITHUB_REPOSITORY/releases"
+          id=$(gh api "$api?per_page=20" --jq ".[] | select(.tag_name == \"$GITHUB_REF_NAME\") | .id" | head -1)
+          [[ -n "$id" ]] || { echo "error: no release for $GITHUB_REF_NAME"; exit 1; }
+          asset=$(gh api "$api/$id/assets" --jq '.[] | select(.name == "latest.json") | .id')
+          [[ -n "$asset" ]] || { echo "error: the release has no latest.json"; exit 1; }
+          gh api -H "Accept: application/octet-stream" "$api/assets/$asset" > "$RUNNER_TEMP/latest.json"
+          node scripts/release-summary.mjs latest-json "${GITHUB_REF_NAME#v}" "$RUNNER_TEMP/latest.json"
+          gh api -X DELETE "$api/assets/$asset"
+          gh api -X POST -H "Content-Type: application/json" --input "$RUNNER_TEMP/latest.json" \
+            "https://uploads.github.com/$api/$id/assets?name=latest.json"

@@ -234,6 +234,20 @@ describe("About", () => {
     expect(screen.queryByTestId("release-notes")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "What's new in 1.2.1" }));
     expect(screen.getByTestId("release-notes").textContent).toContain("safety release");
+    expect(screen.queryByRole("button", { name: "See the full changelog" })).toBeNull();
+  });
+
+  it("shows a released version's summary, with a link to its release page", async () => {
+    getVersion.mockResolvedValue("1.3.0");
+    openExternalLink.mockResolvedValue("cancelled");
+    render(<PreferencesDialog />);
+    await openPreferences("About");
+    fireEvent.click(await screen.findByRole("button", { name: "What's new in 1.3.0" }));
+    expect(screen.getByTestId("release-notes").textContent).toContain("Edge color bleed fills");
+    fireEvent.click(screen.getByRole("button", { name: "See the full changelog" }));
+    expect(openExternalLink).toHaveBeenLastCalledWith(
+      "https://github.com/JoaquinArruiz/Gutterberg/releases/tag/v1.3.0",
+    );
   });
 
   it("sends the Microsoft Store copy to its Store page, where it is updated", async () => {

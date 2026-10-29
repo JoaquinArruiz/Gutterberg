@@ -860,6 +860,7 @@
       "lastCheckFailed": "La última búsqueda no pudo conectarse con el servidor de actualizaciones. Revisa tu conexión.",
       "available": "La versión {{version}} está disponible",
       "whatsNewIn": "Novedades de la versión {{version}}",
+      "fullChangelog": "Ver el registro de cambios completo",
       "downloading": "Descargando la actualización…",
       "progress": "Descargando la actualización… {{percent}} %",
       "installed": "La versión {{version}} está instalada. Reinicia Gutterberg para usarla.",

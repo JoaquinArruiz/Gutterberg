@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { versionNotes } from "./changelog";
+import { versionNotes, versionSummary } from "./changelog";
 
 const TEXT = `# Changelog
 
@@ -37,5 +37,17 @@ describe("the notes of the running version", () => {
 
   it("come from the CHANGELOG.md the app was built with", () => {
     expect(versionNotes("1.2.1")).toContain("safety release");
+  });
+});
+
+describe("the summary of the running version", () => {
+  it("is its file in release-notes/, and none for a version without one", () => {
+    const files = { "/release-notes/1.3.0.md": "### Added\n\n- New.\n" };
+    expect(versionSummary("1.3.0", files)).toBe("### Added\n\n- New.");
+    expect(versionSummary("1.3.1", files)).toBeNull();
+  });
+
+  it("comes from the release-notes/ the app was built with", () => {
+    expect(versionSummary("1.3.0")).toContain("### Added");
   });
 });

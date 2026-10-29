@@ -87,7 +87,7 @@ export function UpdatesSection() {
                 <p className="text-[var(--muted)]">
                   {t("preferences.updates.whatsNewIn", { version: update.version })}
                 </p>
-                <ReleaseNotes notes={update.notes} />
+                <ReleaseNotes notes={update.notes} version={update.version} />
               </>
             )}
           </div>
@@ -144,7 +144,7 @@ export function UpdatesSection() {
 
       {whatsNew && (
         <Field label={t("preferences.updates.whatsNewIn", { version: whatsNew.version })}>
-          <ReleaseNotes notes={whatsNew.notes} />
+          <ReleaseNotes notes={whatsNew.notes} version={whatsNew.version} />
         </Field>
       )}
 

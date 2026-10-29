@@ -1,7 +1,8 @@
 name: Discord release post
 
 # Publishing a release on GitHub posts it in the Discord server's #announcements, pinging the Release pings role, and
-# publishes the post to the servers that follow the channel. Running it by hand posts an existing release again;
+# publishes the post to the servers that follow the channel. The post is the version's summary, release-notes/<x.y.z>.md,
+# as the tag has it. Running it by hand posts an existing release again, with the summary of the branch it runs from;
 # it starts as a dry run that only prints the post. See docs/releasing.md.
 on:
   release:

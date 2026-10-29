@@ -48,10 +48,10 @@ word of the heading.
    pre-releases) in the Discord server's `#announcements`, pinging the Release pings role, and publishes the post to
    the servers that follow the channel. It needs the secrets `DISCORD_BOT_TOKEN` (Gutterbot's token),
    `DISCORD_ANNOUNCEMENTS_CHANNEL_ID` and `DISCORD_RELEASE_ROLE_ID` (the last two may be variables instead), and
-   Gutterbot needs View Channel, Send Messages and Manage Messages in `#announcements`. The post is made from the
-   release's lists (Added as New, Changed, Fixed), each bullet cut to its name and first sentence; I can edit it in
-   Discord afterwards. Run the workflow by hand with a tag to see the post (a dry run, the default) or to post a
-   release again.
+   Gutterbot needs View Channel, Send Messages and Manage Messages in `#announcements`. The post is the version's
+   summary (see "The summary" below) and a link to the release; I can edit it in Discord afterwards. Run the workflow
+   by hand with a tag to see the post (a dry run, the default) or to post a release again; it reads the summary from
+   the branch it runs on.
 
 Builds are not code-signed (no Apple or Windows certificate). The updater works anyway; it checks its own key. The
 Microsoft Store package is the exception: the Store signs it (see "Microsoft Store" below).
@@ -66,8 +66,9 @@ A version has its own branch, `release/1.1.0`, started from `main`; features and
    release and put the five new SHA-256 sums beside it (`sha256sum` of each `.tgz`); then `cargo install cargo-audit`
    once and `cargo audit`, and `cargo update -p <crate>` whatever it reports with a fix.
 1. On `release/1.1.0`, merge `main` into it. Move the `Unreleased` notes under the new version in `CHANGELOG.md`;
-   bump `version` in `package.json` and `src-tauri/Cargo.toml`; run `cargo build` to refresh `Cargo.lock`; delete the
-   version's brief from `docs/milestones/` and its row from `roadmap.md`. To check before pushing:
+   bump `version` in `package.json` and `src-tauri/Cargo.toml`; run `cargo build` to refresh `Cargo.lock`; write the
+   version's summary in `release-notes/1.1.0.md` (see "The summary" below); delete the version's brief from
+   `docs/milestones/` and its row from `roadmap.md`. To check before pushing:
    `scripts/check-release.sh v1.1.0`. Commit it as "Release 1.1.0".
 2. Once CI has passed on `release/1.1.0` and I have tested it, merge it into `main` with a **merge commit**:
    `git switch main && git pull && git merge --no-ff release/1.1.0 && git push`.
@@ -89,7 +90,37 @@ CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a b
 fix branches are merged locally into their version branch (no pull request), so CI checks them when the version branch
 is pushed.
 
-To fix the notes after a release, edit `CHANGELOG.md`, turn the release back into a draft on GitHub (Edit, then
+## The summary
+
+`CHANGELOG.md` and the GitHub release have the full notes. Everywhere else a version shows a short summary that I
+write with the release, `release-notes/x.y.z.md`:
+
+```md
+### Added
+
+- One sentence per change, plain text (no bold, code or links: the app shows Markdown as typed).
+- ...and more!
+
+### Fixed
+
+- Another sentence.
+```
+
+Only the Keep a Changelog headings are allowed (Added, Changed, Deprecated, Removed, Fixed, Security), each with at
+least one bullet. It is short by rule: its Store text must fit the Microsoft Store's 1500 characters, so when a version
+has too much I keep the main changes and end the list with "...and more!". `scripts/check-release.sh` refuses a
+release tag whose summary is missing or breaks these rules (`node scripts/release-summary.mjs check x.y.z` checks it
+alone); a pre-release needs none. It is used by:
+
+- **Discord**: the post is the summary, then "See the full changelog: <release link>".
+- **The app**: the Release workflow's last job puts the summary in `latest.json`, so the update prompt shows it, and
+  the app has every summary built in for What's new; both end with a "See the full changelog" link to the release.
+  A development build, which has no summary, shows the changelog's Unreleased notes.
+- **The Microsoft Store**: `whats-new.txt`, in the run's `microsoft-store` artifact beside the `.msix`, is the
+  summary as plain text without the link, to paste into "What's new in this version"
+  (`node scripts/release-summary.mjs store x.y.z` prints it too).
+
+To fix the notes after a release, edit `CHANGELOG.md` (and the summary), turn the release back into a draft on GitHub (Edit, then
 Save draft), re-run the workflow for that tag (it replaces the release's files) and publish it again. tauri-action
 stops on a tag whose release is already published, since the workflow asks for a draft. Editing the text on GitHub
 alone does **not** change `latest.json`.
@@ -111,7 +142,8 @@ since an unsigned MSIX does not install by double-clicking. Pre-releases get non
 the script. If the artifact is missing, the
 "Pack the Microsoft Store package" step's log says why; the rest of the release is not affected. After publishing the
 GitHub release: in Partner Center, open Gutterberg, **Start update** (or the open submission), **Packages**, drop the
-`.msix`, remove the previous one, and **Submit to the Store**. Certification usually takes one to three days; the
+`.msix`, remove the previous one, paste `whats-new.txt` (in the same zip) into **Store listings** › **What's new
+in this version**, and **Submit to the Store**. Certification usually takes one to three days; the
 Store then updates installed copies by itself.
 
 **Before the first submission, or after changing the manifest**, try the package on a Windows PC. It has to be signed

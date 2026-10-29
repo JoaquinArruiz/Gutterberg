@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/128x128.png";
 import { useAppName } from "../../lib/app-info";
-import { versionNotes } from "../../lib/changelog";
+import { versionNotes, versionSummary } from "../../lib/changelog";
 import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
 import { type LicenseTexts, licenseTexts } from "../../lib/licenses";
 import { useUpdateStore } from "../../stores/update-store";
@@ -36,7 +36,9 @@ export function AboutSection() {
   const [textsFailed, setTextsFailed] = useState(false);
   const store = useUpdateStore((s) => s.store);
   const [notesOpen, setNotesOpen] = useState(false);
-  const notes = version ? versionNotes(version) : null;
+  // A released version's summary, or for a development build the changelog's notes.
+  const summary = version ? versionSummary(version) : null;
+  const notes = summary ?? (version ? versionNotes(version) : null);
 
   useEffect(() => {
     let live = true;
@@ -123,7 +125,7 @@ export function AboutSection() {
             </Button>
           )}
         </div>
-        {notesOpen && notes && <ReleaseNotes notes={notes} />}
+        {notesOpen && notes && version && <ReleaseNotes notes={notes} version={summary ? version : undefined} />}
       </Field>
       <BugReportField />
       <Field label={t("preferences.about.license")}>

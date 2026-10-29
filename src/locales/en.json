@@ -860,6 +860,7 @@
       "lastCheckFailed": "The last check couldn't reach the update server. Check your connection.",
       "available": "{{version}} is available",
       "whatsNewIn": "What's new in {{version}}",
+      "fullChangelog": "See the full changelog",
       "downloading": "Downloading the update…",
       "progress": "Downloading the update… {{percent}}%",
       "installed": "{{version}} is installed. Restart Gutterberg to use it.",

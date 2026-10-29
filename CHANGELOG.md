@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Changed
+
+- What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.
+
 ## 1.3.0 (2026-10-28)
 
 ### Added

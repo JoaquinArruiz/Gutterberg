@@ -26,6 +26,12 @@ export const EXTERNAL_LINKS = {
  */
 export const BUG_REPORT_URL = "https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=bug_report.yml";
 
+/** A version's release page, with its full notes. Allowed by its start, followed by a version such as `1.3.0`. */
+export const RELEASE_URL = "https://github.com/JoaquinArruiz/Gutterberg/releases/tag/v";
+
+/** The release page of `version`. */
+export const releasePageUrl = (version: string): string => `${RELEASE_URL}${version}`;
+
 /** The community's Discord invitation, a permanent one. */
 export const DISCORD_URL = "https://discord.gg/ytBFE9TtRY";
 
@@ -35,9 +41,13 @@ export const bugReportUrl = (fields: { version: string; os: string }): string =>
 
 const EXACT: readonly string[] = [...Object.values(EXTERNAL_LINKS), DISCORD_URL];
 
-/** Whether the app may open `url`: one of the exact addresses, or the bug report form with fields after it. */
+/**
+ * Whether the app may open `url`: one of the exact addresses, a release page, or the bug report form with fields
+ * after it.
+ */
 export function isAllowedLink(url: string): boolean {
   if (EXACT.includes(url)) return true;
+  if (url.startsWith(RELEASE_URL)) return /^\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?$/.test(url.slice(RELEASE_URL.length));
   if (!url.startsWith(`${BUG_REPORT_URL}&`)) return false;
   try {
     const parsed = new URL(url);
