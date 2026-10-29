@@ -69,6 +69,10 @@ pub struct MarkOptions {
     /// Duplex on the other side: marks on the back sheets too, round the backs, for backs that are
     /// cut on their own instead of through both sides at once. Off, a back sheet has none.
     pub on_backs: bool,
+    /// Ticks: also a small cross, its arms `length_mm` long, in the middle of each place where a gap
+    /// between columns crosses a gap between rows, so the inside can be cut without a ruler across
+    /// the sheet.
+    pub inner_crosses: bool,
 }
 
 impl Default for MarkOptions {
@@ -81,6 +85,7 @@ impl Default for MarkOptions {
             length_mm: 3.0,
             offset_mm: 1.0,
             on_backs: false,
+            inner_crosses: false,
         }
     }
 }
@@ -93,6 +98,12 @@ pub enum BleedSource {
     Mirror,
     /// Use what the source PDF has in the gap around the piece.
     Source,
+    /// A plain fill of the colour of the piece's edge (`Finishing::edge_colors`, found by the
+    /// app from a small render), under the piece. A piece without a colour is mirrored.
+    Edge,
+    /// Fill with AI: a picture of the band round the piece (`Finishing::image_fills`), over the mirrored
+    /// bleed and under the piece. A piece without a picture is mirrored.
+    Ai,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -163,6 +174,17 @@ pub struct FinishOptions {
     pub marks: MarkOptions,
     pub bleed: BleedOptions,
     pub duplex: DuplexOptions,
+    pub background: BackgroundOptions,
+}
+
+/// Plain colours painted under everything: the whole sheet, and a rectangle behind each piece
+/// (with its bleed). They show only where the source leaves the page empty. `#rrggbb`; `None`
+/// paints nothing, so the paper shows.
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default)]
+pub struct BackgroundOptions {
+    pub sheet: Option<String>,
+    pub pieces: Option<String>,
 }
 
 /// `back` is the back of `card`.
@@ -176,12 +198,31 @@ pub struct BackPair {
     pub turn: Turn,
 }
 
-/// What the finishing needs from the user: the options and the backs chosen per piece.
+/// The colour of a piece's edge, for the `Edge` bleed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EdgeColor {
+    pub card: CardId,
+    pub color: [u8; 3],
+}
+
+/// The picture of a piece's bleed for the `Ai` bleed: a PNG of the piece plus `inset` pixels on every
+/// side, clear over the piece (`crate::fill::keep_band`).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PieceFill {
+    pub card: CardId,
+    pub path: String,
+    pub inset: u32,
+}
+
+/// What the finishing needs from the user: the options, the backs chosen per piece, the colours of
+/// the pieces' edges for the `Edge` bleed and the pictures of their bleed for the `Ai` bleed.
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Finishing {
     pub options: FinishOptions,
     pub backs: Vec<BackPair>,
+    pub edge_colors: Vec<EdgeColor>,
+    pub image_fills: Vec<PieceFill>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -198,6 +239,74 @@ pub struct SheetBleed {
     pub mm: f64,
     #[serde(default)]
     pub source: BleedSource,
+}
+
+/// The `Edge` bleed of one placement: a fill of `color` over the piece grown by the bleed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct EdgeFill {
+    /// Index into the sheet's placements.
+    pub placement: usize,
+    pub color: [u8; 3],
+}
+
+/// The `Edge` bleed fills of a sheet's placements that have a colour; empty for another bleed.
+fn edge_fills(sheet: &OutputSheet, colors: &HashMap<CardId, [u8; 3]>) -> Vec<EdgeFill> {
+    if sheet.bleed.source != BleedSource::Edge || sheet.bleed.mm <= 0.0 {
+        return Vec::new();
+    }
+    sheet
+        .placements
+        .iter()
+        .enumerate()
+        .filter_map(|(placement, p)| {
+            colors
+                .get(&p.card_id)
+                .map(|&color| EdgeFill { placement, color })
+        })
+        .collect()
+}
+
+/// The `Ai` bleed of one placement: the picture at `path`, its piece area laid on the placement.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ImageFill {
+    /// Index into the sheet's placements.
+    pub placement: usize,
+    pub path: String,
+    pub inset: u32,
+}
+
+/// The `Ai` bleed pictures of a sheet's placements that have one; empty for another bleed.
+fn image_fills(sheet: &OutputSheet, fills: &HashMap<CardId, (String, u32)>) -> Vec<ImageFill> {
+    if sheet.bleed.source != BleedSource::Ai || sheet.bleed.mm <= 0.0 {
+        return Vec::new();
+    }
+    sheet
+        .placements
+        .iter()
+        .enumerate()
+        .filter_map(|(placement, p)| {
+            fills.get(&p.card_id).map(|(path, inset)| ImageFill {
+                placement,
+                path: path.clone(),
+                inset: *inset,
+            })
+        })
+        .collect()
+}
+
+/// The plain colours of a sheet, as the exporter paints them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+pub struct SheetBackground {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sheet: Option<[u8; 3]>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub pieces: Option<[u8; 3]>,
+}
+
+impl SheetBackground {
+    pub fn is_none(&self) -> bool {
+        self.sheet.is_none() && self.pieces.is_none()
+    }
 }
 
 /// Cut marks of a sheet: stroked lines in points.
@@ -274,7 +383,16 @@ fn validate(options: &FinishOptions) -> Result<()> {
         MAX_DUPLEX_OFFSET_MM,
     )?;
     check_range("the gap at the fold", d.fold_gap_mm, 0.0, MAX_FOLD_GAP_MM)?;
+    sheet_background(&options.background)?;
     Ok(())
+}
+
+fn sheet_background(options: &BackgroundOptions) -> Result<SheetBackground> {
+    let parse = |c: &Option<String>| c.as_deref().map(parse_color).transpose();
+    Ok(SheetBackground {
+        sheet: parse(&options.sheet)?,
+        pieces: parse(&options.pieces)?,
+    })
 }
 
 /// Whether the backs go beside the fronts, to fold.
@@ -370,6 +488,59 @@ fn gaps_along(spans: &mut [(f64, f64)]) -> (Vec<(f64, f64)>, usize) {
     (gaps, touching)
 }
 
+/// The crosses where a gap between columns meets a gap between rows, `length` (points) to each
+/// side of the middle, added to `lines`. Only where a piece has a corner at that crossing, so an
+/// empty end of a short last row gets none past its last piece. Returns false when some gap is
+/// too narrow for a line (or there is none), as the gap lines do.
+fn inner_crosses(
+    rects: &[Rect],
+    options: &MarkOptions,
+    length: f64,
+    lines: &mut Vec<[f64; 4]>,
+) -> bool {
+    let needed = mm_to_pt(options.width_mm + GAP_LINE_CLEARANCE_MM);
+    let (columns, touching_x) = gaps_along(
+        &mut rects
+            .iter()
+            .map(|r| (r.x, r.x + r.width))
+            .collect::<Vec<_>>(),
+    );
+    let (rows, touching_y) = gaps_along(
+        &mut rects
+            .iter()
+            .map(|r| (r.y, r.y + r.height))
+            .collect::<Vec<_>>(),
+    );
+    let mut fits = touching_x == 0 && touching_y == 0;
+    let wide = |gaps: Vec<(f64, f64)>, fits: &mut bool| -> Vec<(f64, f64)> {
+        gaps.into_iter()
+            .filter(|(a, b)| {
+                let ok = b - a >= needed;
+                *fits &= ok;
+                ok
+            })
+            .collect()
+    };
+    let (columns, rows) = (wide(columns, &mut fits), wide(rows, &mut fits));
+    let near = |a: f64, b: f64| (a - b).abs() < EPS;
+    for &(x0, x1) in &columns {
+        for &(y0, y1) in &rows {
+            let cornered = rects.iter().any(|r| {
+                let (rx, ry) = ([r.x, r.x + r.width], [r.y, r.y + r.height]);
+                rx.iter().any(|&x| near(x, x0) || near(x, x1))
+                    && ry.iter().any(|&y| near(y, y0) || near(y, y1))
+            });
+            if !cornered {
+                continue;
+            }
+            let (mx, my) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+            lines.push([mx - length, my, mx + length, my]);
+            lines.push([mx, my - length, mx, my + length]);
+        }
+    }
+    fits
+}
+
 /// Cut marks around `rects`: the pieces, or with gutterfold each folded pair as one.
 fn marks_for(
     rects: &[Rect],
@@ -400,6 +571,9 @@ fn marks_for(
             for y in ys {
                 lines.push([left - start - length, y, left - start, y]);
                 lines.push([right + start, y, right + start + length, y]);
+            }
+            if options.inner_crosses && !inner_crosses(rects, options, length, &mut lines) {
+                push_unique(warnings, SheetWarning::GapTooNarrowForLine);
             }
         }
         MarkStyle::Gaps => {
@@ -743,6 +917,7 @@ fn back_sheet(
     let mut sheet = OutputSheet::new(page, placements);
     sheet.side = Side::Back;
     sheet.bleed = front.bleed;
+    sheet.background = front.background;
     let rects: Vec<Rect> = sheet.placements.iter().map(|p| p.destination).collect();
     bleed_warnings(&sheet, &rects, &mut warnings);
     sheet.warnings = warnings;
@@ -840,8 +1015,11 @@ pub fn finish_sheets(
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
     let options = &finishing.options;
     validate(options)?;
-    let wanted =
-        options.marks.style != MarkStyle::Off || options.bleed.mm > 0.0 || options.duplex.on;
+    let background = sheet_background(&options.background)?;
+    let wanted = options.marks.style != MarkStyle::Off
+        || options.bleed.mm > 0.0
+        || options.duplex.on
+        || !background.is_none();
     if !wanted {
         return Ok((sheets, Vec::new()));
     }
@@ -851,6 +1029,16 @@ pub fn finish_sheets(
         .backs
         .iter()
         .map(|p| (p.card, (p.back, p.turn)))
+        .collect();
+    let colors: HashMap<CardId, [u8; 3]> = finishing
+        .edge_colors
+        .iter()
+        .map(|e| (e.card, e.color))
+        .collect();
+    let pictures: HashMap<CardId, (String, u32)> = finishing
+        .image_fills
+        .iter()
+        .map(|f| (f.card, (f.path.clone(), f.inset)))
         .collect();
     let bleed = SheetBleed {
         mm: options.bleed.mm,
@@ -875,6 +1063,7 @@ pub fn finish_sheets(
     let mut issues: Vec<PageIssue> = Vec::new();
     for mut sheet in sheets {
         sheet.bleed = bleed;
+        sheet.background = background;
         let mut warnings = Vec::new();
         // With gutterfold a front and its back are one piece of paper: marks and bleed go round
         // the pair (or round each of them, when the pairs are cut apart).
@@ -903,6 +1092,12 @@ pub fn finish_sheets(
             let rects: Vec<Rect> = b.placements.iter().map(|p| p.destination).collect();
             b.marks = marks_for(&rects, b.page, &options.marks, bleed_pt, &mut b.warnings)?;
         }
+        if let Some(b) = back.as_mut() {
+            b.edge_fills = edge_fills(b, &colors);
+            b.image_fills = image_fills(b, &pictures);
+        }
+        sheet.edge_fills = edge_fills(&sheet, &colors);
+        sheet.image_fills = image_fills(&sheet, &pictures);
         sheet.warnings = warnings;
         out.push(sheet);
         out.extend(back);

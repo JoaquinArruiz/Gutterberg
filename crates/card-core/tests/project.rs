@@ -142,6 +142,17 @@ fn a_version_6_project_gets_a_list_of_one_grid_and_keeps_its_edits() {
 }
 
 #[test]
+fn a_version_7_project_opens_unchanged_but_for_its_version() {
+    let text = r#"{"format":"gutterberg-project","version":7,"plan":{"finish":{"bleed":{"mm":2,"source":"mirror"}}}}"#;
+    let body = parse_project(text).unwrap();
+    assert_eq!(body["version"], 8);
+    assert_eq!(
+        serde_json::Value::Object(body)["plan"],
+        json!({ "finish": { "bleed": { "mm": 2, "source": "mirror" } } })
+    );
+}
+
+#[test]
 fn a_grid_group_that_already_has_a_list_is_left_as_it_is() {
     let text = r#"{"format":"gutterberg-project","version":6,"documents":[{"groups":[{"kind":"grid","pages":{"first":0,"last":0},"grids":[]}]}]}"#;
     let body = parse_project(text).unwrap();

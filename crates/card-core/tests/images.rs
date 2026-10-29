@@ -771,6 +771,8 @@ fn nine_jpegs_print_on_one_a4_sheet_in_a_three_by_three_grid_at_true_size_with_c
             ..FinishOptions::default()
         },
         backs: Vec::new(),
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (sheets, issues) =
         finish_sheets(sheets, std::slice::from_ref(&source), &finishing).unwrap();
@@ -807,6 +809,8 @@ fn an_image_with_bleed_works_with_bleed_from_the_source() {
             ..FinishOptions::default()
         },
         backs: Vec::new(),
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     // Nothing is in the way of the bleed: it is the image's own, so no warning and no error.
     let (sheets, issues) =

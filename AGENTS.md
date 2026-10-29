@@ -54,7 +54,8 @@ Run all of them before proposing a commit.
   a percentage), never applied automatically to make cards fit. Overflow is reported,
   never fixed by shrinking.
 - Content is never rasterised on export. Rotation, translation and scaling are PDF
-  transformation matrices on the original content.
+  transformation matrices on the original content. A Fill with AI picture is an added picture, only in the bleed
+  and under the piece; the piece itself is always the original content.
 - UI coordinates are normalized (0..1 of the page, top-left origin); `layout.rs` works in
   points with a top-left origin. Every conversion goes through `src/lib/coordinates.ts` or
   `src/lib/units.ts`.

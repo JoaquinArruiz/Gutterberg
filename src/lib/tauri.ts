@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { z } from "zod";
 import { t } from "../i18n";
-import type { DocumentId } from "./card";
+import type { DocumentId, OrientedRect } from "./card";
 import type { NormalizedRect } from "./coordinates";
 import { forgetPageEdges } from "./edges-api";
 import { isSupersededError } from "./errors";
@@ -47,14 +47,21 @@ export async function pickExportPath(
   chosenName?: string | null,
 ): Promise<string | null> {
   const filters = [{ name: t("files.pdfFilter"), extensions: ["pdf"] }];
-  if (chosenName) return save({ defaultPath: `${chosenName}.pdf`, filters });
+  return save({ defaultPath: `${chosenName || suggestedExportName(inputPath, kind)}.pdf`, filters });
+}
+
+/**
+ * The name, without ".pdf", that the save dialog offers when none was chosen: the source's (a PDF or a project)
+ * followed by "-print" or "-spaced". The Print tab's toolbar shows the same name.
+ */
+export function suggestedExportName(inputPath: string, kind: "spaced" | "print" = "spaced"): string {
   const name =
     inputPath
       .split(/[\\/]/)
       .pop()
-      ?.replace(/\.(pdf|gtr)$/i, "") ?? t("files.fallbackName");
+      ?.replace(/\.(pdf|gtr)$/i, "") || t("files.fallbackName");
   const suffix = kind === "print" ? t("files.suffixPrint") : t("files.suffixSpaced");
-  return save({ defaultPath: `${name}-${suffix}.pdf`, filters });
+  return `${name}-${suffix}`;
 }
 
 /** Mirrors card_core::layout::GridLayout. */
@@ -129,15 +136,24 @@ export async function renderPage(
   return URL.createObjectURL(new Blob([replyBytes(reply)], { type: "image/png" }));
 }
 
-/** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL. */
+/** The colour (`#rrggbb`) of the edge of each piece, in the order given, for the Edge bleed. Worked out locally. */
+export async function edgeColors(
+  pieces: { documentId: DocumentId; pageIndex: number; source: OrientedRect }[],
+): Promise<string[]> {
+  return invoke<string[]>("edge_colors", { pieces });
+}
+
+/** Renders only `region` (normalized) of a page at the scale where the page is `fullWidthPx` wide. Caller owns the URL.
+ * `transparent` leaves what the page does not paint clear instead of white. */
 export async function renderRegion(
   kind: RenderKind,
   documentId: DocumentId,
   pageIndex: number,
   region: NormalizedRect,
   fullWidthPx: number,
+  transparent = false,
 ): Promise<string> {
-  const reply = await invoke<ArrayBuffer | number[]>("render_region", {
+  const reply = await invoke<ArrayBuffer | number[]>(transparent ? "render_piece_region" : "render_region", {
     kind,
     documentId,
     pageIndex,

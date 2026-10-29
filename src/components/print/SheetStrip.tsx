@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { fillCss } from "../../lib/finish";
 import type { OutputSheet } from "../../lib/sheet-api";
+import { useWheelScrollsSideways } from "../../lib/use-wheel-scrolls-sideways";
 import { PlacedCard } from "./PlacedCard";
-import { SheetOverlay } from "./SheetOverlay";
+import { EdgeFills, SheetOverlay } from "./SheetOverlay";
 
 const THUMB_HEIGHT = 84;
 
@@ -51,11 +53,15 @@ function SheetThumb({
       data-testid="sheet-thumb"
       className={`flex shrink-0 flex-col items-center gap-1 rounded p-1.5 ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
     >
-      <div className="relative bg-white shadow shadow-black/40" style={{ width, height: THUMB_HEIGHT }}>
+      <div
+        className="relative shadow shadow-black/40"
+        style={{ width, height: THUMB_HEIGHT, background: fillCss(sheet.background?.sheet) }}
+      >
+        {visible && <EdgeFills sheet={sheet} k={k} />}
         {visible &&
           sheet.placements.map((p, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
-            <PlacedCard key={i} p={p} k={k} kind="thumbnail" />
+            <PlacedCard key={i} p={p} k={k} kind="thumbnail" fill={fillCss(sheet.background?.pieces)} />
           ))}
         {visible && <SheetOverlay sheet={sheet} k={k} />}
       </div>
@@ -77,8 +83,11 @@ export function SheetStrip({
   onSelect: (i: number) => void;
 }) {
   const tagged = sheets.some((s) => s.side === "back");
+  const ref = useRef<HTMLDivElement>(null);
+  useWheelScrollsSideways(ref);
   return (
     <div
+      ref={ref}
       className="flex shrink-0 gap-1 overflow-x-auto border-b border-[var(--border)] bg-[var(--panel)] px-2 pb-1 pt-1"
       data-testid="sheet-strip"
     >

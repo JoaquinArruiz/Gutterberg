@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_AI, normalizeAi, providerConfig, providerHost } from "./ai";
+import { DEFAULT_AI, drawsPictures, imageConfig, normalizeAi, providerConfig, providerHost } from "./ai";
 import { DEFAULT_PREFERENCES, migratePreferences, normalizePreferences, PREFERENCES_VERSION } from "./preferences";
 
 describe("AI preferences", () => {
@@ -28,7 +28,7 @@ describe("AI preferences", () => {
     expect(ai.enabled).toBe(false); // only a real true turns it on
     expect(ai.provider).toBe("anthropic");
     expect(ai.sendImages).toBe(false);
-    expect(ai.providers.gemini).toEqual({ model: "gemini-2.5-flash", baseUrl: "", workspaceId: "" });
+    expect(ai.providers.gemini).toEqual({ model: "gemini-2.5-flash", baseUrl: "", workspaceId: "", imageModel: "" });
     expect(ai.providers.ollama).toEqual(DEFAULT_AI.providers.ollama);
     expect(ai.providers.openai_compatible.model).toHaveLength(200);
     expect(ai.providers.openai_compatible.baseUrl).toBe("http://localhost:1234/v1");
@@ -74,6 +74,16 @@ describe("what a command is given", () => {
       base_url: null,
       workspace_id: null,
     });
+  });
+
+  it("is, for Fill with AI, the image model of a provider that draws", () => {
+    const ai = normalizeAi({
+      provider: "gemini",
+      providers: { gemini: { model: "gemini-2.5-flash", imageModel: " gemini-2.5-flash-image " } },
+    });
+    expect(imageConfig(ai)).toEqual({ ...providerConfig(ai), model: "gemini-2.5-flash-image" });
+    expect(drawsPictures("gemini") && drawsPictures("openai_compatible")).toBe(true);
+    expect(drawsPictures("anthropic") || drawsPictures("ollama")).toBe(false);
   });
 
   it("names the server the way the notice shows it", () => {

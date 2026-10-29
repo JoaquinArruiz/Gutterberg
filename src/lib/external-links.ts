@@ -11,6 +11,12 @@ export const EXTERNAL_LINKS = {
   linkedin: "https://www.linkedin.com/in/joaquinarruiz",
   github: "https://github.com/JoaquinArruiz",
   refractionHub: "https://github.com/RefractionHub",
+  /** Gutterberg's page, with the download for every system. */
+  projectPage: "https://joaquinarruiz.com.ar/projects/gutterberg",
+  /** The Microsoft Store's page, the download page of the copy the Store installed. */
+  storePage: "https://apps.microsoft.com/detail/9NLQ61KCDSKZ",
+  /** Every version's changes. */
+  changelog: "https://github.com/JoaquinArruiz/Gutterberg/blob/main/CHANGELOG.md",
 } as const;
 
 /**

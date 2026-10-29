@@ -5,8 +5,8 @@ use crate::error::{AiError, Result};
 use crate::provider::{HttpRequest, HttpResponse, Transport};
 use std::time::Duration;
 
-/// Largest answer read (a JSON reply is a few kilobytes).
-const MAX_RESPONSE_BYTES: u64 = 8 * 1024 * 1024;
+/// Largest answer read (a JSON reply is a few kilobytes; a picture from Fill with AI a few megabytes).
+const MAX_RESPONSE_BYTES: u64 = 32 * 1024 * 1024;
 
 pub struct UreqTransport;
 

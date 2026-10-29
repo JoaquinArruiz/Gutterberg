@@ -8,14 +8,17 @@ import { gridCardId } from "./card";
 import { getLayoutDocuments } from "./documents";
 import { appError } from "./errors";
 import { printProject } from "./print-request";
-import { PROJECT_FORMAT, PROJECT_VERSION, parseProject } from "./project";
+import { PROJECT_FORMAT, PROJECT_VERSION, type ProjectState, parseProject, toProject } from "./project";
 import {
   activateDocument,
   addPdfDialog,
+  confirmClose,
   newProject,
+  offerRecovery,
   openPdfDialog,
   openProjectDialog,
   removeActiveDocument,
+  saveForSharing,
   saveProject,
   saveProjectAs,
 } from "./project-actions";
@@ -30,6 +33,11 @@ const fake = vi.hoisted(() => ({
   projects: new Map<string, unknown>(),
   /** What the user will answer next. */
   confirms: [] as boolean[],
+  /** What the user will answer when closing with unsaved changes. */
+  saveAnswers: [] as ("save" | "discard" | "cancel")[],
+  /** Recovery copies an earlier run left, and the ids removed. */
+  recovered: [] as { id: string; info: { path: string | null; written: number }; project: unknown }[],
+  cleared: [] as string[],
   asked: [] as string[],
   pickedPdf: [] as (string | null)[],
   pickedPdfs: [] as string[][],
@@ -37,7 +45,14 @@ const fake = vi.hoisted(() => ({
   saveAs: [] as (string | null)[],
   opened: [] as [number, string][],
   closed: 0,
+  /** Readmes written: project path -> text. */
+  readmes: new Map<string, string>(),
+  informed: [] as string[],
+  /** Save As copying the AI fills: from, to and the file names. */
+  copiedFills: [] as { from: string; to: string; names: string[] }[],
 }));
+
+vi.mock("@tauri-apps/api/app", () => ({ getVersion: vi.fn(async () => "1.3.0") }));
 
 vi.mock("./tauri", async (importOriginal) => ({
   ...(await importOriginal<typeof import("./tauri")>()),
@@ -59,6 +74,12 @@ vi.mock("./tauri", async (importOriginal) => ({
   }),
 }));
 
+vi.mock("./recovery", () => ({
+  findRecovery: vi.fn(async () => fake.recovered.shift() ?? null),
+  clearRecovery: vi.fn(async (id: string) => void fake.cleared.push(id)),
+  dropRecoveryCopy: vi.fn(async () => void fake.cleared.push("this run")),
+}));
+
 vi.mock("./project-api", () => ({
   readProjectFile: vi.fn(async (path: string) => {
     if (!fake.projects.has(path)) throw { code: "io", message: "no such file" };
@@ -76,12 +97,35 @@ vi.mock("./project-api", () => ({
     return pdf.hash;
   }),
   fileExists: vi.fn(async (path: string) => fake.pdfs.has(path)),
+  // As the engine does: in the project's folder, by name and content, then by content, then by name.
+  findBeside: vi.fn(async (project: string, name: string, wanted: string) => {
+    const folder = project.slice(0, project.lastIndexOf("/") + 1);
+    const here = [...fake.pdfs].filter(([p]) => p.startsWith(folder) && !p.slice(folder.length).includes("/"));
+    const named = here.find(([p]) => p === folder + name);
+    const found =
+      (named?.[1].hash === wanted ? named : undefined) ?? here.find(([, pdf]) => pdf.hash === wanted) ?? named;
+    return found ? { path: found[0], same: found[1].hash === wanted } : null;
+  }),
+  writeProjectReadme: vi.fn(async (project: string, text: string) => {
+    fake.readmes.set(project, text);
+    return project.replace(/\.gtr$/, "-Gutterberg-readme.txt");
+  }),
+  inform: vi.fn(async (message: string) => void fake.informed.push(message)),
+  copyProjectFills: vi.fn(async (from: string, to: string, names: string[]) => {
+    fake.copiedFills.push({ from, to, names });
+    return names.length;
+  }),
+  missingFills: vi.fn(async (_project: string, names: string[]) => names.filter((n) => n.startsWith("gone"))),
   pickProjectToOpen: vi.fn(async () => fake.pickedProject.shift() ?? null),
   pickProjectToSave: vi.fn(async () => fake.saveAs.shift() ?? null),
   notify: vi.fn(async () => {}),
   confirm: vi.fn(async (message: string) => {
     fake.asked.push(message);
     return fake.confirms.shift() ?? false;
+  }),
+  askSave: vi.fn(async (message: string) => {
+    fake.asked.push(message);
+    return fake.saveAnswers.shift() ?? "cancel";
   }),
 }));
 
@@ -101,7 +145,20 @@ const modified = () => currentSignature() !== project().signature;
 beforeEach(async () => {
   fake.pdfs.clear();
   fake.projects.clear();
-  for (const list of [fake.confirms, fake.asked, fake.pickedPdf, fake.pickedPdfs, fake.pickedProject, fake.saveAs])
+  fake.copiedFills.length = 0;
+  fake.readmes.clear();
+  fake.informed.length = 0;
+  for (const list of [
+    fake.confirms,
+    fake.saveAnswers,
+    fake.recovered,
+    fake.cleared,
+    fake.asked,
+    fake.pickedPdf,
+    fake.pickedPdfs,
+    fake.pickedProject,
+    fake.saveAs,
+  ])
     list.length = 0;
   fake.opened.length = 0;
   fake.closed = 0;
@@ -264,6 +321,30 @@ describe("saving and opening", () => {
     expect(usePreferencesStore.getState().prefs.files.recent).toEqual(["/projects/two.gtr", "/projects/one.gtr"]);
   });
 
+  it("takes the AI fills along on Save As, and says when a fill's picture is gone on open", async () => {
+    fake.pickedPdf.push("/games/a.pdf");
+    await openPdfDialog();
+    usePrintStore.getState().setBleed({
+      mm: 3,
+      source: "ai",
+      aiFills: {
+        "g:0:0:0:0": { file: "g-0-0-0-0-aa.png", inset: 30 },
+        "g:0:0:0:1": { file: "gone-bb.png", inset: 30 },
+      },
+    });
+    fake.saveAs.push("/projects/one.gtr");
+    expect(await saveProject()).toBe(true);
+    expect(fake.copiedFills).toEqual([]);
+    fake.saveAs.push("/projects/two.gtr");
+    expect(await saveProjectAs()).toBe(true);
+    expect(fake.copiedFills).toEqual([
+      { from: "/projects/one.gtr", to: "/projects/two.gtr", names: ["g-0-0-0-0-aa.png", "gone-bb.png"] },
+    ]);
+    await openProjectDialog("/projects/two.gtr");
+    expect(noticeKeys()).toEqual(["fillsMissing"]);
+    expect(usePrintStore.getState().finish.bleed.aiFills["g:0:0:0:0"]).toEqual({ file: "g-0-0-0-0-aa.png", inset: 30 });
+  });
+
   it("saves nothing while no PDF is open", async () => {
     expect(await saveProject()).toBe(false);
     expect(await saveProjectAs()).toBe(false);
@@ -378,6 +459,38 @@ describe("a PDF that moved or changed", () => {
     expect(noticeKeys()).toEqual(["pdfChanged"]);
     expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
     expect(docs().documents[0].hash).toBe(hash(9));
+  });
+
+  it("finds it beside a shared project, by name or by content, without asking", async () => {
+    await savedWithA();
+    fake.pdfs.delete("/games/a.pdf");
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(1), pages: 3 });
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toEqual([]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/a.pdf"]);
+    expect(layout().groups[0]).toMatchObject({ grids: [{ selection: sel }] });
+
+    // The project now says another place, so New asks before dropping that.
+    fake.confirms.push(true);
+    await newProject();
+    fake.asked.length = 0;
+    fake.pdfs.delete("/projects/a.pdf");
+    fake.pdfs.set("/projects/renamed.pdf", { hash: hash(1), pages: 3 });
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toEqual([]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/renamed.pdf"]);
+  });
+
+  it("asks before using a file beside the project that has its name but other content", async () => {
+    await savedWithA();
+    fake.pdfs.delete("/games/a.pdf");
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(7), pages: 3 });
+    // Not the same file. Use it anyway? Yes.
+    fake.confirms.push(true);
+    await openProjectDialog("/projects/game.gtr");
+    expect(fake.asked).toHaveLength(1);
+    expect(noticeKeys()).toEqual(["pdfChanged"]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/projects/a.pdf"]);
   });
 
   it("resets a layout that no longer fits the PDF's pages, with what hangs on it", async () => {
@@ -517,3 +630,123 @@ const cardKey = (doc: number, page: number, row: number, column: number) => {
   const id = gridCardId(doc, page, row, column);
   return `g:${id.document_id}:${page}:${row}:${column}`;
 };
+
+describe("saving for sharing", () => {
+  it("saves, writes the readme beside the project, and names the files to put beside it", async () => {
+    await editedProject();
+    fake.saveAs.push("/projects/game.gtr");
+    expect(await saveForSharing()).toBe(true);
+    expect(fake.projects.has("/projects/game.gtr")).toBe(true);
+    const readme = fake.readmes.get("/projects/game.gtr") ?? "";
+    expect(readme).toContain("game.gtr: a Gutterberg project");
+    expect(readme).toContain("   - a.pdf\r\n   - game.gtr");
+    expect(readme).toContain("https://joaquinarruiz.com.ar/projects/gutterberg");
+    expect(readme).toContain("Made with Gutterberg 1.3.0.");
+    expect(readme).not.toMatch(/donat/i);
+    expect(fake.informed).toHaveLength(1);
+    expect(fake.informed[0]).toContain("game-Gutterberg-readme.txt");
+    expect(fake.informed[0]).toContain("another folder");
+    expect(fake.informed[0]).toContain("a.pdf");
+  });
+
+  it("does not ask to move anything when the PDFs are already beside the project", async () => {
+    fake.pdfs.set("/projects/a.pdf", { hash: hash(1), pages: 3 });
+    fake.pickedPdf.push("/projects/a.pdf");
+    await openPdfDialog();
+    fake.saveAs.push("/projects/game.gtr");
+    expect(await saveForSharing()).toBe(true);
+    expect(fake.informed[0]).not.toContain("another folder");
+  });
+
+  it("writes nothing when the save is cancelled", async () => {
+    await editedProject();
+    fake.saveAs.push(null);
+    expect(await saveForSharing()).toBe(false);
+    expect(fake.readmes.size).toBe(0);
+  });
+});
+
+describe("closing the window", () => {
+  it("closes without asking when nothing changed", async () => {
+    await expect(confirmClose()).resolves.toBe(true);
+    await editedProject();
+    fake.saveAs.push("/games/kit.gtr");
+    await saveProject();
+    fake.asked.length = 0;
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.asked).toEqual([]);
+  });
+
+  it("asks about unsaved changes: Cancel keeps it open, Don't save closes, Save saves first", async () => {
+    await editedProject();
+    fake.saveAnswers.push("cancel");
+    await expect(confirmClose()).resolves.toBe(false);
+    expect(fake.asked).toEqual(["This project has never been saved. Save it before closing?"]);
+    fake.saveAnswers.push("discard");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.projects.size).toBe(0);
+
+    // Save asks where, and a cancelled save keeps the window open.
+    fake.saveAnswers.push("save");
+    await expect(confirmClose()).resolves.toBe(false);
+    fake.saveAnswers.push("save");
+    fake.saveAs.push("/games/kit.gtr");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.projects.has("/games/kit.gtr")).toBe(true);
+    expect(modified()).toBe(false);
+
+    // A saved project with new changes is named, and saved where it is.
+    layout().setGapX(3);
+    fake.asked.length = 0;
+    fake.saveAnswers.push("save");
+    await expect(confirmClose()).resolves.toBe(true);
+    expect(fake.asked).toEqual(["Save the changes to “kit” before closing?"]);
+    expect(modified()).toBe(false);
+  });
+});
+
+describe("unsaved work from a run that ended", () => {
+  async function leftCopy(path: string | null) {
+    await editedProject();
+    const copy = {
+      format: PROJECT_FORMAT,
+      version: PROJECT_VERSION,
+      ...JSON.parse(JSON.stringify(toProject(currentProjectState() as ProjectState))),
+    };
+    fake.confirms.push(true);
+    await newProject();
+    fake.asked.length = 0;
+    fake.recovered.push({ id: "run-old", info: { path, written: 1 }, project: copy });
+  }
+
+  it("is restored on request, unsaved, still pointing at its file, and offered only once", async () => {
+    await leftCopy("/games/kit.gtr");
+    fake.confirms.push(true);
+    await offerRecovery();
+    expect(fake.asked).toEqual(["Gutterberg closed with unsaved changes to “kit”. Restore them?"]);
+    expect(docs().documents.map((d) => d.path)).toEqual(["/games/a.pdf"]);
+    expect(layout().gapXMm).toBe(1.5);
+    expect(project().path).toBe("/games/kit.gtr");
+    expect(modified()).toBe(true);
+    expect(fake.cleared).toEqual(["run-old"]);
+    fake.asked.length = 0;
+    await offerRecovery();
+    expect(fake.asked).toEqual([]);
+  });
+
+  it("is deleted when the user says Discard", async () => {
+    await leftCopy(null);
+    fake.confirms.push(false);
+    await offerRecovery();
+    expect(fake.asked).toEqual(["Gutterberg closed with unsaved work on a project that was never saved. Restore it?"]);
+    expect(docs().documents).toEqual([]);
+    expect(fake.cleared).toEqual(["run-old"]);
+  });
+
+  it("is removed for this run when the window is closed on purpose", async () => {
+    await editedProject();
+    fake.saveAnswers.push("discard");
+    await confirmClose();
+    expect(fake.cleared).toEqual(["this run"]);
+  });
+});

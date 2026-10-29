@@ -749,6 +749,94 @@ fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [
     ops
 }
 
+/// The operators that fill the sheet's colour over the whole page and the pieces' colour behind
+/// each piece and its bleed. Nothing when neither is set.
+fn background_ops(sheet: &OutputSheet) -> String {
+    let fill = |c: [u8; 3]| c.map(|v| fmt(f64::from(v) / 255.0)).join(" ") + " rg\n";
+    let page = sheet.page;
+    let mut ops = String::new();
+    if let Some(c) = sheet.background.sheet {
+        ops.push_str(&format!(
+            "q\n{}0 0 {} {} re f\nQ\n",
+            fill(c),
+            fmt(page.width_pt),
+            fmt(page.height_pt)
+        ));
+    }
+    if let Some(c) = sheet
+        .background
+        .pieces
+        .filter(|_| !sheet.placements.is_empty())
+    {
+        let bleed = mm_to_pt(sheet.bleed.mm);
+        ops.push_str(&format!("q\n{}", fill(c)));
+        for p in &sheet.placements {
+            let d = p.destination;
+            ops.push_str(&format!(
+                "{} {} {} {} re\n",
+                fmt(d.x - bleed),
+                fmt(page.height_pt - (d.y + d.height + bleed)),
+                fmt(d.width + 2.0 * bleed),
+                fmt(d.height + 2.0 * bleed),
+            ));
+        }
+        ops.push_str("f\nQ\n");
+    }
+    ops
+}
+
+/// The operators of an `Edge` bleed: the piece grown by the bleed, filled with its edge colour.
+fn edge_fill_ops(color: [u8; 3], p: &SheetPlacement, sheet: &OutputSheet) -> String {
+    let [r, g, b] = color.map(|c| fmt(f64::from(c) / 255.0));
+    let bleed = mm_to_pt(sheet.bleed.mm);
+    let d = p.destination;
+    format!(
+        "q\n{r} {g} {b} rg\n{} {} {} {} re f\nQ\n",
+        fmt(d.x - bleed),
+        fmt(sheet.page.height_pt - (d.y + d.height + bleed)),
+        fmt(d.width + 2.0 * bleed),
+        fmt(d.height + 2.0 * bleed),
+    )
+}
+
+/// The operators that lay a picture of Fill with AI (`name`, `size` pixels, its piece `inset` pixels in from
+/// every side) on a placement: the piece's area of the picture on the piece, turned with it, the rest
+/// reaching out over the bleed and cut off where the bleed ends.
+fn image_fill_ops(
+    name: &str,
+    size: (u32, u32),
+    inset: u32,
+    p: &SheetPlacement,
+    sheet: &OutputSheet,
+) -> String {
+    let bleed = mm_to_pt(sheet.bleed.mm);
+    let d = p.destination;
+    let page_h = sheet.page.height_pt;
+    let quarter = p.turn.swaps_axes();
+    // The piece's size before its turn, and the picture's size in points at that scale.
+    let (pw, ph) = if quarter {
+        (d.height, d.width)
+    } else {
+        (d.width, d.height)
+    };
+    let inner = |px: u32| f64::from(px.saturating_sub(2 * inset).max(1));
+    let iw = f64::from(size.0) * pw / inner(size.0);
+    let ih = f64::from(size.1) * ph / inner(size.1);
+    let angle = -p.turn.degrees().to_radians();
+    let (sin, cos) = angle.sin_cos();
+    let (a, b, c, dd) = (cos * iw, sin * iw, -sin * ih, cos * ih);
+    let (cx, cy) = (d.x + d.width / 2.0, page_h - (d.y + d.height / 2.0));
+    let (e, f) = (cx - (a + c) / 2.0, cy - (b + dd) / 2.0);
+    format!(
+        "q\n{} {} {} {} re W n\n{} cm\n/{name} Do\nQ\n",
+        fmt(d.x - bleed),
+        fmt(page_h - (d.y + d.height + bleed)),
+        fmt(d.width + 2.0 * bleed),
+        fmt(d.height + 2.0 * bleed),
+        [a, b, c, dd, e, f].map(fmt).join(" "),
+    )
+}
+
 /// The operators that stroke the cut marks of a sheet `out_height` points tall.
 fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
     let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
@@ -830,6 +918,8 @@ fn export_sheets_into(
     let mut forms: HashMap<(DocumentId, usize), (ObjectId, PageFrame)> = HashMap::new();
     // A card (the same page and clip) printed several times draws through one card form.
     let mut card_forms: HashMap<(DocumentId, usize, String), ObjectId> = HashMap::new();
+    // A picture of Fill with AI is embedded once, however many times its piece is printed.
+    let mut fill_images: HashMap<String, (ObjectId, u32, u32)> = HashMap::new();
 
     for sheet in sheets {
         let out = sheet.page;
@@ -881,12 +971,29 @@ fn export_sheets_into(
             xobjects.set(card.as_bytes().to_vec(), card_id);
             prepared.push((name, frame, card));
         }
-        // Bleed first, so a neighbour's bleed never paints over a piece; then the pieces; then
-        // the marks.
-        let mut ops = String::new();
+        // The plain colours first, then the bleed, so a neighbour's bleed never paints over a
+        // piece; then the pieces; then the marks.
+        let mut ops = background_ops(sheet);
         if sheet.bleed.mm > 0.0 {
-            for (p, (name, frame, _)) in sheet.placements.iter().zip(&prepared) {
-                ops.push_str(&bleed_ops(name, p, sheet, frame.display_box()));
+            for (i, (p, (name, frame, _))) in sheet.placements.iter().zip(&prepared).enumerate() {
+                match sheet.edge_fills.iter().find(|f| f.placement == i) {
+                    Some(fill) => ops.push_str(&edge_fill_ops(fill.color, p, sheet)),
+                    None => ops.push_str(&bleed_ops(name, p, sheet, frame.display_box())),
+                }
+                // A picture of Fill with AI goes over the mirrored bleed, which shows wherever it falls short.
+                if let Some(fill) = sheet.image_fills.iter().find(|f| f.placement == i) {
+                    let (id, w, h) = match fill_images.get(&fill.path) {
+                        Some(v) => *v,
+                        None => {
+                            let v = crate::images::fill_xobject(doc, Path::new(&fill.path))?;
+                            fill_images.insert(fill.path.clone(), v);
+                            v
+                        }
+                    };
+                    let image = format!("F{}_{}", id.0, id.1);
+                    xobjects.set(image.as_bytes().to_vec(), id);
+                    ops.push_str(&image_fill_ops(&image, (w, h), fill.inset, p, sheet));
+                }
             }
         }
         for (p, (_, frame, card)) in sheet.placements.iter().zip(&prepared) {

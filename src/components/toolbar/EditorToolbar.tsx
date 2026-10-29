@@ -143,7 +143,7 @@ export function EditorToolbar() {
       return;
     }
     const documents = getLayoutDocuments();
-    const project = printProject(planOf(print), documents, layout, layout.cardEdits);
+    const project = printProject(planOf(print), documents, layout, layout.cardEdits, useProjectStore.getState().path);
     const pages = pagesById(documents);
     try {
       const found = await validatePrint(project, pages);

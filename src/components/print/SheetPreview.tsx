@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { CSS_PX_PER_PT } from "../../lib/coordinates";
 import { formatError } from "../../lib/errors";
+import { fillCss } from "../../lib/finish";
 import { emitHintEvent } from "../../lib/hint-events";
 import type { PageSize } from "../../lib/tauri";
 import { mmToPt } from "../../lib/units";
@@ -15,7 +16,7 @@ import { RefreshButton } from "../editor/RefreshPreviewButton";
 import { HintToast } from "../ui/HintToast";
 import { WarningList } from "./FinishSections";
 import { PlacedCard } from "./PlacedCard";
-import { SheetOverlay } from "./SheetOverlay";
+import { EdgeFills, SheetOverlay } from "./SheetOverlay";
 import { SheetReferences } from "./SheetReferences";
 import { SheetStrip } from "./SheetStrip";
 
@@ -90,10 +91,15 @@ export function SheetPreview() {
   if (sheet && box.width > 0) {
     const { k, style } = placeSheet(sheet.page);
     content = (
-      <div className="absolute bg-white shadow-lg shadow-black/50" style={style} data-testid="sheet-page">
+      <div
+        className="absolute shadow-lg shadow-black/50"
+        style={{ ...style, background: fillCss(sheet.background?.sheet) }}
+        data-testid="sheet-page"
+      >
+        <EdgeFills sheet={sheet} k={k} />
         {sheet.placements.map((p, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: a card can appear many times on a sheet; its slot is its identity
-          <PlacedCard key={i} p={p} k={k} />
+          <PlacedCard key={i} p={p} k={k} fill={fillCss(sheet.background?.pieces)} />
         ))}
         <SheetOverlay sheet={sheet} k={k} />
         {showReferences && <SheetReferences sheet={sheet} k={k} />}

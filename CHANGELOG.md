@@ -5,6 +5,28 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.3.0 (2026-10-28)
+
+### Added
+
+- File › Save for sharing… saves the project and writes `<name>-Gutterberg-readme.txt` beside it, in the app's language: what Gutterberg is, where to download it, and the steps to print (keep the files in one folder, open the project, Print tab, Export PDF). It names any PDF that is in another folder, to put beside the project before sharing. The readme is yours to edit; nothing reads it back.
+- Fill with AI (AI Mode): Print settings › Bleed › Taken from › Fill with AI has an image model paint each piece's bleed, continuing its art past the edge. Choose the model in Preferences › AI Mode › Image model (Gemini or an OpenAI-compatible server; Claude and Ollama cannot draw). It sends a picture of each piece selected in the library, or of every piece (up to 30), one paid image request each, and shows every result beside the piece before anything is kept. Only the band outside the piece is used, under the piece, which is still printed from the original as vector. The pictures are saved in `<name>.gtr-fills/` beside the project, Save As copies them, and the command line exports them without calling any AI. A piece without one, or whose picture is gone, gets a mirrored bleed, and opening the project says so.
+- Edge color bleed: Print settings › Bleed › Taken from › Edge color fills each piece's bleed with the most common color along its edge, worked out on this computer, as a plain vector fill under the piece. It suits pieces with a border of one color, where a mirrored edge would show the border twice. The preview shows it, and the command line exports it as saved.
+- Background colors: Print settings › Background can color the whole sheet (black paper, for example) and put a color behind each piece and its bleed. They are plain vector fills under the art, so they only show where the source leaves the page empty, such as a card's rounded or missing corners. The preview shows them too. Projects open with both off, and the command line exports them as saved.
+- Recovery of unsaved work: while a project has unsaved changes, Gutterberg writes a copy of it every 30 seconds to its own data folder, never over your `.gtr`. If the app crashes or is closed without saving, the next start asks to restore it, including a project that was never saved. A restored project is unsaved and still points at its file. Saving, or closing on purpose, removes the copy.
+- Closing the window with unsaved changes asks first: Save, Don't save or Cancel. Save asks where for a project that was never saved, and cancelling that keeps the window open. Before, the window just closed.
+- Cut marks where the gaps cross: Print settings › Cut marks › Also where gaps cross (with Ticks in the margins) puts a small cross in the middle of each place where the gaps between pieces cross, so the inside of the sheet can be cut without a ruler laid across it. Its arms are the mark's length; a gap narrower than the line gets none. Projects open with it off, and the command line exports it as saved.
+- See a piece large in the Print tab: hold the right mouse button on a piece in the piece library, on the sheet or in the row of sheets, and it fills the window as it will print, with its name, until you let go. A quick right-click keeps it open until you click or press `Esc`. Handy for pieces that look alike.
+- Preferences › About › Updates: Download page opens Gutterberg's page (https://joaquinarruiz.com.ar/projects/gutterberg), to download it again; the Microsoft Store copy opens its Store page instead. Full changelog opens every version's changes on GitHub, and What's new in (this version) shows this version's notes in the app, without a network. Preferences › Updates has the Download page button too.
+- In the Source tab, `Delete` or `Backspace` removes the page whose thumbnail you clicked, like its Remove page menu item: the page leaves the Pages panel, stays in the PDF and the project, and comes back from Removed pages. The next page's thumbnail is picked, so you can keep pressing it. One page always stays.
+
+### Changed
+
+- The mouse wheel scrolls the row of sheets above the Print tab's preview sideways, and the Pages panel when it is docked at the top or bottom. Before, only `Shift`+wheel, a trackpad or the scrollbar moved them.
+- The Print tab's toolbar shows the name Export will offer, such as `my-game-print.pdf` (the project's or the first PDF's name), instead of "New-PDF". Clicking it opens that name to edit, with the cursor at the end; keeping it as it is keeps following the project.
+- Projects are saved as version 8, for the Edge color bleed and Fill with AI. Gutterberg 1.2 and earlier say a version 8 project needs a newer Gutterberg instead of opening it wrong; 1.3.0 opens every older project as before.
+- Opening a project whose PDF or image is not where it was saved looks beside the project file first, by name and then by content, before asking where it is. A project shared in one folder with its PDFs opens on another computer without asking for each file. The command line does the same.
+
 ## 1.2.1 (2026-10-27)
 
 1.2.1 is a safety release that follows a security and legal review before the Microsoft Store. AI Mode now leaves alone any PDF its publisher restricted, the key can no longer be sent in the clear to a look-alike address, the PDF engine and network libraries carry their latest security fixes, sheets made from several PDFs credit every author, and the privacy policy says more about how your data is kept and removed.

@@ -24,6 +24,7 @@ import {
   type SheetWarning,
 } from "../../lib/finish";
 import { useLibraryCards } from "../../lib/use-library-cards";
+import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
 import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
@@ -35,6 +36,7 @@ import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
 import { CalibrationDialog } from "./CalibrationDialog";
 import { CardThumb } from "./CardThumb";
+import { FillWithAiDialog } from "./FillWithAiDialog";
 import { PairBacksDialog } from "./PairBacksDialog";
 
 /** The warnings of every sheet, once each: what the plan as a whole needs the user to look at. */
@@ -132,6 +134,12 @@ export function MarksSection() {
                 value={marks.offsetMm}
                 onChange={(offsetMm) => setMarks({ offsetMm })}
               />
+              <Switch
+                checked={marks.innerCrosses}
+                onChange={(innerCrosses) => setMarks({ innerCrosses })}
+                label={t("print.marks.innerCrosses")}
+                info={t("print.marks.innerCrossesHint")}
+              />
             </>
           )}
           {backSheets && (
@@ -154,6 +162,15 @@ export function BleedSection() {
   const { t } = useTranslation();
   const bleed = usePrintStore((s) => s.finish.bleed);
   const setBleed = usePrintStore((s) => s.setBleed);
+  const aiEnabled = usePreferencesStore((s) => s.prefs.ai.enabled);
+  const selected = usePrintStore(useShallow((s) => s.selection.selected));
+  const cards = useLibraryCards();
+  const [filling, setFilling] = useState(false);
+  // Fill with AI is offered with AI Mode on; a project that already uses it keeps showing it.
+  const sources = BLEED_SOURCES.filter((s) => s !== "ai" || aiEnabled || bleed.source === "ai");
+  // The pieces picked in the library, or every piece.
+  const toFill = selected.length > 0 ? cards.filter((c) => selected.includes(cardIdKey(c.id))) : cards;
+  const filled = cards.filter((c) => cardIdKey(c.id) in bleed.aiFills).length;
   return (
     <CollapsibleSection
       id="print.bleed"
@@ -170,20 +187,77 @@ export function BleedSection() {
         onChange={(mm) => setBleed({ mm })}
       />
       {bleed.mm > 0 && (
-        <FieldRow
-          label={t("print.bleed.source")}
-          info={bleed.source === "mirror" ? t("print.bleed.mirrorNote") : t("print.bleed.sourceNote")}
-        >
-          <Segmented<BleedSource>
+        <FieldRow label={t("print.bleed.source")} info={t(`print.bleed.${bleed.source}Note`)}>
+          <Select<BleedSource>
             fill
             label={t("print.bleed.source")}
             value={bleed.source}
             onChange={(source) => setBleed({ source })}
-            options={BLEED_SOURCES.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
+            options={sources.map((value) => ({ value, label: t(`print.bleed.sources.${value}`) }))}
           />
         </FieldRow>
       )}
+      {bleed.mm > 0 && bleed.source === "ai" && (
+        <>
+          <p className="text-[var(--muted)]" data-testid="ai-fill-count">
+            {t("print.aiFill.count", { count: filled, total: cards.length })}
+          </p>
+          {aiEnabled && (
+            <FieldRow label={null}>
+              <Button variant="ai" onClick={() => setFilling(true)}>
+                {selected.length > 0
+                  ? t("print.aiFill.openSelected", { count: toFill.length })
+                  : t("print.aiFill.open")}
+              </Button>
+            </FieldRow>
+          )}
+          <FillWithAiDialog open={filling} cards={toFill} onClose={() => setFilling(false)} />
+        </>
+      )}
       <WarningList codes={["bleed_overlaps_neighbour", "bleed_off_page", "bleed_exceeds_source_gap"]} />
+    </CollapsibleSection>
+  );
+}
+
+/** The colour a fill starts with when it is switched on: black paper for the sheet, white behind the pieces. */
+const FIRST_FILL = { sheet: "#000000", pieces: "#ffffff" } as const;
+
+/** Background: plain colours under the sheet and behind the pieces, for art that leaves corners or edges empty. */
+export function BackgroundSection() {
+  const { t } = useTranslation();
+  const background = usePrintStore((s) => s.finish.background);
+  const setBackground = usePrintStore((s) => s.setBackground);
+  return (
+    <CollapsibleSection
+      id="print.background"
+      title={t("print.sections.background")}
+      defaultOpen={false}
+      info={t("print.background.note")}
+    >
+      {(["sheet", "pieces"] as const).map((which) => {
+        const color = background[which];
+        return (
+          <div key={which} className="space-y-1">
+            <Switch
+              checked={color !== null}
+              onChange={(on) => setBackground({ [which]: on ? FIRST_FILL[which] : null })}
+              label={t(`print.background.${which}`)}
+              info={t(`print.background.${which}Hint`)}
+            />
+            {color !== null && (
+              <FieldRow label={t(`print.background.${which}Color`)}>
+                <input
+                  type="color"
+                  aria-label={t(`print.background.${which}Color`)}
+                  value={color}
+                  onChange={(e) => setBackground({ [which]: e.target.value })}
+                  className="h-6 w-10 cursor-pointer rounded border border-[var(--border)] bg-transparent"
+                />
+              </FieldRow>
+            )}
+          </div>
+        );
+      })}
     </CollapsibleSection>
   );
 }

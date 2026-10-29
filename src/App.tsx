@@ -4,6 +4,7 @@ import { EditorViewport } from "./components/editor/EditorViewport";
 import { FirstPdfTour } from "./components/editor/FirstPdfTour";
 import { ImageSizeDialog } from "./components/images/ImageSizeDialog";
 import { PreferencesDialog } from "./components/preferences/PreferencesDialog";
+import { PiecePeek } from "./components/print/PiecePeek";
 import { PrintStage } from "./components/print/PrintStage";
 import { StartScreen } from "./components/start/StartScreen";
 import { EditorToolbar } from "./components/toolbar/EditorToolbar";
@@ -18,12 +19,22 @@ import { useWelcomeAutoOpen, WelcomeDialog } from "./components/welcome/WelcomeD
 import { WorkspaceLayout } from "./components/workspace/WorkspaceLayout";
 import { deletePicked, duplicatePicked, nudgePicked, pickAllPieces } from "./lib/editor-actions";
 import { resolveStartMode } from "./lib/preferences";
-import { newProject, openPdfDialog, openProjectDialog, saveProject, saveProjectAs } from "./lib/project-actions";
+import {
+  newProject,
+  offerRecovery,
+  openPdfDialog,
+  openProjectDialog,
+  saveProject,
+  saveProjectAs,
+} from "./lib/project-actions";
 import { useProjectTracking } from "./lib/project-state";
+import { useRecoveryCopy } from "./lib/recovery";
 import { stepPage } from "./lib/removed-pages";
 import { isShortcutsKey } from "./lib/shortcuts";
 import { applyTheme } from "./lib/theme";
 import { startUpdateChecks } from "./lib/update-actions";
+import { useCloseGuard } from "./lib/use-close-guard";
+import { useEdgeColors } from "./lib/use-edge-colors";
 import { useImageDrop } from "./lib/use-image-drop";
 import { useLayoutSync } from "./lib/use-layout-sync";
 import { useOpenedFiles } from "./lib/use-opened-files";
@@ -48,6 +59,11 @@ export default function App() {
   useLayoutSync();
   usePrintSync();
   useProjectTracking();
+  useCloseGuard();
+  useRecoveryCopy();
+  useEdgeColors();
+  // A run that ended with unsaved changes left a copy: offered once, at start.
+  useEffect(() => void offerRecovery().catch(() => {}), []);
   useImageDrop();
   // Before the welcome tour: a project the app was started with is opened first, and the tour waits for it.
   useOpenedFiles();
@@ -208,6 +224,7 @@ export default function App() {
       <FirstPdfTour />
       <PreferencesDialog />
       <ShortcutsDialog />
+      <PiecePeek />
       <TutorialsDialog />
       <TutorialHost />
       <AiConfirmDialog />

@@ -752,6 +752,17 @@ fn raster_xobject(doc: &mut Document, px: Pixels, icc: Option<&[u8]>) -> Result<
     Ok(doc.add_object(stream))
 }
 
+/// A picture of Fill with AI (a PNG the app wrote) as an image XObject, with its transparency. Returns its
+/// size in pixels too.
+pub(crate) fn fill_xobject(doc: &mut Document, path: &Path) -> Result<(ObjectId, u32, u32)> {
+    let name = name_of(path);
+    let bytes = std::fs::read(path)?;
+    let img = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)
+        .map_err(|e| unreadable(&name, e))?;
+    let (w, h) = (img.width(), img.height());
+    Ok((raster_xobject(doc, to_pixels(&img), None)?, w, h))
+}
+
 fn num(v: f64) -> String {
     let s = format!("{v:.4}");
     s.trim_end_matches('0').trim_end_matches('.').to_string()

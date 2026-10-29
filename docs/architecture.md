@@ -11,7 +11,8 @@ are, and writes new sheets with the pieces re-spaced. Two ideas shape everything
 
 - **The original content is never touched.** A piece is the source page placed in the output as a PDF form
   XObject, clipped to the piece's rectangle, moved, turned or scaled with a transformation matrix. Nothing is
-  rasterised on export, so text and vector art stay sharp. Pieces keep their size unless the user explicitly sets a
+  rasterised on export, so text and vector art stay sharp. The one picture an export can add is a Fill with AI band,
+  and only in the bleed, under the piece. Pieces keep their size unless the user explicitly sets a
   real size or a percentage; a layout that does not fit is an error, never a reason to shrink.
 - **One engine, written once.** Geometry lives in Rust, in one place. The interface asks the engine over IPC and
   draws the answer; it never re-derives layout maths. Preview and export run the same planner, so what you see is
@@ -98,7 +99,7 @@ The engine behind every export, in four steps:
    smaller pieces are centred in it), or share one grid if grouping is off. Pieces are laid out row by row, the block
    centred inside the margins. Asking for more rows or columns than fit, or a piece larger than the page, is
    `DoesNotFit`. Auto-fill repeats pieces to fill the last sheet.
-3. **Finish** (`finish`). Cut marks, bleed and duplex backs are added to the planned sheets. With everything off the
+3. **Finish** (`finish`). Cut marks, bleed, background colours and duplex backs are added to the planned sheets. With everything off the
    sheets pass through untouched, and the exported content stream is the same as before.
 4. **Export** (`export`). `export_sheets` builds a PDF from any list of sheets and several source documents.
 
@@ -155,14 +156,35 @@ matter:
 ### Finishing (`finish`)
 
 - **Cut marks:** ticks in the margins at every piece edge, or lines down the middle of each gap (too narrow a gap
-  gives a warning and no line). Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
+  gives a warning and no line). Ticks can add a cross (`MarkOptions::inner_crosses`) in the middle of each place
+  where a gap between columns meets one between rows and a piece has a corner, its arms the tick length. Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
   dash pattern in points on `SheetMarks.dash` (dots are dashes of length 0 with round caps), so the preview and the
   export read the same pattern. Back sheets get none (you cut through both sides from the front, and a printer's
   drift would put them beside the cut) unless `MarkOptions.on_backs`: then `marks_for` runs on the back placements,
   so the marks follow the mirroring and the back offset.
 - **Bleed:** taken either by mirroring each piece's own edge (4 strips and 4 corners, as vectors, using the piece's
   oriented edge so tilted pieces work) or from the gap that is already in the source. A bleed bigger than half a piece
-  is an error; a source gap smaller than the bleed is a page issue that blocks export.
+  is an error; a source gap smaller than the bleed is a page issue that blocks export. The third source, `Edge`, is a
+  plain vector fill of each piece grown by the bleed, under the piece, in the colour of its edge
+  (`OutputSheet.edge_fills`). The colours come from the app, not the engine: `render::edge_colors_in` draws each
+  piece at 128 px and `edge::dominant_color` picks the most common colour (in steps of 16 per channel) of a band
+  just inside its edge, away from the corners. `useEdgeColors` keeps them in the plan (`finish.bleed.edgeColors`, by
+  piece key, outside the undo history) whenever the pieces change, so the saved project carries them and the command
+  line, which has no pdfium, exports the same. A piece without a colour is mirrored.
+  The fourth, `Ai` (Fill with AI), draws a picture of each piece's band over its mirrored bleed and under the piece
+  (`OutputSheet.image_fills`, `export::image_fill_ops`): the picture's inner area is mapped onto the destination with
+  the placement's turn, and it is clipped to the destination grown by the bleed, so a band the model drew short shows
+  the mirror underneath. This is the one picture an export can add, and only in the bleed: the piece itself is still
+  the original content, drawn on top. The pictures are PNGs in the fills folder beside the project
+  (`<name>.gtr-fills/`, `fill::fills_dir`), listed in `finish.bleed.aiFills` by piece key with the band's width in
+  pixels; the request carries the folder (`PrintProject.fills_dir`, from where the project is saved), and only a
+  plain file name that is there is used, so a missing picture means a mirrored bleed (the app and the command line
+  say so). How they are made is under AI Mode.
+- **Background:** `BackgroundOptions` holds two optional colours, `sheet` and `pieces`, carried on every sheet (front
+  and back) as `OutputSheet.background`. Export paints them first, as plain vector fills: the whole page, then one
+  rectangle per placement grown by the bleed; the bleed and the pieces go on top. They only show where the source
+  paints nothing. So the preview can show them, the Print tab's piece crops are rendered with a clear background
+  (`render_region_png_on(.., transparent: true)`), over the sheet or piece colour (white when none).
 - **Duplex:** backs are mirrored left to right for a long-edge flip on a portrait sheet (or a short-edge flip on a
   landscape one), otherwise top to bottom, with the back's turn adjusted so a front corner and its back corner pair
   up. A common back or a back per piece, with an X/Y offset for printer drift. `calibration.rs` writes the sheet that
@@ -274,12 +296,23 @@ rebuilt on open.
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
   gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
-  `grid` and `selection` into a list of one in `grids`); the current version is 7. A change to the format adds a version and a migration with a test file.
+  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed and Fill with AI, and the number makes an older Gutterberg ask to update); the current version is 8. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
-  the user is asked "Where is this file now?" if it is gone) before any store changes. A PDF whose page count no
+  the user is asked "Where is this file now?" if it is gone) before any store changes. A file missing from its saved
+  path is first looked for beside the project file (`card_core::sharing::find_beside`: same name and hash, then any
+  file of that kind with that hash, then the same name for the user to accept), so a project shared in one folder
+  with its PDFs opens on another computer; the command line does the same. File › Save for sharing also writes
+  `<name>-Gutterberg-readme.txt` beside the project (`write_readme`; the text is built in `src/lib/sharing.ts` from
+  the locale), which nothing reads back. The format is unchanged: paths stay absolute. A PDF whose page count no
   longer fits its saved groups gets that PDF's layout reset, with a notice.
 - The interface's model is camelCase with normalised coordinates, not the Rust shapes; `src/lib/project.ts` has the
   Zod schema and clamps out-of-range values back into what the interface allows.
+- **Unsaved work.** Closing the window with unsaved changes asks Save, Don't save or Cancel (`confirmClose`, from
+  the window's close-requested event). While there are unsaved changes, `src/lib/recovery.ts` writes the project
+  every 30 s to `recovery/<run id>.gtr` in the app's data folder, with a `.json` saying where it was saved and when
+  (`card_core::recovery`). Each run has its own id, so two windows never overwrite each other. A copy not written
+  for 90 s belongs to a run that ended; the next start offers the newest (`offerRecovery`), restored unsaved and
+  still pointing at its file. Saving, closing on purpose, Restore and Discard remove the copy.
 - The file association (`.gtr`, type `dev.joaquinarruiz.gutterberg.project`) opens a project at startup (command-line
   argument on Windows and Linux, the "opened" event on macOS) through the same open path, with the same checks.
 
@@ -476,6 +509,17 @@ pictures. A result is always an editable proposal, or for pairing, a summary to 
   used for a week; only the reload button or an older list asks again, and a failed request shows the saved list.
 - Requests carry a page summary (sizes and object boxes, or a page image if the user allows it), or pictures of the
   pieces for pairing, never the PDF.
+- **Fill with AI** (Print settings › Bleed › Taken from) is the one action whose answer is a picture, so it has its
+  own requests (`card-ai/src/fill.rs`): Gemini's `generateContent` asking for an image back, and the OpenAI image
+  edits endpoint (`/images/edits`, multipart, with a mask). Anthropic and Ollama cannot draw and are refused before
+  anything is sent. It uses its own model, Preferences › AI Mode › Image model (`imageModel`, per provider). One
+  request per piece, at most 30 a run, straight pieces only, with pictures allowed: `ai_fill_edge` renders the piece
+  at about 1024 px and `card_core::fill::fill_canvas` sets it in a flat magenta frame as wide as the bleed (padded to
+  the edits endpoint's fixed sizes, with a mask opaque over the piece). Of the answer `keep_band` keeps only the
+  frame, at the size it was sent, with the piece's area cleared; a picture of another shape is refused. The dialog
+  shows each piece before and after, and Apply saves the ticked bands (`save_fills`, named by piece key and a hash of
+  what was sent) and sets them as one undo step. Save As copies them beside the new file. The command line exports
+  the saved pictures and never calls a model.
 
 ## Updates and releases
 

@@ -83,7 +83,6 @@
     "pdfFilter": "PDF",
     "suffixSpaced": "spaced",
     "suffixPrint": "print",
-    "newPdfName": "New-PDF",
     "fallbackName": "pieces",
     "imageFilter": "Images"
   },
@@ -349,6 +348,7 @@
     "descriptionSeveral": "Copies grids and their piece regions from page {{page}}. Each target becomes its own group, so you can edit it separately afterwards."
   },
   "library": {
+    "peek": "{{name}}, shown large",
     "openPdf": "Open a PDF to see its pieces.",
     "show": "Show",
     "filterLabel": "Filter pieces by group",
@@ -406,6 +406,7 @@
       "page": "Page",
       "marks": "Cut marks",
       "bleed": "Bleed",
+      "background": "Background",
       "duplex": "Duplex"
     },
     "plan": {
@@ -500,6 +501,8 @@
       "offset": "Distance from the piece",
       "onBacks": "Also on back sheets",
       "onBacksHint": "Puts marks around the backs too, for backs you cut on their own: printed on separate sheets, or glued to the other side of a board. Leave it off to cut through both sides from the front.",
+      "innerCrosses": "Also where gaps cross",
+      "innerCrossesHint": "A small cross in the middle of each place where the gaps between pieces cross, so the inside can be cut without laying a ruler across the whole sheet. Its arms are the mark length. Gaps narrower than the line get none.",
       "note": "Marks are printed on the front sheets, and on the back sheets if you ask. Ticks start past the bleed."
     },
     "bleed": {
@@ -507,11 +510,24 @@
       "source": "Taken from",
       "sources": {
         "mirror": "Mirror the edge",
-        "source": "The source gap"
+        "source": "The source gap",
+        "edge": "Edge color",
+        "ai": "Fill with AI"
       },
       "mirrorNote": "The edge strip of each piece is drawn again, flipped over the edge. It stays vector.",
       "sourceNote": "Uses what the source PDF has between pieces. Needs at least this much space between them there.",
-      "note": "Pieces keep their size: the bleed is extra art around each one. Leave room for it in the output gap and the margins."
+      "edgeNote": "Each piece's bleed is filled with the most common color along its edge, worked out on this computer. A plain vector fill, good for borders of one color; a piece whose edge has none yet is mirrored.",
+      "note": "Pieces keep their size: the bleed is extra art around each one. Leave room for it in the output gap and the margins.",
+      "aiNote": "An image model paints the bleed of each piece from a picture of it, continuing its art past the edge. Only the band outside the piece is kept, and the piece itself is still printed from the original, as vector. The pictures are saved in a folder beside the project file. A piece without one is mirrored."
+    },
+    "background": {
+      "sheet": "Color the sheet",
+      "sheetHint": "Fills the whole sheet with a color before anything is printed on it, so the paper round the pieces is that color. A dark sheet uses a lot of ink.",
+      "sheetColor": "Sheet color",
+      "pieces": "Color behind pieces",
+      "piecesHint": "A rectangle of this color under each piece and its bleed, so corners and edges the art leaves empty are filled.",
+      "piecesColor": "Color behind pieces",
+      "note": "Plain colors printed under the art. They only show where the source leaves the page empty, and they stay vector."
     },
     "duplex": {
       "on": "Print backs",
@@ -633,6 +649,38 @@
       "bleed_off_page": "The bleed goes past the edge of the page: leave larger margins.",
       "back_size_differs": "A back is not the same size as its front, so the cuts will not line up.",
       "bleed_exceeds_source_gap": "The source has less space between some pieces than the bleed."
+    },
+    "aiFill": {
+      "title": "Fill with AI",
+      "open": "Fill with AI…",
+      "openSelected_one": "Fill {{count}} selected piece with AI…",
+      "openSelected_other": "Fill {{count}} selected pieces with AI…",
+      "count": "{{count}} of {{total}} pieces have an AI fill; the rest are mirrored.",
+      "text": "Each piece is sent as a picture with a magenta frame where the bleed goes, and the image model paints the frame. You see every result before anything is kept.",
+      "what_one": "{{count}} piece will be sent to {{host}} as a picture of about {{size}} px, for the image model {{model}}: one paid image request.",
+      "what_other": "{{count}} pieces will be sent to {{host}} as pictures of about {{size}} px, for the image model {{model}}: {{count}} paid image requests, one each.",
+      "blocked": {
+        "needsBleed": "Set a bleed first.",
+        "saveFirst": "Save the project first: the pictures are kept in a folder beside the project file.",
+        "needsImages": "Fill with AI sends pictures of the pieces. Turn on “Send page images” in Preferences › AI Mode.",
+        "noProvider": "{{provider}} cannot draw pictures. Choose Gemini or an OpenAI-compatible server in Preferences › AI Mode.",
+        "noModel": "Choose an image model in Preferences › AI Mode.",
+        "noPieces": "There are no pieces to fill.",
+        "tooMany": "Select at most {{max}} pieces in the library ({{count}} now): each one is a paid request."
+      },
+      "send_one": "Send {{count}} piece",
+      "send_other": "Send {{count}} pieces",
+      "running": "Painting piece {{done}} of {{count}}…",
+      "stop": "Stop",
+      "stopped": "Stopped: {{error}}",
+      "review": "Tick the fills to keep. The piece on the right is drawn over its new bleed, as it will print.",
+      "piece": "Piece {{n}}",
+      "before": "As sent",
+      "after": "With the AI fill",
+      "pieceFailed": "Piece {{n}}: {{error}}",
+      "discard": "Discard",
+      "apply_one": "Use {{count}} fill",
+      "apply_other": "Use {{count}} fills"
     }
   },
   "sheets": {
@@ -750,7 +798,13 @@
       "licenseNote": "Free for personal and noncommercial use. For any commercial use, or if you're not sure whether your use counts, contact joaquinarruiz@gmail.com. The software comes as is, without warranty.",
       "appLicense": "Gutterberg license",
       "thirdParty": "Third-party licenses",
-      "licenseFailed": "The license text could not be loaded."
+      "licenseFailed": "The license text could not be loaded.",
+      "updates": "Updates",
+      "downloadPage": "Download page",
+      "downloadPageNote": "Every version for every system, if you need to download Gutterberg again.",
+      "storePage": "Microsoft Store page",
+      "changelog": "Full changelog",
+      "whatsNew": "What's new in {{version}}"
     },
     "footer": {
       "confirm": "Reset all preferences? This restores the default application settings. Your document is not affected.",
@@ -1185,7 +1239,11 @@
     "image_unsupported": "“{{name}}” can't be used. Images can be PNG, JPEG or WebP.",
     "image_too_large": "“{{name}}” is too large ({{megapixels}} megapixels, {{mb}} MB). The limits are 100 megapixels and 200 MB.",
     "image_unreadable": "“{{name}}” can't be read: {{detail}}",
-    "pdf_locked": "This PDF's publisher doesn't allow changes. Contact them for an unlocked print-and-play version."
+    "pdf_locked": "This PDF's publisher doesn't allow changes. Contact them for an unlocked print-and-play version.",
+    "ai_fill_needs_images": "Fill with AI sends pictures of the pieces. Turn on “Send page images” in Preferences › AI Mode.",
+    "ai_no_image_output": "This provider cannot draw pictures. Use Gemini or an OpenAI-compatible server for Fill with AI.",
+    "fill_reply": "The picture that came back cannot be used ({{detail}}).",
+    "fill_tilted": "This piece is tilted on its page; Fill with AI works on straight pieces only."
   },
   "numberField": {
     "decrease": "Decrease {{label}}",
@@ -1214,10 +1272,41 @@
       "addPdf": "Add PDF…",
       "save": "Save",
       "saveAs": "Save as…",
+      "saveForSharing": "Save for sharing…",
       "recent": "Recent projects",
       "noRecent": "No recent projects",
       "shortcuts": "Keyboard shortcuts…",
       "addImages": "Add images…"
+    },
+    "close": {
+      "message": "Save the changes to “{{name}}” before closing?",
+      "messageNew": "This project has never been saved. Save it before closing?",
+      "save": "Save",
+      "discard": "Don't save"
+    },
+    "share": {
+      "done": "Saved, with “{{readme}}” beside it. To share the project, give the project file, the readme and its PDFs together, in one folder.",
+      "elsewhere": "These files are in another folder. Put a copy of them beside the project before you share it: {{files}}",
+      "readme": {
+        "title": "{{project}}: a Gutterberg project",
+        "what": "This folder has a print-and-play game and a Gutterberg project for it ({{project}}). Gutterberg is a free desktop app that turns print-and-play PDFs into sheets that are easy to cut: every piece at its exact size, with space between them, and the original artwork untouched.",
+        "ready": "The project already has every piece marked and a print layout chosen, so there is nothing to set up.",
+        "how": "How to print it:",
+        "step1": "Download Gutterberg from {{link}} and install it.",
+        "step2": "Keep these files together in one folder:",
+        "step3": "Open {{project}} in Gutterberg (File › Open project…).",
+        "step4": "Go to the Print tab, check the sheets, and click Export PDF to save a PDF ready to print.",
+        "change": "You can change anything before exporting: copies, paper size, gaps, cut marks, bleed and backs.",
+        "madeWith": "Made with Gutterberg {{version}}.",
+        "fills": "the folder {{folder}} (the AI bleed pictures)"
+      },
+      "fills": "The bleed uses pictures from Fill with AI: share the folder “{{folder}}” too, next to the project file."
+    },
+    "recovery": {
+      "message": "Gutterberg closed with unsaved changes to “{{name}}”. Restore them?",
+      "messageNew": "Gutterberg closed with unsaved work on a project that was never saved. Restore it?",
+      "restore": "Restore",
+      "discard": "Discard"
     },
     "discard": {
       "message": "This project has changes that are not saved. Discard them?",
@@ -1240,7 +1329,9 @@
       "pdfChanged": "“{{name}}” has changed since the project was saved. Check that the pieces are still where you marked them.",
       "layoutReset": "“{{name}}” has a different number of pages than when the project was saved, so its page groups and pieces were reset.",
       "imageChanged": "“{{name}}” has changed since the project was saved. Its page now shows the new image.",
-      "imagesMissing": "Some images of “{{name}}” were not found. Their pages stay blank until you add the images again."
+      "imagesMissing": "Some images of “{{name}}” were not found. Their pages stay blank until you add the images again.",
+      "fillsMissing_one": "{{count}} AI fill picture was not found beside the project. Its piece gets a mirrored bleed until you fill it again.",
+      "fillsMissing_other": "{{count}} AI fill pictures were not found beside the project. Their pieces get a mirrored bleed until you fill them again."
     }
   },
   "detect": {
@@ -1348,7 +1439,8 @@
       "testOk": "Connected. Used {{input}} input and {{output}} output tokens.",
       "workspace": "Workspace ID (optional)",
       "workspaceNote": "Only for an API key that is not scoped to a workspace: the ID of the workspace to use, sent as the anthropic-workspace-id header. Leave empty otherwise.",
-      "testSends": "Sends a short test message to {{provider}}"
+      "testSends": "Sends a short test message to {{provider}}",
+      "imageModel": "Image model"
     },
     "confirm": {
       "title": "Send to {{provider}}?",
@@ -1396,6 +1488,12 @@
       "text": "AI Mode still needs further testing and may not work as expected. It can be token hungry: every action sends pages to your provider, and the tokens cost money. Use it at your own responsibility.",
       "ok": "Okay",
       "cancel": "Cancel"
+    },
+    "imageModelHint": {
+      "anthropic": "Claude does not draw pictures, so Fill with AI is not available with it.",
+      "openai_compatible": "For Fill with AI: a model that edits images with a mask, e.g. gpt-image-1 on https://api.openai.com/v1.",
+      "gemini": "For Fill with AI: a Gemini model that draws images, e.g. gemini-2.5-flash-image.",
+      "ollama": "Ollama does not draw pictures, so Fill with AI is not available with it."
     }
   },
   "shortcuts": {
@@ -1438,6 +1536,7 @@
       "nextPage": "Next page (the arrow, with nothing picked)",
       "previousPage": "Previous page (the arrow, with nothing picked)",
       "deletePiece": "Delete the picked pieces (Select or Piece tool)",
+      "removePage": "Remove a page from view (its thumbnail picked in the Pages panel)",
       "snapRotation": "Rotate a piece in 15° steps (hold while turning it)",
       "applyProposal": "Apply the proposal",
       "discardProposal": "Discard the proposal",

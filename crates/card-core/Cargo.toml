@@ -10,7 +10,8 @@ lopdf = "0.45"
 serde = { version = "1", features = ["derive"] }
 thiserror = "2"
 pdfium-render = "0.9"
-image = { version = "0.25", default-features = false, features = ["png", "webp"] }
+# JPEG too: an image model may answer Fill with AI with one.
+image = { version = "0.25", default-features = false, features = ["png", "webp", "jpeg"] }
 serde_json = "1"
 sha2 = "0.10"
 

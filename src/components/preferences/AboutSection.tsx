@@ -3,10 +3,13 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import appIcon from "../../../src-tauri/icons/128x128.png";
 import { useAppName } from "../../lib/app-info";
+import { versionNotes } from "../../lib/changelog";
 import { EXTERNAL_LINKS, openExternalLink } from "../../lib/external-links";
 import { type LicenseTexts, licenseTexts } from "../../lib/licenses";
+import { useUpdateStore } from "../../stores/update-store";
 import { GitHubIcon, LinkedInIcon, RefractionHubIcon } from "../ui/BrandIcons";
 import { Button } from "../ui/Button";
+import { ReleaseNotes } from "../ui/ReleaseNotes";
 import { BugReportField } from "./BugReportField";
 import { Field } from "./Field";
 
@@ -18,7 +21,10 @@ const LINKS = [
 // A link to an organization the author shares with friends, not a page of his own: shown apart, after a divider.
 const ORG_LINK = { id: "refractionHub", url: EXTERNAL_LINKS.refractionHub, Icon: RefractionHubIcon } as const;
 
-/** The app's name and version, who made it, its links (his own, and one to an organization, each asking before it opens the web browser), how to report a bug, and the license. */
+/**
+ * The app's name and version, who made it, its links (his own, and one to an organization, each asking before it
+ * opens the web browser), where to download it and what changed, how to report a bug, and the license.
+ */
 export function AboutSection() {
   const { t } = useTranslation();
   const name = useAppName();
@@ -28,6 +34,9 @@ export function AboutSection() {
   const [shown, setShown] = useState<keyof LicenseTexts | null>(null);
   const [texts, setTexts] = useState<LicenseTexts | null>(null);
   const [textsFailed, setTextsFailed] = useState(false);
+  const store = useUpdateStore((s) => s.store);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const notes = version ? versionNotes(version) : null;
 
   useEffect(() => {
     let live = true;
@@ -101,6 +110,21 @@ export function AboutSection() {
           </p>
         )}
       </Field>
+      <Field label={t("preferences.about.updates")}>
+        <p className="text-[var(--muted)]">{t("preferences.about.downloadPageNote")}</p>
+        <div className="flex flex-wrap gap-2">
+          <DownloadPageButton store={store} onOpen={(url) => void open(url)} />
+          <Button size="md" title={EXTERNAL_LINKS.changelog} onClick={() => void open(EXTERNAL_LINKS.changelog)}>
+            {t("preferences.about.changelog")}
+          </Button>
+          {version && notes && (
+            <Button size="md" aria-pressed={notesOpen} onClick={() => setNotesOpen(!notesOpen)}>
+              {t("preferences.about.whatsNew", { version })}
+            </Button>
+          )}
+        </div>
+        {notesOpen && notes && <ReleaseNotes notes={notes} />}
+      </Field>
       <BugReportField />
       <Field label={t("preferences.about.license")}>
         <p className="text-[var(--muted)]">{t("preferences.about.licenseNote")}</p>
@@ -128,5 +152,19 @@ export function AboutSection() {
         )}
       </Field>
     </>
+  );
+}
+
+/**
+ * Where this copy can be downloaded again: Gutterberg's page, or the Store's page for the copy the Store installed
+ * (the installer from the page would put a second copy next to it). Preferences › Updates shows it too.
+ */
+export function DownloadPageButton({ store, onOpen }: { store: boolean; onOpen: (url: string) => void }) {
+  const { t } = useTranslation();
+  const url = store ? EXTERNAL_LINKS.storePage : EXTERNAL_LINKS.projectPage;
+  return (
+    <Button size="md" title={url} onClick={() => onOpen(url)}>
+      {t(store ? "preferences.about.storePage" : "preferences.about.downloadPage")}
+    </Button>
   );
 }

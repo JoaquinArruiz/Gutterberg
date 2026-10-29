@@ -10,7 +10,7 @@ export type MarkStyle = (typeof MARK_STYLES)[number];
 /** How a cut mark is stroked. */
 export const MARK_LINES = ["solid", "dashed", "dotted"] as const;
 export type MarkLine = (typeof MARK_LINES)[number];
-export const BLEED_SOURCES = ["mirror", "source"] as const;
+export const BLEED_SOURCES = ["mirror", "source", "edge", "ai"] as const;
 export type BleedSource = (typeof BLEED_SOURCES)[number];
 export const FLIPS = ["long", "short"] as const;
 export type Flip = (typeof FLIPS)[number];
@@ -29,6 +29,12 @@ export const MAX_BLEED_MM = 5;
 export const MAX_DUPLEX_OFFSET_MM = 10;
 export const MAX_FOLD_GAP_MM = 5;
 
+/** A picture of Fill with AI, as the project lists it. */
+export type AiFill = { file: string; inset: number };
+
+/** A fill's file name: plain, in the fills folder (`card_core::fill::fill_name`). */
+const FILL_FILE = /^[A-Za-z0-9-]+\.png$/;
+
 export type Finish = {
   marks: {
     style: MarkStyle;
@@ -39,8 +45,19 @@ export type Finish = {
     offsetMm: number;
     /** Duplex on the other side: marks on the back sheets too, for backs cut on their own. */
     onBacks: boolean;
+    /** Ticks: also a cross where a gap between columns meets a gap between rows. */
+    innerCrosses: boolean;
   };
-  bleed: { mm: number; source: BleedSource };
+  bleed: {
+    mm: number;
+    source: BleedSource;
+    /** Edge: the colour (`#rrggbb`) of each piece's edge, by `cardIdKey`, found from a small render
+     * (`useEdgeColors`). A piece without one is mirrored. */
+    edgeColors: Record<string, string>;
+    /** Fill with AI: the picture of each piece's band (`file`, in the project's fills folder) and the band's width
+     * in it (`inset`, px), by `cardIdKey`. A piece without one, or whose file is gone, is mirrored. */
+    aiFills: Record<string, AiFill>;
+  };
   duplex: {
     on: boolean;
     layout: BackLayout;
@@ -61,11 +78,23 @@ export type Finish = {
     /** The piece (by `cardIdKey`) printed behind every piece that has no back of its own. */
     commonBack: string | null;
   };
+  /** Plain colours (`#rrggbb`) under everything: the whole sheet, and behind each piece and its bleed. They show
+   * only where the source leaves the page empty. Null paints nothing, so the paper shows. */
+  background: { sheet: string | null; pieces: string | null };
 };
 
 export const DEFAULT_FINISH: Finish = {
-  marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1, onBacks: false },
-  bleed: { mm: 0, source: "mirror" },
+  marks: {
+    style: "off",
+    line: "solid",
+    widthMm: 0.25,
+    color: "#000000",
+    lengthMm: 3,
+    offsetMm: 1,
+    onBacks: false,
+    innerCrosses: false,
+  },
+  bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
   duplex: {
     on: false,
     layout: "duplex",
@@ -78,6 +107,7 @@ export const DEFAULT_FINISH: Finish = {
     offsetYMm: 0,
     commonBack: null,
   },
+  background: { sheet: null, pieces: null },
 };
 
 export const FinishSchema = z.object({
@@ -89,8 +119,14 @@ export const FinishSchema = z.object({
     lengthMm: z.number(),
     offsetMm: z.number(),
     onBacks: z.boolean().default(false),
+    innerCrosses: z.boolean().default(false),
   }),
-  bleed: z.object({ mm: z.number(), source: z.enum(BLEED_SOURCES) }),
+  bleed: z.object({
+    mm: z.number(),
+    source: z.enum(BLEED_SOURCES),
+    edgeColors: z.record(z.string(), z.string()).default({}),
+    aiFills: z.record(z.string(), z.object({ file: z.string(), inset: z.number() })).default({}),
+  }),
   duplex: z.object({
     on: z.boolean(),
     layout: z.enum(BACK_LAYOUTS).default("duplex"),
@@ -103,6 +139,9 @@ export const FinishSchema = z.object({
     offsetYMm: z.number(),
     commonBack: z.string().nullable(),
   }),
+  background: z
+    .object({ sheet: z.string().nullable(), pieces: z.string().nullable() })
+    .default({ sheet: null, pieces: null }),
 });
 
 const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
@@ -111,6 +150,10 @@ const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
 /** `#rrggbb` in lower case, or the default when `value` is not one. */
 export const cleanColor = (value: string): string =>
   /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : DEFAULT_FINISH.marks.color;
+
+/** `#rrggbb` in lower case, or null (no fill) when `value` is not one. */
+const cleanFill = (value: string | null): string | null =>
+  value !== null && /^#[0-9a-fA-F]{6}$/.test(value) ? value.toLowerCase() : null;
 
 /** Piece keys name a document, a page and a place; only keys of this shape are kept. */
 const KEY = CARD_KEY;
@@ -127,8 +170,23 @@ export function cleanFinish(f: Finish): Finish {
       lengthMm: clampTo(f.marks.lengthMm, ...MARK_LENGTH_RANGE, d.marks.lengthMm),
       offsetMm: clampTo(f.marks.offsetMm, ...MARK_OFFSET_RANGE, d.marks.offsetMm),
       onBacks: f.marks.onBacks,
+      innerCrosses: f.marks.innerCrosses,
     },
-    bleed: { mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0), source: f.bleed.source },
+    bleed: {
+      mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0),
+      source: f.bleed.source,
+      edgeColors: Object.fromEntries(
+        Object.entries(f.bleed.edgeColors).flatMap(([k, c]) => {
+          const color = cleanFill(c);
+          return KEY.test(k) && color !== null ? [[k, color]] : [];
+        }),
+      ),
+      aiFills: Object.fromEntries(
+        Object.entries(f.bleed.aiFills).filter(
+          ([k, a]) => KEY.test(k) && FILL_FILE.test(a.file) && Number.isInteger(a.inset) && a.inset > 0,
+        ),
+      ),
+    },
     duplex: {
       on: f.duplex.on,
       layout: f.duplex.layout,
@@ -141,8 +199,12 @@ export function cleanFinish(f: Finish): Finish {
       offsetYMm: clampTo(f.duplex.offsetYMm, -MAX_DUPLEX_OFFSET_MM, MAX_DUPLEX_OFFSET_MM, 0),
       commonBack: f.duplex.commonBack !== null && KEY.test(f.duplex.commonBack) ? f.duplex.commonBack : null,
     },
+    background: { sheet: cleanFill(f.background.sheet), pieces: cleanFill(f.background.pieces) },
   };
 }
+
+/** The file names of the project's AI fills. */
+export const fillFiles = (f: Finish): string[] => Object.values(f.bleed.aiFills).map((a) => a.file);
 
 /** Codes of `OutputSheet.warnings`, as `card_core::finish::SheetWarning` names them. */
 export const SHEET_WARNINGS = [
@@ -155,8 +217,17 @@ export const SHEET_WARNINGS = [
 ] as const;
 export type SheetWarning = (typeof SHEET_WARNINGS)[number];
 
+/** A sheet's background colour (RGB, as the engine returns it) for CSS; `fallback` when there is none. */
+export const fillCss = (rgb: readonly number[] | undefined, fallback = "white"): string =>
+  rgb ? `rgb(${rgb.join(" ")})` : fallback;
+
 /** Whether the backs go beside the fronts, to fold: the plan then needs a sheet grid (not "same as source"). */
 export const gutterfoldOn = (f: Finish): boolean => f.duplex.on && f.duplex.layout === "gutterfold";
 
 /** Whether anything of the finishing is switched on. */
-export const finishingOn = (f: Finish): boolean => f.marks.style !== "off" || f.bleed.mm > 0 || f.duplex.on;
+export const finishingOn = (f: Finish): boolean =>
+  f.marks.style !== "off" ||
+  f.bleed.mm > 0 ||
+  f.duplex.on ||
+  f.background.sheet !== null ||
+  f.background.pieces !== null;

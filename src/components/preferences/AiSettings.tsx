@@ -1,6 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AI_PROVIDERS, type AiProvider, DEFAULT_BASE_URL, needsKey, providerHost, skipsNotice } from "../../lib/ai";
+import {
+  AI_PROVIDERS,
+  type AiProvider,
+  DEFAULT_BASE_URL,
+  drawsPictures,
+  IMAGE_MODEL_EXAMPLE,
+  needsKey,
+  providerHost,
+  skipsNotice,
+} from "../../lib/ai";
 import { aiDeleteKey, aiKeyStatus, aiSetKey, aiTestConnection } from "../../lib/ai-api";
 import { formatError, toAppError } from "../../lib/errors";
 import { usePreferencesStore } from "../../stores/preferences-store";
@@ -175,6 +184,18 @@ export function AiSettings() {
           <Field label={t("ai.settings.model")}>
             <ModelPicker provider={provider} keySaved={saved} />
             <p className="text-[var(--muted)]">{t(`ai.modelHint.${provider}`)}</p>
+          </Field>
+
+          <Field label={t("ai.settings.imageModel")}>
+            {drawsPictures(provider) && (
+              <TextSetting
+                label={t("ai.settings.imageModel")}
+                value={settings.imageModel}
+                placeholder={IMAGE_MODEL_EXAMPLE[provider]}
+                onCommit={(imageModel) => set.setAiProviderSettings(provider, { imageModel })}
+              />
+            )}
+            <p className="text-[var(--muted)]">{t(`ai.imageModelHint.${provider}`)}</p>
           </Field>
 
           {provider === "anthropic" && (

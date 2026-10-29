@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { CardId, OrientedRect } from "../lib/card";
 import { emitHintEvent } from "../lib/hint-events";
 import type { TutorialId } from "../lib/tutorials";
 
@@ -26,6 +27,12 @@ export type RunningTutorial = { id: TutorialId; step: number };
 
 /** The two halves of the app: define where the cards are, then choose what to print. */
 export type Stage = "cards" | "print";
+
+/**
+ * A piece shown large over the Print tab (right-click on it): where it is in its source and how it prints, `width`
+ * and `height` being its printed shape (points or any unit, only their ratio counts).
+ */
+export type PiecePeek = { card: CardId; source: OrientedRect; turn: number; width: number; height: number };
 
 /** Transient UI state (not persisted). */
 export const useUiStore = create<{
@@ -68,6 +75,9 @@ export const useUiStore = create<{
   /** Always starts in the Cards stage; switching never changes a document. */
   stage: Stage;
   setStage: (stage: Stage) => void;
+  /** The piece shown large, or null. */
+  peek: PiecePeek | null;
+  setPeek: (peek: PiecePeek | null) => void;
 }>((set) => ({
   prefsOpen: false,
   prefsSection: null,
@@ -110,6 +120,8 @@ export const useUiStore = create<{
   hintsHeld: false,
   exporting: false,
   setExporting: (exporting) => set({ exporting }),
+  peek: null,
+  setPeek: (peek) => set({ peek }),
   stage: "cards",
   setStage: (stage) => {
     set({ stage });

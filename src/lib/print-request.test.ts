@@ -66,6 +66,7 @@ describe("what the UI sends the Rust planner", () => {
       plan: p,
     });
     expect(sent).toEqual({
+      fillsDir: null,
       documents: saved.documents.map(({ id, kind, groups, freeform }) => ({ id, kind, groups, freeform })),
       output: saved.output,
       edits: saved.edits,

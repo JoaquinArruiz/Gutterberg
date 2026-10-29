@@ -5,7 +5,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { z } from "zod";
 import { usePreferencesStore } from "../stores/preferences-store";
-import { type AiProvider, providerConfig } from "./ai";
+import { type AiProvider, imageConfig, providerConfig } from "./ai";
 import type { DocumentId, OrientedRect } from "./card";
 import { DetectionSchema } from "./detect-api";
 
@@ -134,4 +134,34 @@ export async function aiPairBacks(pieces: PairPiece[]) {
   const { config, sendImages } = settings();
   const raw = await call<unknown>("ai_pair_backs", { pieces, config, sendImages });
   return z.object({ pieces: z.array(AiSideSchema), usage: UsageSchema }).parse(raw);
+}
+
+const EdgeFillSchema = z.object({
+  before: z.string(),
+  after: z.string(),
+  fill: z.string(),
+  inset: z.number().int().min(1),
+  hash: z.string(),
+  usage: UsageSchema,
+});
+/** What Fill with AI made for one piece: PNGs in base64 (the piece, the piece with its new band, the band alone). */
+export type EdgeFill = z.infer<typeof EdgeFillSchema>;
+
+/** Fill with AI for one piece: one paid image request to the image model chosen in Preferences. Saves nothing. */
+export async function aiFillEdge(
+  documentId: DocumentId,
+  pageIndex: number,
+  source: OrientedRect,
+  bleedMm: number,
+): Promise<EdgeFill> {
+  const ai = usePreferencesStore.getState().prefs.ai;
+  const raw = await call<unknown>("ai_fill_edge", {
+    documentId,
+    pageIndex,
+    source,
+    bleedMm,
+    config: imageConfig(ai),
+    sendImages: ai.sendImages,
+  });
+  return EdgeFillSchema.parse(raw);
 }

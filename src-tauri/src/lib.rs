@@ -42,6 +42,7 @@ pub fn run() {
             commands::ai::ai_sort_pages,
             commands::ai::ai_estimate_pairing,
             commands::ai::ai_pair_backs,
+            commands::ai::ai_fill_edge,
             commands::ai::ai_test_connection,
             commands::ai::ai_list_models,
             commands::calibration::save_calibration_sheet,
@@ -53,6 +54,14 @@ pub fn run() {
             commands::project::save_project_file,
             commands::project::hash_file,
             commands::project::file_exists,
+            commands::project::find_beside_project,
+            commands::project::save_fills,
+            commands::project::copy_project_fills,
+            commands::project::missing_fills,
+            commands::project::write_project_readme,
+            commands::recovery::write_recovery,
+            commands::recovery::clear_recovery,
+            commands::recovery::find_recovery,
             commands::images::build_images_document,
             commands::images::plan_images,
             commands::images::probe_images,
@@ -68,6 +77,8 @@ pub fn run() {
             commands::export::validate_export,
             commands::render::render_page,
             commands::render::render_region,
+            commands::render::render_piece_region,
+            commands::render::edge_colors,
         ])
         .setup(|app| {
             // Checks for a new version and installs it; the web side drives both from Preferences. A Store copy is

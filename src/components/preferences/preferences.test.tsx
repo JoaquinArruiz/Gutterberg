@@ -222,6 +222,30 @@ describe("About", () => {
     expect(openExternalLink).toHaveBeenCalledTimes(3);
   });
 
+  it("links the download page and the changelog, and shows this version's notes from the changelog", async () => {
+    getVersion.mockResolvedValue("1.2.1");
+    openExternalLink.mockResolvedValue("cancelled");
+    render(<PreferencesDialog />);
+    await openPreferences("About");
+    fireEvent.click(await screen.findByRole("button", { name: "Download page" }));
+    expect(openExternalLink).toHaveBeenLastCalledWith("https://joaquinarruiz.com.ar/projects/gutterberg");
+    fireEvent.click(screen.getByRole("button", { name: "Full changelog" }));
+    expect(openExternalLink).toHaveBeenLastCalledWith(EXTERNAL_LINKS.changelog);
+    expect(screen.queryByTestId("release-notes")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "What's new in 1.2.1" }));
+    expect(screen.getByTestId("release-notes").textContent).toContain("safety release");
+  });
+
+  it("sends the Microsoft Store copy to its Store page, where it is updated", async () => {
+    useUpdateStore.setState({ store: true });
+    openExternalLink.mockResolvedValue("cancelled");
+    render(<PreferencesDialog />);
+    await openPreferences("About");
+    expect(screen.queryByRole("button", { name: "Download page" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Microsoft Store page" }));
+    expect(openExternalLink).toHaveBeenLastCalledWith("https://apps.microsoft.com/detail/9NLQ61KCDSKZ");
+  });
+
   it("states the terms in a line and shows the license and the third-party notices on request", async () => {
     render(<PreferencesDialog />);
     await openPreferences("About");

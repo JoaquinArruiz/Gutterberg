@@ -21,8 +21,17 @@ beforeEach(() => {
 describe("cut marks, bleed and duplex in the print store", () => {
   it("start off and are part of the plan", () => {
     expect(planOf(st()).finish).toEqual({
-      marks: { style: "off", line: "solid", widthMm: 0.25, color: "#000000", lengthMm: 3, offsetMm: 1, onBacks: false },
-      bleed: { mm: 0, source: "mirror" },
+      marks: {
+        style: "off",
+        line: "solid",
+        widthMm: 0.25,
+        color: "#000000",
+        lengthMm: 3,
+        offsetMm: 1,
+        onBacks: false,
+        innerCrosses: false,
+      },
+      bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
       duplex: {
         on: false,
         layout: "duplex",
@@ -35,6 +44,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
         offsetYMm: 0,
         commonBack: null,
       },
+      background: { sheet: null, pieces: null },
     });
   });
 
@@ -44,8 +54,11 @@ describe("cut marks, bleed and duplex in the print store", () => {
     st().setBleed({ source: "source" });
     st().setDuplex({ on: true, offsetXMm: -50 });
     expect(st().finish.marks).toMatchObject({ style: "gaps", widthMm: 2, lengthMm: 3 });
-    expect(st().finish.bleed).toEqual({ mm: 2, source: "source" });
+    expect(st().finish.bleed).toEqual({ mm: 2, source: "source", edgeColors: {}, aiFills: {} });
     expect(st().finish.duplex).toMatchObject({ on: true, flip: "long", offsetXMm: -10 });
+    st().setBackground({ sheet: "#123ABC" });
+    st().setBackground({ pieces: "not a colour" });
+    expect(st().finish.background).toEqual({ sheet: "#123abc", pieces: null });
   });
 
   it("are reset with the plan and loaded with it", () => {
@@ -53,7 +66,10 @@ describe("cut marks, bleed and duplex in the print store", () => {
     st().reset();
     expect(st().finish.bleed.mm).toBe(0);
     const plan = planOf(st());
-    st().loadPlan({ ...plan, finish: { ...plan.finish, bleed: { mm: 3, source: "mirror" } } });
+    st().loadPlan({
+      ...plan,
+      finish: { ...plan.finish, bleed: { mm: 3, source: "mirror", edgeColors: {}, aiFills: {} } },
+    });
     expect(st().finish.bleed.mm).toBe(3);
   });
 

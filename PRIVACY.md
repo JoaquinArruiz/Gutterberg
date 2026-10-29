@@ -20,9 +20,12 @@ Only two things, and neither sends anything about you or your files to me.
   copy does not check: the Store updates it.
 - **AI Mode**, which is off until you turn it on. It sends what an action needs to the AI provider you chose, with
   your own key: a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the
-  pieces for Pair backs. Each action shows what it sends and to which server, and waits for you to press Send,
+  pieces for Pair backs, a picture of each piece (about 1024 px) for Fill with AI, one paid image request per piece.
+  Each action shows what it sends and to which server, and waits for you to press Send,
   unless you ticked "Don't ask again" for that server. While AI Mode is on, choosing a provider asks it for its list
-  of models, which carries your key and nothing else. With Ollama running on your own computer, nothing leaves it.
+  of models, which carries your key and nothing else. Fill with AI shows its pieces and the server in its own dialog
+  and sends nothing until you press Send; the pictures it brings back are saved in a folder beside your project.
+  With Ollama running on your own computer, nothing leaves it.
   AI Mode never sends a PDF whose publisher restricted it (against printing, changes, copying or anything else).
 
   What the provider does with what you send is up to its own terms and privacy policy. With a free (unpaid) key,
@@ -39,8 +42,9 @@ Only two things, and neither sends anything about you or your files to me.
 
 ## What is kept on your computer, and how to remove it
 
-- Your settings, the log (about half a megabyte at most) and, while AI Mode is on, the provider's list of models
-  (kept for a week). Uninstalling the Microsoft Store copy removes them; for the copy from GitHub they are in the
+- Your settings, the log (about half a megabyte at most), while AI Mode is on the provider's list of models
+  (kept for a week), and while a project has unsaved changes a recovery copy of it in a `recovery` folder (removed
+  when you save, close it on purpose, or restore or discard it at the next start). Uninstalling the Microsoft Store copy removes them; for the copy from GitHub they are in the
   `Gutterberg` folders in `%APPDATA%` and `%LOCALAPPDATA%` on Windows; in `~/Library/Application Support`,
   `~/Library/Caches` and `~/Library/Logs` on macOS; and in `~/.config`, `~/.local/share` and `~/.cache` on Linux.
 - Your API key stays in the keychain until you remove it, even after uninstalling. Remove it first in
@@ -53,7 +57,7 @@ Only two things, and neither sends anything about you or your files to me.
 
 The Microsoft Store and Windows (including the WebView2 component the app draws its window with) follow Microsoft's
 own privacy statement, not this one, and GitHub's statement covers the update check and downloads. The links in
-Preferences (GitHub, Discord, LinkedIn) open in your browser, where those sites' own policies apply.
+Preferences (GitHub, Discord, LinkedIn, the download page and the changelog) open in your browser, where those sites' own policies apply.
 
 ## Children
 

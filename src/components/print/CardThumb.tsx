@@ -7,6 +7,7 @@ import { documentById, useDocumentStore } from "../../stores/document-store";
 import { useSeveralGrids } from "../../stores/layout-store";
 import { useUnit } from "../../stores/preferences-store";
 import { CardImage } from "./CardImage";
+import { usePiecePeek } from "./use-piece-peek";
 
 /** Padding, gap and label below the picture: what the cell keeps for itself. */
 const CHROME_X = 8;
@@ -14,7 +15,8 @@ const CHROME_Y = 25;
 
 /**
  * A piece in the library: its picture as it will print (straightened, turned and sized as set), a
- * page/position label, its copies, and a badge when it is printed at another size than on the page.
+ * page/position label, its copies, and a badge when it is printed at another size than on the page. A right-click
+ * shows it large (`usePiecePeek`).
  */
 export function CardThumb({
   card,
@@ -74,11 +76,16 @@ export function CardThumb({
   const size = formatCardSize(card, unit);
   const printed = copies === null || copies > 0;
   const scaled = Math.abs(card.scale - 1) > 1e-6 || hasOwnHeight(card);
+  const peek = usePiecePeek(() => ({ card: card.id, source: card.source, turn: card.turn, ...final }));
   return (
     <button
       type="button"
       onClick={onClick}
-      onPointerDown={onPointerDown}
+      onPointerDown={(e) => {
+        peek.onPointerDown(e);
+        onPointerDown?.(e);
+      }}
+      onContextMenu={peek.onContextMenu}
       aria-pressed={selected}
       data-card={cardIdKey(card.id)}
       data-turn={card.turn}
@@ -92,7 +99,7 @@ export function CardThumb({
       className={`relative flex select-none flex-col items-center gap-0.5 rounded p-1 text-[10px] ${selected ? "bg-[var(--accent)]/25 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"} ${printed ? "" : "opacity-45"} ${dragging ? "opacity-40" : ""}`}
     >
       <span className="flex min-h-0 w-full flex-1 items-center justify-center bg-white/5">
-        <span className="relative" style={{ width: boxW, height: boxH }}>
+        <span className="relative bg-white" style={{ width: boxW, height: boxH }}>
           {url && <CardImage url={url} source={card.source} turn={card.turn} aspect={boxW / boxH} />}
         </span>
       </span>

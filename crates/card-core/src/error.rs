@@ -61,6 +61,12 @@ pub enum Error {
     },
     #[error("{name} cannot be read: {detail}")]
     ImageUnreadable { name: String, detail: String },
+    /// Fill with AI: the picture that came back cannot be used.
+    #[error("the picture that came back cannot be used: {0}")]
+    FillReply(String),
+    /// Fill with AI works on straight pieces only.
+    #[error("Fill with AI works on straight pieces only; this one is tilted")]
+    FillTilted,
     #[error(
         "this PDF's publisher doesn't allow changes ({reason} is locked); contact them for an \
          unlocked print-and-play version"
@@ -181,6 +187,8 @@ impl From<&Error> for ErrorInfo {
                 "image_unreadable",
                 vec![("name", text(name)), ("detail", text(detail))],
             ),
+            Error::FillReply(d) => ("fill_reply", vec![("detail", text(d))]),
+            Error::FillTilted => ("fill_tilted", vec![]),
             Error::PdfLocked {
                 document_id,
                 reason,

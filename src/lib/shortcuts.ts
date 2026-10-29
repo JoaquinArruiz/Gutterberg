@@ -39,6 +39,7 @@ export type ShortcutId =
   | "makeGuide"
   | "deleteGuide"
   | "deletePiece"
+  | "removePage"
   | "snapRotation"
   | "applyProposal"
   | "discardProposal"
@@ -103,6 +104,7 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
     { id: "makeGuide", keys: [["Drag"]] },
     { id: "deleteGuide", keys: [["Drag"]] },
     { id: "deletePiece", keys: [["Delete"], ["Backspace"]] },
+    { id: "removePage", keys: [["Delete"], ["Backspace"]] },
     { id: "snapRotation", keys: [["Shift"]] },
     { id: "applyProposal", keys: [["Enter"]] },
     { id: "discardProposal", keys: [["Esc"]] },

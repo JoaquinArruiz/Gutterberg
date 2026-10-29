@@ -3,9 +3,9 @@
 use card_core::card::{CardId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use card_core::export::{export_sheets, page_size};
 use card_core::finish::{
-    bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BleedOptions, BleedSource,
-    DuplexOptions, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, SheetWarning,
-    Side,
+    bleed_regions, finish_sheets, plan_and_finish, BackLayout, BackPair, BackgroundOptions,
+    BleedOptions, BleedSource, DuplexOptions, EdgeColor, FinishOptions, Finishing, Flip, MarkLine,
+    MarkOptions, MarkStyle, PieceFill, SheetWarning, Side,
 };
 use card_core::geometry::{PageSize, Point};
 use card_core::layout::GridLayout;
@@ -66,6 +66,8 @@ fn finishing(options: FinishOptions) -> Finishing {
     Finishing {
         options,
         backs: Vec::new(),
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     }
 }
 
@@ -147,6 +149,46 @@ fn ticks_mark_the_inner_cuts_of_pieces_that_touch() {
     let sheets = plan(&docs, spec(3, 3, 0.0, 3.0), &[]);
     let (out, _) = finish_sheets(sheets, &docs, &finishing(marks(MarkStyle::Ticks))).unwrap();
     assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 16);
+}
+
+#[test]
+fn ticks_can_add_a_cross_where_the_gaps_cross() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let mut o = marks(MarkStyle::Ticks);
+    o.marks.inner_crosses = true;
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    let lines = &out[0].marks.as_ref().unwrap().lines;
+    // The 16 ticks, and one cross of two lines in the middle.
+    assert_eq!(lines.len(), 18);
+    let (a, d) = (
+        sheets[0].placements[0].destination,
+        sheets[0].placements[3].destination,
+    );
+    let (mx, my) = ((a.x + a.width + d.x) / 2.0, (a.y + a.height + d.y) / 2.0);
+    let length = mm_to_pt(3.0);
+    assert!(lines.iter().any(|l| close(l[0], mx - length)
+        && close(l[1], my)
+        && close(l[2], mx + length)
+        && close(l[3], my)));
+    assert!(lines.iter().any(|l| close(l[0], mx)
+        && close(l[1], my - length)
+        && close(l[2], mx)
+        && close(l[3], my + length)));
+    assert!(out[0].warnings.is_empty());
+
+    // 3 x 3 has four crossings; without the setting there are none.
+    let sheets = plan(&docs, spec(3, 3, 6.0, 0.0), &[]);
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24 + 8);
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(marks(MarkStyle::Ticks))).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24);
+
+    // Touching pieces leave no room for a cross: the ticks stay, with the narrow-gap warning.
+    let sheets = plan(&docs, spec(2, 2, 0.0, 15.0), &[]);
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(o)).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 12);
+    assert!(out[0].warnings.contains(&SheetWarning::GapTooNarrowForLine));
 }
 
 #[test]
@@ -418,6 +460,132 @@ fn a_sheet_without_bleed_or_marks_exports_the_same_stream_as_before() {
     assert!(!after.contains("RG"));
 }
 
+#[test]
+fn the_background_colours_are_painted_first_as_plain_fills() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Mirror,
+        },
+        background: BackgroundOptions {
+            sheet: Some("#000000".into()),
+            pieces: Some("#ffffff".into()),
+        },
+        ..FinishOptions::default()
+    };
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+    assert_eq!(out[0].background.sheet, Some([0, 0, 0]));
+    assert_eq!(out[0].background.pieces, Some([255, 255, 255]));
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    assert!(
+        content.starts_with("q\n0 0 0 rg\n0 0 "),
+        "the sheet is filled first: {content}"
+    );
+    // One rectangle per piece, filled once, before anything is drawn.
+    let pieces_at = content.find("1 1 1 rg\n").unwrap();
+    let fill_end = pieces_at + content[pieces_at..].find("f\nQ").unwrap();
+    assert_eq!(content[pieces_at..fill_end].matches(" re\n").count(), 4);
+    assert!(fill_end < content.find(" Do").unwrap());
+}
+
+#[test]
+fn the_edge_bleed_fills_each_piece_with_its_colour_and_mirrors_one_without() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Edge,
+        },
+        ..FinishOptions::default()
+    };
+    let colors = [(0, 0), (0, 1), (1, 0)].map(|(r, c)| EdgeColor {
+        card: card(r, c),
+        color: [200, 10, 10],
+    });
+    let f = Finishing {
+        edge_colors: colors.to_vec(),
+        ..finishing(options)
+    };
+    let (out, issues) = finish_sheets(sheets, &docs, &f).unwrap();
+    assert!(issues.is_empty());
+    assert_eq!(out[0].edge_fills.len(), 3);
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    // Three plain fills; the fourth piece is mirrored (8 regions), and every piece is drawn once.
+    assert_eq!(content.matches(" rg\n").count(), 3);
+    assert_eq!(content.matches(" Do").count(), 8 + 4);
+    let fill = content.find(" rg\n").unwrap();
+    assert!(fill < content.find("re W n").unwrap(), "under the pieces");
+}
+
+#[test]
+fn an_ai_fill_is_laid_over_the_mirrored_bleed_and_under_its_piece_as_a_picture() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let dir = std::env::temp_dir().join(format!("card-core-ai-fill-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let file = dir.join("fill.png");
+    image::RgbaImage::from_pixel(70, 90, image::Rgba([0, 0, 200, 255]))
+        .save(&file)
+        .unwrap();
+    let options = FinishOptions {
+        bleed: BleedOptions {
+            mm: 2.0,
+            source: BleedSource::Ai,
+        },
+        ..FinishOptions::default()
+    };
+    let f = Finishing {
+        image_fills: vec![PieceFill {
+            card: card(0, 0),
+            path: file.to_string_lossy().into_owned(),
+            inset: 5,
+        }],
+        ..finishing(options)
+    };
+    let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
+    assert_eq!(out[0].image_fills.len(), 1);
+    let pdf = export_sheets(vec![(0, sample_pdf())], &out[..1]).unwrap();
+    let content = first_page_content(&pdf);
+    // Every piece is mirrored (8 regions each); the picture comes after the mirrored bleed and before the pieces.
+    let picture = content.find("/F").unwrap();
+    assert_eq!(content[..picture].matches(" Do").count(), 8);
+    assert_eq!(content[picture..].matches(" Do").count(), 1 + 3 * 8 + 4);
+    let images: Vec<_> = pdf
+        .objects
+        .values()
+        .filter_map(|o| match o {
+            lopdf::Object::Stream(s)
+                if s.dict.get(b"Subtype").and_then(|s| s.as_name()).ok() == Some(b"Image") =>
+            {
+                Some(s)
+            }
+            _ => None,
+        })
+        .collect();
+    // The picture and its transparency.
+    assert_eq!(images.len(), 2);
+    assert!(images.iter().any(|s| s.dict.has(b"SMask")));
+}
+
+#[test]
+fn a_bad_background_colour_is_refused() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
+    let options = FinishOptions {
+        background: BackgroundOptions {
+            sheet: Some("black".into()),
+            pieces: None,
+        },
+        ..FinishOptions::default()
+    };
+    assert!(finish_sheets(sheets, &docs, &finishing(options)).is_err());
+}
+
 // ---- duplex ----------------------------------------------------------------------------
 
 fn duplex(flip: Flip, common_back: Option<CardId>) -> FinishOptions {
@@ -625,6 +793,8 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             back: card(1, 1),
             turn: Turn::R0,
         }],
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (out, _) = finish_sheets(sheets, &docs, &f).unwrap();
     assert_eq!(out.len(), 4);
@@ -638,6 +808,8 @@ fn a_piece_without_a_back_leaves_its_slot_empty_and_a_sheet_without_backs_has_no
             back: card(1, 1),
             turn: Turn::R0,
         }],
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let docs2 = [source()];
     let (out, _) = finish_sheets(plan(&docs2, spec(2, 2, 6.0, 15.0), &[]), &docs2, &f).unwrap();
@@ -656,6 +828,8 @@ fn a_back_turned_by_the_user_is_turned_that_much_more_on_the_back_sheet() {
             back: card(1, 1),
             turn,
         }],
+        edge_colors: Vec::new(),
+        image_fills: Vec::new(),
     };
     let (plain, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R0)).unwrap();
     let (turned, _) = finish_sheets(sheets.clone(), &docs, &pair(Turn::R180)).unwrap();

@@ -157,8 +157,9 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - A piece library with copies per piece, from several PDFs at once; plan the sheets or fill them automatically.
 - Turn pieces, sort them by dragging, and set a real size (for example 63 × 88 mm) or a percentage per piece,
   always a visible, explicit choice. Overflow is reported, never fixed by shrinking.
-- Cut marks (ticks in the margins or lines in the gaps, solid, dashed or dotted), bleed, and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
+- Cut marks (ticks in the margins, with crosses where the gaps cross if you like, or lines in the gaps, solid, dashed or dotted), bleed (mirrored, from the source, or in the edge's color), and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
   a back per piece, or every back paired automatically from where it is in the file.
+- A color for the whole sheet and behind each piece, for art that leaves its corners or edges empty.
 - Converts both ways: a gutterfold file prints double-sided, and a double-sided file prints as gutterfold.
 - Export keeps the original vector content: pieces are placed and clipped, never turned into pictures.
 
@@ -171,12 +172,15 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 - `.gtr` project files keep everything but the PDFs, which they find again by content even if they moved.
   Double-clicking a project opens it in Gutterberg. Undo and redo cover the whole project.
+- Save for sharing: hand players a `.gtr` beside your PDF, with a readme that says how to print it. Gutterberg finds
+  the PDF next to the project on their computer.
 - PDFs locked by their publisher against printing or changes are not exported; other restrictions are kept.
 
 **AI Mode (optional)**
 
 - Experimental, and off and hidden until you turn it on. Detect pieces (several grids on a page too), Sort pages and
-  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), with your
+  pair backs by picture with an AI engine of your choice (Anthropic, OpenAI-compatible, Gemini or Ollama), and paint
+  a piece's bleed with an image model (Gemini or OpenAI-compatible), with your
   own key kept in the system keychain. Every action shows what is sent and to which server and asks first (until
   you say not to ask again for that server), and every result is a proposal you can edit.
 
@@ -217,7 +221,8 @@ stay there, and the app has no account, no analytics and no tracking. Only two t
   not check by itself; the Microsoft Store copy never does, since the Store updates it.
 - **AI Mode**, only if you turn it on, sends what an action needs to the provider you chose, with your own key:
   a picture of the page for Detect, small pictures of the pages for Sort pages, small pictures of the pieces for Pair
-  backs. Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
+  backs, and a picture of each piece for Fill with AI (one paid image request per piece, after its own dialog; the
+  pictures that come back are saved beside your project). Each action shows what it sends and to which server, and waits for Send, until you tick "Don't ask again"
   for that server (Preferences › AI Mode › Ask before sending brings the question back). Your key is kept in the
   system keychain, and stays there after uninstalling until you remove it. AI Mode never sends a PDF whose
   publisher restricted it, and sends your key only over HTTPS (plain http only to this computer or a private

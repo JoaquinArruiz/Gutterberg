@@ -13,8 +13,9 @@ describe("finish settings", () => {
       lengthMm: 3,
       offsetMm: 1,
       onBacks: false,
+      innerCrosses: false,
     });
-    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror" });
+    expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror", edgeColors: {}, aiFills: {} });
     expect(DEFAULT_FINISH.duplex).toEqual({
       on: false,
       layout: "duplex",
@@ -27,13 +28,36 @@ describe("finish settings", () => {
       offsetYMm: 0,
       commonBack: null,
     });
-    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror" } })).toBe(true);
+    expect(DEFAULT_FINISH.background).toEqual({ sheet: null, pieces: null });
+    expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror", edgeColors: {}, aiFills: {} } })).toBe(
+      true,
+    );
+    expect(finishingOn({ ...DEFAULT_FINISH, background: { sheet: "#000000", pieces: null } })).toBe(true);
   });
 
   it("are pulled back into what the engine accepts", () => {
     const wild: Finish = {
-      marks: { style: "ticks", line: "dotted", widthMm: 50, color: "red", lengthMm: 0, offsetMm: -3, onBacks: true },
-      bleed: { mm: 99, source: "source" },
+      marks: {
+        style: "ticks",
+        line: "dotted",
+        widthMm: 50,
+        color: "red",
+        lengthMm: 0,
+        offsetMm: -3,
+        onBacks: true,
+        innerCrosses: true,
+      },
+      bleed: {
+        mm: 99,
+        source: "source",
+        edgeColors: { "g:0:0:0:0": "#ABCDEF", "g:0:0:0:1": "blue", nonsense: "#000000" },
+        aiFills: {
+          "g:0:0:0:0": { file: "g-0-0-0-0-ab12.png", inset: 30 },
+          "g:0:0:0:1": { file: "../outside.png", inset: 30 },
+          "g:0:0:0:2": { file: "g-0-0-0-2-cd34.png", inset: 0 },
+          nonsense: { file: "x.png", inset: 30 },
+        },
+      },
       duplex: {
         ...DEFAULT_FINISH.duplex,
         on: true,
@@ -42,6 +66,7 @@ describe("finish settings", () => {
         offsetYMm: Number.NaN,
         commonBack: "not a key",
       },
+      background: { sheet: "#00FF00", pieces: "green" },
     };
     const clean = cleanFinish(wild);
     expect(clean.marks).toEqual({
@@ -52,8 +77,15 @@ describe("finish settings", () => {
       lengthMm: 1,
       offsetMm: 0,
       onBacks: true,
+      innerCrosses: true,
     });
-    expect(clean.bleed).toEqual({ mm: MAX_BLEED_MM, source: "source" });
+    expect(clean.bleed).toEqual({
+      mm: MAX_BLEED_MM,
+      source: "source",
+      edgeColors: { "g:0:0:0:0": "#abcdef" },
+      // Only a plain file name in the fills folder, with a band, for a real piece.
+      aiFills: { "g:0:0:0:0": { file: "g-0-0-0-0-ab12.png", inset: 30 } },
+    });
     expect(clean.duplex).toEqual({
       ...DEFAULT_FINISH.duplex,
       on: true,
@@ -61,6 +93,7 @@ describe("finish settings", () => {
       offsetXMm: -10,
       commonBack: null,
     });
+    expect(clean.background).toEqual({ sheet: "#00ff00", pieces: null });
     expect(cleanColor("#ABCDEF")).toBe("#abcdef");
     expect(cleanColor("#abc")).toBe("#000000");
   });

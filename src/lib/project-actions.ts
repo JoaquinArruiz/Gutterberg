@@ -2,6 +2,7 @@
 // open; these functions move it between the stores and the disk, and never leave a half-opened project
 // behind: a file is checked, its PDFs are found and read, and only then do the stores change.
 
+import { getVersion } from "@tauri-apps/api/app";
 import { t } from "../i18n";
 import {
   documentName,
@@ -16,12 +17,13 @@ import { useImageImportStore } from "../stores/image-import-store";
 import { DEFAULT_OUTPUT, type DocLayout, outputSettings, useLayoutStore } from "../stores/layout-store";
 import { usePreferencesStore } from "../stores/preferences-store";
 import { usePrintStore } from "../stores/print-store";
-import { useProjectStore } from "../stores/project-store";
+import { projectName, useProjectStore } from "../stores/project-store";
 import { useToastStore } from "../stores/toast-store";
 import type { DocumentId } from "./card";
 import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
 import { defaultGroups } from "./document-layout";
 import { formatError, toAppError } from "./errors";
+import { fillFiles } from "./finish";
 import { emitHintEvent } from "./hint-events";
 import {
   buildImagesDocument,
@@ -35,27 +37,36 @@ import {
   probeImages,
 } from "./images";
 import { usualPaper } from "./paper";
-import { DEFAULT_PLAN, type PrintPlan } from "./print-request";
+import { DEFAULT_PLAN, fillsDir, type PrintPlan } from "./print-request";
 import {
   fromProject,
   groupsCoverPages,
   type ImagesDocumentState,
   type ProjectDocumentState,
   type ProjectState,
+  parseProject,
   projectSignature,
   toProject,
 } from "./project";
 import {
+  askSave,
   confirm,
+  copyProjectFills,
   fileExists,
+  findBeside,
   hashFile,
+  inform,
+  missingFills,
   notify,
   pickProjectToOpen,
   pickProjectToSave,
   readProjectFile,
   writeProjectFile,
+  writeProjectReadme,
 } from "./project-api";
-import { currentProjectState, currentSignature } from "./project-state";
+import { currentProjectState, currentSignature, hasUnsavedChanges } from "./project-state";
+import { clearRecovery, dropRecoveryCopy, findRecovery } from "./recovery";
+import { filesElsewhere, projectFiles, readmeText } from "./sharing";
 import { closePdf, type DocumentInfo, openPdf, pickPdf, pickPdfs } from "./tauri";
 import { clearCardImages } from "./use-card-image";
 import { startSession } from "./workspace";
@@ -75,10 +86,47 @@ async function run(action: () => Promise<void>): Promise<void> {
 
 /** Whether the project may be replaced: nothing to lose, or the user said to discard it. */
 async function confirmDiscard(): Promise<boolean> {
-  const { signature } = useProjectStore.getState();
-  const now = currentSignature();
-  if (now === null || now === signature) return true;
+  if (!hasUnsavedChanges()) return true;
   return confirm(t("project.discard.message"), t("project.discard.ok"));
+}
+
+/**
+ * Before the window closes: a project with unsaved changes asks Save, Don't save or Cancel. Save saves it (asking
+ * where, if it has no file yet) and a cancelled save keeps the window open. Resolves to whether it may close.
+ */
+export async function confirmClose(): Promise<boolean> {
+  if (!hasUnsavedChanges()) return true;
+  const name = projectName(useProjectStore.getState().path);
+  const answer = await askSave(name ? t("project.close.message", { name }) : t("project.close.messageNew"));
+  if (answer === "cancel") return false;
+  if (answer === "save" && !(await saveProject())) return false;
+  // Closed on purpose: nothing to offer at the next start.
+  await dropRecoveryCopy();
+  return true;
+}
+
+/**
+ * At start: the newest recovery copy left by a run that ended with unsaved changes (a crash, a forced close), if
+ * there is one, is offered. Restore opens it as the project, unsaved, still pointing at its file if it had one;
+ * Discard deletes it. Either way it is not offered again.
+ */
+export async function offerRecovery(): Promise<void> {
+  const found = await findRecovery();
+  if (!found) return;
+  const name = projectName(found.info.path);
+  const restore = await confirm(
+    name ? t("project.recovery.message", { name }) : t("project.recovery.messageNew"),
+    t("project.recovery.restore"),
+    t("project.recovery.discard"),
+  );
+  if (restore) {
+    if (!(await confirmDiscard())) return;
+    await run(async () => {
+      useProjectStore.getState().clearNotices();
+      await load(fromProject(parseProject(found.project)), found.info.path, null);
+    });
+  }
+  await clearRecovery(found.id);
 }
 
 /**
@@ -86,9 +134,7 @@ async function confirmDiscard(): Promise<boolean> {
  * file yet). Resolves to whether it may go on; "no" or a cancelled save keeps the app as it is.
  */
 export async function saveBeforeRestart(): Promise<boolean> {
-  const { signature } = useProjectStore.getState();
-  const now = currentSignature();
-  if (now === null || now === signature) return true;
+  if (!hasUnsavedChanges()) return true;
   if (!(await confirm(t("updates.unsaved"), t("updates.saveFirst")))) return false;
   return saveProject();
 }
@@ -348,17 +394,28 @@ type Located =
   | { kind: "images"; id: DocumentId; name: string; pages: ImagePageInfo[] };
 
 /**
+ * Where to look first for a file of the project: its saved path, or when that is gone, the file beside the project
+ * file (`projectFile`) with its name or its content. A project shared with its PDFs in one folder opens on another
+ * computer without asking for each of them.
+ */
+async function firstPlace(savedPath: string, hash: string, projectFile: string | null): Promise<string> {
+  if (!projectFile || (await fileExists(savedPath))) return savedPath;
+  const found = await findBeside(projectFile, fileName(savedPath), hash).catch(() => null);
+  return found?.path ?? savedPath;
+}
+
+/**
  * Finds the image files of an images document. One that moved is looked for with the user, like a PDF, and
  * taken if it is the same file; one that changed asks before it replaces the old one. An image the user does
  * not find or does not accept keeps its page, blank and marked missing, so the rest of the project works.
  */
-async function locateImages(d: ImagesDocumentState): Promise<ImagePageInfo[]> {
+async function locateImages(d: ImagesDocumentState, projectFile: string | null): Promise<ImagePageInfo[]> {
   const notices = useProjectStore.getState();
   const pages: ImagePageInfo[] = [];
   for (const image of d.images) {
     const name = fileName(image.path);
     const missing = (): ImagePageInfo => ({ ...image, plan: null, missing: true });
-    let path = image.path;
+    let path = await firstPlace(image.path, image.hash, projectFile);
     let page: ImagePageInfo | null = null;
     for (;;) {
       if (!(await fileExists(path))) {
@@ -418,21 +475,24 @@ async function materializeImages(
 }
 
 /**
- * Finds the file of each PDF of a project and checks it is still the same one. A missing file is looked for
- * with the user ("Where is this file now?"), and the new location is taken if its hash matches; if it does
+ * Finds the file of each PDF of a project and checks it is still the same one. A missing file is looked for beside
+ * `projectFile` (the project's own file, if it has one) and then with the user ("Where is this file now?"), and the new location is taken if its hash matches; if it does
  * not, the user is told and chooses. A file at the saved place that has changed is used, with a warning.
  * Returns null if the user gives up, so nothing is opened.
  */
-async function locateDocuments(documents: ProjectDocumentState[]): Promise<Located[] | null> {
+async function locateDocuments(
+  documents: ProjectDocumentState[],
+  projectFile: string | null,
+): Promise<Located[] | null> {
   const notices = useProjectStore.getState();
   const located: Located[] = [];
   for (const d of documents) {
     if (d.kind === "images") {
-      located.push({ kind: "images", id: d.id, name: d.name, pages: await locateImages(d) });
+      located.push({ kind: "images", id: d.id, name: d.name, pages: await locateImages(d, projectFile) });
       continue;
     }
     const name = fileName(d.path);
-    let path = d.path;
+    let path = await firstPlace(d.path, d.hash, projectFile);
     for (;;) {
       if (!(await fileExists(path))) {
         if (!(await confirm(t("project.relink.message", { name }), t("project.relink.ok")))) return null;
@@ -475,65 +535,78 @@ export async function openProjectDialog(path?: string): Promise<void> {
   if (!file) return;
   await run(async () => {
     useProjectStore.getState().clearNotices();
-    const prefs = usePreferencesStore.getState();
     let project: ProjectState;
     try {
       project = fromProject(await readProjectFile(file));
     } catch (e) {
       // A recent project that is gone is forgotten; any other file stays where it was listed.
-      if (toAppError(e).code === "io") prefs.removeRecentProject(file);
+      if (toAppError(e).code === "io") usePreferencesStore.getState().removeRecentProject(file);
       throw e;
     }
-    const located = await locateDocuments(project.documents);
-    if (!located) return;
-    const files = await Promise.all(
-      located.map(async (l) => {
-        if (l.kind === "pdf") return l;
-        const built = await materializeImages(l.name, l.pages);
-        return { id: l.id, path: built.path, images: built.images };
-      }),
-    );
-    const opened = await swapDocuments(files);
-
-    let { edits, plan } = project;
-    const layouts: Record<DocumentId, DocLayout> = {};
-    const viewed: Record<DocumentId, number> = {};
-    for (const [i, d] of project.documents.entries()) {
-      const n = opened[i].pages.length;
-      const fits = groupsCoverPages(d.groups, n) && Object.keys(d.freeform).every((p) => Number(p) < n);
-      if (fits) {
-        layouts[d.id] = { groups: d.groups, freeform: d.freeform };
-      } else {
-        // The PDF has other pages than when the project was saved: its old layout would not fit it.
-        layouts[d.id] = { groups: defaultGroups(n), freeform: {} };
-        edits = {
-          turns: withoutDocument(edits.turns, d.id),
-          scales: withoutDocument(edits.scales, d.id),
-          ...(edits.scalesY ? { scalesY: withoutDocument(edits.scalesY, d.id) } : {}),
-          order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
-          backs: backsWithoutDocument(edits.backs, d.id),
-        };
-        const common = plan.finish.duplex.commonBack;
-        plan = {
-          ...plan,
-          quantities: withoutDocument(plan.quantities, d.id),
-          finish:
-            common !== null && isCardOfDocument(common, d.id)
-              ? { ...plan.finish, duplex: { ...plan.finish.duplex, commonBack: null } }
-              : plan.finish,
-        };
-        useProjectStore.getState().addNotice("layoutReset", { name: documentName(opened[i]) });
-      }
-      viewed[d.id] = Math.min(d.viewedPage, n - 1);
-    }
-
-    applyLoaded(opened, { activeId: project.activeId, layouts, viewed, output: project.output, edits, plan });
     // What the file says. If a PDF moved or its layout had to be reset, the open project differs from it,
     // so it counts as modified and saving updates the file.
-    useProjectStore.getState().setSaved(file, projectSignature(project));
-    prefs.addRecentProject(file);
-    emitHintEvent("pdf-opened");
+    await load(project, file, projectSignature(project));
   });
+}
+
+/**
+ * Puts `project` on screen in place of the open one, once its PDFs are found and opened. It belongs to `file` (null:
+ * no file yet) and `signature` is what that file holds (null: nothing, so it counts as modified).
+ */
+async function load(project: ProjectState, file: string | null, signature: string | null): Promise<void> {
+  const located = await locateDocuments(project.documents, file);
+  if (!located) return;
+  const files = await Promise.all(
+    located.map(async (l) => {
+      if (l.kind === "pdf") return l;
+      const built = await materializeImages(l.name, l.pages);
+      return { id: l.id, path: built.path, images: built.images };
+    }),
+  );
+  const opened = await swapDocuments(files);
+
+  let { edits, plan } = project;
+  const layouts: Record<DocumentId, DocLayout> = {};
+  const viewed: Record<DocumentId, number> = {};
+  for (const [i, d] of project.documents.entries()) {
+    const n = opened[i].pages.length;
+    const fits = groupsCoverPages(d.groups, n) && Object.keys(d.freeform).every((p) => Number(p) < n);
+    if (fits) {
+      layouts[d.id] = { groups: d.groups, freeform: d.freeform };
+    } else {
+      // The PDF has other pages than when the project was saved: its old layout would not fit it.
+      layouts[d.id] = { groups: defaultGroups(n), freeform: {} };
+      edits = {
+        turns: withoutDocument(edits.turns, d.id),
+        scales: withoutDocument(edits.scales, d.id),
+        ...(edits.scalesY ? { scalesY: withoutDocument(edits.scalesY, d.id) } : {}),
+        order: edits.order.filter((k) => !k.startsWith(`g:${d.id}:`) && !k.startsWith(`f:${d.id}:`)),
+        backs: backsWithoutDocument(edits.backs, d.id),
+      };
+      const common = plan.finish.duplex.commonBack;
+      plan = {
+        ...plan,
+        quantities: withoutDocument(plan.quantities, d.id),
+        finish:
+          common !== null && isCardOfDocument(common, d.id)
+            ? { ...plan.finish, duplex: { ...plan.finish.duplex, commonBack: null } }
+            : plan.finish,
+      };
+      useProjectStore.getState().addNotice("layoutReset", { name: documentName(opened[i]) });
+    }
+    viewed[d.id] = Math.min(d.viewedPage, n - 1);
+  }
+
+  applyLoaded(opened, { activeId: project.activeId, layouts, viewed, output: project.output, edits, plan });
+  useProjectStore.getState().setSaved(file, signature);
+  const fills = fillFiles(plan.finish);
+  if (file && fills.length > 0 && plan.finish.bleed.source === "ai") {
+    // A fill whose picture is gone gets a mirrored bleed; say so rather than let it change quietly.
+    const gone = await missingFills(file, fills).catch(() => []);
+    if (gone.length > 0) useProjectStore.getState().addNotice("fillsMissing", { count: gone.length });
+  }
+  if (file) usePreferencesStore.getState().addRecentProject(file);
+  emitHintEvent("pdf-opened");
 }
 
 /** The name a new project file is offered under: the first PDF's, without `.pdf`. */
@@ -545,6 +618,7 @@ function suggestedName(): string {
 async function saveTo(path: string): Promise<boolean> {
   const state = currentProjectState();
   if (!state) return false;
+  const before = useProjectStore.getState().path;
   try {
     await writeProjectFile(path, toProject(state));
   } catch (e) {
@@ -552,6 +626,15 @@ async function saveTo(path: string): Promise<boolean> {
     return false;
   }
   useProjectStore.getState().setSaved(path, projectSignature(state));
+  // Save As: the AI fills go with the project, into the folder beside its new file.
+  const fills = fillFiles(state.plan.finish);
+  if (before && before !== path && fills.length > 0) {
+    try {
+      await copyProjectFills(before, path, fills);
+    } catch (e) {
+      useProjectStore.getState().addError(toAppError(e));
+    }
+  }
   usePreferencesStore.getState().addRecentProject(path);
   return true;
 }
@@ -567,4 +650,34 @@ export async function saveProjectAs(): Promise<boolean> {
   if (useDocumentStore.getState().documents.length === 0) return false;
   const picked = await pickProjectToSave(suggestedName());
   return picked ? saveTo(picked) : false;
+}
+
+/**
+ * File › Save for sharing: saves the project (asking where the first time), writes its readme beside it, and says
+ * which of its files still have to be put in the same folder. Resolves to whether both were written.
+ */
+export async function saveForSharing(): Promise<boolean> {
+  if (!(await saveProject())) return false;
+  const { path } = useProjectStore.getState();
+  const state = currentProjectState();
+  if (!path || !state) return false;
+  const files = projectFiles(state.documents);
+  try {
+    const fills = fillFiles(state.plan.finish).length > 0;
+    const readme = await writeProjectReadme(path, readmeText(path, files, await getVersion(), fills));
+    const elsewhere = filesElsewhere(path, files);
+    await inform(
+      [
+        t("project.share.done", { readme: fileName(readme) }),
+        elsewhere.length > 0 ? t("project.share.elsewhere", { files: elsewhere.join(", ") }) : "",
+        fills ? t("project.share.fills", { folder: fileName(fillsDir(path) ?? "") }) : "",
+      ]
+        .filter(Boolean)
+        .join("\n\n"),
+    );
+    return true;
+  } catch (e) {
+    useProjectStore.getState().addError(toAppError(e));
+    return false;
+  }
 }

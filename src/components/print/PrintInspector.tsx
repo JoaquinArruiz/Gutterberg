@@ -26,7 +26,7 @@ import { NumberField } from "../ui/NumberField";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
-import { BleedSection, DuplexSection, MarksSection } from "./FinishSections";
+import { BackgroundSection, BleedSection, DuplexSection, MarksSection } from "./FinishSections";
 import { OutputPageFields, OutputSpacingFields, SheetSizeFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
 
@@ -213,6 +213,7 @@ export function PrintInspector() {
 
         <MarksSection />
         <BleedSection />
+        <BackgroundSection />
         <DuplexSection />
 
         <CollapsibleSection id="print.page" title={t("print.sections.page")} defaultOpen={false}>
