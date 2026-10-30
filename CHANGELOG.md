@@ -9,6 +9,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - CMYK export, for print shops: Print settings › Sheet › Colors › CMYK writes the cut marks, fold lines, background and Edge color fills in CMYK, and turns the pictures Gutterberg put in the file (images added as pieces, Fill with AI pictures) into CMYK too, for coated paper (FOGRA39). Black and gray go on the black ink only, so a cut mark is one clean line. Source PDFs keep their own colors, as before: a PDF that is already CMYK stays CMYK. A JPEG stays a JPEG and a PNG stays lossless. RGB stays the default, which suits home printers and most online print services. The preview still shows screen colors, and the command line exports it as saved.
 
+### Fixed
+
+- Cut marks where the gaps cross now line up with the ticks in the margins: instead of a cross in the middle of the gap, each piece corner gets two short arms along its edges, so a narrow gap shows a small square between the pieces and a wide one an L at each corner.
+
 ## 1.3.0 (2026-10-28)
 
 ### Added
