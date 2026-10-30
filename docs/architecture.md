@@ -185,6 +185,15 @@ matter:
   rectangle per placement grown by the bleed; the bleed and the pieces go on top. They only show where the source
   paints nothing. So the preview can show them, the Print tab's piece crops are rendered with a clear background
   (`render_region_png_on(.., transparent: true)`), over the sheet or piece colour (white when none).
+- **Colours:** `FinishOptions.colors` (`cmyk::ColorMode`, RGB by default) is carried on every sheet as
+  `OutputSheet.colors`. With CMYK, export writes what it draws itself (marks, fold lines, sheet and piece colours,
+  Edge fills) with `k`/`K` instead of `rg`/`RG`, and turns the image XObjects of the app's images documents
+  (`DocumentGroups.images`, passed to `export_sheets_files`) and of Fill with AI into `DeviceCMYK` in place: a JPEG
+  is decoded and written again as a CMYK JPEG (quality 95, with the Adobe `Decode`), a lossless picture stays
+  Flate, an `SMask` is kept. The conversion is Little CMS (`lcms2`, built in, never the system's) to FOGRA39L coated
+  (`crates/card-core/profiles/`, colord's CC0 profile): relative colorimetric with black point compensation for plain
+  colours, perceptual from the picture's own profile (else sRGB) for pictures. A grey is black ink only. Source
+  pages are never touched, and no output intent is written. The preview stays RGB.
 - **Duplex:** backs are mirrored left to right for a long-edge flip on a portrait sheet (or a short-edge flip on a
   landscape one), otherwise top to bottom, with the back's turn adjusted so a front corner and its back corner pair
   up. A common back or a back per piece, with an X/Y offset for printer drift. `calibration.rs` writes the sheet that

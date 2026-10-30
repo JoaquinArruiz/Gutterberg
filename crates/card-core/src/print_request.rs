@@ -13,6 +13,7 @@
 //! file gives the same sheets in the app and from the command line.
 
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
+use crate::cmyk::ColorMode;
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
 use crate::finish::{
@@ -247,6 +248,8 @@ pub struct Finish {
     pub duplex: FinishDuplex,
     #[serde(default)]
     pub background: BackgroundOptions,
+    #[serde(default)]
+    pub colors: ColorMode,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -321,6 +324,9 @@ pub fn print_project(body: &crate::project::Body) -> Result<PrintProject> {
 pub struct DocumentGroups {
     pub document_id: DocumentId,
     pub groups: Vec<PageGroup>,
+    /// An images document the app built: its pictures turn CMYK with a CMYK export.
+    #[serde(default)]
+    pub images: bool,
 }
 
 /// Everything the planner takes for one print.
@@ -832,6 +838,7 @@ fn finishing(
                 sheet: fill(&finish.background.sheet),
                 pieces: fill(&finish.background.pieces),
             },
+            colors: finish.colors,
         },
         backs,
     }
@@ -851,6 +858,7 @@ pub fn print_request(
         .map(|d| DocumentGroups {
             document_id: d.id,
             groups: page_groups(d, pages.get(&d.id).unwrap_or(&no_pages), &p.output),
+            images: d.kind == DocumentKind::Images,
         })
         .collect();
     let request = PrintRequest {
@@ -990,7 +998,13 @@ pub fn export_files(
             "there is nothing to print",
         ));
     }
-    export_sheets_files(files, output, &sheets)?;
+    let images = req
+        .documents
+        .iter()
+        .filter(|d| d.images)
+        .map(|d| d.document_id)
+        .collect();
+    export_sheets_files(files, output, &sheets, &images)?;
     Ok(sheets.len())
 }
 
@@ -1179,7 +1193,20 @@ mod tests {
                 common_back: Some("g:0:0:1:0".into()),
             },
             background: BackgroundOptions::default(),
+            colors: ColorMode::Rgb,
         }
+    }
+
+    #[test]
+    fn the_colours_of_the_export_are_rgb_unless_the_project_says_cmyk() {
+        let mut body = serde_json::to_value(finish()).unwrap();
+        body.as_object_mut().unwrap().remove("colors");
+        let old: Finish = serde_json::from_value(body.clone()).unwrap();
+        assert_eq!(old.colors, ColorMode::Rgb);
+        body["colors"] = "cmyk".into();
+        let f: Finish = serde_json::from_value(body).unwrap();
+        let options = finishing(&f, &PieceEdits::default(), &known(), None).options;
+        assert_eq!(options.colors, ColorMode::Cmyk);
     }
 
     #[test]

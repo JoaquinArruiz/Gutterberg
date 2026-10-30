@@ -7,6 +7,8 @@ import {
   type BackLayout,
   BLEED_SOURCES,
   type BleedSource,
+  COLOR_MODES,
+  type ColorMode,
   FLIPS,
   type Flip,
   FOLDS,
@@ -259,6 +261,27 @@ export function BackgroundSection() {
         );
       })}
     </CollapsibleSection>
+  );
+}
+
+/** Colors: RGB as on screen, or CMYK for a print shop, for what the app draws and the pictures it put in the file. */
+export function ColorsField() {
+  const { t } = useTranslation();
+  const colors = usePrintStore((s) => s.finish.colors);
+  const setColors = usePrintStore((s) => s.setColors);
+  return (
+    <>
+      <FieldRow label={t("print.colors.label")} info={t("print.colors.hint")}>
+        <Segmented<ColorMode>
+          fill
+          label={t("print.colors.label")}
+          value={colors}
+          onChange={setColors}
+          options={COLOR_MODES.map((m) => ({ value: m, label: t(`print.colors.${m}`) }))}
+        />
+      </FieldRow>
+      {colors === "cmyk" && <p className="text-[var(--muted)]">{t("print.colors.cmykNote")}</p>}
+    </>
   );
 }
 

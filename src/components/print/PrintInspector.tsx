@@ -26,7 +26,7 @@ import { NumberField } from "../ui/NumberField";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
-import { BackgroundSection, BleedSection, DuplexSection, MarksSection } from "./FinishSections";
+import { BackgroundSection, BleedSection, ColorsField, DuplexSection, MarksSection } from "./FinishSections";
 import { OutputPageFields, OutputSpacingFields, SheetSizeFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
 
@@ -201,6 +201,7 @@ export function PrintInspector() {
             <InfoTip text={t("print.sheet.outputGapNote")} />
           </div>
           <OutputSpacingFields />
+          <ColorsField />
           {first && (
             <div className="flex justify-between">
               <span className="text-[var(--muted)]">{t("print.sheet.size")}</span>

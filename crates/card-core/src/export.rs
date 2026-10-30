@@ -19,6 +19,7 @@
 
 use crate::access;
 use crate::card::{DocumentId, PageGroup, PageGroupKind, DEFAULT_DOCUMENT_ID};
+use crate::cmyk::{ColorMode, Converter};
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
 use crate::finish::{bleed_regions, plan_and_finish, Finishing, MarkLine, SheetMarks};
 use crate::geometry::{PageSize, Rect};
@@ -326,15 +327,21 @@ pub fn export_pdf(input: &Path, output: &Path, job: &ExportJob) -> Result<()> {
 
 /// Export `sheets` built from the single document at `input` (document id 0), writing `output`.
 pub fn export_sheets_file(input: &Path, output: &Path, sheets: &[OutputSheet]) -> Result<()> {
-    export_sheets_files(&[(DEFAULT_DOCUMENT_ID, input)], output, sheets)
+    export_sheets_files(
+        &[(DEFAULT_DOCUMENT_ID, input)],
+        output,
+        sheets,
+        &BTreeSet::new(),
+    )
 }
 
 /// Export `sheets` built from several PDFs, each at its `document_id`, writing `output`. Every
-/// used file's metadata is kept (see `keep_metadata`).
+/// used file's metadata is kept (see `keep_metadata`). `images` are the inputs that are images documents.
 pub fn export_sheets_files(
     inputs: &[(DocumentId, &Path)],
     output: &Path,
     sheets: &[OutputSheet],
+    images: &BTreeSet<DocumentId>,
 ) -> Result<()> {
     let sources = inputs
         .iter()
@@ -344,7 +351,7 @@ pub fn export_sheets_files(
     access::check_sources(&loaded)?;
     let permissions = access::output_permissions(&loaded);
     let base = sources.first().map_or(DEFAULT_DOCUMENT_ID, |(id, _)| *id);
-    let mut doc = export_sheets(sources, sheets)?;
+    let mut doc = export_sheets_with_images(sources, sheets, images)?;
     if let Some(p) = permissions {
         access::apply_permissions(&mut doc, p, base)?;
     }
@@ -749,10 +756,33 @@ fn bleed_ops(name: &str, p: &SheetPlacement, sheet: &OutputSheet, display_box: [
     ops
 }
 
+/// How the app's own colours are written: as RGB, or as CMYK through the converter.
+#[derive(Clone, Copy)]
+struct Paint<'a>(Option<&'a Converter>);
+
+impl Paint<'_> {
+    /// The operator that sets the fill colour.
+    fn fill(&self, c: [u8; 3]) -> String {
+        self.op(c, "rg", "k")
+    }
+
+    /// The operator that sets the stroke colour.
+    fn stroke(&self, c: [u8; 3]) -> String {
+        self.op(c, "RG", "K")
+    }
+
+    fn op(&self, c: [u8; 3], rgb: &str, cmyk: &str) -> String {
+        match self.0 {
+            None => format!("{} {rgb}\n", c.map(|v| fmt(f64::from(v) / 255.0)).join(" ")),
+            Some(converter) => format!("{} {cmyk}\n", converter.solid(c).map(fmt).join(" ")),
+        }
+    }
+}
+
 /// The operators that fill the sheet's colour over the whole page and the pieces' colour behind
 /// each piece and its bleed. Nothing when neither is set.
-fn background_ops(sheet: &OutputSheet) -> String {
-    let fill = |c: [u8; 3]| c.map(|v| fmt(f64::from(v) / 255.0)).join(" ") + " rg\n";
+fn background_ops(sheet: &OutputSheet, paint: Paint) -> String {
+    let fill = |c: [u8; 3]| paint.fill(c);
     let page = sheet.page;
     let mut ops = String::new();
     if let Some(c) = sheet.background.sheet {
@@ -786,12 +816,12 @@ fn background_ops(sheet: &OutputSheet) -> String {
 }
 
 /// The operators of an `Edge` bleed: the piece grown by the bleed, filled with its edge colour.
-fn edge_fill_ops(color: [u8; 3], p: &SheetPlacement, sheet: &OutputSheet) -> String {
-    let [r, g, b] = color.map(|c| fmt(f64::from(c) / 255.0));
+fn edge_fill_ops(color: [u8; 3], p: &SheetPlacement, sheet: &OutputSheet, paint: Paint) -> String {
     let bleed = mm_to_pt(sheet.bleed.mm);
     let d = p.destination;
     format!(
-        "q\n{r} {g} {b} rg\n{} {} {} {} re f\nQ\n",
+        "q\n{}{} {} {} {} re f\nQ\n",
+        paint.fill(color),
         fmt(d.x - bleed),
         fmt(sheet.page.height_pt - (d.y + d.height + bleed)),
         fmt(d.width + 2.0 * bleed),
@@ -838,9 +868,12 @@ fn image_fill_ops(
 }
 
 /// The operators that stroke the cut marks of a sheet `out_height` points tall.
-fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
-    let [r, g, b] = marks.color.map(|c| fmt(f64::from(c) / 255.0));
-    let mut ops = format!("q\n{r} {g} {b} RG\n{} w\n", fmt(marks.width_pt));
+fn marks_ops(marks: &SheetMarks, out_height: f64, paint: Paint) -> String {
+    let mut ops = format!(
+        "q\n{}{} w\n",
+        paint.stroke(marks.color),
+        fmt(marks.width_pt)
+    );
     if !marks.dash.is_empty() {
         let dash: Vec<String> = marks.dash.iter().map(|&d| fmt(d)).collect();
         ops.push_str(&format!("[{}] 0 d\n", dash.join(" ")));
@@ -863,8 +896,8 @@ fn marks_ops(marks: &SheetMarks, out_height: f64) -> String {
 
 /// The operators that draw gutterfold fold lines: thin, grey and dashed, so they never read as a
 /// place to cut.
-fn fold_ops(folds: &[[f64; 4]], out_height: f64) -> String {
-    let mut ops = String::from("q\n0.6 0.6 0.6 RG\n0.35 w\n[2 2] 0 d\n");
+fn fold_ops(folds: &[[f64; 4]], out_height: f64, paint: Paint) -> String {
+    let mut ops = format!("q\n{}0.35 w\n[2 2] 0 d\n", paint.stroke([153; 3]));
     for l in folds {
         ops.push_str(&format!(
             "{} {} m {} {} l S\n",
@@ -878,6 +911,30 @@ fn fold_ops(folds: &[[f64; 4]], out_height: f64) -> String {
     ops
 }
 
+/// The image XObjects a page draws directly (through its own or inherited resources).
+fn page_images(doc: &Document, page_id: ObjectId) -> Result<Vec<ObjectId>> {
+    let (own, inherited) = doc.get_page_resources(page_id)?;
+    let mut layers: Vec<&Dictionary> = own.into_iter().collect();
+    for id in inherited {
+        layers.push(doc.get_dictionary(id)?);
+    }
+    let mut ids = Vec::new();
+    for resources in layers {
+        let Ok(xobjects) = resources.get(b"XObject").and_then(|x| doc.dereference(x)) else {
+            continue;
+        };
+        let Ok(xobjects) = xobjects.1.as_dict() else {
+            continue;
+        };
+        for (_, v) in xobjects.iter() {
+            if let Ok(id) = v.as_reference() {
+                ids.push(id);
+            }
+        }
+    }
+    Ok(ids)
+}
+
 /// Resource name of the form that stands in for page `page_index` of `document_id`.
 fn form_name(document_id: DocumentId, page_index: usize) -> String {
     format!("S{document_id}_{page_index}")
@@ -885,12 +942,14 @@ fn form_name(document_id: DocumentId, page_index: usize) -> String {
 
 /// Build the output document in `doc`, whose pages become `sheets`. `doc` is source document
 /// `base_id`; `others` are further sources, imported once into `doc` (their objects are
-/// renumbered past `doc`'s) so every page form can live in one file.
+/// renumbered past `doc`'s) so every page form can live in one file. The pictures of the documents in `images`
+/// (the app's own images documents) turn CMYK with the sheets that print them.
 fn export_sheets_into(
     doc: &mut Document,
     base_id: DocumentId,
     others: Vec<(DocumentId, Document)>,
     sheets: &[OutputSheet],
+    images: &BTreeSet<DocumentId>,
 ) -> Result<()> {
     let pages_root = doc
         .catalog()?
@@ -920,9 +979,20 @@ fn export_sheets_into(
     let mut card_forms: HashMap<(DocumentId, usize, String), ObjectId> = HashMap::new();
     // A picture of Fill with AI is embedded once, however many times its piece is printed.
     let mut fill_images: HashMap<String, (ObjectId, u32, u32)> = HashMap::new();
+    let converter = if sheets.iter().any(|s| s.colors == ColorMode::Cmyk) {
+        Some(Converter::new()?)
+    } else {
+        None
+    };
+    // Pictures already turned CMYK, so one shown on several pages is converted once.
+    let mut converted: BTreeSet<ObjectId> = BTreeSet::new();
 
     for sheet in sheets {
         let out = sheet.page;
+        let cmyk = converter
+            .as_ref()
+            .filter(|_| sheet.colors == ColorMode::Cmyk);
+        let paint = Paint(cmyk);
         let mut xobjects = Dictionary::new();
         let mut prepared: Vec<(String, PageFrame, String)> =
             Vec::with_capacity(sheet.placements.len());
@@ -938,6 +1008,13 @@ fn export_sheets_into(
                         .get(&(key.1 as u32 + 1))
                         .ok_or(Error::PageOutOfRange(key.1, table.len()))?;
                     let frame = PageFrame::read(doc, src_id, key.1)?;
+                    if let Some(c) = cmyk.filter(|_| images.contains(&key.0)) {
+                        for picture in page_images(doc, src_id)? {
+                            if converted.insert(picture) {
+                                c.convert_image(doc, picture)?;
+                            }
+                        }
+                    }
                     let id = page_to_form(doc, src_id, key.1, &frame)?;
                     // The page's own XMP metadata, or else its document's, travels with its content.
                     let xmp = doc
@@ -973,11 +1050,11 @@ fn export_sheets_into(
         }
         // The plain colours first, then the bleed, so a neighbour's bleed never paints over a
         // piece; then the pieces; then the marks.
-        let mut ops = background_ops(sheet);
+        let mut ops = background_ops(sheet, paint);
         if sheet.bleed.mm > 0.0 {
             for (i, (p, (name, frame, _))) in sheet.placements.iter().zip(&prepared).enumerate() {
                 match sheet.edge_fills.iter().find(|f| f.placement == i) {
-                    Some(fill) => ops.push_str(&edge_fill_ops(fill.color, p, sheet)),
+                    Some(fill) => ops.push_str(&edge_fill_ops(fill.color, p, sheet, paint)),
                     None => ops.push_str(&bleed_ops(name, p, sheet, frame.display_box())),
                 }
                 // A picture of Fill with AI goes over the mirrored bleed, which shows wherever it falls short.
@@ -986,6 +1063,9 @@ fn export_sheets_into(
                         Some(v) => *v,
                         None => {
                             let v = crate::images::fill_xobject(doc, Path::new(&fill.path))?;
+                            if let Some(c) = cmyk {
+                                c.convert_image(doc, v.0)?;
+                            }
                             fill_images.insert(fill.path.clone(), v);
                             v
                         }
@@ -1000,10 +1080,10 @@ fn export_sheets_into(
             ops.push_str(&placement_ops(card, p, frame.display_box(), out.height_pt));
         }
         if let Some(marks) = &sheet.marks {
-            ops.push_str(&marks_ops(marks, out.height_pt));
+            ops.push_str(&marks_ops(marks, out.height_pt, paint));
         }
         if !sheet.folds.is_empty() {
-            ops.push_str(&fold_ops(&sheet.folds, out.height_pt));
+            ops.push_str(&fold_ops(&sheet.folds, out.height_pt, paint));
         }
         let mut cs = Stream::new(Dictionary::new(), ops.into_bytes());
         let _ = cs.compress();
@@ -1180,11 +1260,21 @@ pub fn export_sheets(
     sources: Vec<(DocumentId, Document)>,
     sheets: &[OutputSheet],
 ) -> Result<Document> {
+    export_sheets_with_images(sources, sheets, &BTreeSet::new())
+}
+
+/// [`export_sheets`], where the sources in `images` are the app's own images documents: on CMYK sheets their
+/// pictures turn CMYK too (see [`crate::cmyk`]).
+pub fn export_sheets_with_images(
+    sources: Vec<(DocumentId, Document)>,
+    sheets: &[OutputSheet],
+    images: &BTreeSet<DocumentId>,
+) -> Result<Document> {
     let mut sources = sources.into_iter();
     let (base_id, mut base) = sources
         .next()
         .ok_or_else(|| Error::Malformed("no source document was given".into()))?;
-    export_sheets_into(&mut base, base_id, sources.collect(), sheets)?;
+    export_sheets_into(&mut base, base_id, sources.collect(), sheets, images)?;
     Ok(base)
 }
 
@@ -1208,7 +1298,13 @@ pub fn export_document(doc: &mut Document, job: &ExportJob) -> Result<()> {
             &layout,
         ));
     }
-    export_sheets_into(doc, DEFAULT_DOCUMENT_ID, Vec::new(), &sheets)
+    export_sheets_into(
+        doc,
+        DEFAULT_DOCUMENT_ID,
+        Vec::new(),
+        &sheets,
+        &BTreeSet::new(),
+    )
 }
 
 /// Convenience for diagnostics: card size in mm of a rect in points.

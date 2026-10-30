@@ -45,6 +45,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
         commonBack: null,
       },
       background: { sheet: null, pieces: null },
+      colors: "rgb",
     });
   });
 
@@ -59,6 +60,8 @@ describe("cut marks, bleed and duplex in the print store", () => {
     st().setBackground({ sheet: "#123ABC" });
     st().setBackground({ pieces: "not a colour" });
     expect(st().finish.background).toEqual({ sheet: "#123abc", pieces: null });
+    st().setColors("cmyk");
+    expect(st().finish.colors).toBe("cmyk");
   });
 
   it("are reset with the plan and loaded with it", () => {

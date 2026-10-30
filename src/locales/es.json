@@ -529,6 +529,13 @@
       "piecesColor": "Color detrás de las piezas",
       "note": "Colores lisos impresos debajo del arte. Solo se ven donde el origen deja la página vacía, y siguen siendo vectoriales."
     },
+    "colors": {
+      "label": "Colores",
+      "hint": "RGB es lo indicado para imprimir en casa y para la mayoría de los servicios de impresión en línea. CMYK es para una imprenta que lo pida.",
+      "rgb": "RGB",
+      "cmyk": "CMYK",
+      "cmykNote": "Las marcas de corte, los colores lisos, las imágenes agregadas como piezas y las imágenes de Rellenar con IA se escriben en CMYK para papel estucado (FOGRA39), con el negro y los grises solo en tinta negra. Los PDF de origen conservan sus propios colores, y la vista previa sigue mostrando los colores de pantalla."
+    },
     "duplex": {
       "on": "Imprimir dorsos",
       "onHint": "Imprime el dorso de cada pieza: en una hoja de dorsos después de cada hoja de frentes (doble cara), o junto al frente para doblar (gutterfold).",

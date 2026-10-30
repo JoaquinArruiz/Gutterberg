@@ -9,6 +9,7 @@
 //! Export (`export::export_sheets`) turns the sheets into a PDF without rasterising anything.
 
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
+use crate::cmyk::ColorMode;
 use crate::error::{Error, Result};
 use crate::finish::{
     EdgeFill, ImageFill, SheetBackground, SheetBleed, SheetMarks, SheetWarning, Side,
@@ -384,6 +385,9 @@ pub struct OutputSheet {
     /// Cut marks, drawn over the pieces.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub marks: Option<SheetMarks>,
+    /// How the exporter writes the colours it draws, and the app's own pictures.
+    #[serde(default, skip_serializing_if = "ColorMode::is_rgb")]
+    pub colors: ColorMode,
     /// Things worth telling the user that do not stop the export.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub warnings: Vec<SheetWarning>,
@@ -403,6 +407,7 @@ impl OutputSheet {
             edge_fills: Vec::new(),
             image_fills: Vec::new(),
             background: SheetBackground::default(),
+            colors: ColorMode::Rgb,
             marks: None,
             warnings: Vec::new(),
             folds: Vec::new(),

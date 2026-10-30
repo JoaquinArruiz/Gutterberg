@@ -12,6 +12,7 @@
 //! the sheets come out exactly as they went in.
 
 use crate::card::{CardId, DocumentId, OrientedRect};
+use crate::cmyk::ColorMode;
 use crate::error::{Error, Result};
 use crate::export::PageIssue;
 use crate::geometry::{PageSize, Point, Rect};
@@ -175,6 +176,8 @@ pub struct FinishOptions {
     pub bleed: BleedOptions,
     pub duplex: DuplexOptions,
     pub background: BackgroundOptions,
+    /// RGB, or CMYK for a print shop (see [`crate::cmyk`]).
+    pub colors: ColorMode,
 }
 
 /// Plain colours painted under everything: the whole sheet, and a rectangle behind each piece
@@ -918,6 +921,7 @@ fn back_sheet(
     sheet.side = Side::Back;
     sheet.bleed = front.bleed;
     sheet.background = front.background;
+    sheet.colors = front.colors;
     let rects: Vec<Rect> = sheet.placements.iter().map(|p| p.destination).collect();
     bleed_warnings(&sheet, &rects, &mut warnings);
     sheet.warnings = warnings;
@@ -1021,6 +1025,13 @@ pub fn finish_sheets(
         || options.duplex.on
         || !background.is_none();
     if !wanted {
+        let sheets = sheets
+            .into_iter()
+            .map(|mut s| {
+                s.colors = options.colors;
+                s
+            })
+            .collect();
         return Ok((sheets, Vec::new()));
     }
     let cards = extract_all_cards(documents)?;
@@ -1064,6 +1075,7 @@ pub fn finish_sheets(
     for mut sheet in sheets {
         sheet.bleed = bleed;
         sheet.background = background;
+        sheet.colors = options.colors;
         let mut warnings = Vec::new();
         // With gutterfold a front and its back are one piece of paper: marks and bleed go round
         // the pair (or round each of them, when the pairs are cut apart).

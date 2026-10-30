@@ -20,6 +20,8 @@ export type BackLayout = (typeof BACK_LAYOUTS)[number];
 /** Gutterfold: the back beside its front (vertical fold) or below it (horizontal). */
 export const FOLDS = ["vertical", "horizontal"] as const;
 export type Fold = (typeof FOLDS)[number];
+export const COLOR_MODES = ["rgb", "cmyk"] as const;
+export type ColorMode = (typeof COLOR_MODES)[number];
 
 /** Ranges the engine accepts (mm); the fields clamp to them so Rust never sees a value outside. */
 export const MARK_WIDTH_RANGE = [0.05, 2] as const;
@@ -81,6 +83,9 @@ export type Finish = {
   /** Plain colours (`#rrggbb`) under everything: the whole sheet, and behind each piece and its bleed. They show
    * only where the source leaves the page empty. Null paints nothing, so the paper shows. */
   background: { sheet: string | null; pieces: string | null };
+  /** How the export writes the colours the app draws (marks, fills) and the pictures it put in the file (images,
+   * Fill with AI): RGB, or CMYK for a print shop. The sources keep their own colours either way. */
+  colors: ColorMode;
 };
 
 export const DEFAULT_FINISH: Finish = {
@@ -108,6 +113,7 @@ export const DEFAULT_FINISH: Finish = {
     commonBack: null,
   },
   background: { sheet: null, pieces: null },
+  colors: "rgb",
 };
 
 export const FinishSchema = z.object({
@@ -142,6 +148,7 @@ export const FinishSchema = z.object({
   background: z
     .object({ sheet: z.string().nullable(), pieces: z.string().nullable() })
     .default({ sheet: null, pieces: null }),
+  colors: z.enum(COLOR_MODES).default("rgb"),
 });
 
 const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
@@ -200,6 +207,7 @@ export function cleanFinish(f: Finish): Finish {
       commonBack: f.duplex.commonBack !== null && KEY.test(f.duplex.commonBack) ? f.duplex.commonBack : null,
     },
     background: { sheet: cleanFill(f.background.sheet), pieces: cleanFill(f.background.pieces) },
+    colors: COLOR_MODES.includes(f.colors) ? f.colors : "rgb",
   };
 }
 

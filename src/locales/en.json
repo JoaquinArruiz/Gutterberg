@@ -529,6 +529,13 @@
       "piecesColor": "Color behind pieces",
       "note": "Plain colors printed under the art. They only show where the source leaves the page empty, and they stay vector."
     },
+    "colors": {
+      "label": "Colors",
+      "hint": "RGB is right for printing at home and for most online print services. CMYK is for a print shop that asks for it.",
+      "rgb": "RGB",
+      "cmyk": "CMYK",
+      "cmykNote": "Cut marks, plain colors, images added as pieces and Fill with AI pictures are written in CMYK for coated paper (FOGRA39), with black and gray on black ink only. Source PDFs keep their own colors, and the preview still shows screen colors."
+    },
     "duplex": {
       "on": "Print backs",
       "onHint": "Prints each piece's back: on a back sheet after every front sheet (duplex), or beside the front to fold (gutterfold).",

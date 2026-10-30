@@ -7,6 +7,7 @@
 pub mod access;
 pub mod calibration;
 pub mod card;
+pub mod cmyk;
 pub mod detect;
 pub mod edge;
 pub mod error;

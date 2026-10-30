@@ -112,6 +112,16 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.queryByRole("switch", { name: /Also on back sheets/ })).toBeNull();
   });
 
+  it("switches the export to CMYK and says what that changes", () => {
+    render(<PrintInspector />);
+    expect(print().finish.colors).toBe("rgb");
+    expect(screen.getByRole("radio", { name: "RGB" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.queryByText(/FOGRA39/)).toBeNull();
+    fireEvent.click(screen.getByRole("radio", { name: "CMYK" }));
+    expect(print().finish.colors).toBe("cmyk");
+    expect(screen.getByText(/FOGRA39/)).toBeTruthy();
+  });
+
   it("sets the bleed, its source, and caps it at 5 mm", () => {
     render(<PrintInspector />);
     fireEvent.click(screen.getByRole("button", { name: "Bleed" }));

@@ -255,6 +255,22 @@ fn fronts_and_backs_of_two_pdfs_and_freeform_pieces_export_as_the_app_does() {
     );
 }
 
+/// The colour spaces of the pictures in the PDF at `path`, once each.
+fn image_spaces(path: &Path) -> Vec<String> {
+    let doc = lopdf::Document::load(path).unwrap();
+    let mut spaces: Vec<String> = doc
+        .objects
+        .values()
+        .filter_map(|o| o.as_stream().ok())
+        .filter(|s| s.dict.get(b"Subtype").and_then(|t| t.as_name()).ok() == Some(b"Image"))
+        .filter_map(|s| s.dict.get(b"ColorSpace").and_then(|c| c.as_name()).ok())
+        .map(|n| String::from_utf8_lossy(n).into_owned())
+        .collect();
+    spaces.sort();
+    spaces.dedup();
+    spaces
+}
+
 #[test]
 fn a_project_of_images_exports_without_pdfium() {
     let d = dir("images");
@@ -286,6 +302,23 @@ fn a_project_of_images_exports_without_pdfium() {
     assert!(ok, "{stderr}");
     assert_eq!(stdout.trim(), format!("wrote 1 sheet to {}", out.display()));
     assert_eq!(lopdf::Document::load(&out).unwrap().get_pages().len(), 1);
+    assert_eq!(image_spaces(&out), ["DeviceRGB"]);
+
+    // A CMYK export turns the images' pictures CMYK, and the marks too.
+    let mut cmyk = p.clone();
+    cmyk["plan"]["finish"]["colors"] = json!("cmyk");
+    let gtr_cmyk = save(&d, "images-cmyk.gtr", &cmyk);
+    let (ok, _, stderr) = cli(&[
+        "export",
+        gtr_cmyk.to_str().unwrap(),
+        "-o",
+        out.to_str().unwrap(),
+    ]);
+    assert!(ok, "{stderr}");
+    assert_eq!(image_spaces(&out), ["DeviceCMYK"]);
+    let written = lopdf::Document::load(&out).unwrap();
+    let page = *written.get_pages().get(&1).unwrap();
+    assert!(String::from_utf8_lossy(&written.get_page_content(page)).contains("0 0 0 1 K"));
 
     // A missing image leaves its page blank, as in the app, and says so.
     std::fs::remove_file(&png).unwrap();

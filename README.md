@@ -160,6 +160,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - Cut marks (ticks in the margins, with crosses where the gaps cross if you like, or lines in the gaps, solid, dashed or dotted), bleed (mirrored, from the source, or in the edge's color), and backs: double-sided (duplex) or beside each front to fold (gutterfold), with a common back,
   a back per piece, or every back paired automatically from where it is in the file.
 - A color for the whole sheet and behind each piece, for art that leaves its corners or edges empty.
+- CMYK export for print shops: the marks, colors and images Gutterberg adds are written in CMYK, and source PDFs keep
+  their own colors.
 - Converts both ways: a gutterfold file prints double-sided, and a double-sided file prints as gutterfold.
 - Export keeps the original vector content: pieces are placed and clipped, never turned into pictures.
 
