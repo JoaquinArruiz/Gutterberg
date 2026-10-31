@@ -152,56 +152,39 @@ fn ticks_mark_the_inner_cuts_of_pieces_that_touch() {
 }
 
 #[test]
-fn ticks_can_add_corner_marks_where_the_gaps_cross() {
+fn ticks_can_add_a_cross_where_the_gaps_cross() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);
     let mut o = marks(MarkStyle::Ticks);
     o.marks.inner_crosses = true;
     let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
     let lines = &out[0].marks.as_ref().unwrap().lines;
-    // The 16 ticks, and a square on the pieces' edges: a 6 mm gap is no wider than two 3 mm arms.
-    assert_eq!(lines.len(), 20);
+    // The 16 ticks, and one cross of two lines in the middle.
+    assert_eq!(lines.len(), 18);
     let (a, d) = (
         sheets[0].placements[0].destination,
         sheets[0].placements[3].destination,
     );
-    let (x0, y0, x1, y1) = (a.x + a.width, a.y + a.height, d.x, d.y);
-    for y in [y0, y1] {
-        assert!(lines
-            .iter()
-            .any(|l| close(l[0], x0) && close(l[1], y) && close(l[2], x1) && close(l[3], y)));
-    }
-    for x in [x0, x1] {
-        assert!(lines
-            .iter()
-            .any(|l| close(l[0], x) && close(l[1], y0) && close(l[2], x) && close(l[3], y1)));
-    }
+    let (mx, my) = ((a.x + a.width + d.x) / 2.0, (a.y + a.height + d.y) / 2.0);
+    let length = mm_to_pt(3.0);
+    assert!(lines.iter().any(|l| close(l[0], mx - length)
+        && close(l[1], my)
+        && close(l[2], mx + length)
+        && close(l[3], my)));
+    assert!(lines.iter().any(|l| close(l[0], mx)
+        && close(l[1], my - length)
+        && close(l[2], mx)
+        && close(l[3], my + length)));
     assert!(out[0].warnings.is_empty());
-
-    // A 10 mm gap leaves the 3 mm arms apart: an L at each of the four corners.
-    let sheets = plan(&docs, spec(2, 2, 10.0, 15.0), &[]);
-    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
-    let lines = &out[0].marks.as_ref().unwrap().lines;
-    assert_eq!(lines.len(), 16 + 8);
-    let a = sheets[0].placements[0].destination;
-    let (x0, y0, length) = (a.x + a.width, a.y + a.height, mm_to_pt(3.0));
-    assert!(lines.iter().any(|l| close(l[0], x0)
-        && close(l[1], y0)
-        && close(l[2], x0 + length)
-        && close(l[3], y0)));
-    assert!(lines.iter().any(|l| close(l[0], x0)
-        && close(l[1], y0)
-        && close(l[2], x0)
-        && close(l[3], y0 + length)));
 
     // 3 x 3 has four crossings; without the setting there are none.
     let sheets = plan(&docs, spec(3, 3, 6.0, 0.0), &[]);
     let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
-    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24 + 16);
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24 + 8);
     let (out, _) = finish_sheets(sheets, &docs, &finishing(marks(MarkStyle::Ticks))).unwrap();
     assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 24);
 
-    // Touching pieces leave no room for corner marks: the ticks stay, with the narrow-gap warning.
+    // Touching pieces leave no room for a cross: the ticks stay, with the narrow-gap warning.
     let sheets = plan(&docs, spec(2, 2, 0.0, 15.0), &[]);
     let (out, _) = finish_sheets(sheets, &docs, &finishing(o)).unwrap();
     assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 12);

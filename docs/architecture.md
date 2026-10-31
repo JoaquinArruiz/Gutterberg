@@ -156,9 +156,8 @@ matter:
 ### Finishing (`finish`)
 
 - **Cut marks:** ticks in the margins at every piece edge, or lines down the middle of each gap (too narrow a gap
-  gives a warning and no line). Ticks can add corner marks (`MarkOptions::inner_crosses`) where a gap between columns
-  meets one between rows: each piece corner there gets two arms into the gap along its edges, the tick length or the
-  gap if less, so they line up with the ticks and arms that meet are one line (a narrow gap gives a closed square). Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
+  gives a warning and no line). Ticks can add a cross (`MarkOptions::inner_crosses`) in the middle of each place
+  where a gap between columns meets one between rows and a piece has a corner, its arms the tick length. Drawn as strokes, last: solid, dashed or dotted (`MarkLine`). The engine puts the
   dash pattern in points on `SheetMarks.dash` (dots are dashes of length 0 with round caps), so the preview and the
   export read the same pattern. Back sheets get none (you cut through both sides from the front, and a printer's
   drift would put them beside the cut) unless `MarkOptions.on_backs`: then `marks_for` runs on the back placements,

@@ -502,7 +502,7 @@
       "onBacks": "Also on back sheets",
       "onBacksHint": "Puts marks around the backs too, for backs you cut on their own: printed on separate sheets, or glued to the other side of a board. Leave it off to cut through both sides from the front.",
       "innerCrosses": "Also where gaps cross",
-      "innerCrossesHint": "Corner marks where the gaps between pieces cross, in line with the ticks in the margins, so the inside can be cut without laying a ruler across the whole sheet. Each piece corner gets two arms along its edges, the mark length or the gap if that is less, so a narrow gap shows a small square. Gaps narrower than the line get none.",
+      "innerCrossesHint": "A small cross in the middle of each place where the gaps between pieces cross, so the inside can be cut without laying a ruler across the whole sheet. Its arms are the mark length. Gaps narrower than the line get none.",
       "note": "Marks are printed on the front sheets, and on the back sheets if you ask. Ticks start past the bleed."
     },
     "bleed": {

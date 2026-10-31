@@ -70,8 +70,9 @@ pub struct MarkOptions {
     /// Duplex on the other side: marks on the back sheets too, round the backs, for backs that are
     /// cut on their own instead of through both sides at once. Off, a back sheet has none.
     pub on_backs: bool,
-    /// Ticks: also corner marks where a gap between columns crosses a gap between rows, in line
-    /// with the ticks, so the inside can be cut without a ruler across the sheet.
+    /// Ticks: also a small cross, its arms `length_mm` long, in the middle of each place where a gap
+    /// between columns crosses a gap between rows, so the inside can be cut without a ruler across
+    /// the sheet.
     pub inner_crosses: bool,
 }
 
@@ -490,12 +491,10 @@ fn gaps_along(spans: &mut [(f64, f64)]) -> (Vec<(f64, f64)>, usize) {
     (gaps, touching)
 }
 
-/// The marks where a gap between columns meets a gap between rows, added to `lines`: each piece
-/// corner at that crossing gets two arms, `length` (points) or the width of the gap if that is
-/// less, running from the corner into the gap along the piece's edges, so they line up with the
-/// ticks in the margins. Arms that meet across the gap are one line, so four corners close to a
-/// square. An empty end of a short last row gets none past its last piece. Returns false when
-/// some gap is too narrow for a line (or there is none), as the gap lines do.
+/// The crosses where a gap between columns meets a gap between rows, `length` (points) to each
+/// side of the middle, added to `lines`. Only where a piece has a corner at that crossing, so an
+/// empty end of a short last row gets none past its last piece. Returns false when some gap is
+/// too narrow for a line (or there is none), as the gap lines do.
 fn inner_crosses(
     rects: &[Rect],
     options: &MarkOptions,
@@ -527,43 +526,19 @@ fn inner_crosses(
     };
     let (columns, rows) = (wide(columns, &mut fits), wide(rows, &mut fits));
     let near = |a: f64, b: f64| (a - b).abs() < EPS;
-    // Arms from the start and from the end of a gap `a..b`: one line where they meet.
-    let arms = |a: f64, b: f64, from_a: bool, from_b: bool| -> Vec<(f64, f64)> {
-        let arm = length.min(b - a);
-        match (from_a, from_b) {
-            (true, true) if 2.0 * arm >= b - a - EPS => vec![(a, b)],
-            _ => [(from_a, (a, a + arm)), (from_b, (b - arm, b))]
-                .into_iter()
-                .filter_map(|(on, span)| on.then_some(span))
-                .collect(),
-        }
-    };
     for &(x0, x1) in &columns {
         for &(y0, y1) in &rows {
-            // Whether a piece has its corner at (x0 or x1, y0 or y1), facing the crossing.
-            let corner = |right: bool, below: bool| {
-                rects.iter().any(|r| {
-                    let x = if right { r.x } else { r.x + r.width };
-                    let y = if below { r.y } else { r.y + r.height };
-                    near(x, if right { x1 } else { x0 }) && near(y, if below { y1 } else { y0 })
-                })
-            };
-            let [tl, tr, bl, br] = [
-                corner(false, false),
-                corner(true, false),
-                corner(false, true),
-                corner(true, true),
-            ];
-            for (y, left, right) in [(y0, tl, tr), (y1, bl, br)] {
-                for (a, b) in arms(x0, x1, left, right) {
-                    lines.push([a, y, b, y]);
-                }
+            let cornered = rects.iter().any(|r| {
+                let (rx, ry) = ([r.x, r.x + r.width], [r.y, r.y + r.height]);
+                rx.iter().any(|&x| near(x, x0) || near(x, x1))
+                    && ry.iter().any(|&y| near(y, y0) || near(y, y1))
+            });
+            if !cornered {
+                continue;
             }
-            for (x, top, bottom) in [(x0, tl, bl), (x1, tr, br)] {
-                for (a, b) in arms(y0, y1, top, bottom) {
-                    lines.push([x, a, x, b]);
-                }
-            }
+            let (mx, my) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+            lines.push([mx - length, my, mx + length, my]);
+            lines.push([mx, my - length, mx, my + length]);
         }
     }
     fits
