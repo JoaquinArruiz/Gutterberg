@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Cut marks in the gaps: Print settings › Cut marks › Also in the gaps (with Ticks in the margins) repeats the margin ticks inside the sheet, in the gaps where they cross. Each piece edge gets a tick in line with it, at the same offset from the piece, so the inner cuts line up like the outer ones; in a narrow gap the ticks from both sides join into one. It is separate from Also where gaps cross. Projects open with it off, and the command line exports it as saved.
+
 ### Changed
 
 - What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.

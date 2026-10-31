@@ -30,6 +30,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
         offsetMm: 1,
         onBacks: false,
         innerCrosses: false,
+        gapTicks: false,
       },
       bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
       duplex: {

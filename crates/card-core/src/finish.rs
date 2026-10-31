@@ -73,6 +73,10 @@ pub struct MarkOptions {
     /// between columns crosses a gap between rows, so the inside can be cut without a ruler across
     /// the sheet.
     pub inner_crosses: bool,
+    /// Ticks: also ticks in the gaps between pieces, where a gap between columns crosses one
+    /// between rows: the margin ticks again, each in line with a piece edge and `offset_mm` (plus
+    /// the bleed) from the piece, `length_mm` long or as much as the gap leaves.
+    pub gap_ticks: bool,
 }
 
 impl Default for MarkOptions {
@@ -86,6 +90,7 @@ impl Default for MarkOptions {
             offset_mm: 1.0,
             on_backs: false,
             inner_crosses: false,
+            gap_ticks: false,
         }
     }
 }
@@ -488,16 +493,13 @@ fn gaps_along(spans: &mut [(f64, f64)]) -> (Vec<(f64, f64)>, usize) {
     (gaps, touching)
 }
 
-/// The crosses where a gap between columns meets a gap between rows, `length` (points) to each
-/// side of the middle, added to `lines`. Only where a piece has a corner at that crossing, so an
-/// empty end of a short last row gets none past its last piece. Returns false when some gap is
-/// too narrow for a line (or there is none), as the gap lines do.
-fn inner_crosses(
-    rects: &[Rect],
-    options: &MarkOptions,
-    length: f64,
-    lines: &mut Vec<[f64; 4]>,
-) -> bool {
+/// Spans `[start, end]` along one axis.
+type Spans = Vec<(f64, f64)>;
+
+/// The gaps between columns and between rows (see `gaps_along`) that are wide enough for a line,
+/// and whether every gap is: false when some gap is too narrow (or there is none), as the gap
+/// lines do.
+fn inner_gaps(rects: &[Rect], options: &MarkOptions) -> (Spans, Spans, bool) {
     let needed = mm_to_pt(options.width_mm + GAP_LINE_CLEARANCE_MM);
     let (columns, touching_x) = gaps_along(
         &mut rects
@@ -512,7 +514,7 @@ fn inner_crosses(
             .collect::<Vec<_>>(),
     );
     let mut fits = touching_x == 0 && touching_y == 0;
-    let wide = |gaps: Vec<(f64, f64)>, fits: &mut bool| -> Vec<(f64, f64)> {
+    let wide = |gaps: Spans, fits: &mut bool| -> Spans {
         gaps.into_iter()
             .filter(|(a, b)| {
                 let ok = b - a >= needed;
@@ -522,20 +524,101 @@ fn inner_crosses(
             .collect()
     };
     let (columns, rows) = (wide(columns, &mut fits), wide(rows, &mut fits));
+    (columns, rows, fits)
+}
+
+/// Whether a piece has a corner at the crossing of the gaps `x0..x1` and `y0..y1`: so an empty end
+/// of a short last row gets no inner marks past its last piece.
+fn cornered(rects: &[Rect], (x0, x1): (f64, f64), (y0, y1): (f64, f64)) -> bool {
     let near = |a: f64, b: f64| (a - b).abs() < EPS;
-    for &(x0, x1) in &columns {
-        for &(y0, y1) in &rows {
-            let cornered = rects.iter().any(|r| {
-                let (rx, ry) = ([r.x, r.x + r.width], [r.y, r.y + r.height]);
-                rx.iter().any(|&x| near(x, x0) || near(x, x1))
-                    && ry.iter().any(|&y| near(y, y0) || near(y, y1))
-            });
-            if !cornered {
+    rects.iter().any(|r| {
+        let (rx, ry) = ([r.x, r.x + r.width], [r.y, r.y + r.height]);
+        rx.iter().any(|&x| near(x, x0) || near(x, x1))
+            && ry.iter().any(|&y| near(y, y0) || near(y, y1))
+    })
+}
+
+/// The crosses where a gap between columns meets a gap between rows, `length` (points) to each
+/// side of the middle, added to `lines`, where a piece has a corner. Returns false when some gap
+/// is too narrow for a line (or there is none).
+fn inner_crosses(
+    rects: &[Rect],
+    options: &MarkOptions,
+    length: f64,
+    lines: &mut Vec<[f64; 4]>,
+) -> bool {
+    let (columns, rows, fits) = inner_gaps(rects, options);
+    for &column in &columns {
+        for &row in &rows {
+            if !cornered(rects, column, row) {
                 continue;
             }
-            let (mx, my) = ((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+            let (mx, my) = ((column.0 + column.1) / 2.0, (row.0 + row.1) / 2.0);
             lines.push([mx - length, my, mx + length, my]);
             lines.push([mx, my - length, mx, my + length]);
+        }
+    }
+    fits
+}
+
+/// The margin ticks again inside the sheet, added to `lines`: where a gap between columns meets a
+/// gap between rows, each piece edge there gets a tick in the gap across it, in line with the edge,
+/// from `start` (points) off the piece and `length` long, or as far as the tick of the piece on the
+/// other side of the gap starts, when they join into one. Returns false when some gap is too
+/// narrow for a line or leaves no room past the offsets.
+fn gap_ticks(
+    rects: &[Rect],
+    options: &MarkOptions,
+    start: f64,
+    length: f64,
+    lines: &mut Vec<[f64; 4]>,
+) -> bool {
+    let (columns, rows, mut fits) = inner_gaps(rects, options);
+    let near = |a: f64, b: f64| (a - b).abs() < EPS;
+    // The ticks in the gap `a..b` from the piece before it and the piece after it.
+    let mut ticks = |a: f64, b: f64, before: bool, after: bool| -> Spans {
+        let (a, b) = (a + start, b - start);
+        if b - a <= EPS {
+            fits &= !(before || after);
+            return Vec::new();
+        }
+        let tick = length.min(b - a);
+        match (before, after) {
+            (true, true) if 2.0 * tick >= b - a - EPS => vec![(a, b)],
+            _ => [(before, (a, a + tick)), (after, (b - tick, b))]
+                .into_iter()
+                .filter_map(|(on, span)| on.then_some(span))
+                .collect(),
+        }
+    };
+    for &(x0, x1) in &columns {
+        for &(y0, y1) in &rows {
+            // Whether a piece has its corner at (x0 or x1, y0 or y1), facing the crossing.
+            let corner = |right: bool, below: bool| {
+                rects.iter().any(|r| {
+                    let x = if right { r.x } else { r.x + r.width };
+                    let y = if below { r.y } else { r.y + r.height };
+                    near(x, if right { x1 } else { x0 }) && near(y, if below { y1 } else { y0 })
+                })
+            };
+            let [tl, tr, bl, br] = [
+                corner(false, false),
+                corner(true, false),
+                corner(false, true),
+                corner(true, true),
+            ];
+            // The edges down the page cross the gap between rows; those across it, the gap
+            // between columns.
+            for (x, above, below) in [(x0, tl, bl), (x1, tr, br)] {
+                for (a, b) in ticks(y0, y1, above, below) {
+                    lines.push([x, a, x, b]);
+                }
+            }
+            for (y, left, right) in [(y0, tl, tr), (y1, bl, br)] {
+                for (a, b) in ticks(x0, x1, left, right) {
+                    lines.push([a, y, b, y]);
+                }
+            }
         }
     }
     fits
@@ -573,6 +656,9 @@ fn marks_for(
                 lines.push([right + start, y, right + start + length, y]);
             }
             if options.inner_crosses && !inner_crosses(rects, options, length, &mut lines) {
+                push_unique(warnings, SheetWarning::GapTooNarrowForLine);
+            }
+            if options.gap_ticks && !gap_ticks(rects, options, start, length, &mut lines) {
                 push_unique(warnings, SheetWarning::GapTooNarrowForLine);
             }
         }

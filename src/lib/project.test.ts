@@ -83,6 +83,7 @@ function state(): ProjectState {
           offsetMm: 2,
           onBacks: true,
           innerCrosses: true,
+          gapTicks: true,
         },
         bleed: { mm: 2, source: "source", edgeColors: {}, aiFills: {} },
         duplex: {

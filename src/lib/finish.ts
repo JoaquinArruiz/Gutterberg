@@ -47,6 +47,8 @@ export type Finish = {
     onBacks: boolean;
     /** Ticks: also a cross where a gap between columns meets a gap between rows. */
     innerCrosses: boolean;
+    /** Ticks: also the margin ticks in the gaps, in line with the piece edges, where the gaps cross. */
+    gapTicks: boolean;
   };
   bleed: {
     mm: number;
@@ -93,6 +95,7 @@ export const DEFAULT_FINISH: Finish = {
     offsetMm: 1,
     onBacks: false,
     innerCrosses: false,
+    gapTicks: false,
   },
   bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
   duplex: {
@@ -120,6 +123,7 @@ export const FinishSchema = z.object({
     offsetMm: z.number(),
     onBacks: z.boolean().default(false),
     innerCrosses: z.boolean().default(false),
+    gapTicks: z.boolean().default(false),
   }),
   bleed: z.object({
     mm: z.number(),
@@ -171,6 +175,7 @@ export function cleanFinish(f: Finish): Finish {
       offsetMm: clampTo(f.marks.offsetMm, ...MARK_OFFSET_RANGE, d.marks.offsetMm),
       onBacks: f.marks.onBacks,
       innerCrosses: f.marks.innerCrosses,
+      gapTicks: f.marks.gapTicks,
     },
     bleed: {
       mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0),
