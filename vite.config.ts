@@ -5,7 +5,12 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   clearScreen: false,
-  server: { port: 1420, strictPort: true },
+  server: {
+    port: 1420,
+    strictPort: true,
+    // Cargo's build output: on Windows, watching files the compiler has open fails with EBUSY.
+    watch: { ignored: ["**/target/**", "**/src-tauri/**", "**/crates/**"] },
+  },
   // Tests read the English catalog, so text assertions are stable.
   test: { setupFiles: ["./src/test-setup.ts"] },
 });
