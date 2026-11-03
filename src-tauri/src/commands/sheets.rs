@@ -18,33 +18,46 @@ type Pages = HashMap<DocumentId, Vec<PageSize>>;
 
 /// Every card of the documents' page groups, in page order, one document after the other: the
 /// piece library. Pure geometry like `compute_layout` (no PDF is read); the pages carry the
-/// sizes the UI shows.
+/// sizes the UI shows. Run off the main thread, like `compute_sheets`, so a big library does not
+/// hold up the window; the UI drops a reply that a newer request has replaced.
 #[tauri::command]
-pub fn compute_cards(
+pub async fn compute_cards(
     documents: Vec<ProjectDocument>,
     output: OutputSettings,
     pages: Pages,
 ) -> Result<Vec<Card>, ErrorInfo> {
-    Ok(extract_all_cards(&document_sources(
-        &documents, &output, &pages,
-    ))?)
+    tauri::async_runtime::spawn_blocking(move || {
+        Ok(extract_all_cards(&document_sources(
+            &documents, &output, &pages,
+        ))?)
+    })
+    .await
+    .map_err(internal)?
 }
 
 /// Output sheets for the preview: the request built from the project as the export builds it, and
-/// the same planner the export runs (`plan_and_finish`), fed with the page sizes the UI shows.
+/// the same planner the export runs (`plan_and_finish`), fed with the page sizes the UI shows. Run
+/// off the main thread: a large plan would otherwise freeze the window while it is worked out.
 #[tauri::command]
-pub fn compute_sheets(project: PrintProject, pages: Pages) -> Result<Vec<OutputSheet>, ErrorInfo> {
-    let req = print_request(&project, &pages)?;
-    // Pages the bleed cannot be taken from are reported by `validate_print`; the preview shows
-    // them as a warning on the sheet.
-    Ok(plan_and_finish(
-        &req.sources(&pages),
-        &req.settings,
-        &req.layout,
-        &req.options,
-        &req.finishing,
-    )?
-    .0)
+pub async fn compute_sheets(
+    project: PrintProject,
+    pages: Pages,
+) -> Result<Vec<OutputSheet>, ErrorInfo> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let req = print_request(&project, &pages)?;
+        // Pages the bleed cannot be taken from are reported by `validate_print`; the preview shows
+        // them as a warning on the sheet.
+        Ok(plan_and_finish(
+            &req.sources(&pages),
+            &req.settings,
+            &req.layout,
+            &req.options,
+            &req.finishing,
+        )?
+        .0)
+    })
+    .await
+    .map_err(internal)?
 }
 
 /// The open file behind each document of the request.
