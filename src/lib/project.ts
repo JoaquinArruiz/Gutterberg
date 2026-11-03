@@ -30,7 +30,7 @@ import { TurnSchema } from "./sheet-api";
 /** Value of the `format` key: the file's signature. Kept in step with `card_core::project::FORMAT`. */
 export const PROJECT_FORMAT = "gutterberg-project";
 /** The version this build writes. Older ones are migrated in Rust before they get here. */
-export const PROJECT_VERSION = 8;
+export const PROJECT_VERSION = 9;
 export const PROJECT_EXTENSION = "gtr";
 
 const finite = z.number();
@@ -44,6 +44,7 @@ const GroupGridSchema = z.object({
   sourceGapXMm: finite,
   sourceGapYMm: finite,
   sourceGapLinked: z.boolean(),
+  crop: z.object({ topMm: finite, rightMm: finite, bottomMm: finite, leftMm: finite }).optional(),
 });
 
 const GridRegionSchema = z.object({
@@ -227,6 +228,7 @@ function cleanRegion(r: z.infer<typeof GridRegionSchema>): GridRegion {
     sourceGapXMm: r.grid.sourceGapXMm,
     sourceGapYMm: r.grid.sourceGapYMm,
     sourceGapLinked: r.grid.sourceGapLinked,
+    crop: r.grid.crop,
   });
   return withLook(
     { ...r, grid },

@@ -79,6 +79,8 @@ export type GridPayload = {
   margin_left_mm: number;
   output_page: PageSize | null;
   fit_page: boolean;
+  /** camelCase inside, like the project's grids. */
+  crop?: { topMm: number; rightMm: number; bottomMm: number; leftMm: number };
 };
 
 /** One output page: a source page and the grid it is cut with. Mirrors card_core::export::PageJob. */

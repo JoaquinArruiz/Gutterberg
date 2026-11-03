@@ -47,6 +47,27 @@ pub struct GridLayout {
     /// of using `output_page`. Cards are never scaled.
     #[serde(default)]
     pub fit_page: bool,
+    /// Cut off each piece's edges by this much (mm), for art that is a little larger than the sleeve it goes in.
+    /// The piece is the cell less the crop; what is cut off stays on the page, so a bleed from the source reads it.
+    #[serde(default)]
+    pub crop: Crop,
+}
+
+/// How much is cut off each side of every piece of a grid, in mm. Zero (the default) keeps the piece as the cell.
+/// camelCase (`topMm`) in JSON, in a grid of the project and of the layout engine alike.
+#[derive(Debug, Clone, Copy, PartialEq, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct Crop {
+    pub top_mm: f64,
+    pub right_mm: f64,
+    pub bottom_mm: f64,
+    pub left_mm: f64,
+}
+
+impl Crop {
+    pub fn is_none(&self) -> bool {
+        *self == Crop::default()
+    }
 }
 
 /// One card's location in the source page. Everything after this step works on
@@ -131,9 +152,15 @@ fn validate(grid: &GridLayout) -> Result<()> {
         grid.margin_right_mm,
         grid.margin_bottom_mm,
         grid.margin_left_mm,
+        grid.crop.top_mm,
+        grid.crop.right_mm,
+        grid.crop.bottom_mm,
+        grid.crop.left_mm,
     ] {
         if g < 0.0 || !g.is_finite() {
-            return Err(Error::InvalidGrid("gaps and margins must be >= 0".into()));
+            return Err(Error::InvalidGrid(
+                "gaps, margins and crops must be >= 0".into(),
+            ));
         }
     }
     if let Some(p) = grid.output_page {
@@ -168,6 +195,20 @@ pub fn source_cards(source_page: PageSize, grid: &GridLayout) -> Result<Vec<Sour
             "source gaps leave no room for the cards".into(),
         ));
     }
+    // The crop is taken off inside each cell: the cells keep their place, the piece is smaller.
+    let k = grid.crop;
+    let (top, right, bottom, left) = (
+        mm_to_pt(k.top_mm),
+        mm_to_pt(k.right_mm),
+        mm_to_pt(k.bottom_mm),
+        mm_to_pt(k.left_mm),
+    );
+    let (piece_w, piece_h) = (card_w - left - right, card_h - top - bottom);
+    if !(piece_w > 0.0 && piece_h > 0.0) {
+        return Err(Error::InvalidGrid(
+            "the crop leaves nothing of the pieces".into(),
+        ));
+    }
     let mut cards = Vec::with_capacity(rows * cols);
     for r in 0..rows {
         for c in 0..cols {
@@ -176,10 +217,10 @@ pub fn source_cards(source_page: PageSize, grid: &GridLayout) -> Result<Vec<Sour
                 row: r,
                 column: c,
                 rect: Rect::new(
-                    region.x + c as f64 * (card_w + gap_x),
-                    region.y + r as f64 * (card_h + gap_y),
-                    card_w,
-                    card_h,
+                    region.x + c as f64 * (card_w + gap_x) + left,
+                    region.y + r as f64 * (card_h + gap_y) + top,
+                    piece_w,
+                    piece_h,
                 ),
             });
         }
@@ -318,6 +359,7 @@ mod tests {
             margin_left_mm: 0.0,
             output_page: None,
             fit_page: false,
+            crop: Crop::default(),
         }
     }
 
@@ -547,5 +589,43 @@ mod tests {
         assert!((pt_to_mm(l.output_page.height_pt) - (88.0 + 5.0)).abs() < 1e-6);
         assert!((pt_to_mm(l.placements[0].destination.x) - 5.0).abs() < 1e-6);
         assert!((pt_to_mm(l.placements[0].destination.y) - 2.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn a_crop_is_taken_off_inside_each_cell() {
+        let page = mm_page(200.0, 100.0);
+        let grid = GridLayout {
+            columns: 2,
+            crop: Crop {
+                top_mm: 10.0,
+                right_mm: 20.0,
+                bottom_mm: 0.0,
+                left_mm: 10.0,
+            },
+            ..base()
+        };
+        let cards = source_cards(page, &grid).unwrap();
+        let mm = |pt: f64| crate::units::pt_to_mm(pt);
+        assert!((mm(cards[0].rect.x) - 10.0).abs() < 1e-9);
+        assert!((mm(cards[0].rect.width) - 70.0).abs() < 1e-9);
+        assert!((mm(cards[0].rect.height) - 90.0).abs() < 1e-9);
+        assert!((mm(cards[1].rect.x) - 110.0).abs() < 1e-9);
+        // The output uses the cropped size, so the pieces print smaller.
+        let layout = calculate_layout(page, &grid, None).unwrap();
+        assert!((layout.card_width_mm - 70.0).abs() < 1e-9);
+        assert!((mm(layout.placements[0].destination.width) - 70.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn a_crop_that_leaves_nothing_is_an_error() {
+        let grid = GridLayout {
+            crop: Crop {
+                left_mm: 60.0,
+                right_mm: 60.0,
+                ..Crop::default()
+            },
+            ..base()
+        };
+        assert!(source_cards(mm_page(100.0, 100.0), &grid).is_err());
     }
 }

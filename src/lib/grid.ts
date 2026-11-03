@@ -8,7 +8,14 @@ import type { PageSize } from "./tauri";
 import { ptToMm } from "./units";
 
 /** Source grid: `gapXMm`/`gapYMm` is the spacing already present between cards in the PDF. */
-export type GridSpec = { rows: number; columns: number; gapXMm?: number; gapYMm?: number };
+export type GridSpec = { rows: number; columns: number; gapXMm?: number; gapYMm?: number; crop?: Crop };
+
+/** What is cut off each side of every piece of a grid, in mm (mirrors card_core::layout::Crop). */
+export type Crop = { topMm: number; rightMm: number; bottomMm: number; leftMm: number };
+export const NO_CROP: Crop = { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 };
+export const MAX_CROP_MM = 20;
+export const hasCrop = (c: Crop | undefined): c is Crop =>
+  c !== undefined && (c.topMm > 0 || c.rightMm > 0 || c.bottomMm > 0 || c.leftMm > 0);
 export const MAX_GRID = 30;
 
 export const clampCount = (n: number) => clamp(Math.round(n), 1, MAX_GRID);
@@ -38,6 +45,23 @@ export function cardRects(sel: NormalizedRect, grid: GridSpec, page: PageSize): 
     for (let c = 0; c < grid.columns; c++)
       out.push({ x: sel.x + c * (w + gx), y: sel.y + r * (h + gy), width: w, height: h });
   return out;
+}
+
+/**
+ * The pieces themselves: each cell of `cardRects` less the grid's crop, as card_core::layout::source_cards cuts
+ * them. Only for drawing the Source tab; the engine is what prints.
+ */
+export function pieceRects(sel: NormalizedRect, grid: GridSpec, page: PageSize): NormalizedRect[] {
+  const cells = cardRects(sel, grid, page);
+  if (!hasCrop(grid.crop)) return cells;
+  const p = pageMm(page);
+  const c = grid.crop;
+  return cells.map((r) => ({
+    x: r.x + c.leftMm / p.width,
+    y: r.y + c.topMm / p.height,
+    width: Math.max(0, r.width - (c.leftMm + c.rightMm) / p.width),
+    height: Math.max(0, r.height - (c.topMm + c.bottomMm) / p.height),
+  }));
 }
 
 /**

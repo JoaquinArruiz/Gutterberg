@@ -518,6 +518,7 @@ fn all_cards_in_order_matches_the_layout_engine() {
                 height_pt: r(400.0, 1000.0),
             }),
             fit_page: lcg(&rng) < 0.3,
+            crop: Default::default(),
         };
         let Ok(layout) = calculate_layout(page, &grid, None) else {
             continue;

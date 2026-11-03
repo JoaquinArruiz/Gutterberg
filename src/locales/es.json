@@ -188,7 +188,8 @@
       "layout": "Disposición de origen",
       "gap": "Separación de origen",
       "output": "Salida",
-      "selection": "Posición de la selección"
+      "selection": "Posición de la selección",
+      "crop": "Recorte"
     },
     "size": "Tamaño",
     "total": "Total",
@@ -283,6 +284,15 @@
         "delete": "Eliminar",
         "clear": "Borrar región"
       }
+    },
+    "crop": {
+      "note": "Recorta lo mismo de cada pieza de esta cuadrícula, para arte un poco más grande que la funda donde va. La pieza se imprime más chica, en su nuevo tamaño; lo recortado queda en la página, así que un sangrado tomado del origen lo usa.",
+      "topMm": "Arriba",
+      "rightMm": "Derecha",
+      "bottomMm": "Abajo",
+      "leftMm": "Izquierda",
+      "result": "Las piezas se imprimen a {{width}} × {{height}}.",
+      "clear": "Sin recorte"
     }
   },
   "freeform": {

@@ -50,6 +50,7 @@ import {
   withLook,
 } from "../lib/document-layout";
 import { type AppError, toAppErrorOrNull } from "../lib/errors";
+import type { Crop } from "../lib/grid";
 import { gridToPieces } from "../lib/grid-to-pieces";
 import { emitHintEvent } from "../lib/hint-events";
 import type { LayoutResult } from "../lib/layout-api";
@@ -713,7 +714,7 @@ export function outputPage(s: GridSettings) {
 /** A group's grid and region plus the output settings, as the Rust layout engine / exporter expects them (snake_case). */
 export function gridPayload(
   bounds: NormalizedRect,
-  grid: { rows: number; columns: number; sourceGapXMm: number; sourceGapYMm: number },
+  grid: { rows: number; columns: number; sourceGapXMm: number; sourceGapYMm: number; crop?: Crop },
   s: GridSettings,
 ): GridPayload {
   return {
@@ -730,6 +731,7 @@ export function gridPayload(
     margin_left_mm: s.margins.left,
     output_page: outputPage(s),
     fit_page: s.pageMode === "fit",
+    ...(grid.crop ? { crop: grid.crop } : {}),
   };
 }
 

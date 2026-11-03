@@ -1,5 +1,5 @@
 import { type NormalizedRect, rectToScreen, type ViewportState } from "../../lib/coordinates";
-import { cardRects, type GridSpec } from "../../lib/grid";
+import { cardRects, type GridSpec, hasCrop, pieceRects } from "../../lib/grid";
 import type { PageSize } from "../../lib/tauri";
 
 const MIN_LABEL_PX = 28;
@@ -24,9 +24,35 @@ export function GridOverlay({
   const hasGap = (grid.gapXMm ?? 0) > 0 || (grid.gapYMm ?? 0) > 0;
   const box = (r: { x: number; y: number; width: number; height: number }) =>
     `M${r.x} ${r.y}h${r.width}v${r.height}h${-r.width}z`;
+  // A crop: the band cut off each piece is shaded, and the piece that prints is outlined inside its cell.
+  const pieces = hasCrop(grid.crop)
+    ? pieceRects(selection, grid, page).map((r) => rectToScreen(r, viewport, page))
+    : [];
   return (
     <g pointerEvents="none">
       {hasGap && <path d={[sel, ...cards].map(box).join("")} fillRule="evenodd" fill="#a855f7" fillOpacity={0.28} />}
+      {pieces.length > 0 && (
+        <path
+          data-testid="crop-band"
+          d={[...cards, ...pieces].map(box).join("")}
+          fillRule="evenodd"
+          fill="#f59e0b"
+          fillOpacity={0.35}
+        />
+      )}
+      {pieces.map((p) => (
+        <rect
+          key={`piece-${p.x}-${p.y}`}
+          x={p.x}
+          y={p.y}
+          width={p.width}
+          height={p.height}
+          fill="none"
+          stroke={color}
+          strokeWidth={1}
+          strokeOpacity={0.9}
+        />
+      ))}
       {cards.map((c, i) => (
         <g key={`${c.x}-${c.y}`}>
           <rect

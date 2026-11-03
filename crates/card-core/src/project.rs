@@ -20,7 +20,7 @@ use std::path::Path;
 pub const FORMAT: &str = "gutterberg-project";
 
 /// The version this build writes and reads without migrating.
-pub const VERSION: u32 = 8;
+pub const VERSION: u32 = 9;
 
 /// File extension of a project, without the dot.
 pub const EXTENSION: &str = "gtr";
@@ -33,7 +33,7 @@ pub type Body = Map<String, Value>;
 pub type Migration = fn(&mut Body);
 
 const MIGRATIONS: &[Migration] = &[
-    v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8,
+    v1_to_v2, v2_to_v3, v3_to_v4, v4_to_v5, v5_to_v6, v6_to_v7, v7_to_v8, v8_to_v9,
 ];
 
 /// Version 2 adds the print finishing (cut marks, bleed, duplex) to the plan and the backs of
@@ -143,6 +143,11 @@ fn v6_to_v7(body: &mut Body) {
 /// number makes an older Gutterberg say "made with a newer version" instead of calling the
 /// project damaged when it meets a bleed it does not know.
 fn v7_to_v8(_body: &mut Body) {}
+
+/// Version 9 adds a crop to a grid (`crop`, the mm cut off each side of its pieces, for art larger than its sleeve).
+/// A version 8 grid has none, so nothing changes; the new number keeps an older Gutterberg from opening a cropped
+/// grid and printing its pieces whole.
+fn v8_to_v9(_body: &mut Body) {}
 
 /// A project file is a few hundred kilobytes at most; anything much larger is some other file.
 const MAX_PROJECT_BYTES: u64 = 64 * 1024 * 1024;

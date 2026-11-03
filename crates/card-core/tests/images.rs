@@ -699,6 +699,7 @@ fn image_source(doc: &Document, spec: &ImageSpec, count: usize) -> DocumentSourc
         margin_left_mm: 0.0,
         output_page: None,
         fit_page: false,
+        crop: Default::default(),
     };
     DocumentSource {
         document_id: 0,

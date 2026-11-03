@@ -104,6 +104,7 @@ fn cmyk_pictures_keep_their_colour() {
                 margin_left_mm: 0.0,
                 output_page: None,
                 fit_page: false,
+                crop: Default::default(),
             }),
         }],
     };

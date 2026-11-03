@@ -22,7 +22,7 @@ use crate::finish::{
     MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
-use crate::layout::GridLayout;
+use crate::layout::{Crop, GridLayout};
 use crate::sheet::{
     extract_all_cards, Card, CardSetting, DocumentSource, FoldAxis, Margins, Order, OutputSheet,
     PaginateOptions, PrintLayout, SheetPage, SheetSpec, Turn,
@@ -126,6 +126,9 @@ pub struct GroupGrid {
     pub source_gap_y_mm: f64,
     #[serde(default)]
     pub source_gap_linked: bool,
+    /// Cut off each piece's edges (project version 9); absent in older projects, which crop nothing.
+    #[serde(default, skip_serializing_if = "Crop::is_none")]
+    pub crop: Crop,
 }
 
 /// The sheet size the user chose.
@@ -523,6 +526,7 @@ fn grid_layout(bounds: Rect, grid: &GroupGrid, o: &OutputSettings) -> GridLayout
         margin_left_mm: o.margins.left,
         output_page: output_page(o),
         fit_page: o.page_mode == PageMode::Fit,
+        crop: grid.crop,
     }
 }
 
@@ -1130,6 +1134,7 @@ mod tests {
                             source_gap_x_mm: 0.0,
                             source_gap_y_mm: 0.0,
                             source_gap_linked: true,
+                            crop: Crop::default(),
                         },
                         selection: drawn.then(|| Rect::new(0.1, 0.1, 0.8, 0.8)),
                     }],

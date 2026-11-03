@@ -87,6 +87,7 @@ fn images_doc(d: &Path, paths: &[PathBuf]) -> (Document, DocumentSource) {
         margin_left_mm: 0.0,
         output_page: None,
         fit_page: false,
+        crop: Default::default(),
     };
     let source = DocumentSource {
         document_id: 0,

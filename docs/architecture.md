@@ -308,7 +308,7 @@ rebuilt on open.
   kind, `v3_to_v4` changes nothing: version 4 only adds values, A3/A5/Tabloid sheets and `scalesY` in the edits, and
   the new number makes an older Gutterberg say "please update" instead of failing on them, `v4_to_v5` adds the
   gutterfold settings of the duplex finish, `v5_to_v6` adds `cutApart`, false, so older pairs still fold, `v6_to_v7` turns a grid group's
-  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed and Fill with AI, and the number makes an older Gutterberg ask to update); the current version is 8. A change to the format adds a version and a migration with a test file.
+  `grid` and `selection` into a list of one in `grids`, `v7_to_v8` changes nothing: version 8 adds the Edge bleed and Fill with AI, and the number makes an older Gutterberg ask to update; `v8_to_v9` changes nothing either: version 9 adds a grid's `crop`); the current version is 9. A change to the format adds a version and a migration with a test file.
 - **Opening is all or nothing.** The file is checked and every PDF found (by hash, so a moved PDF is recognised, and
   the user is asked "Where is this file now?" if it is gone) before any store changes. A file missing from its saved
   path is first looked for beside the project file (`card_core::sharing::find_beside`: same name and hash, then any

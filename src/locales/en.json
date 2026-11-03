@@ -188,7 +188,8 @@
       "layout": "Source layout",
       "gap": "Source gap",
       "output": "Output",
-      "selection": "Selection position"
+      "selection": "Selection position",
+      "crop": "Crop"
     },
     "size": "Size",
     "total": "Total",
@@ -283,6 +284,15 @@
         "delete": "Delete",
         "clear": "Clear region"
       }
+    },
+    "crop": {
+      "note": "Cuts the same amount off every piece of this grid, for art a little larger than the sleeve it goes in. The piece prints smaller, at its new size; what is cut off stays on the page, so a bleed taken from the source uses it.",
+      "topMm": "Top",
+      "rightMm": "Right",
+      "bottomMm": "Bottom",
+      "leftMm": "Left",
+      "result": "Pieces print at {{width}} × {{height}}.",
+      "clear": "No crop"
     }
   },
   "freeform": {

@@ -34,6 +34,7 @@ fn main() {
                 margin_left_mm: 0.0,
                 output_page: None,
                 fit_page: false,
+                crop: Default::default(),
             };
             let l = card_core::layout::calculate_layout(size, &grid, None).unwrap();
             println!(

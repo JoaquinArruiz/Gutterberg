@@ -142,6 +142,7 @@ export function EditorViewport() {
     columns: current.grid.columns,
     gapXMm: current.grid.sourceGapXMm,
     gapYMm: current.grid.sourceGapYMm,
+    crop: current.grid.crop,
   };
   const ref = useRef<HTMLDivElement>(null);
   const drag = useRef<Drag | null>(null);

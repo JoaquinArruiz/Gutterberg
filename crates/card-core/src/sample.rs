@@ -32,6 +32,7 @@ pub fn sample_grid(gap_mm: f64) -> GridLayout {
         margin_left_mm: 0.0,
         output_page: None,
         fit_page: false,
+        crop: crate::layout::Crop::default(),
     }
 }
 

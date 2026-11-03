@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cardRects, cardSizeMm, selectionAtMm, selectionForCardSize } from "./grid";
+import { cardRects, cardSizeMm, pieceRects, selectionAtMm, selectionForCardSize } from "./grid";
 import { mmToPt } from "./units";
 
 const A4 = { width_pt: mmToPt(210), height_pt: mmToPt(297) };
@@ -56,5 +56,24 @@ describe("grid", () => {
     close(r[2].x + r[2].width - (s.x + s.width), 0);
     const f = selectionForCardSize(s, A4, g, { width: 60 });
     close(f.width * 210, 184);
+  });
+});
+
+describe("pieceRects", () => {
+  const page = { width_pt: mmToPt(200), height_pt: mmToPt(100) };
+  const sel = { x: 0, y: 0, width: 1, height: 1 };
+
+  it("is the cells when nothing is cropped", () => {
+    expect(pieceRects(sel, { rows: 1, columns: 2 }, page)).toEqual(cardRects(sel, { rows: 1, columns: 2 }, page));
+  });
+
+  it("takes the crop off inside each cell", () => {
+    const crop = { topMm: 10, rightMm: 20, bottomMm: 0, leftMm: 10 };
+    const [first, second] = pieceRects(sel, { rows: 1, columns: 2, crop }, page);
+    close(first.x * 200, 10);
+    close(first.width * 200, 70);
+    close(first.y * 100, 10);
+    close(first.height * 100, 90);
+    close(second.x * 200, 110);
   });
 });

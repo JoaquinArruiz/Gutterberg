@@ -26,6 +26,7 @@ fn grid(x: f64, y: f64, w: f64, h: f64, rows: usize, columns: usize) -> GridLayo
         margin_left_mm: 0.0,
         output_page: None,
         fit_page: false,
+        crop: Default::default(),
     }
 }
 
