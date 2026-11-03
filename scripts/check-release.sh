@@ -2,7 +2,8 @@
 # Checks a release tag before anything is built, and writes the tag's notes from CHANGELOG.md.
 # Usage: scripts/check-release.sh v1.1.0 [notes-file]
 # Fails when the tag is not vX.Y.Z (or vX.Y.Z-pre.N), when package.json, src-tauri/Cargo.toml and the tag
-# disagree (tauri.conf.json reads package.json), or when CHANGELOG.md has no "## X.Y.Z (date)" section.
+# disagree (tauri.conf.json reads package.json), when CHANGELOG.md has no "## X.Y.Z (date)" section, or when a
+# release (not a pre-release) has no valid summary in release-notes/X.Y.Z.md (scripts/release-summary.mjs).
 set -euo pipefail
 tag="${1:?usage: scripts/check-release.sh vX.Y.Z [notes-file]}"
 notes="${2:-}"
@@ -23,6 +24,9 @@ section="$(awk -v v="$version" '
   found { print }
 ' "$root/CHANGELOG.md")"
 [[ -n "$(echo "$section" | tr -d '[:space:]')" ]] || fail "CHANGELOG.md has no notes under '## $version (date)'"
+
+# The summary that Discord, the app and the Microsoft Store show. A pre-release goes to none of them.
+if [[ "$version" != *-* ]]; then node "$root/scripts/release-summary.mjs" check "$version" || exit 1; fi
 
 echo "ok: $tag matches package.json, Cargo.toml and CHANGELOG.md"
 if [[ -n "$notes" ]]; then printf '%s\n' "$section" | sed '/./,$!d' > "$notes"; fi

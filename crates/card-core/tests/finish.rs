@@ -192,6 +192,54 @@ fn ticks_can_add_a_cross_where_the_gaps_cross() {
 }
 
 #[test]
+fn ticks_can_repeat_in_the_gaps_in_line_with_the_edges() {
+    let docs = [source()];
+    let mut o = marks(MarkStyle::Ticks);
+    o.marks.gap_ticks = true;
+    let (start, length) = (mm_to_pt(1.0), mm_to_pt(3.0));
+
+    // A 10 mm gap leaves 8 mm past the 1 mm offsets: two 3 mm ticks on each of the four edges.
+    let sheets = plan(&docs, spec(2, 2, 10.0, 15.0), &[]);
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    let lines = &out[0].marks.as_ref().unwrap().lines;
+    assert_eq!(lines.len(), 16 + 8);
+    let a = sheets[0].placements[0].destination;
+    let (x0, y0) = (a.x + a.width, a.y + a.height);
+    // Down from the first piece's right edge, in line with it.
+    assert!(lines.iter().any(|l| close(l[0], x0)
+        && close(l[1], y0 + start)
+        && close(l[2], x0)
+        && close(l[3], y0 + start + length)));
+    // Across from its bottom edge.
+    assert!(lines.iter().any(|l| close(l[0], x0 + start)
+        && close(l[1], y0)
+        && close(l[2], x0 + start + length)
+        && close(l[3], y0)));
+    assert!(out[0].warnings.is_empty());
+
+    // A 4 mm gap leaves 2 mm: the ticks from both sides join, one per edge.
+    let sheets = plan(&docs, spec(2, 2, 4.0, 15.0), &[]);
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o.clone())).unwrap();
+    let lines = &out[0].marks.as_ref().unwrap().lines;
+    assert_eq!(lines.len(), 16 + 4);
+    let (a, d) = (
+        sheets[0].placements[0].destination,
+        sheets[0].placements[3].destination,
+    );
+    let (x0, y0, y1) = (a.x + a.width, a.y + a.height, d.y);
+    assert!(lines.iter().any(|l| close(l[0], x0)
+        && close(l[1], y0 + start)
+        && close(l[2], x0)
+        && close(l[3], y1 - start)));
+
+    // A 2 mm gap has no room past the offsets: the ticks stay, with the narrow-gap warning.
+    let sheets = plan(&docs, spec(2, 2, 2.0, 15.0), &[]);
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(o)).unwrap();
+    assert_eq!(out[0].marks.as_ref().unwrap().lines.len(), 16);
+    assert!(out[0].warnings.contains(&SheetWarning::GapTooNarrowForLine));
+}
+
+#[test]
 fn gap_lines_run_down_the_middle_of_wide_gaps_only() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);

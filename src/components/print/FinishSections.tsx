@@ -140,6 +140,12 @@ export function MarksSection() {
                 label={t("print.marks.innerCrosses")}
                 info={t("print.marks.innerCrossesHint")}
               />
+              <Switch
+                checked={marks.gapTicks}
+                onChange={(gapTicks) => setMarks({ gapTicks })}
+                label={t("print.marks.gapTicks")}
+                info={t("print.marks.gapTicksHint")}
+              />
             </>
           )}
           {backSheets && (

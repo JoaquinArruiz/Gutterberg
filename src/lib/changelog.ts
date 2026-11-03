@@ -1,7 +1,17 @@
-// The changes of the version that is running, from CHANGELOG.md as it was when the app was built, so they can be read
-// without a network. English only, like the release notes.
+// The changes of the version that is running, from its summary in release-notes/ or else CHANGELOG.md, as they were
+// when the app was built, so they can be read without a network. English only, like the release notes.
 
 import changelog from "../../CHANGELOG.md?raw";
+
+const summaries = import.meta.glob<string>("/release-notes/*.md", { query: "?raw", import: "default", eager: true });
+
+/**
+ * The short notes of `version` (release-notes/x.y.z.md, written with the release), as Discord and the Microsoft Store
+ * show them. Null for a version without one, such as a development build.
+ */
+export function versionSummary(version: string, files: Record<string, string> = summaries): string | null {
+  return files[`/release-notes/${version}.md`]?.trim() || null;
+}
 
 /**
  * The notes of `version` in `text`: everything between its "## x.y.z (date)" heading and the next "## " heading, as

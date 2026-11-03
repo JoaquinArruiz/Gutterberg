@@ -283,6 +283,8 @@ pub struct FinishMarks {
     pub on_backs: bool,
     #[serde(default)]
     pub inner_crosses: bool,
+    #[serde(default)]
+    pub gap_ticks: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -800,6 +802,7 @@ fn finishing(
                 ),
                 on_backs: m.on_backs,
                 inner_crosses: m.inner_crosses,
+                gap_ticks: m.gap_ticks,
             },
             bleed: BleedOptions {
                 mm: clamp_to(finish.bleed.mm, 0.0, MAX_BLEED_MM, 0.0),
@@ -1164,6 +1167,7 @@ mod tests {
                 offset_mm: 2.0,
                 on_backs: true,
                 inner_crosses: false,
+                gap_ticks: false,
             },
             bleed: FinishBleed::default(),
             duplex: FinishDuplex {

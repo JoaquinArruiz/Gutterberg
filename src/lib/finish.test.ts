@@ -14,6 +14,7 @@ describe("finish settings", () => {
       offsetMm: 1,
       onBacks: false,
       innerCrosses: false,
+      gapTicks: false,
     });
     expect(DEFAULT_FINISH.bleed).toEqual({ mm: 0, source: "mirror", edgeColors: {}, aiFills: {} });
     expect(DEFAULT_FINISH.duplex).toEqual({
@@ -46,6 +47,7 @@ describe("finish settings", () => {
         offsetMm: -3,
         onBacks: true,
         innerCrosses: true,
+        gapTicks: true,
       },
       bleed: {
         mm: 99,
@@ -78,6 +80,7 @@ describe("finish settings", () => {
       offsetMm: 0,
       onBacks: true,
       innerCrosses: true,
+      gapTicks: true,
     });
     expect(clean.bleed).toEqual({
       mm: MAX_BLEED_MM,
