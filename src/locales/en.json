@@ -328,7 +328,13 @@
       "skip": "Skip page",
       "include": "Include page",
       "restore": "Bring back",
-      "restoreAll": "Bring all back"
+      "restoreAll": "Bring all back",
+      "removeSelected_one": "Remove {{count}} page",
+      "removeSelected_other": "Remove {{count}} pages",
+      "skipSelected_one": "Skip {{count}} page",
+      "skipSelected_other": "Skip {{count}} pages",
+      "includeSelected_one": "Include {{count}} page",
+      "includeSelected_other": "Include {{count}} pages"
     }
   },
   "applyGrid": {
