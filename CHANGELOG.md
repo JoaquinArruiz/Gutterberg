@@ -12,6 +12,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
 - What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.
 
 ## 1.3.0 (2026-10-28)

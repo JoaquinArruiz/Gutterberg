@@ -1,16 +1,16 @@
-// A small least-recently-used cache for card images (blob URLs), so a card shown in the library
-// and again on a sheet is rendered once, and old images are released.
+// A small least-recently-used cache for card images (blob URLs, or the decoded pages they are cut from), so a card
+// shown in the library and again on a sheet is rendered once, and old images are released.
 
-export class ImageCache {
-  private entries = new Map<string, Promise<string>>();
+export class ImageCache<T = string> {
+  private entries = new Map<string, Promise<T>>();
 
   constructor(
     private limit: number,
-    private release: (url: string) => void,
+    private release: (image: T) => void,
   ) {}
 
   /** The image for `key`, rendering it with `make` the first time. A failed render is not kept. */
-  get(key: string, make: () => Promise<string>): Promise<string> {
+  get(key: string, make: () => Promise<T>): Promise<T> {
     const hit = this.entries.get(key);
     if (hit) {
       // Most recently used goes last.
