@@ -398,7 +398,25 @@
     },
     "allOfDocument": "All pieces of {{name}}",
     "groupIn": "{{name}}: {{range}} ({{grids}})",
-    "pickingBack": "Click the piece to use as the back of the selection. Esc cancels."
+    "pickingBack": "Click the piece to use as the back of the selection. Esc cancels.",
+    "copiesListButton": "Copies from a list…",
+    "copiesListTitle": "Give copies to the picked pieces, or to every piece shown, from a list pasted from a rulebook or a spreadsheet",
+    "copiesList": {
+      "title": "Copies from a list",
+      "intro_one": "Paste one line per piece, in the order of the piece library, each with its number of copies, such as “3x Ember Drake”, “Ember Drake, 3” or just “3”. It goes onto the {{count}} picked piece, from the first.",
+      "intro_other": "Paste one line per piece, in the order of the piece library, each with its number of copies, such as “3x Ember Drake”, “Ember Drake, 3” or just “3”. It goes onto the {{count}} pieces (the picked ones, or every piece shown), from the first.",
+      "paste": "List of copies",
+      "placeholder": "3x Ember Drake\n2x Tide Caller\n4 Mossback Elder",
+      "check": "Which piece gets which line",
+      "piece": "Piece",
+      "line": "Line",
+      "noPiece": "(no piece left)",
+      "unchanged": "(left as it is)",
+      "skipped_one": "{{count}} line without a number was left out.",
+      "skipped_other": "{{count}} lines without a number were left out.",
+      "extra_one": "{{count}} line has no piece left and is not used.",
+      "extra_other": "{{count}} lines have no piece left and are not used."
+    }
   },
   "print": {
     "error": {

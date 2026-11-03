@@ -26,6 +26,7 @@ import { FieldLayout, FieldRow } from "../ui/FieldRow";
 import { NumberField } from "../ui/NumberField";
 import { Select } from "../ui/Select";
 import { CardThumb } from "./CardThumb";
+import { CopiesListDialog } from "./CopiesListDialog";
 import { useCardDrag } from "./use-card-drag";
 
 type FilterChoice = "all" | "page" | `doc:${number}` | `group:${number}:${number}`;
@@ -58,6 +59,7 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
     })),
   );
   const commonBack = usePrintStore((s) => s.finish.duplex.commonBack);
+  const [listOpen, setListOpen] = useState(false);
 
   // The cards as they print: the engine's, with the user's turn, scale and order applied.
   const cards = useLibraryCards();
@@ -270,6 +272,21 @@ export function CardLibrary({ orientation = "vertical" }: { orientation?: PanelO
             >
               <Plus size={12} />
             </Button>
+          </FieldRow>
+          <FieldRow label={null}>
+            <Button
+              onClick={() => setListOpen(true)}
+              disabled={shown.length === 0}
+              title={t("library.copiesListTitle")}
+            >
+              {t("library.copiesListButton")}
+            </Button>
+            <CopiesListDialog
+              open={listOpen}
+              onClose={() => setListOpen(false)}
+              // The picked pieces in the library's order, or every piece shown when none is picked.
+              pieces={(picked.length > 0 ? shown.filter((c) => selected.has(cardIdKey(c.id))) : shown).map((c) => c.id)}
+            />
           </FieldRow>
           <FieldRow label={t("library.turn")} data-testid="card-turn">
             <div className="grid w-full grid-cols-2 gap-1.5">

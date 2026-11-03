@@ -398,7 +398,25 @@
     },
     "allOfDocument": "Todas las piezas de {{name}}",
     "groupIn": "{{name}}: {{range}} ({{grids}})",
-    "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela."
+    "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela.",
+    "copiesListButton": "Copias desde una lista…",
+    "copiesListTitle": "Da copias a las piezas elegidas, o a todas las que se muestran, desde una lista pegada de un reglamento o una planilla",
+    "copiesList": {
+      "title": "Copias desde una lista",
+      "intro_one": "Pega una línea por pieza, en el orden de la biblioteca de piezas, cada una con su cantidad de copias, como «3x Ember Drake», «Ember Drake, 3» o solo «3». Se aplica a {{count}} pieza elegida, desde la primera.",
+      "intro_other": "Pega una línea por pieza, en el orden de la biblioteca de piezas, cada una con su cantidad de copias, como «3x Ember Drake», «Ember Drake, 3» o solo «3». Se aplica a las {{count}} piezas (las elegidas, o todas las que se muestran), desde la primera.",
+      "paste": "Lista de copias",
+      "placeholder": "3x Ember Drake\n2x Tide Caller\n4 Mossback Elder",
+      "check": "Qué pieza recibe cada línea",
+      "piece": "Pieza",
+      "line": "Línea",
+      "noPiece": "(no quedan piezas)",
+      "unchanged": "(queda como está)",
+      "skipped_one": "Se dejó afuera {{count}} línea sin número.",
+      "skipped_other": "Se dejaron afuera {{count}} líneas sin número.",
+      "extra_one": "{{count}} línea no tiene pieza y no se usa.",
+      "extra_other": "{{count}} líneas no tienen pieza y no se usan."
+    }
   },
   "print": {
     "error": {

@@ -50,6 +50,8 @@ type PrintState = PrintPlan & {
   /** Copies for `keys`. Changing a quantity switches to a custom selection (nothing else is printed). */
   setQuantity: (keys: string[], n: number) => void;
   adjustQuantity: (keys: string[], delta: number) => void;
+  /** Copies for several pieces at once (a pasted list): one undo step, and a custom selection like `setQuantity`. */
+  setQuantities: (copies: Record<string, number>) => void;
   /** Custom selection starting from one copy of every card. */
   startFromAllCards: () => void;
   setAutoFill: (on: boolean) => void;
@@ -119,6 +121,13 @@ export const usePrintStore = create<PrintState>()(
       },
       adjustQuantity: (keys, delta) => {
         set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) }));
+        emitHintEvent("copies-changed");
+      },
+      setQuantities: (copies) => {
+        set((s) => ({
+          mode: "custom",
+          quantities: Object.entries(copies).reduce((q, [key, n]) => setQuantity(q, [key], n), s.quantities),
+        }));
         emitHintEvent("copies-changed");
       },
       startFromAllCards: () => set((s) => ({ mode: "custom", quantities: oneOfEach(s.cards) })),

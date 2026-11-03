@@ -12,6 +12,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - Remove or skip several pages at once: in the Pages panel, `Ctrl`+click (`Cmd`+click on macOS) picks pages one by one and `Shift`+click a run of them from the viewed page. `Delete` removes every picked page, and the right-click menu removes, skips or includes them, each as one undo step. `Esc` or a plain click drops the pick.
 
+- Copies from a list: Copies from a list… in the piece library takes a list pasted from a rulebook or a spreadsheet, one line per piece in the library's order, such as `3x Ember Drake`, `Ember Drake, 3` or just `3`, and gives those copies to the picked pieces (or every piece shown) from the first. Before applying, it shows which piece gets which line, so a list out of step is easy to spot; a header line without a number is left out. One undo step.
+
 ### Changed
 
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
