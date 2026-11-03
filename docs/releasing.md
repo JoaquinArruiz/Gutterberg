@@ -88,7 +88,8 @@ A version has its own branch, `release/1.1.0`, started from `main`; features and
 
 CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a branch is not built twice. Feature and
 fix branches are merged locally into their version branch (no pull request), so CI checks them when the version branch
-is pushed.
+is pushed. A push to a version branch also builds the Windows and macOS apps with their installers (unsigned, without
+updater signatures), so a build that only fails there shows up before the tag.
 
 ## The summary
 
