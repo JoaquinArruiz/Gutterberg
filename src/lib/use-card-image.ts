@@ -111,7 +111,10 @@ export function useCardImage(
     const render = () =>
       shared === null
         ? renderRegion(kind, id.document_id, id.page_index, region, fullWidthPx, true)
-        : sharedPage(docKey, kind, id.document_id, id.page_index, shared).then((b) => cutFrom(b, region));
+        : sharedPage(docKey, kind, id.document_id, id.page_index, shared)
+            .then((b) => cutFrom(b, region))
+            // A web view that cannot decode or cut the page still gets the piece, rendered on its own.
+            .catch(() => renderRegion(kind, id.document_id, id.page_index, region, fullWidthPx, true));
     cache
       .get(key, render)
       .then((u) => !cancelled && setUrl(u))
