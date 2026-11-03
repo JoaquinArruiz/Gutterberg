@@ -6,3 +6,10 @@ members = ["crates/card-core", "crates/card-ai", "crates/card-cli", "src-tauri"]
 # otherwise PNG encoding of previews is ~10x slower under `tauri dev`.
 [profile.dev.package."*"]
 opt-level = 3
+
+# Release builds: one codegen unit and full LTO make a smaller, faster binary; strip drops the debug symbols that
+# nobody ships. It slows the release build, not `tauri dev`.
+[profile.release]
+codegen-units = 1
+lto = true
+strip = true
