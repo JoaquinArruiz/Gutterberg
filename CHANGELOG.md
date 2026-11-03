@@ -7,7 +7,6 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
-- Cut marks in the gaps: Print settings › Cut marks › Also in the gaps (with Ticks in the margins) repeats the margin ticks inside the sheet, in the gaps where they cross. Each piece edge gets a tick in line with it, at the same offset from the piece, so the inner cuts line up like the outer ones; in a narrow gap the ticks from both sides join into one. It is separate from Also where gaps cross. Projects open with it off, and the command line exports it as saved.
 - CMYK export, for print shops: Print settings › Sheet › Colors › CMYK writes the cut marks, fold lines, background and Edge color fills in CMYK, and turns the pictures Gutterberg put in the file (images added as pieces, Fill with AI pictures) into CMYK too, for coated paper (FOGRA39). Black and gray go on the black ink only, so a cut mark is one clean line. Source PDFs keep their own colors, as before: a PDF that is already CMYK stays CMYK. A JPEG stays a JPEG and a PNG stays lossless. RGB stays the default, which suits home printers and most online print services. The preview still shows screen colors, and the command line exports it as saved.
 - Remove or skip several pages at once: in the Pages panel, `Ctrl`+click (`Cmd`+click on macOS) picks pages one by one and `Shift`+click a run of them from the viewed page. `Delete` removes every picked page, and the right-click menu removes, skips or includes them, each as one undo step. `Esc` or a plain click drops the pick.
 - Copies from a list: Copies from a list… in the piece library takes a list pasted from a rulebook or a spreadsheet, one line per piece in the library's order, such as `3x Ember Drake`, `Ember Drake, 3` or just `3`, and gives those copies to the picked pieces (or every piece shown) from the first. Before applying, it shows which piece gets which line, so a list out of step is easy to spot; a header line without a number is left out. One undo step.
@@ -20,6 +19,15 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Print settings show what most people change first: Line width, Color, the ticks' distance, Also where gaps cross, Also in the gaps and Also on back sheets (Cut marks), Auto-fill and Order (Plan), and Group pieces by size, Colors and Scale check (Sheet) are under More options. It opens by itself when one of its options is changed, and folded it says how many are. Duplex details, freeform pieces and skipped pages already only show when they are in use.
 - Projects are saved as version 9, for the crop. Gutterberg 1.3 and earlier say a version 9 project needs a newer Gutterberg instead of printing its pieces uncropped; 1.4.0 opens every older project as before.
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
+
+## 1.3.1 (2026-11-03)
+
+### Added
+
+- Cut marks in the gaps: Print settings › Cut marks › Also in the gaps (with Ticks in the margins) repeats the margin ticks inside the sheet, in the gaps where they cross. Each piece edge gets a tick in line with it, at the same offset from the piece, so the inner cuts line up like the outer ones; in a narrow gap the ticks from both sides join into one. It is separate from Also where gaps cross. Projects open with it off, and the command line exports it as saved.
+
+### Changed
+
 - What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.
 
 ## 1.3.0 (2026-10-28)
