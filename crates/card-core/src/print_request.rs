@@ -250,6 +250,9 @@ pub struct Finish {
     pub background: BackgroundOptions,
     #[serde(default)]
     pub colors: ColorMode,
+    /// A 50 mm ruler in a margin of each sheet (see [`crate::finish::scale_check`]). Older projects have none.
+    #[serde(default)]
+    pub scale_check: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -842,6 +845,7 @@ fn finishing(
                 pieces: fill(&finish.background.pieces),
             },
             colors: finish.colors,
+            scale_check: finish.scale_check,
         },
         backs,
     }
@@ -1223,6 +1227,7 @@ mod tests {
             },
             background: BackgroundOptions::default(),
             colors: ColorMode::Rgb,
+            scale_check: false,
         }
     }
 

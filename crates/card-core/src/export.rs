@@ -951,6 +951,22 @@ fn fold_ops(folds: &[[f64; 4]], out_height: f64, paint: Paint) -> String {
     ops
 }
 
+/// The operators that draw the scale check: thin black lines (black ink only in CMYK), solid, so it measures true.
+fn scale_check_ops(lines: &[[f64; 4]], out_height: f64, paint: Paint) -> String {
+    let mut ops = format!("q\n{}0.5 w\n0 J\n", paint.stroke([0; 3]));
+    for l in lines {
+        ops.push_str(&format!(
+            "{} {} m {} {} l S\n",
+            fmt(l[0]),
+            fmt(out_height - l[1]),
+            fmt(l[2]),
+            fmt(out_height - l[3]),
+        ));
+    }
+    ops.push_str("Q\n");
+    ops
+}
+
 /// The image XObjects a page draws directly (through its own or inherited resources).
 fn page_images(doc: &Document, page_id: ObjectId) -> Result<Vec<ObjectId>> {
     let (own, inherited) = doc.get_page_resources(page_id)?;
@@ -1124,6 +1140,9 @@ fn export_sheets_into(
         }
         if !sheet.folds.is_empty() {
             ops.push_str(&fold_ops(&sheet.folds, out.height_pt, paint));
+        }
+        if !sheet.scale_check.is_empty() {
+            ops.push_str(&scale_check_ops(&sheet.scale_check, out.height_pt, paint));
         }
         let mut cs = Stream::new(Dictionary::new(), ops.into_bytes());
         let _ = cs.compress();

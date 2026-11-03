@@ -47,6 +47,7 @@ describe("cut marks, bleed and duplex in the print store", () => {
       },
       background: { sheet: null, pieces: null },
       colors: "rgb",
+      scaleCheck: false,
     });
   });
 

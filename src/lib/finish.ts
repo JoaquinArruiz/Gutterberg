@@ -88,6 +88,8 @@ export type Finish = {
   /** How the export writes the colours the app draws (marks, fills) and the pictures it put in the file (images,
    * Fill with AI): RGB, or CMYK for a print shop. The sources keep their own colours either way. */
   colors: ColorMode;
+  /** A 50 mm ruler in a margin of each sheet, to measure that the printer kept the size. */
+  scaleCheck: boolean;
 };
 
 export const DEFAULT_FINISH: Finish = {
@@ -117,6 +119,7 @@ export const DEFAULT_FINISH: Finish = {
   },
   background: { sheet: null, pieces: null },
   colors: "rgb",
+  scaleCheck: false,
 };
 
 export const FinishSchema = z.object({
@@ -153,6 +156,7 @@ export const FinishSchema = z.object({
     .object({ sheet: z.string().nullable(), pieces: z.string().nullable() })
     .default({ sheet: null, pieces: null }),
   colors: z.enum(COLOR_MODES).default("rgb"),
+  scaleCheck: z.boolean().default(false),
 });
 
 const clampTo = (v: number, lo: number, hi: number, fallback: number) =>
@@ -213,6 +217,7 @@ export function cleanFinish(f: Finish): Finish {
     },
     background: { sheet: cleanFill(f.background.sheet), pieces: cleanFill(f.background.pieces) },
     colors: COLOR_MODES.includes(f.colors) ? f.colors : "rgb",
+    scaleCheck: f.scaleCheck === true,
   };
 }
 
@@ -227,6 +232,7 @@ export const SHEET_WARNINGS = [
   "bleed_off_page",
   "back_size_differs",
   "bleed_exceeds_source_gap",
+  "no_room_for_scale_check",
 ] as const;
 export type SheetWarning = (typeof SHEET_WARNINGS)[number];
 

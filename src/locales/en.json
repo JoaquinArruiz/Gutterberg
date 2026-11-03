@@ -681,7 +681,8 @@
       "bleed_overlaps_neighbour": "The bleeds of neighbouring pieces overlap: make the output gap at least twice the bleed.",
       "bleed_off_page": "The bleed goes past the edge of the page: leave larger margins.",
       "back_size_differs": "A back is not the same size as its front, so the cuts will not line up.",
-      "bleed_exceeds_source_gap": "The source has less space between some pieces than the bleed."
+      "bleed_exceeds_source_gap": "The source has less space between some pieces than the bleed.",
+      "no_room_for_scale_check": "There is no room for the scale check in the sheet's margins: it needs about 10 mm free above or below the pieces."
     },
     "aiFill": {
       "title": "Fill with AI",
@@ -714,6 +715,10 @@
       "discard": "Discard",
       "apply_one": "Use {{count}} fill",
       "apply_other": "Use {{count}} fills"
+    },
+    "scaleCheck": {
+      "label": "Scale check",
+      "hint": "Prints a 50 mm ruler, with a tick every 10 mm, in the bottom margin of each sheet (the top one when the bottom is full). Measure it on the printed page: if it is not 50 mm, the printer scaled the page, so print at actual size (100%), not “fit to page”."
     }
   },
   "sheets": {

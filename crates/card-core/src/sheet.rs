@@ -394,6 +394,9 @@ pub struct OutputSheet {
     /// Gutterfold: where each pair folds, `[x1, y1, x2, y2]` in points, drawn as dashed lines.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub folds: Vec<[f64; 4]>,
+    /// The scale check: a 50 mm ruler in a margin, `[x1, y1, x2, y2]` lines in points, drawn in black.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub scale_check: Vec<[f64; 4]>,
 }
 
 impl OutputSheet {
@@ -411,6 +414,7 @@ impl OutputSheet {
             marks: None,
             warnings: Vec::new(),
             folds: Vec::new(),
+            scale_check: Vec::new(),
         }
     }
 }

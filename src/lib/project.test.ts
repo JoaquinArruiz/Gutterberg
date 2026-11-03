@@ -96,6 +96,7 @@ function state(): ProjectState {
         },
         background: { sheet: "#000000", pieces: "#ffffff" },
         colors: "cmyk",
+        scaleCheck: true,
       },
     },
   };

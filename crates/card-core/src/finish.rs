@@ -183,6 +183,8 @@ pub struct FinishOptions {
     pub background: BackgroundOptions,
     /// RGB, or CMYK for a print shop (see [`crate::cmyk`]).
     pub colors: ColorMode,
+    /// A 50 mm ruler in a margin of each front sheet, to measure that the printer kept the size.
+    pub scale_check: bool,
 }
 
 /// Plain colours painted under everything: the whole sheet, and a rectangle behind each piece
@@ -341,6 +343,8 @@ pub enum SheetWarning {
     BleedOffPage,
     BackSizeDiffers,
     BleedExceedsSourceGap,
+    /// The scale check fits in no margin of the sheet.
+    NoRoomForScaleCheck,
 }
 
 fn invalid(detail: &str) -> Error {
@@ -625,6 +629,56 @@ fn gap_ticks(
         }
     }
     fits
+}
+
+/// The scale check's length, its ticks' spacing and the height of its end ticks, in mm.
+pub const SCALE_CHECK_MM: f64 = 50.0;
+const SCALE_CHECK_TICK_MM: f64 = 10.0;
+const SCALE_CHECK_HEIGHT_MM: f64 = 3.0;
+/// Room kept from the pieces (and their bleed and ticks), and from the paper's edge, which most printers do not reach.
+const SCALE_CHECK_CLEARANCE_MM: f64 = 2.0;
+const SCALE_CHECK_EDGE_MM: f64 = 5.0;
+
+/// A 50 mm ruler with a tick every 10 mm, in the bottom margin under the pieces, or the top one when the bottom has no
+/// room; `reach` is how far the bleed and the margin ticks go past the pieces. None when neither margin has room.
+pub fn scale_check(rects: &[Rect], page: PageSize, reach: f64) -> Option<Vec<[f64; 4]>> {
+    let (length, height) = (mm_to_pt(SCALE_CHECK_MM), mm_to_pt(SCALE_CHECK_HEIGHT_MM));
+    let (clear, edge) = (
+        mm_to_pt(SCALE_CHECK_CLEARANCE_MM),
+        mm_to_pt(SCALE_CHECK_EDGE_MM),
+    );
+    let block = bounds(rects).unwrap_or(Rect {
+        x: edge,
+        y: page.height_pt / 2.0,
+        width: 0.0,
+        height: 0.0,
+    });
+    // In line with the pieces' left side, or as far left as the paper allows when that runs off the sheet.
+    let x = (block.x - reach)
+        .max(edge)
+        .min(page.width_pt - edge - length);
+    if x < edge {
+        return None;
+    }
+    let below = block.y + block.height + reach + clear;
+    let above = block.y - reach - clear - height;
+    let top = if below + height <= page.height_pt - edge {
+        below
+    } else if above >= edge {
+        above
+    } else {
+        return None;
+    };
+    let base = top + height;
+    let mut lines = vec![[x, base, x + length, base]];
+    let ticks = (SCALE_CHECK_MM / SCALE_CHECK_TICK_MM).round() as usize;
+    for i in 0..=ticks {
+        let tx = x + mm_to_pt(i as f64 * SCALE_CHECK_TICK_MM);
+        // The ends stand taller, so the 50 mm is easy to measure.
+        let tall = i == 0 || i == ticks;
+        lines.push([tx, if tall { top } else { top + height / 2.0 }, tx, base]);
+    }
+    Some(lines)
 }
 
 /// Cut marks around `rects`: the pieces, or with gutterfold each folded pair as one.
@@ -1109,6 +1163,7 @@ pub fn finish_sheets(
     let wanted = options.marks.style != MarkStyle::Off
         || options.bleed.mm > 0.0
         || options.duplex.on
+        || options.scale_check
         || !background.is_none();
     if !wanted {
         let sheets = sheets
@@ -1193,6 +1248,17 @@ pub fn finish_sheets(
         if let Some(b) = back.as_mut() {
             b.edge_fills = edge_fills(b, &colors);
             b.image_fills = image_fills(b, &pictures);
+        }
+        if options.scale_check {
+            let reach = if options.marks.style == MarkStyle::Ticks {
+                bleed_pt + mm_to_pt(options.marks.offset_mm + options.marks.length_mm)
+            } else {
+                bleed_pt
+            };
+            match scale_check(&outlines, sheet.page, reach) {
+                Some(lines) => sheet.scale_check = lines,
+                None => push_unique(&mut warnings, SheetWarning::NoRoomForScaleCheck),
+            }
         }
         sheet.edge_fills = edge_fills(&sheet, &colors);
         sheet.image_fills = image_fills(&sheet, &pictures);

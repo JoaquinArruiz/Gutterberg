@@ -681,7 +681,8 @@
       "bleed_overlaps_neighbour": "Los sangrados de piezas vecinas se superponen: haz la separación de salida de al menos el doble del sangrado.",
       "bleed_off_page": "El sangrado pasa del borde de la página: deja márgenes más grandes.",
       "back_size_differs": "Un dorso no tiene el mismo tamaño que su frente, así que los cortes no coincidirán.",
-      "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado."
+      "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado.",
+      "no_room_for_scale_check": "No hay lugar para el control de escala en los márgenes de la hoja: necesita unos 10 mm libres arriba o abajo de las piezas."
     },
     "aiFill": {
       "title": "Rellenar con IA",
@@ -714,6 +715,10 @@
       "discard": "Descartar",
       "apply_one": "Usar {{count}} relleno",
       "apply_other": "Usar {{count}} rellenos"
+    },
+    "scaleCheck": {
+      "label": "Control de escala",
+      "hint": "Imprime una regla de 50 mm, con una marca cada 10 mm, en el margen inferior de cada hoja (en el superior si el de abajo está ocupado). Mídela en la hoja impresa: si no mide 50 mm, la impresora escaló la página, así que imprime a tamaño real (100 %), no «ajustar a la página»."
     }
   },
   "sheets": {

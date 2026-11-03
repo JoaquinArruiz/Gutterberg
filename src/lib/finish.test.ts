@@ -71,8 +71,10 @@ describe("finish settings", () => {
       },
       background: { sheet: "#00FF00", pieces: "green" },
       colors: "lab" as Finish["colors"],
+      scaleCheck: "yes" as unknown as boolean,
     };
     const clean = cleanFinish(wild);
+    expect(clean.scaleCheck).toBe(false);
     expect(clean.marks).toEqual({
       style: "ticks",
       line: "dotted",

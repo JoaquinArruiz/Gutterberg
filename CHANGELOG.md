@@ -14,6 +14,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - Copies from a list: Copies from a list… in the piece library takes a list pasted from a rulebook or a spreadsheet, one line per piece in the library's order, such as `3x Ember Drake`, `Ember Drake, 3` or just `3`, and gives those copies to the picked pieces (or every piece shown) from the first. Before applying, it shows which piece gets which line, so a list out of step is easy to spot; a header line without a number is left out. One undo step.
 
+- Scale check: Print settings › Sheet › Scale check prints a 50 mm ruler, with a tick every 10 mm, in the bottom margin of each sheet (the top one when the bottom is full). Measure it on paper: if it is not 50 mm, the printer scaled the page, so print at actual size. It is a thin black line (black ink only in CMYK), shows in the preview, and the command line exports it as saved. A sheet with no room for it says so. Projects open with it off; older versions ignore it.
+
 ### Changed
 
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.

@@ -1158,3 +1158,40 @@ fn a_gutterfold_sheet_exports_with_dashed_fold_lines() {
     );
     assert!(content.contains("[2 2] 0 d"), "a dashed fold line");
 }
+
+#[test]
+fn the_scale_check_is_a_50_mm_ruler_under_the_pieces() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(1, 1, 0.0, 15.0), &[]);
+    let options = FinishOptions {
+        scale_check: true,
+        ..FinishOptions::default()
+    };
+    let (out, _) = finish_sheets(sheets, &docs, &finishing(options)).unwrap();
+    let sheet = &out[0];
+    assert!(sheet.warnings.is_empty());
+    let base = sheet.scale_check[0];
+    // The baseline is exactly 50 mm, with six ticks on it (0, 10 ... 50 mm).
+    assert!(close(base[2] - base[0], mm_to_pt(50.0)));
+    assert_eq!(sheet.scale_check.len(), 7);
+    let piece = sheet.placements[0].destination;
+    assert!(base[1] > piece.y + piece.height);
+    assert!(base[1] < sheet.page.height_pt);
+}
+
+#[test]
+fn the_scale_check_goes_above_when_the_bottom_is_full_and_warns_with_no_room() {
+    let page = card_core::geometry::PageSize {
+        width_pt: mm_to_pt(100.0),
+        height_pt: mm_to_pt(100.0),
+    };
+    let piece = |y: f64, h: f64| card_core::geometry::Rect {
+        x: mm_to_pt(20.0),
+        y: mm_to_pt(y),
+        width: mm_to_pt(60.0),
+        height: mm_to_pt(h),
+    };
+    let above = card_core::finish::scale_check(&[piece(20.0, 76.0)], page, 0.0).unwrap();
+    assert!(above[0][1] < mm_to_pt(20.0));
+    assert!(card_core::finish::scale_check(&[piece(5.0, 90.0)], page, 0.0).is_none());
+}

@@ -291,6 +291,24 @@ export function ColorsField() {
   );
 }
 
+/** The scale check: a 50 mm ruler printed in a margin, to measure that the printer kept the size. */
+export function ScaleCheckField() {
+  const { t } = useTranslation();
+  const on = usePrintStore((s) => s.finish.scaleCheck);
+  const setScaleCheck = usePrintStore((s) => s.setScaleCheck);
+  return (
+    <>
+      <Switch
+        checked={on}
+        onChange={setScaleCheck}
+        label={t("print.scaleCheck.label")}
+        info={t("print.scaleCheck.hint")}
+      />
+      {on && <WarningList codes={["no_room_for_scale_check"]} />}
+    </>
+  );
+}
+
 /** Duplex: a back sheet after every front sheet, mirrored so the backs line up when the paper is turned. */
 export function DuplexSection() {
   const { t } = useTranslation();
