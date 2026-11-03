@@ -105,7 +105,8 @@ jobs:
           releaseName: Gutterberg v__VERSION__
           releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: true
-          prerelease: false
+          # A tag with a hyphen (v1.4.0-beta.1) is a pre-release, which releases/latest (the updater) skips.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           args: ${{ matrix.args }} --config src-tauri/tauri.cli.conf.json
 
       - name: Attach the command line to the release
