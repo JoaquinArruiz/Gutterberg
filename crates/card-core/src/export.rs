@@ -951,6 +951,35 @@ fn fold_ops(folds: &[[f64; 4]], out_height: f64, paint: Paint) -> String {
     ops
 }
 
+/// A sheet of one piece is a finished page for a print shop: its TrimBox is the piece and its BleedBox the piece
+/// with its bleed (within the page), so the shop's software knows where to cut. A sheet of several pieces has no
+/// single trim, and gets neither box.
+fn print_boxes(sheet: &OutputSheet, out: PageSize) -> Option<(Vec<Object>, Vec<Object>)> {
+    let [p] = sheet.placements.as_slice() else {
+        return None;
+    };
+    let d = p.destination;
+    let bleed = mm_to_pt(sheet.bleed.mm);
+    let pdf_box = |x0: f64, y0: f64, x1: f64, y1: f64| {
+        // Top-left page coordinates to the PDF's bottom-left ones, kept inside the MediaBox.
+        let clamp = |v: f64, max: f64| v.clamp(0.0, max) as f32;
+        vec![
+            Object::Real(clamp(x0, out.width_pt)),
+            Object::Real(clamp(out.height_pt - y1, out.height_pt)),
+            Object::Real(clamp(x1, out.width_pt)),
+            Object::Real(clamp(out.height_pt - y0, out.height_pt)),
+        ]
+    };
+    let trim = pdf_box(d.x, d.y, d.x + d.width, d.y + d.height);
+    let bleed = pdf_box(
+        d.x - bleed,
+        d.y - bleed,
+        d.x + d.width + bleed,
+        d.y + d.height + bleed,
+    );
+    Some((trim, bleed))
+}
+
 /// The operators that draw the scale check: thin black lines (black ink only in CMYK), solid, so it measures true.
 fn scale_check_ops(lines: &[[f64; 4]], out_height: f64, paint: Paint) -> String {
     let mut ops = format!("q\n{}0.5 w\n0 J\n", paint.stroke([0; 3]));
@@ -1148,13 +1177,17 @@ fn export_sheets_into(
         let _ = cs.compress();
         let content_id = doc.add_object(cs);
 
-        let page = dictionary! {
+        let mut page = dictionary! {
             "Type" => "Page",
             "Parent" => pages_root,
             "MediaBox" => vec![0.into(), 0.into(), Object::Real(out.width_pt as f32), Object::Real(out.height_pt as f32)],
             "Resources" => dictionary! { "XObject" => xobjects },
             "Contents" => content_id,
         };
+        if let Some((trim, bleed)) = print_boxes(sheet, out) {
+            page.set("TrimBox", trim);
+            page.set("BleedBox", bleed);
+        }
         new_page_ids.push(Object::Reference(doc.add_object(page)));
     }
 

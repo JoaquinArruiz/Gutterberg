@@ -16,6 +16,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 - Scale check: Print settings › Sheet › Scale check prints a 50 mm ruler, with a tick every 10 mm, in the bottom margin of each sheet (the top one when the bottom is full). Measure it on paper: if it is not 50 mm, the printer scaled the page, so print at actual size. It is a thin black line (black ink only in CMYK), shows in the preview, and the command line exports it as saved. A sheet with no room for it says so. Projects open with it off; older versions ignore it.
 
+- Trim and bleed boxes for print shops: a sheet that holds one piece is written with a TrimBox (the piece) and a BleedBox (the piece with its bleed), which print shops' software reads to know where to cut. For a file of one piece per page, set Rows and Columns to 1, the page to Auto-fit to pieces and each margin to the bleed. Sheets of several pieces are written as before.
+
 ### Changed
 
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
