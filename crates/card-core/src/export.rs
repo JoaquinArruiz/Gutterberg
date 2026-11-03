@@ -343,10 +343,25 @@ pub fn export_sheets_files(
     sheets: &[OutputSheet],
     images: &BTreeSet<DocumentId>,
 ) -> Result<()> {
-    let sources = inputs
+    export_sheets_loaded(load_sources(inputs)?, output, sheets, images)
+}
+
+/// Parse each PDF of `inputs`, keeping its `document_id`.
+pub fn load_sources(inputs: &[(DocumentId, &Path)]) -> Result<Vec<(DocumentId, Document)>> {
+    inputs
         .iter()
         .map(|(id, path)| Ok((*id, Document::load(path)?)))
-        .collect::<Result<Vec<_>>>()?;
+        .collect()
+}
+
+/// [`export_sheets_files`] from PDFs already parsed (by [`load_sources`]), so a check just before the export does
+/// not make it read every file again.
+pub fn export_sheets_loaded(
+    sources: Vec<(DocumentId, Document)>,
+    output: &Path,
+    sheets: &[OutputSheet],
+    images: &BTreeSet<DocumentId>,
+) -> Result<()> {
     let loaded: Vec<(DocumentId, &Document)> = sources.iter().map(|(id, d)| (*id, d)).collect();
     access::check_sources(&loaded)?;
     let permissions = access::output_permissions(&loaded);
@@ -524,6 +539,13 @@ pub struct SourceFile<'a> {
     pub groups: &'a [PageGroup],
 }
 
+/// One parsed PDF of a project and the page groups that say where its cards are.
+pub struct SourceDoc<'a> {
+    pub document_id: DocumentId,
+    pub doc: &'a Document,
+    pub groups: &'a [PageGroup],
+}
+
 /// [`plan_print_file`] for a project with several PDFs: their cards share the sheets.
 pub fn plan_print_files(
     files: &[SourceFile],
@@ -536,13 +558,33 @@ pub fn plan_print_files(
         .iter()
         .map(|f| Document::load(f.path))
         .collect::<std::result::Result<Vec<_>, _>>()?;
+    let loaded: Vec<SourceDoc> = files
+        .iter()
+        .zip(&docs)
+        .map(|(f, doc)| SourceDoc {
+            document_id: f.document_id,
+            doc,
+            groups: f.groups,
+        })
+        .collect();
+    plan_print_docs(&loaded, settings, layout, options, finishing)
+}
+
+/// [`plan_print_files`] on PDFs already parsed.
+pub fn plan_print_docs(
+    files: &[SourceDoc],
+    settings: &[CardSetting],
+    layout: &PrintLayout,
+    options: &PaginateOptions,
+    finishing: &Finishing,
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
     let locked: Vec<(DocumentId, &Document)> =
-        files.iter().map(|f| f.document_id).zip(&docs).collect();
+        files.iter().map(|f| (f.document_id, f.doc)).collect();
     access::check_sources(&locked)?;
     let mut issues = Vec::new();
     let mut sources = Vec::with_capacity(files.len());
-    for (file, doc) in files.iter().zip(&docs) {
-        let sizes = page_sizes(doc);
+    for file in files {
+        let sizes = page_sizes(file.doc);
         for g in file.groups.iter().filter(|g| g.kind != PageGroupKind::Skip) {
             if g.pages.last >= sizes.len() {
                 return Err(Error::PageOutOfRange(g.pages.last, sizes.len()));
@@ -573,9 +615,7 @@ pub fn plan_print_files(
         return Ok((Vec::new(), issues));
     }
     let (sheets, mut issues) = plan_and_finish(&sources, settings, layout, options, finishing)?;
-    let loaded: Vec<(DocumentId, &Document)> =
-        files.iter().map(|f| f.document_id).zip(&docs).collect();
-    issues.extend(validate_sheets_in(&loaded, &sheets));
+    issues.extend(validate_sheets_in(&locked, &sheets));
     Ok((sheets, issues))
 }
 

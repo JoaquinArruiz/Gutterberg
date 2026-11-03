@@ -15,7 +15,7 @@
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
 use crate::cmyk::ColorMode;
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
-use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
+use crate::export::{export_sheets_loaded, load_sources, plan_print_docs, PageIssue, SourceDoc};
 use crate::finish::{
     parse_color, BackLayout, BackPair, BackgroundOptions, BleedOptions, BleedSource, DuplexOptions,
     EdgeColor, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, PieceFill,
@@ -957,18 +957,34 @@ pub fn plan_files(
     req: &PrintRequest,
     files: &[(DocumentId, &Path)],
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
-    let sources: Vec<SourceFile> = req
+    plan_loaded(req, &load_sources(files)?)
+}
+
+/// The PDFs of a request, parsed, in its document order (see [`load_sources`]).
+pub type LoadedSources = Vec<(DocumentId, lopdf::Document)>;
+
+/// Parse the PDFs at `files` for [`plan_loaded`] and [`export_loaded`].
+pub fn load_files(files: &[(DocumentId, &Path)]) -> Result<LoadedSources> {
+    load_sources(files)
+}
+
+/// [`plan_files`] on the PDFs already parsed (by [`load_sources`]), in the request's document order.
+pub fn plan_loaded(
+    req: &PrintRequest,
+    sources: &[(DocumentId, lopdf::Document)],
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
+    let docs: Vec<SourceDoc> = req
         .documents
         .iter()
-        .zip(files)
-        .map(|(d, (id, path))| SourceFile {
+        .zip(sources)
+        .map(|(d, (id, doc))| SourceDoc {
             document_id: *id,
-            path,
+            doc,
             groups: &d.groups,
         })
         .collect();
-    plan_print_files(
-        &sources,
+    plan_print_docs(
+        &docs,
         &req.settings,
         &req.layout,
         &req.options,
@@ -978,13 +994,22 @@ pub fn plan_files(
 
 /// Exports the request from the PDFs at `files` to `output`, after the same check as [`plan_files`]: the first
 /// page that cannot be exported is the error, with its own code and the page (`at_page`). Returns the number of
-/// sheets written.
+/// sheets written. Each PDF is read once, for the check and the export.
 pub fn export_files(
     req: &PrintRequest,
     files: &[(DocumentId, &Path)],
     output: &Path,
 ) -> std::result::Result<usize, ErrorInfo> {
-    let (sheets, issues) = plan_files(req, files)?;
+    export_loaded(req, load_sources(files)?, output)
+}
+
+/// [`export_files`] from the PDFs already parsed (by [`load_sources`]), in the request's document order.
+pub fn export_loaded(
+    req: &PrintRequest,
+    sources: LoadedSources,
+    output: &Path,
+) -> std::result::Result<usize, ErrorInfo> {
+    let (sheets, issues) = plan_loaded(req, &sources)?;
     if let Some(first) = issues.into_iter().next() {
         let mut info = ErrorInfo::new(&first.code, &first.message);
         info.params = first.params;
@@ -1007,7 +1032,7 @@ pub fn export_files(
         .filter(|d| d.images)
         .map(|d| d.document_id)
         .collect();
-    export_sheets_files(files, output, &sheets, &images)?;
+    export_sheets_loaded(sources, output, &sheets, &images)?;
     Ok(sheets.len())
 }
 

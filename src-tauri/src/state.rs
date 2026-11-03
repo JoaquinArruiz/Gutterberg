@@ -19,6 +19,29 @@ pub struct AppState {
     pub ai_keys: Arc<KeyringStore>,
     /// The project file the app was started with, and whether the web side has asked for it yet.
     opened: Mutex<Opened>,
+    /// The PDFs the last print check parsed, for the export that follows it (see `commands::sheets`).
+    pub parsed_sources: Mutex<Option<ParsedSources>>,
+}
+
+/// Source PDFs parsed by a print check, with what each file looked like then, so the export only reuses them while
+/// the files are unchanged.
+pub struct ParsedSources {
+    pub stamps: Vec<FileStamp>,
+    pub sources: card_core::print_request::LoadedSources,
+}
+
+/// A file's path, size and modification time.
+pub type FileStamp = (PathBuf, u64, Option<std::time::SystemTime>);
+
+/// The stamp of each of `files`; a file that cannot be read gets none, so it never matches.
+pub fn file_stamps(files: &[(DocumentId, PathBuf)]) -> Option<Vec<FileStamp>> {
+    files
+        .iter()
+        .map(|(_, p)| {
+            let m = std::fs::metadata(p).ok()?;
+            Some((p.clone(), m.len(), m.modified().ok()))
+        })
+        .collect()
 }
 
 #[derive(Default)]
