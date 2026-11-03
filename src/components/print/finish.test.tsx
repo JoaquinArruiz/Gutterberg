@@ -35,6 +35,11 @@ function typeNumber(input: HTMLElement, value: string) {
   fireEvent.keyDown(input, { key: "Enter" });
 }
 
+/** Unfolds the More options of the section `id` (print.marks, print.plan, print.sheet). */
+function moreOptions(id: string) {
+  fireEvent.click(within(screen.getByTestId(`section-${id}`)).getByRole("button", { name: /More options/ }));
+}
+
 function choose(selectName: string, optionName: string) {
   fireEvent.click(screen.getByRole("combobox", { name: selectName }));
   fireEvent.click(screen.getByRole("option", { name: optionName }));
@@ -84,6 +89,7 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(screen.queryByRole("textbox", { name: "Line width" })).toBeNull();
     choose("Style", "Ticks in the margins");
     expect(print().finish.marks.style).toBe("ticks");
+    moreOptions("print.marks");
     typeNumber(screen.getByRole("textbox", { name: "Line width" }), "50");
     expect(print().finish.marks.widthMm).toBe(2);
     typeNumber(screen.getByRole("textbox", { name: "Tick length" }), "5");
@@ -104,6 +110,7 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     render(<PrintInspector />);
     fireEvent.click(screen.getByRole("button", { name: "Cut marks" }));
     choose("Style", "Ticks in the margins");
+    moreOptions("print.marks");
     expect(screen.queryByRole("switch", { name: /Also on back sheets/ })).toBeNull();
     act(() => print().setDuplex({ on: true }));
     fireEvent.click(screen.getByRole("switch", { name: /Also on back sheets/ }));
@@ -115,11 +122,22 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
   it("switches the export to CMYK and says what that changes", () => {
     render(<PrintInspector />);
     expect(print().finish.colors).toBe("rgb");
+    expect(screen.queryByRole("radio", { name: "RGB" })).toBeNull();
+    moreOptions("print.sheet");
     expect(screen.getByRole("radio", { name: "RGB" }).getAttribute("aria-checked")).toBe("true");
     expect(screen.queryByText(/FOGRA39/)).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: "CMYK" }));
     expect(print().finish.colors).toBe("cmyk");
     expect(screen.getByText(/FOGRA39/)).toBeTruthy();
+  });
+
+  it("opens More options by itself when one of its options is in use, and says so when folded", () => {
+    act(() => print().setColors("cmyk"));
+    render(<PrintInspector />);
+    expect(screen.getByRole("radio", { name: "CMYK" })).toBeTruthy();
+    fireEvent.click(within(screen.getByTestId("section-print.sheet")).getByRole("button", { name: /Fewer options/ }));
+    expect(screen.queryByRole("radio", { name: "CMYK" })).toBeNull();
+    expect(within(screen.getByTestId("section-print.sheet")).getByRole("button", { name: /1 changed/ })).toBeTruthy();
   });
 
   it("sets the bleed, its source, and caps it at 5 mm", () => {

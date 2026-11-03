@@ -17,6 +17,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
+- Print settings show what most people change first: Line width, Color, the ticks' distance, Also where gaps cross, Also in the gaps and Also on back sheets (Cut marks), Auto-fill and Order (Plan), and Group pieces by size, Colors and Scale check (Sheet) are under More options. It opens by itself when one of its options is changed, and folded it says how many are. Duplex details, freeform pieces and skipped pages already only show when they are in use.
 - Projects are saved as version 9, for the crop. Gutterberg 1.3 and earlier say a version 9 project needs a newer Gutterberg instead of printing its pieces uncropped; 1.4.0 opens every older project as before.
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
 - What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.

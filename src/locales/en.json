@@ -98,7 +98,11 @@
     "width": "Width",
     "height": "Height",
     "columns": "Columns",
-    "rows": "Rows"
+    "rows": "Rows",
+    "moreOptions": "More options",
+    "fewerOptions": "Fewer options",
+    "optionsChanged_one": "{{count}} changed",
+    "optionsChanged_other": "{{count}} changed"
   },
   "status": {
     "page": "Page {{current}} / {{total}}",
@@ -1152,7 +1156,7 @@
       },
       "line": {
         "title": "Solid, dashed or dotted",
-        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Line width and Color are below, and ticks also have a length and a distance from the piece."
+        "text": "Choose how the line is drawn: Solid, Dashed or Dotted. Ticks also have a length; Line width, Color and the distance from the piece are under More options."
       },
       "sheet": {
         "title": "Check the sheet",

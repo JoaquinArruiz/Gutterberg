@@ -98,7 +98,11 @@
     "width": "Ancho",
     "height": "Alto",
     "columns": "Columnas",
-    "rows": "Filas"
+    "rows": "Filas",
+    "moreOptions": "Más opciones",
+    "fewerOptions": "Menos opciones",
+    "optionsChanged_one": "{{count}} cambiada",
+    "optionsChanged_other": "{{count}} cambiadas"
   },
   "status": {
     "page": "Página {{current}} / {{total}}",
@@ -1152,7 +1156,7 @@
       },
       "line": {
         "title": "Continua, discontinua o punteada",
-        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Debajo están el Grosor de la línea y el Color, y las marcas en los márgenes también tienen un largo y una distancia a la pieza."
+        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Las marcas en los márgenes también tienen un largo; el Grosor de la línea, el Color y la distancia a la pieza están en Más opciones."
       },
       "sheet": {
         "title": "Revisa la hoja",

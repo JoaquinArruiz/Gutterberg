@@ -109,14 +109,14 @@ describe("Print inspector", () => {
   it("opens Plan and Sheet and folds Page, and each folds on click", () => {
     render(<PrintInspector />);
     expect(screen.getByText("All pieces in order")).toBeTruthy();
-    expect(screen.getByText("Group pieces by size")).toBeTruthy();
+    expect(screen.getByText("Output gap")).toBeTruthy();
     expect(screen.queryByText("Margin top")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /^Page$/ }));
     expect(screen.getByText("Margin top")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Plan$/ }));
     expect(screen.queryByText("All pieces in order")).toBeNull();
-    expect(screen.getByText("Group pieces by size")).toBeTruthy();
+    expect(screen.getByText("Output gap")).toBeTruthy();
   });
 
   it("remembers which sections are open across a restart of the view", () => {
@@ -126,7 +126,7 @@ describe("Print inspector", () => {
     first.unmount();
     render(<PrintInspector />);
     expect(screen.getByText("Margin top")).toBeTruthy();
-    expect(screen.queryByText("Group pieces by size")).toBeNull();
+    expect(screen.queryByText("Output gap")).toBeNull();
     expect(usePreferencesStore.getState().prefs.inspector.sections).toMatchObject({
       "print.page": true,
       "print.sheet": false,
@@ -135,6 +135,8 @@ describe("Print inspector", () => {
 
   it("switches the plan and its options", () => {
     render(<PrintInspector />);
+    for (const id of ["print.plan", "print.sheet"])
+      fireEvent.click(within(screen.getByTestId(`section-${id}`)).getByRole("button", { name: /More options/ }));
     // The order only matters once the sheet grid is not the source's.
     expect(screen.getByRole("radio", { name: /Interleaved/ }).hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByRole("radio", { name: /Custom selection/ }));
