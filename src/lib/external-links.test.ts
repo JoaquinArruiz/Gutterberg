@@ -7,6 +7,8 @@ import {
   EXTERNAL_LINKS,
   isAllowedLink,
   openExternalLink,
+  RELEASE_URL,
+  releasePageUrl,
 } from "./external-links";
 
 const { ask, openUrl } = vi.hoisted(() => ({ ask: vi.fn(), openUrl: vi.fn() }));
@@ -88,8 +90,9 @@ describe("the permission to open web addresses", () => {
     expect(typeof entry).toBe("object");
     if (typeof entry === "string") return;
     expect(entry.identifier).toBe("opener:allow-open-url");
-    // The form's address changes with the version and system, so its permission ends in a wildcard.
-    const expected = [...Object.values(EXTERNAL_LINKS), `${BUG_REPORT_URL}&*`, DISCORD_URL];
+    // The form's address changes with the version and system, and a release page with its version, so their
+    // permissions end in a wildcard.
+    const expected = [...Object.values(EXTERNAL_LINKS), `${BUG_REPORT_URL}&*`, `${RELEASE_URL}*`, DISCORD_URL];
     expect(entry.allow?.map((a) => a.url).sort()).toEqual(expected.sort());
   });
 
@@ -150,6 +153,22 @@ describe("the bug report address", () => {
     }
     expect(ask).not.toHaveBeenCalled();
     expect(openUrl).not.toHaveBeenCalled();
+  });
+
+  it("opens a version's release page, and nothing else under releases", async () => {
+    expect(releasePageUrl("1.3.0")).toBe("https://github.com/JoaquinArruiz/Gutterberg/releases/tag/v1.3.0");
+    expect(isAllowedLink(releasePageUrl("1.4.0-beta.1"))).toBe(true);
+    for (const url of [
+      RELEASE_URL,
+      `${RELEASE_URL}1.3`,
+      `${RELEASE_URL}1.3.0/../../../issues`,
+      `${RELEASE_URL}1.3.0?x=1`,
+      `${RELEASE_URL}1.3.0#x`,
+    ]) {
+      expect(isAllowedLink(url)).toBe(false);
+    }
+    ask.mockResolvedValue(true);
+    await expect(openExternalLink(releasePageUrl("1.3.0"))).resolves.toBe("opened");
   });
 
   it("opens the Discord invitation, which is a permanent discord.gg link", async () => {

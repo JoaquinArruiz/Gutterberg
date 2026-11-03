@@ -1,84 +1,31 @@
 #!/usr/bin/env node
 // Posts a published GitHub release in the Discord server's #announcements channel, pinging the Release pings role,
 // and publishes the post so servers that follow the channel get it too. Run by .github/workflows/discord-release.yml.
+// The post is the version's summary from release-notes/, as checked out, so a release's summary comes from its tag.
 // Env: TAG (v1.1.0), GITHUB_REPOSITORY, GITHUB_TOKEN, DISCORD_BOT_TOKEN, DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
 // DISCORD_RELEASE_ROLE_ID; DRY_RUN=true prints the post instead of sending it.
 import { pathToFileURL } from "node:url";
+import { readSummary } from "./release-summary.mjs";
 
 // Discord refuses longer messages.
 const LIMIT = 2000;
 
-const SECTIONS = { Added: "✨ New", Changed: "🔄 Changed", Fixed: "🛠️ Fixed" };
+const EMOJI = { Added: "✨", Changed: "🔄", Deprecated: "⚠️", Removed: "🗑️", Fixed: "🛠️", Security: "🔒" };
 
-// The `### Added`, `### Changed` and `### Fixed` lists of a release's notes (CHANGELOG.md's section), as
-// { heading, items } in the order they appear. The paragraph before them and any other heading are left out.
-export function parseNotes(body) {
-  const sections = [];
-  let current = null;
-  for (const line of body.replace(/\r\n?/g, "\n").split("\n")) {
-    const heading = line.match(/^###\s+(.+?)\s*$/);
-    if (heading) {
-      current = SECTIONS[heading[1]] ? { heading: SECTIONS[heading[1]], items: [] } : null;
-      if (current) sections.push(current);
-    } else if (current && /^\s*[-*]\s+/.test(line)) {
-      current.items.push(line.replace(/^\s*[-*]\s+/, "").trim());
-    } else if (current?.items.length && /^\s+\S/.test(line)) {
-      // A bullet that goes on over several lines.
-      current.items[current.items.length - 1] += ` ${line.trim()}`;
-    }
-  }
-  return sections.filter((s) => s.items.length);
-}
-
-// Cuts text to at most `max` characters, on a word, with an ellipsis.
-function cut(text, max) {
-  if (text.length <= max) return text;
-  const short = text.slice(0, max - 1);
-  const space = short.lastIndexOf(" ");
-  return `${(space > max / 2 ? short.slice(0, space) : short).replace(/[\s,;:.]+$/, "")}…`;
-}
-
-// The changelog's bullets are written for the release page and run long. A bullet that opens with a name and a
-// colon ("Cut marks on back sheets: with Backs…") keeps the name in bold and the first sentence after it; any
-// other keeps its first sentence. Either way it is cut to `max` characters.
-export function summarize(item, max = 160) {
-  const firstSentence = (text) => text.match(/^.*?[.!?](?=\s+[A-Z`(]|$)/)?.[0] ?? text;
-  const colon = item.indexOf(": ");
-  if (colon > 0 && colon <= 60 && !item.slice(0, colon).includes("`")) {
-    const name = item.slice(0, colon).replace(/\.$/, "");
-    return `**${name}:** ${cut(firstSentence(item.slice(colon + 2)), Math.max(40, max - name.length))}`;
-  }
-  return cut(firstSentence(item), max);
-}
-
-// The post: the role ping, a heading, a section per list and a link to the release. When it doesn't fit in
-// Discord's limit, the bullets get shorter, then the last ones of each list are left for the release page.
-export function buildPost({ tag, url, body, roleId }) {
+// The post: the role ping, a heading, the version's summary (release-notes/<x.y.z>.md, see release-summary.mjs) and
+// a link to the full notes on the release page. The summary is short by rule (the Store's 1500 characters), so the
+// post is never cut; one that is too long anyway is refused rather than sent cut.
+export function buildPost({ tag, url, sections, roleId }) {
   const version = tag.replace(/^v/, "");
-  const head = `${roleId ? `<@&${roleId}>\n` : ""}# Gutterberg ${version} is out!`;
-  const foot = `The app offers the update on its own, or [download it from GitHub](<${url}>).`;
-  const sections = parseNotes(body);
-  const render = (max, keep) =>
-    [
-      head,
-      ...sections.map((s) => {
-        const shown = s.items.slice(0, keep).map((item) => `- ${summarize(item, max)}`);
-        const more = s.items.length - shown.length;
-        if (more > 0) shown.push(`- …and ${more} more in the release notes.`);
-        return `## ${s.heading}\n${shown.join("\n")}`;
-      }),
-      foot,
-    ].join("\n\n");
-  for (const max of [160, 120, 90]) {
-    const post = render(max, Infinity);
-    if (post.length <= LIMIT) return post;
-  }
-  const most = Math.max(0, ...sections.map((s) => s.items.length));
-  for (let keep = most - 1; keep >= 1; keep--) {
-    const post = render(90, keep);
-    if (post.length <= LIMIT) return post;
-  }
-  return render(90, 0).slice(0, LIMIT);
+  const post = [
+    `${roleId ? `<@&${roleId}>\n` : ""}# Gutterberg ${version} is out!`,
+    ...sections.map((s) =>
+      `## ${EMOJI[s.name] ?? ""} ${s.name}\n${s.items.map((item) => `- ${item}`).join("\n")}`.trim(),
+    ),
+    `See the full changelog: <${url}>`,
+  ].join("\n\n");
+  if (post.length > LIMIT) throw new Error(`The post is ${post.length} characters, over Discord's ${LIMIT}.`);
+  return post;
 }
 
 async function call(url, init, what) {
@@ -101,7 +48,8 @@ async function main(env) {
     `Reading the release ${tag}`,
   );
   const roleId = need("DISCORD_RELEASE_ROLE_ID");
-  const content = buildPost({ tag, url: release.html_url, body: release.body ?? "", roleId });
+  const sections = readSummary(tag.replace(/^v/, ""));
+  const content = buildPost({ tag, url: release.html_url, sections, roleId });
   if (env.DRY_RUN === "true") {
     console.log(`Dry run, nothing sent. The post (${content.length} characters):\n\n${content}`);
     return;

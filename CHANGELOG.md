@@ -7,7 +7,12 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- Cut marks in the gaps: Print settings › Cut marks › Also in the gaps (with Ticks in the margins) repeats the margin ticks inside the sheet, in the gaps where they cross. Each piece edge gets a tick in line with it, at the same offset from the piece, so the inner cuts line up like the outer ones; in a narrow gap the ticks from both sides join into one. It is separate from Also where gaps cross. Projects open with it off, and the command line exports it as saved.
 - CMYK export, for print shops: Print settings › Sheet › Colors › CMYK writes the cut marks, fold lines, background and Edge color fills in CMYK, and turns the pictures Gutterberg put in the file (images added as pieces, Fill with AI pictures) into CMYK too, for coated paper (FOGRA39). Black and gray go on the black ink only, so a cut mark is one clean line. Source PDFs keep their own colors, as before: a PDF that is already CMYK stays CMYK. A JPEG stays a JPEG and a PNG stays lossless. RGB stays the default, which suits home printers and most online print services. The preview still shows screen colors, and the command line exports it as saved.
+
+### Changed
+
+- What's new and the update prompt show a short summary of the version, with a See the full changelog link to its release page on GitHub, instead of the full notes.
 
 ## 1.3.0 (2026-10-28)
 
