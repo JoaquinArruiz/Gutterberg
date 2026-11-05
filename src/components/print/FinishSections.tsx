@@ -146,17 +146,6 @@ export function MarksSection() {
                 label={t("print.marks.gapTicks")}
                 info={t("print.marks.gapTicksHint")}
               />
-              {(marks.innerCrosses || marks.gapTicks) && (
-                <MeasurementInput
-                  label={t("print.marks.gapLength")}
-                  info={t("print.marks.gapLengthHint")}
-                  precise
-                  min={MARK_LENGTH_RANGE[0]}
-                  max={MARK_LENGTH_RANGE[1]}
-                  value={marks.gapLengthMm}
-                  onChange={(gapLengthMm) => setMarks({ gapLengthMm })}
-                />
-              )}
             </>
           )}
           {backSheets && (

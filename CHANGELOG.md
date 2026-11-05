@@ -5,12 +5,6 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
-## 1.3.2 (2026-11-05)
-
-### Added
-
-- Length in the gaps: Print settings › Cut marks › Length in the gaps sets how long the marks inside the sheet are (the ticks of Also in the gaps and the arms of Also where gaps cross), apart from Tick length, which now sets only the marks in the margins. It shows once either of those is on. Projects saved before open with it at their tick length, so they export as before, and the command line exports it as saved.
-
 ## 1.3.1 (2026-11-03)
 
 ### Added
