@@ -23,7 +23,8 @@ included. `CONTRIBUTING.md` is the human version.
   download of a new version.
 - `src/`: React frontend. Stores in `src/stores/` (Zustand), helpers in `src/lib/`, components in
   `src/components/`, texts in `src/locales/`.
-- `docs/`: `architecture.md` (how it fits together), `controls.md`, `releasing.md` (how a version is released).
+- `docs/`: `architecture.md` (how it fits together), `controls.md`, `FAQ.md` (answers to "why does it do that?"
+  questions; add one when a question comes up twice), `releasing.md` (how a version is released).
   `docs/milestones/` holds the brief of a feature while it is being built (see "Planning" below).
 - `examples/`: sample PDFs, with a guide in `examples/README.md`.
 - `release-notes/`: each version's short summary, which Discord, the app and the Microsoft Store show (see

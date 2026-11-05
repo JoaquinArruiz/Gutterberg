@@ -130,6 +130,8 @@ You need a free [GitHub account](https://github.com/signup). Then:
 4. Press **Submit new issue**. Before you do, a quick look at the
    [open issues](https://github.com/JoaquinArruiz/Gutterberg/issues) tells you whether someone has already reported it.
 
+Before reporting something that looks wrong, [docs/FAQ.md](docs/FAQ.md) may already explain it.
+
 For an idea instead of a bug, pick **Feature request** on the same page.
 
 ## Features
@@ -193,6 +195,8 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 - Twelve tutorials, from the `?` Help menu, walk you through a task on the real controls: marking pieces and
   exporting, lining up fronts and backs, gutterfold, cut marks, images as pieces and more.
 - The full list of controls is in [docs/controls.md](docs/controls.md).
+- Answers to common questions, such as why the ticks in narrow gaps are short or why pieces are never shrunk to
+  fit, are in [docs/FAQ.md](docs/FAQ.md).
 
 ## Command line
 
