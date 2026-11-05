@@ -7,6 +7,9 @@ import {
   type BackLayout,
   BLEED_SOURCES,
   type BleedSource,
+  COLOR_MODES,
+  type ColorMode,
+  DEFAULT_FINISH,
   FLIPS,
   type Flip,
   FOLDS,
@@ -31,6 +34,7 @@ import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { FieldRow } from "../ui/FieldRow";
 import { InfoTip } from "../ui/InfoTip";
 import { MeasurementInput } from "../ui/MeasurementInput";
+import { countChanged, MoreOptions } from "../ui/MoreOptions";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
@@ -99,63 +103,77 @@ export function MarksSection() {
               />
             </FieldRow>
           </div>
-          <MeasurementInput
-            label={t("print.marks.width")}
-            precise
-            min={MARK_WIDTH_RANGE[0]}
-            max={MARK_WIDTH_RANGE[1]}
-            value={marks.widthMm}
-            onChange={(widthMm) => setMarks({ widthMm })}
-          />
-          <FieldRow label={t("print.marks.color")}>
-            <input
-              type="color"
-              aria-label={t("print.marks.color")}
-              value={marks.color}
-              onChange={(e) => setMarks({ color: e.target.value })}
-              className="h-6 w-10 cursor-pointer rounded border border-[var(--border)] bg-transparent"
-            />
-          </FieldRow>
           {marks.style === "ticks" && (
-            <>
-              <MeasurementInput
-                label={t("print.marks.length")}
-                precise
-                min={MARK_LENGTH_RANGE[0]}
-                max={MARK_LENGTH_RANGE[1]}
-                value={marks.lengthMm}
-                onChange={(lengthMm) => setMarks({ lengthMm })}
-              />
-              <MeasurementInput
-                label={t("print.marks.offset")}
-                precise
-                min={MARK_OFFSET_RANGE[0]}
-                max={MARK_OFFSET_RANGE[1]}
-                value={marks.offsetMm}
-                onChange={(offsetMm) => setMarks({ offsetMm })}
-              />
-              <Switch
-                checked={marks.innerCrosses}
-                onChange={(innerCrosses) => setMarks({ innerCrosses })}
-                label={t("print.marks.innerCrosses")}
-                info={t("print.marks.innerCrossesHint")}
-              />
-              <Switch
-                checked={marks.gapTicks}
-                onChange={(gapTicks) => setMarks({ gapTicks })}
-                label={t("print.marks.gapTicks")}
-                info={t("print.marks.gapTicksHint")}
-              />
-            </>
-          )}
-          {backSheets && (
-            <Switch
-              checked={marks.onBacks}
-              onChange={(onBacks) => setMarks({ onBacks })}
-              label={t("print.marks.onBacks")}
-              info={t("print.marks.onBacksHint")}
+            <MeasurementInput
+              label={t("print.marks.length")}
+              precise
+              min={MARK_LENGTH_RANGE[0]}
+              max={MARK_LENGTH_RANGE[1]}
+              value={marks.lengthMm}
+              onChange={(lengthMm) => setMarks({ lengthMm })}
             />
           )}
+          <MoreOptions
+            id="print.marks"
+            changed={countChanged(
+              marks.widthMm !== DEFAULT_FINISH.marks.widthMm,
+              marks.color.toLowerCase() !== DEFAULT_FINISH.marks.color,
+              marks.style === "ticks" && marks.offsetMm !== DEFAULT_FINISH.marks.offsetMm,
+              marks.style === "ticks" && marks.innerCrosses,
+              marks.style === "ticks" && marks.gapTicks,
+              backSheets && marks.onBacks,
+            )}
+          >
+            <MeasurementInput
+              label={t("print.marks.width")}
+              precise
+              min={MARK_WIDTH_RANGE[0]}
+              max={MARK_WIDTH_RANGE[1]}
+              value={marks.widthMm}
+              onChange={(widthMm) => setMarks({ widthMm })}
+            />
+            <FieldRow label={t("print.marks.color")}>
+              <input
+                type="color"
+                aria-label={t("print.marks.color")}
+                value={marks.color}
+                onChange={(e) => setMarks({ color: e.target.value })}
+                className="h-6 w-10 cursor-pointer rounded border border-[var(--border)] bg-transparent"
+              />
+            </FieldRow>
+            {marks.style === "ticks" && (
+              <>
+                <MeasurementInput
+                  label={t("print.marks.offset")}
+                  precise
+                  min={MARK_OFFSET_RANGE[0]}
+                  max={MARK_OFFSET_RANGE[1]}
+                  value={marks.offsetMm}
+                  onChange={(offsetMm) => setMarks({ offsetMm })}
+                />
+                <Switch
+                  checked={marks.innerCrosses}
+                  onChange={(innerCrosses) => setMarks({ innerCrosses })}
+                  label={t("print.marks.innerCrosses")}
+                  info={t("print.marks.innerCrossesHint")}
+                />
+                <Switch
+                  checked={marks.gapTicks}
+                  onChange={(gapTicks) => setMarks({ gapTicks })}
+                  label={t("print.marks.gapTicks")}
+                  info={t("print.marks.gapTicksHint")}
+                />
+              </>
+            )}
+            {backSheets && (
+              <Switch
+                checked={marks.onBacks}
+                onChange={(onBacks) => setMarks({ onBacks })}
+                label={t("print.marks.onBacks")}
+                info={t("print.marks.onBacksHint")}
+              />
+            )}
+          </MoreOptions>
         </>
       )}
       <WarningList codes={["marks_off_page", "gap_too_narrow_for_line"]} />
@@ -265,6 +283,45 @@ export function BackgroundSection() {
         );
       })}
     </CollapsibleSection>
+  );
+}
+
+/** Colors: RGB as on screen, or CMYK for a print shop, for what the app draws and the pictures it put in the file. */
+export function ColorsField() {
+  const { t } = useTranslation();
+  const colors = usePrintStore((s) => s.finish.colors);
+  const setColors = usePrintStore((s) => s.setColors);
+  return (
+    <>
+      <FieldRow label={t("print.colors.label")} info={t("print.colors.hint")}>
+        <Segmented<ColorMode>
+          fill
+          label={t("print.colors.label")}
+          value={colors}
+          onChange={setColors}
+          options={COLOR_MODES.map((m) => ({ value: m, label: t(`print.colors.${m}`) }))}
+        />
+      </FieldRow>
+      {colors === "cmyk" && <p className="text-[var(--muted)]">{t("print.colors.cmykNote")}</p>}
+    </>
+  );
+}
+
+/** The scale check: a 50 mm ruler printed in a margin, to measure that the printer kept the size. */
+export function ScaleCheckField() {
+  const { t } = useTranslation();
+  const on = usePrintStore((s) => s.finish.scaleCheck);
+  const setScaleCheck = usePrintStore((s) => s.setScaleCheck);
+  return (
+    <>
+      <Switch
+        checked={on}
+        onChange={setScaleCheck}
+        label={t("print.scaleCheck.label")}
+        info={t("print.scaleCheck.hint")}
+      />
+      {on && <WarningList codes={["no_room_for_scale_check"]} />}
+    </>
   );
 }
 

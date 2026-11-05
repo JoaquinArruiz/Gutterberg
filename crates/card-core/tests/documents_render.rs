@@ -87,6 +87,7 @@ fn one_sheet_shows_a_card_from_each_of_two_pdfs() {
         &[(0, path_a.as_path()), (7, path_b.as_path())],
         &out_path,
         &sheets,
+        &Default::default(),
     )
     .unwrap();
     let after = render(&out_path);

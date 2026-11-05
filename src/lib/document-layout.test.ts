@@ -476,3 +476,15 @@ describe("removed pages", () => {
     expect(shownPage(g, 5, 4, 0)).toBe(3);
   });
 });
+
+describe("a grid's crop", () => {
+  it("keeps each side within range and drops a crop of nothing", () => {
+    const cropped = patchGrid(DEFAULT_GROUP_GRID, {
+      crop: { topMm: 1, rightMm: 99, bottomMm: -3, leftMm: Number.NaN },
+    });
+    expect(cropped.crop).toEqual({ topMm: 1, rightMm: 20, bottomMm: 0, leftMm: 0 });
+    expect("crop" in patchGrid(cropped, { crop: { topMm: 0, rightMm: 0, bottomMm: 0, leftMm: 0 } })).toBe(false);
+    expect("crop" in patchGrid(cropped, { crop: undefined })).toBe(false);
+    expect(patchGrid(cropped, { rows: 2 }).crop).toEqual(cropped.crop);
+  });
+});

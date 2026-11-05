@@ -145,7 +145,7 @@ fn a_version_6_project_gets_a_list_of_one_grid_and_keeps_its_edits() {
 fn a_version_7_project_opens_unchanged_but_for_its_version() {
     let text = r#"{"format":"gutterberg-project","version":7,"plan":{"finish":{"bleed":{"mm":2,"source":"mirror"}}}}"#;
     let body = parse_project(text).unwrap();
-    assert_eq!(body["version"], 8);
+    assert_eq!(body["version"], card_core::project::VERSION);
     assert_eq!(
         serde_json::Value::Object(body)["plan"],
         json!({ "finish": { "bleed": { "mm": 2, "source": "mirror" } } })

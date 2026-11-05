@@ -3,7 +3,15 @@ import { useShallow } from "zustand/react/shallow";
 import type { NormalizedRect } from "../../lib/coordinates";
 import { pageCount, rangeLabel } from "../../lib/document-layout";
 import { formatError } from "../../lib/errors";
-import { cardSizeMm, MAX_GRID, selectionAtMm, selectionForCardSize } from "../../lib/grid";
+import {
+  cardSizeMm,
+  hasCrop,
+  MAX_CROP_MM,
+  MAX_GRID,
+  NO_CROP,
+  selectionAtMm,
+  selectionForCardSize,
+} from "../../lib/grid";
 import { formatMeasurement } from "../../lib/measurement";
 import { ptToMm } from "../../lib/units";
 import { useDocumentStore } from "../../stores/document-store";
@@ -136,6 +144,38 @@ export function PropertiesSidebar() {
               onX={(sourceGapXMm) => L.setGrid(currentPage, { sourceGapXMm })}
               onY={(sourceGapYMm) => L.setGrid(currentPage, { sourceGapYMm })}
             />
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            id="cards.crop"
+            title={t("source.sections.crop")}
+            info={t("source.crop.note")}
+            defaultOpen={hasCrop(grid.crop)}
+          >
+            {(["topMm", "rightMm", "bottomMm", "leftMm"] as const).map((side) => (
+              <MeasurementInput
+                key={side}
+                label={t(`source.crop.${side}`)}
+                precise
+                min={0}
+                max={MAX_CROP_MM}
+                value={grid.crop?.[side] ?? 0}
+                onChange={(mm) => L.setGrid(currentPage, { crop: { ...(grid.crop ?? NO_CROP), [side]: mm } })}
+              />
+            ))}
+            {card && hasCrop(grid.crop) && (
+              <p className="text-[var(--muted)]">
+                {t("source.crop.result", {
+                  width: fmt(card.width - grid.crop.leftMm - grid.crop.rightMm),
+                  height: fmt(card.height - grid.crop.topMm - grid.crop.bottomMm),
+                })}
+              </p>
+            )}
+            {hasCrop(grid.crop) && (
+              <div>
+                <Button onClick={() => L.setGrid(currentPage, { crop: undefined })}>{t("source.crop.clear")}</Button>
+              </div>
+            )}
           </CollapsibleSection>
 
           <PresetsSection grid={grid} page={currentPage} />

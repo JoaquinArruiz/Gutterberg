@@ -2,10 +2,11 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { formatError } from "../../lib/errors";
-import { gutterfoldOn } from "../../lib/finish";
+import { DEFAULT_FINISH, gutterfoldOn } from "../../lib/finish";
 import { formatMeasurement } from "../../lib/measurement";
 import {
   type CardOrder,
+  DEFAULT_PLAN,
   effectiveGrid,
   imageDocumentIds,
   MAX_SHEET_GRID,
@@ -22,11 +23,19 @@ import { Button } from "../ui/Button";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { FieldLayout, FieldRow } from "../ui/FieldRow";
 import { InfoTip } from "../ui/InfoTip";
+import { countChanged, MoreOptions } from "../ui/MoreOptions";
 import { NumberField } from "../ui/NumberField";
 import { Segmented } from "../ui/Segmented";
 import { Select } from "../ui/Select";
 import { Switch } from "../ui/Switch";
-import { BackgroundSection, BleedSection, DuplexSection, MarksSection } from "./FinishSections";
+import {
+  BackgroundSection,
+  BleedSection,
+  ColorsField,
+  DuplexSection,
+  MarksSection,
+  ScaleCheckField,
+} from "./FinishSections";
 import { OutputPageFields, OutputSpacingFields, SheetSizeFields } from "./OutputFields";
 import { SelectedCardsSection } from "./SelectedCardsSection";
 
@@ -57,6 +66,8 @@ export function PrintInspector() {
     })),
   );
   const rawCards = usePrintStore((s) => s.cards);
+  const colors = usePrintStore((s) => s.finish.colors);
+  const scaleCheck = usePrintStore((s) => s.finish.scaleCheck);
   const edits = useLayoutStore((s) => s.cardEdits);
   const unit = useUnit();
   const fmt = (mm: number) => formatMeasurement(mm, unit);
@@ -124,39 +135,47 @@ export function PrintInspector() {
               <Button onClick={P.startFromAllCards}>{t("print.plan.startFromAll")}</Button>
             </div>
           )}
-          <Switch
-            checked={P.autoFill}
-            onChange={P.setAutoFill}
-            label={t("print.plan.autoFill")}
-            info={t("print.plan.autoFillHint")}
-          />
-          <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
-            {t("print.plan.order")}
-            <InfoTip
-              text={
-                <>
-                  <span className="block">
-                    {t("print.plan.grouped")}: {t("print.plan.groupedHint")}
-                  </span>
-                  <span className="block">
-                    {t("print.plan.interleaved")}: {t("print.plan.interleavedHint")}
-                  </span>
-                </>
-              }
+          <MoreOptions
+            id="print.plan"
+            changed={countChanged(
+              P.autoFill !== DEFAULT_PLAN.autoFill,
+              !sourceLayout && P.order !== DEFAULT_PLAN.order,
+            )}
+          >
+            <Switch
+              checked={P.autoFill}
+              onChange={P.setAutoFill}
+              label={t("print.plan.autoFill")}
+              info={t("print.plan.autoFillHint")}
             />
-          </div>
-          <Segmented<CardOrder>
-            fill
-            label={t("print.plan.order")}
-            value={P.order}
-            onChange={P.setOrder}
-            disabled={sourceLayout}
-            options={[
-              { value: "grouped", label: t("print.plan.grouped") },
-              { value: "interleaved", label: t("print.plan.interleaved") },
-            ]}
-          />
-          {sourceLayout && <p className="text-[var(--muted)]">{t("print.plan.orderNote")}</p>}
+            <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
+              {t("print.plan.order")}
+              <InfoTip
+                text={
+                  <>
+                    <span className="block">
+                      {t("print.plan.grouped")}: {t("print.plan.groupedHint")}
+                    </span>
+                    <span className="block">
+                      {t("print.plan.interleaved")}: {t("print.plan.interleavedHint")}
+                    </span>
+                  </>
+                }
+              />
+            </div>
+            <Segmented<CardOrder>
+              fill
+              label={t("print.plan.order")}
+              value={P.order}
+              onChange={P.setOrder}
+              disabled={sourceLayout}
+              options={[
+                { value: "grouped", label: t("print.plan.grouped") },
+                { value: "interleaved", label: t("print.plan.interleaved") },
+              ]}
+            />
+            {sourceLayout && <p className="text-[var(--muted)]">{t("print.plan.orderNote")}</p>}
+          </MoreOptions>
         </CollapsibleSection>
 
         <CollapsibleSection id="print.sheet" title={t("print.sections.sheet")}>
@@ -189,18 +208,29 @@ export function PrintInspector() {
               <NumberField label={t("common.rows")} value={P.rows} min={1} max={MAX_SHEET_GRID} onCommit={P.setRows} />
             </>
           )}
-          <Switch
-            checked={P.groupBySize}
-            disabled={sourceLayout}
-            onChange={P.setGroupBySize}
-            label={t("print.sheet.groupBySize")}
-            info={t("print.sheet.groupBySizeHint")}
-          />
           <div className="mt-1 flex items-center gap-1 text-[var(--muted)]">
             {t("print.sheet.outputGap")}
             <InfoTip text={t("print.sheet.outputGapNote")} />
           </div>
           <OutputSpacingFields />
+          <MoreOptions
+            id="print.sheet"
+            changed={countChanged(
+              !sourceLayout && P.groupBySize !== DEFAULT_PLAN.groupBySize,
+              colors !== DEFAULT_FINISH.colors,
+              scaleCheck,
+            )}
+          >
+            <Switch
+              checked={P.groupBySize}
+              disabled={sourceLayout}
+              onChange={P.setGroupBySize}
+              label={t("print.sheet.groupBySize")}
+              info={t("print.sheet.groupBySizeHint")}
+            />
+            <ColorsField />
+            <ScaleCheckField />
+          </MoreOptions>
           {first && (
             <div className="flex justify-between">
               <span className="text-[var(--muted)]">{t("print.sheet.size")}</span>

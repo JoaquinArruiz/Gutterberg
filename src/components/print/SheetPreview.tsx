@@ -1,8 +1,8 @@
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Tag } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Maximize, Tag, ZoomIn, ZoomOut } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { CSS_PX_PER_PT } from "../../lib/coordinates";
+import { fitViewport, pxPerPoint } from "../../lib/coordinates";
 import { formatError } from "../../lib/errors";
 import { fillCss } from "../../lib/finish";
 import { emitHintEvent } from "../../lib/hint-events";
@@ -12,6 +12,7 @@ import { useDocumentStore } from "../../stores/document-store";
 import { outputPage, useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
+import { SHEET_PAD, sheetViewport, useSheetViewStore } from "../../stores/sheet-view-store";
 import { RefreshButton } from "../editor/RefreshPreviewButton";
 import { HintToast } from "../ui/HintToast";
 import { WarningList } from "./FinishSections";
@@ -20,8 +21,6 @@ import { EdgeFills, SheetOverlay } from "./SheetOverlay";
 import { SheetReferences } from "./SheetReferences";
 import { SheetStrip } from "./SheetStrip";
 
-const PAD = 24;
-const MAX_ZOOM_PX_PER_PT = 16 * CSS_PX_PER_PT;
 /** Remembered like the inspector's sections: the strip of sheet previews is open unless the user hid it. */
 export const STRIP_SECTION_ID = "print.sheet-strip";
 
@@ -29,7 +28,8 @@ export const STRIP_SECTION_ID = "print.sheet-strip";
  * The sheets the plan produces: one sheet large, and a row of small previews of all of them
  * (hideable). The large sheet always follows the plan: it is redrawn when copies change and when
  * another sheet is chosen. Only the row of previews obeys Live Preview: with it off, the row shows
- * the sheets as of the last refresh.
+ * the sheets as of the last refresh. The large sheet can be zoomed (the buttons, +, - and 0, Ctrl/Cmd+wheel at the
+ * cursor) and moved (a drag, or the wheel); 0 fits it to the pane again.
  */
 export function SheetPreview() {
   const { t } = useTranslation();
@@ -48,6 +48,13 @@ export function SheetPreview() {
   const setSectionOpen = usePreferencesStore((s) => s.setSectionOpen);
   const showReferences = usePreferencesStore((s) => s.prefs.print.showReferences);
   const setShowReferences = usePreferencesStore((s) => s.setShowReferences);
+  const view = useSheetViewStore((s) => s.view);
+  const setFrame = useSheetViewStore((s) => s.setFrame);
+  const zoomIn = useSheetViewStore((s) => s.zoomIn);
+  const zoomOut = useSheetViewStore((s) => s.zoomOut);
+  const fit = useSheetViewStore((s) => s.fit);
+  const pan = useRef<{ id: number; x: number; y: number } | null>(null);
+  const [panning, setPanning] = useState(false);
 
   // With Live Preview off the row of previews is frozen; the first plan after entering the stage is shown at once.
   const previews = live ? planned : snapshot;
@@ -72,19 +79,59 @@ export function SheetPreview() {
   const duplex = planned?.some((s) => s.side === "back") ?? false;
   const cardCount = planned?.reduce((n, s) => n + s.placements.length, 0) ?? 0;
 
-  // The scale that fits a sheet of `page` in the pane, and where its top-left corner goes.
-  const placeSheet = (page: PageSize) => {
-    const k = Math.min(
-      MAX_ZOOM_PX_PER_PT,
-      Math.max(0.01, Math.min((box.width - PAD * 2) / page.width_pt, (box.height - PAD * 2) / page.height_pt)),
-    );
-    const style = {
-      left: (box.width - page.width_pt * k) / 2,
-      top: (box.height - page.height_pt * k) / 2,
-      width: page.width_pt * k,
-      height: page.height_pt * k,
-    };
+  // What the zoom buttons, keys and status bar work on: the pane and the sheet in it.
+  const sheetPage = sheet?.page ?? null;
+  useEffect(() => setFrame(box, sheetPage), [box, sheetPage, setFrame]);
+
+  // The scale (screen px per point) of a sheet of `page` in the pane, and where its top-left corner goes. The
+  // blank sheet is always fitted; the plan's sheets follow the zoom.
+  const placeSheet = (page: PageSize, zoomed = true) => {
+    const vp = zoomed ? sheetViewport(view, box, page) : fitViewport(box, page, SHEET_PAD);
+    const k = pxPerPoint(vp.zoom);
+    const style = { left: vp.panX, top: vp.panY, width: page.width_pt * k, height: page.height_pt * k };
     return { k, style };
+  };
+
+  // Ctrl/Cmd+wheel (and a trackpad pinch) zooms at the cursor, the wheel alone moves the sheet, as on the Source
+  // tab. A non-passive listener, to keep the web view from zooming or scrolling itself.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the pane exists once a document is open
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      const v = useSheetViewStore.getState();
+      if (!v.page) return;
+      e.preventDefault();
+      if (e.ctrlKey || e.metaKey) {
+        const r = el.getBoundingClientRect();
+        v.zoomBy(Math.exp(-e.deltaY * 0.0025), { x: e.clientX - r.left, y: e.clientY - r.top });
+      } else v.panBy(e.shiftKey ? -e.deltaY : -e.deltaX, e.shiftKey ? 0 : -e.deltaY);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [hasDocument]);
+
+  // A drag with the left or middle button moves the sheet; the right button stays the piece peek.
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if ((e.button !== 0 && e.button !== 1) || !sheet) return;
+    // Help tips and messages in the pane keep their own clicks.
+    const target = e.target as HTMLElement;
+    if (target !== e.currentTarget && !target.closest("[data-testid=sheet-page]")) return;
+    e.preventDefault();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+    pan.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    setPanning(true);
+  };
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const p = pan.current;
+    if (!p || p.id !== e.pointerId) return;
+    useSheetViewStore.getState().panBy(e.clientX - p.x, e.clientY - p.y);
+    pan.current = { ...p, x: e.clientX, y: e.clientY };
+  };
+  const endPan = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (pan.current?.id !== e.pointerId) return;
+    pan.current = null;
+    setPanning(false);
   };
 
   let content: React.ReactNode = null;
@@ -162,6 +209,38 @@ export function SheetPreview() {
         >
           <Tag size={14} />
         </button>
+        <div className="mx-0.5 h-4 w-px bg-[var(--border)]" />
+        <button
+          type="button"
+          aria-label={t("sheets.zoomOut")}
+          title={t("sheets.zoomOut")}
+          disabled={!sheet}
+          onClick={zoomOut}
+          className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
+        >
+          <ZoomOut size={14} />
+        </button>
+        <button
+          type="button"
+          aria-label={t("sheets.zoomIn")}
+          title={t("sheets.zoomIn")}
+          disabled={!sheet}
+          onClick={zoomIn}
+          className="rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40"
+        >
+          <ZoomIn size={14} />
+        </button>
+        <button
+          type="button"
+          aria-label={t("sheets.fit")}
+          title={t("sheets.fit")}
+          aria-pressed={view === null}
+          disabled={!sheet}
+          onClick={fit}
+          className={`rounded p-1 hover:bg-[var(--hover)] disabled:opacity-40 ${view === null && sheet ? "bg-[var(--accent)]/25 text-[var(--accent)]" : ""}`}
+        >
+          <Maximize size={14} />
+        </button>
         <span className="ml-auto whitespace-nowrap text-[var(--muted)]" data-testid="sheet-summary">
           {t("sheets.summary", {
             sheets: t("sheets.sheetCount", { count: total }),
@@ -190,7 +269,15 @@ export function SheetPreview() {
       {stripOpen && previews && previews.length > 0 && (
         <SheetStrip sheets={previews} current={index} onSelect={setCurrent} />
       )}
-      <div ref={ref} className="relative min-h-0 flex-1 overflow-hidden bg-[var(--canvas)]">
+      <div
+        ref={ref}
+        data-testid="sheet-pane"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endPan}
+        onPointerCancel={endPan}
+        className={`relative min-h-0 flex-1 touch-none overflow-hidden bg-[var(--canvas)] ${sheet ? (panning ? "cursor-grabbing" : "cursor-grab") : ""}`}
+      >
         {!hasDocument ? (
           <Message>{t("sheets.openPdf")}</Message>
         ) : error ? (
@@ -222,7 +309,7 @@ function BlankSheet({
   place,
   firstPage,
 }: {
-  place: (page: PageSize) => { k: number; style: React.CSSProperties };
+  place: (page: PageSize, zoomed?: boolean) => { k: number; style: React.CSSProperties };
   firstPage: PageSize | null;
 }) {
   const output = useLayoutStore(
@@ -237,7 +324,7 @@ function BlankSheet({
     })),
   );
   const page = outputPage(output) ?? firstPage ?? { width_pt: mmToPt(210), height_pt: mmToPt(297) };
-  const { k, style } = place(page);
+  const { k, style } = place(page, false);
   const m = output.margins;
   return (
     <div className="absolute bg-white shadow-lg shadow-black/50" style={style} data-testid="blank-sheet">

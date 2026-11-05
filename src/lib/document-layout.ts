@@ -8,7 +8,7 @@
 import { t } from "../i18n";
 import type { OrientedRect } from "./card";
 import { clamp, type NormalizedRect } from "./coordinates";
-import { clampCount } from "./grid";
+import { type Crop, clampCount, hasCrop, MAX_CROP_MM } from "./grid";
 import type { PageSize } from "./tauri";
 
 export const MAX_GAP_MM = 50;
@@ -25,6 +25,8 @@ export type GroupGrid = {
   sourceGapYMm: number;
   /** When linked, the vertical value follows the horizontal one. */
   sourceGapLinked: boolean;
+  /** Cut off each side of every piece, for art larger than its sleeve; absent = none (project version 9). */
+  crop?: Crop;
 };
 
 export const DEFAULT_GROUP_GRID: GroupGrid = {
@@ -587,5 +589,17 @@ export function patchGrid(grid: GroupGrid, patch: GridPatch): GroupGrid {
   if (patch.sourceGapYMm !== undefined) next.sourceGapYMm = gap(patch.sourceGapYMm);
   if (next.sourceGapLinked && (patch.sourceGapXMm !== undefined || patch.sourceGapLinked !== undefined))
     next.sourceGapYMm = next.sourceGapXMm;
+  if ("crop" in patch) {
+    const side = (mm: number) => clamp(Number.isFinite(mm) ? mm : 0, 0, MAX_CROP_MM);
+    const c = patch.crop;
+    const crop = c && {
+      topMm: side(c.topMm),
+      rightMm: side(c.rightMm),
+      bottomMm: side(c.bottomMm),
+      leftMm: side(c.leftMm),
+    };
+    if (hasCrop(crop)) next.crop = crop;
+    else delete next.crop;
+  }
   return next;
 }

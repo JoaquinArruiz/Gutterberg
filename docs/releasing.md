@@ -10,8 +10,11 @@ release on its own (`gutterberg-cli-<target>`), with the app's version.
 [Semantic Versioning](https://semver.org/), `MAJOR.MINOR.PATCH`:
 
 - **PATCH** (`1.1.1`): bug fixes only.
-- **MINOR** (`1.2.0`): new features; old `.gtr` files keep working.
-- **MAJOR** (`2.0.0`): big or breaking changes (a project migration, a redesign).
+- **MINOR** (`1.2.0`): new features. Every older `.gtr` file still opens and exports as before. A new project version
+  is fine here (1.3.0 saved version 8): older apps refuse the newer file with a clear message instead of opening it
+  wrong, which is the forward direction semver does not promise.
+- **MAJOR** (`2.0.0`): something that breaks what people already have: a `.gtr` that no longer opens or exports the
+  same, a command-line option or exit code that changes meaning, or a redesign that moves the main workflow.
 
 Tags have a `v` (`v1.1.0`), the versions in the files don't (`1.1.0`). A pre-release is `v1.2.0-beta.1`.
 The version lives in two files you edit, `package.json` and `src-tauri/Cargo.toml`
@@ -88,7 +91,8 @@ A version has its own branch, `release/1.1.0`, started from `main`; features and
 
 CI runs on pull requests, on pushes to `main` and `release/**`, and on tags; a branch is not built twice. Feature and
 fix branches are merged locally into their version branch (no pull request), so CI checks them when the version branch
-is pushed.
+is pushed. A push to a version branch also builds the Windows and macOS apps with their installers (unsigned, without
+updater signatures), so a build that only fails there shows up before the tag.
 
 ## The summary
 

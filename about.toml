@@ -15,6 +15,9 @@ accepted = [
   "BSL-1.0",
   # The Mozilla root certificates bundle (webpki-roots), a permissive data license.
   "CDLA-Permissive-2.0",
+  # jpeg-encoder (CMYK export), partly from the Independent JPEG Group's code: permissive, and the notices file
+  # carries the credit it asks for.
+  "IJG",
 ]
 # Every platform an installer is built for, so a license that only one of them needs is found on any machine.
 targets = [

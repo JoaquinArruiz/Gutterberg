@@ -159,8 +159,9 @@ export function PreferencesDialog() {
   const fromStore = useUpdateStore((s) => s.store);
   const sections = fromStore ? SECTIONS.filter((s) => s !== "Updates") : SECTIONS;
 
-  const store = usePreferencesStore();
-  const { prefs } = store;
+  const prefs = usePreferencesStore((s) => s.prefs);
+  // The setters never change, so they are read once instead of subscribing to the whole store.
+  const store = usePreferencesStore.getState();
   const { visibleModes } = prefs.workspace;
   const layout = prefs.workspace.layout;
 

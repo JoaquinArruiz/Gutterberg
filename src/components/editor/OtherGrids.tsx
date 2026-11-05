@@ -42,6 +42,7 @@ export function OtherGrids({
             columns: r.grid.columns,
             gapXMm: r.grid.sourceGapXMm,
             gapYMm: r.grid.sourceGapYMm,
+            crop: r.grid.crop,
           };
           const inFolder = folder !== null && r.folder === folder;
           return (

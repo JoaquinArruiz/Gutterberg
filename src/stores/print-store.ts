@@ -50,6 +50,8 @@ type PrintState = PrintPlan & {
   /** Copies for `keys`. Changing a quantity switches to a custom selection (nothing else is printed). */
   setQuantity: (keys: string[], n: number) => void;
   adjustQuantity: (keys: string[], delta: number) => void;
+  /** Copies for several pieces at once (a pasted list): one undo step, and a custom selection like `setQuantity`. */
+  setQuantities: (copies: Record<string, number>) => void;
   /** Custom selection starting from one copy of every card. */
   startFromAllCards: () => void;
   setAutoFill: (on: boolean) => void;
@@ -63,6 +65,8 @@ type PrintState = PrintPlan & {
   setBleed: (patch: Partial<Finish["bleed"]>) => void;
   setDuplex: (patch: Partial<Finish["duplex"]>) => void;
   setBackground: (patch: Partial<Finish["background"]>) => void;
+  setColors: (colors: Finish["colors"]) => void;
+  setScaleCheck: (on: boolean) => void;
   /** The Edge bleed's colours, found by `useEdgeColors`. Not an undo step of its own: they follow the pieces. */
   setEdgeColors: (colors: Record<string, string>) => void;
   /** The piece picked in the library to choose a back for the selection; null = not choosing. */
@@ -120,6 +124,13 @@ export const usePrintStore = create<PrintState>()(
         set((s) => ({ mode: "custom", quantities: adjustQuantity(s.quantities, keys, delta) }));
         emitHintEvent("copies-changed");
       },
+      setQuantities: (copies) => {
+        set((s) => ({
+          mode: "custom",
+          quantities: Object.entries(copies).reduce((q, [key, n]) => setQuantity(q, [key], n), s.quantities),
+        }));
+        emitHintEvent("copies-changed");
+      },
       startFromAllCards: () => set((s) => ({ mode: "custom", quantities: oneOfEach(s.cards) })),
       setAutoFill: (autoFill) => set({ autoFill }),
       setOrder: (order) => set({ order }),
@@ -142,6 +153,8 @@ export const usePrintStore = create<PrintState>()(
         set((s) => ({
           finish: cleanFinish({ ...s.finish, background: { ...s.finish.background, ...patch } }),
         })),
+      setColors: (colors) => set((s) => ({ finish: cleanFinish({ ...s.finish, colors }) })),
+      setScaleCheck: (scaleCheck) => set((s) => ({ finish: { ...s.finish, scaleCheck } })),
       setEdgeColors: (colors) => {
         const now = usePrintStore.getState().finish.bleed.edgeColors;
         const keys = Object.keys(colors);

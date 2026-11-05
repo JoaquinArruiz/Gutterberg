@@ -30,6 +30,7 @@ describe("finish settings", () => {
       commonBack: null,
     });
     expect(DEFAULT_FINISH.background).toEqual({ sheet: null, pieces: null });
+    expect(DEFAULT_FINISH.colors).toBe("rgb");
     expect(finishingOn({ ...DEFAULT_FINISH, bleed: { mm: 1, source: "mirror", edgeColors: {}, aiFills: {} } })).toBe(
       true,
     );
@@ -69,8 +70,11 @@ describe("finish settings", () => {
         commonBack: "not a key",
       },
       background: { sheet: "#00FF00", pieces: "green" },
+      colors: "lab" as Finish["colors"],
+      scaleCheck: "yes" as unknown as boolean,
     };
     const clean = cleanFinish(wild);
+    expect(clean.scaleCheck).toBe(false);
     expect(clean.marks).toEqual({
       style: "ticks",
       line: "dotted",
@@ -97,6 +101,8 @@ describe("finish settings", () => {
       commonBack: null,
     });
     expect(clean.background).toEqual({ sheet: "#00ff00", pieces: null });
+    expect(clean.colors).toBe("rgb");
+    expect(cleanFinish({ ...DEFAULT_FINISH, colors: "cmyk" }).colors).toBe("cmyk");
     expect(cleanColor("#ABCDEF")).toBe("#abcdef");
     expect(cleanColor("#abc")).toBe("#000000");
   });

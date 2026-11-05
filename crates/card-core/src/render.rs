@@ -105,7 +105,9 @@ fn access_in(doc: &PdfDocument) -> Option<PdfAccess> {
 }
 
 /// Encode quickly: these PNGs are transient UI previews, so favour speed over size.
-fn encode_png(img: &image::DynamicImage) -> Result<Vec<u8>> {
+/// Encode a rendered picture as a fast, unfiltered PNG. Public so the render worker's callers can encode
+/// on their own thread instead of holding the pdfium thread.
+pub fn encode_png(img: &image::DynamicImage) -> Result<Vec<u8>> {
     use image::codecs::png::{CompressionType, FilterType, PngEncoder};
     use image::ImageEncoder;
     let rgba = img.to_rgba8();
@@ -121,14 +123,25 @@ fn encode_png(img: &image::DynamicImage) -> Result<Vec<u8>> {
     Ok(out)
 }
 
-/// Debug builds print where render time goes (draw vs encode).
-fn log_timing(what: &str, draw: std::time::Duration, encode: std::time::Duration, bytes: usize) {
+/// Debug builds print where render time goes (draw, then encode).
+fn log_draw(what: &str, draw: std::time::Duration) {
+    if cfg!(debug_assertions) {
+        eprintln!("[render] {what}: draw {draw:?}");
+    }
+}
+
+/// [`encode_png`], with the time it took printed in debug builds.
+pub fn encode_png_timed(img: &image::DynamicImage) -> Result<Vec<u8>> {
+    let t = std::time::Instant::now();
+    let out = encode_png(img)?;
     if cfg!(debug_assertions) {
         eprintln!(
-            "[render] {what}: draw {draw:?}, encode {encode:?}, {} KiB",
-            bytes / 1024
+            "[render] encode {:?}, {} KiB",
+            t.elapsed(),
+            out.len() / 1024
         );
     }
+    Ok(out)
 }
 
 pub(crate) fn get_page<'a>(doc: &PdfDocument<'a>, page_index: usize) -> Result<PdfPage<'a>> {
@@ -152,6 +165,15 @@ pub fn render_page_png(
 
 /// Like [`render_page_png`] on an already-loaded document (no re-parse).
 pub fn render_page_png_in(doc: &PdfDocument, page_index: usize, width_px: u32) -> Result<Vec<u8>> {
+    encode_png_timed(&render_page_image_in(doc, page_index, width_px)?)
+}
+
+/// Like [`render_page_png_in`], without the PNG encode: the picture as pdfium drew it.
+pub fn render_page_image_in(
+    doc: &PdfDocument,
+    page_index: usize,
+    width_px: u32,
+) -> Result<image::DynamicImage> {
     let page = get_page(doc, page_index)?;
     let t = std::time::Instant::now();
     let cfg = PdfRenderConfig::new().set_target_width(width_px.clamp(16, 8192) as i32);
@@ -160,16 +182,8 @@ pub fn render_page_png_in(doc: &PdfDocument, page_index: usize, width_px: u32) -
         .map_err(pdfium_err)?
         .as_image()
         .map_err(pdfium_err)?;
-    let draw = t.elapsed();
-    let t = std::time::Instant::now();
-    let out = encode_png(&img)?;
-    log_timing(
-        &format!("page {page_index} @ {width_px}px"),
-        draw,
-        t.elapsed(),
-        out.len(),
-    );
-    Ok(out)
+    log_draw(&format!("page {page_index} @ {width_px}px"), t.elapsed());
+    Ok(img)
 }
 
 /// A page as a PNG with the size it came out at.
@@ -343,6 +357,23 @@ pub fn render_region_png_on(
     full_width_px: u32,
     transparent: bool,
 ) -> Result<Vec<u8>> {
+    encode_png_timed(&render_region_image_on(
+        doc,
+        page_index,
+        region,
+        full_width_px,
+        transparent,
+    )?)
+}
+
+/// Like [`render_region_png_on`], without the PNG encode: the picture as pdfium drew it.
+pub fn render_region_image_on(
+    doc: &PdfDocument,
+    page_index: usize,
+    region: crate::geometry::Rect,
+    full_width_px: u32,
+    transparent: bool,
+) -> Result<image::DynamicImage> {
     let page = get_page(doc, page_index)?;
 
     let full_w = full_width_px.clamp(16, 32768) as f64;
@@ -369,14 +400,6 @@ pub fn render_region_png_on(
     page.render_into_bitmap_with_config(&mut bitmap, &cfg)
         .map_err(pdfium_err)?;
     let img = bitmap.as_image().map_err(pdfium_err)?;
-    let draw = t.elapsed();
-    let t = std::time::Instant::now();
-    let out = encode_png(&img)?;
-    log_timing(
-        &format!("region {w}x{h} of page {page_index}"),
-        draw,
-        t.elapsed(),
-        out.len(),
-    );
-    Ok(out)
+    log_draw(&format!("region {w}x{h} of page {page_index}"), t.elapsed());
+    Ok(img)
 }

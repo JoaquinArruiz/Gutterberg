@@ -16,9 +16,10 @@ use crate::detect::{default_engines, detect_page, page_edges, Detection, PageEdg
 use crate::error::{Error, Result};
 use crate::geometry::{PageSize, Rect};
 use crate::render::{
-    bind_pdfium, document_info_in, edge_colors_in, render_page_fit_in, render_page_png_in,
-    render_pieces_in, render_region_png_on, DocumentInfo, RenderedPage,
+    bind_pdfium, document_info_in, edge_colors_in, encode_png_timed, render_page_fit_in,
+    render_page_image_in, render_pieces_in, render_region_image_on, DocumentInfo, RenderedPage,
 };
+use image::DynamicImage;
 use pdfium_render::prelude::{PdfDocument, Pdfium};
 use std::collections::{HashMap, VecDeque};
 use std::path::PathBuf;
@@ -56,9 +57,9 @@ enum Work {
     Open(DocumentId, PathBuf, Reply<DocumentInfo>),
     /// Close one document, or every document when the id is `None`.
     Close(Option<DocumentId>, Reply<()>),
-    Page(DocumentId, usize, u32, Reply<Vec<u8>>),
+    Page(DocumentId, usize, u32, Reply<DynamicImage>),
     /// The last value: leave what the page does not paint clear instead of white.
-    Region(DocumentId, usize, Rect, u32, bool, Reply<Vec<u8>>),
+    Region(DocumentId, usize, Rect, u32, bool, Reply<DynamicImage>),
     Detect(DocumentId, usize, Reply<Detection>),
     Edges(DocumentId, usize, Reply<PageEdges>),
     /// Objects of one page, for describing it as text.
@@ -154,7 +155,9 @@ impl RenderWorker {
         page_index: usize,
         width_px: u32,
     ) -> Result<Vec<u8>> {
-        self.send(kind, |r| Work::Page(document_id, page_index, width_px, r))
+        let img = self.send(kind, |r| Work::Page(document_id, page_index, width_px, r))?;
+        // Encoded here, on the caller's thread, so the pdfium thread can draw the next request meanwhile.
+        encode_png_timed(&img)
     }
 
     /// Where the pieces seem to be on a page, found locally (see [`crate::detect`]). Blocks until done.
@@ -236,9 +239,10 @@ impl RenderWorker {
         region: Rect,
         full_width_px: u32,
     ) -> Result<Vec<u8>> {
-        self.send(kind, |r| {
+        let img = self.send(kind, |r| {
             Work::Region(document_id, page_index, region, full_width_px, false, r)
-        })
+        })?;
+        encode_png_timed(&img)
     }
 
     /// Like [`Self::render_region`], with what the page does not paint left clear (a piece on the
@@ -251,9 +255,10 @@ impl RenderWorker {
         region: Rect,
         full_width_px: u32,
     ) -> Result<Vec<u8>> {
-        self.send(kind, |r| {
+        let img = self.send(kind, |r| {
             Work::Region(document_id, page_index, region, full_width_px, true, r)
-        })
+        })?;
+        encode_png_timed(&img)
     }
 }
 
@@ -306,7 +311,7 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                 } else {
                     docs.get(&id)
                         .ok_or(Error::NoDocument)
-                        .and_then(|d| render_page_png_in(d, index, width))
+                        .and_then(|d| render_page_image_in(d, index, width))
                 });
             }
             Work::Detect(id, index, reply) => {
@@ -367,7 +372,7 @@ fn run(pdfium: &Pdfium, rx: &Receiver<Msg>, latest: &[AtomicU64]) {
                 } else {
                     docs.get(&id)
                         .ok_or(Error::NoDocument)
-                        .and_then(|d| render_region_png_on(d, index, region, width, transparent))
+                        .and_then(|d| render_region_image_on(d, index, region, width, transparent))
                 });
             }
         }

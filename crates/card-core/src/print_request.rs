@@ -13,15 +13,16 @@
 //! file gives the same sheets in the app and from the command line.
 
 use crate::card::{CardId, DocumentId, OrientedRect, PageGroup, PageGroupKind, PageRange};
+use crate::cmyk::ColorMode;
 use crate::error::{Error, ErrorInfo, ErrorParam, Result};
-use crate::export::{export_sheets_files, plan_print_files, PageIssue, SourceFile};
+use crate::export::{export_sheets_loaded, load_sources, plan_print_docs, PageIssue, SourceDoc};
 use crate::finish::{
     parse_color, BackLayout, BackPair, BackgroundOptions, BleedOptions, BleedSource, DuplexOptions,
     EdgeColor, FinishOptions, Finishing, Flip, MarkLine, MarkOptions, MarkStyle, PieceFill,
     MAX_BLEED_MM, MAX_DUPLEX_OFFSET_MM, MAX_FOLD_GAP_MM,
 };
 use crate::geometry::{PageSize, Point, Rect};
-use crate::layout::GridLayout;
+use crate::layout::{Crop, GridLayout};
 use crate::sheet::{
     extract_all_cards, Card, CardSetting, DocumentSource, FoldAxis, Margins, Order, OutputSheet,
     PaginateOptions, PrintLayout, SheetPage, SheetSpec, Turn,
@@ -125,6 +126,9 @@ pub struct GroupGrid {
     pub source_gap_y_mm: f64,
     #[serde(default)]
     pub source_gap_linked: bool,
+    /// Cut off each piece's edges (project version 9); absent in older projects, which crop nothing.
+    #[serde(default, skip_serializing_if = "Crop::is_none")]
+    pub crop: Crop,
 }
 
 /// The sheet size the user chose.
@@ -247,6 +251,11 @@ pub struct Finish {
     pub duplex: FinishDuplex,
     #[serde(default)]
     pub background: BackgroundOptions,
+    #[serde(default)]
+    pub colors: ColorMode,
+    /// A 50 mm ruler in a margin of each sheet (see [`crate::finish::scale_check`]). Older projects have none.
+    #[serde(default)]
+    pub scale_check: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
@@ -323,6 +332,9 @@ pub fn print_project(body: &crate::project::Body) -> Result<PrintProject> {
 pub struct DocumentGroups {
     pub document_id: DocumentId,
     pub groups: Vec<PageGroup>,
+    /// An images document the app built: its pictures turn CMYK with a CMYK export.
+    #[serde(default)]
+    pub images: bool,
 }
 
 /// Everything the planner takes for one print.
@@ -514,6 +526,7 @@ fn grid_layout(bounds: Rect, grid: &GroupGrid, o: &OutputSettings) -> GridLayout
         margin_left_mm: o.margins.left,
         output_page: output_page(o),
         fit_page: o.page_mode == PageMode::Fit,
+        crop: grid.crop,
     }
 }
 
@@ -835,6 +848,8 @@ fn finishing(
                 sheet: fill(&finish.background.sheet),
                 pieces: fill(&finish.background.pieces),
             },
+            colors: finish.colors,
+            scale_check: finish.scale_check,
         },
         backs,
     }
@@ -854,6 +869,7 @@ pub fn print_request(
         .map(|d| DocumentGroups {
             document_id: d.id,
             groups: page_groups(d, pages.get(&d.id).unwrap_or(&no_pages), &p.output),
+            images: d.kind == DocumentKind::Images,
         })
         .collect();
     let request = PrintRequest {
@@ -949,18 +965,34 @@ pub fn plan_files(
     req: &PrintRequest,
     files: &[(DocumentId, &Path)],
 ) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
-    let sources: Vec<SourceFile> = req
+    plan_loaded(req, &load_sources(files)?)
+}
+
+/// The PDFs of a request, parsed, in its document order (see [`load_sources`]).
+pub type LoadedSources = Vec<(DocumentId, lopdf::Document)>;
+
+/// Parse the PDFs at `files` for [`plan_loaded`] and [`export_loaded`].
+pub fn load_files(files: &[(DocumentId, &Path)]) -> Result<LoadedSources> {
+    load_sources(files)
+}
+
+/// [`plan_files`] on the PDFs already parsed (by [`load_sources`]), in the request's document order.
+pub fn plan_loaded(
+    req: &PrintRequest,
+    sources: &[(DocumentId, lopdf::Document)],
+) -> Result<(Vec<OutputSheet>, Vec<PageIssue>)> {
+    let docs: Vec<SourceDoc> = req
         .documents
         .iter()
-        .zip(files)
-        .map(|(d, (id, path))| SourceFile {
+        .zip(sources)
+        .map(|(d, (id, doc))| SourceDoc {
             document_id: *id,
-            path,
+            doc,
             groups: &d.groups,
         })
         .collect();
-    plan_print_files(
-        &sources,
+    plan_print_docs(
+        &docs,
         &req.settings,
         &req.layout,
         &req.options,
@@ -970,13 +1002,22 @@ pub fn plan_files(
 
 /// Exports the request from the PDFs at `files` to `output`, after the same check as [`plan_files`]: the first
 /// page that cannot be exported is the error, with its own code and the page (`at_page`). Returns the number of
-/// sheets written.
+/// sheets written. Each PDF is read once, for the check and the export.
 pub fn export_files(
     req: &PrintRequest,
     files: &[(DocumentId, &Path)],
     output: &Path,
 ) -> std::result::Result<usize, ErrorInfo> {
-    let (sheets, issues) = plan_files(req, files)?;
+    export_loaded(req, load_sources(files)?, output)
+}
+
+/// [`export_files`] from the PDFs already parsed (by [`load_sources`]), in the request's document order.
+pub fn export_loaded(
+    req: &PrintRequest,
+    sources: LoadedSources,
+    output: &Path,
+) -> std::result::Result<usize, ErrorInfo> {
+    let (sheets, issues) = plan_loaded(req, &sources)?;
     if let Some(first) = issues.into_iter().next() {
         let mut info = ErrorInfo::new(&first.code, &first.message);
         info.params = first.params;
@@ -993,7 +1034,13 @@ pub fn export_files(
             "there is nothing to print",
         ));
     }
-    export_sheets_files(files, output, &sheets)?;
+    let images = req
+        .documents
+        .iter()
+        .filter(|d| d.images)
+        .map(|d| d.document_id)
+        .collect();
+    export_sheets_loaded(sources, output, &sheets, &images)?;
     Ok(sheets.len())
 }
 
@@ -1087,6 +1134,7 @@ mod tests {
                             source_gap_x_mm: 0.0,
                             source_gap_y_mm: 0.0,
                             source_gap_linked: true,
+                            crop: Crop::default(),
                         },
                         selection: drawn.then(|| Rect::new(0.1, 0.1, 0.8, 0.8)),
                     }],
@@ -1183,7 +1231,21 @@ mod tests {
                 common_back: Some("g:0:0:1:0".into()),
             },
             background: BackgroundOptions::default(),
+            colors: ColorMode::Rgb,
+            scale_check: false,
         }
+    }
+
+    #[test]
+    fn the_colours_of_the_export_are_rgb_unless_the_project_says_cmyk() {
+        let mut body = serde_json::to_value(finish()).unwrap();
+        body.as_object_mut().unwrap().remove("colors");
+        let old: Finish = serde_json::from_value(body.clone()).unwrap();
+        assert_eq!(old.colors, ColorMode::Rgb);
+        body["colors"] = "cmyk".into();
+        let f: Finish = serde_json::from_value(body).unwrap();
+        let options = finishing(&f, &PieceEdits::default(), &known(), None).options;
+        assert_eq!(options.colors, ColorMode::Cmyk);
     }
 
     #[test]

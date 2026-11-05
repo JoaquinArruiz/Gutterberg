@@ -23,7 +23,8 @@ included. `CONTRIBUTING.md` is the human version.
   download of a new version.
 - `src/`: React frontend. Stores in `src/stores/` (Zustand), helpers in `src/lib/`, components in
   `src/components/`, texts in `src/locales/`.
-- `docs/`: `architecture.md` (how it fits together), `controls.md`, `releasing.md` (how a version is released).
+- `docs/`: `architecture.md` (how it fits together), `controls.md`, `FAQ.md` (answers to "why does it do that?"
+  questions; add one when a question comes up twice), `releasing.md` (how a version is released).
   `docs/milestones/` holds the brief of a feature while it is being built (see "Planning" below).
 - `examples/`: sample PDFs, with a guide in `examples/README.md`.
 - `release-notes/`: each version's short summary, which Discord, the app and the Microsoft Store show (see
@@ -88,6 +89,7 @@ and type names) stay as they are.
 | **bleed** | **sangrado** | Art that extends past a piece's edge | |
 | **AI Mode** | **Modo IA** | The opt-in setting that adds AI buttons, using the user's own key; off and hidden by default | AI assistant, chat |
 | **proposal** | **propuesta** | What Detect pieces offers: shown as a draft on the page, applied only when the user says so | result, guess |
+| **crop** | **recorte** | What a grid cuts off each side of its pieces, for art larger than its sleeve; the piece prints smaller | trim (that is the print shop's cut) |
 | **sticky edges** | **bordes adhesivos** | The Source tab aid that makes a side stick to straight edges in the artwork while dragging | sticky borders |
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add

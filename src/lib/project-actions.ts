@@ -18,6 +18,7 @@ import { DEFAULT_OUTPUT, type DocLayout, outputSettings, useLayoutStore } from "
 import { usePreferencesStore } from "../stores/preferences-store";
 import { usePrintStore } from "../stores/print-store";
 import { projectName, useProjectStore } from "../stores/project-store";
+import { useSheetViewStore } from "../stores/sheet-view-store";
 import { useToastStore } from "../stores/toast-store";
 import type { DocumentId } from "./card";
 import { backsWithoutDocument, type CardEdits, isCardOfDocument, NO_EDITS } from "./card-edits";
@@ -144,6 +145,7 @@ function resetSession() {
   useEditorStore.getState().reset();
   useEditorStore.getState().setSelectedCard(null);
   usePrintStore.getState().reset();
+  useSheetViewStore.getState().fit();
   useLayoutStore.getState().clearSnapshot();
   clearCardImages();
   startSession();

@@ -14,6 +14,9 @@ pdfium-render = "0.9"
 image = { version = "0.25", default-features = false, features = ["png", "webp", "jpeg"] }
 serde_json = "1"
 sha2 = "0.10"
+# CMYK export: Little CMS built into the app (never the system's), and a JPEG encoder that writes CMYK.
+lcms2 = { version = "6.2", features = ["static"] }
+jpeg-encoder = "0.7"
 
 
 [dev-dependencies]

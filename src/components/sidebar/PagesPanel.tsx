@@ -9,6 +9,7 @@ import { useWheelScrollsSideways } from "../../lib/use-wheel-scrolls-sideways";
 import { PAGE_THUMB_HEIGHT, type PanelOrientation } from "../../lib/workspace-layout";
 import { documentName, useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
+import { pagesFor, usePageSelectionStore } from "../../stores/page-selection-store";
 import { Checkbox } from "../ui/Checkbox";
 import { openContextMenu } from "../ui/ContextMenu";
 import { Select } from "../ui/Select";
@@ -37,6 +38,7 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
   // A different group than the viewed page's: say which, so sections are easy to tell apart.
   const badge = useLayoutStore((s) => pageBadge(s.groups, index, viewed, s.freeform));
   const setSkipped = useLayoutStore((s) => s.setSkipped);
+  const picked = usePageSelectionStore((s) => s.pages.includes(index));
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -56,28 +58,67 @@ function Thumbnail({ index, orientation }: { index: number; orientation: PanelOr
   return (
     <div
       ref={ref}
-      className={`relative flex shrink-0 flex-col items-center rounded ${orientation === "vertical" ? "mx-auto w-[132px]" : ""} ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
+      className={`relative flex shrink-0 flex-col items-center rounded ${orientation === "vertical" ? "mx-auto w-[132px]" : ""} ${active ? "bg-[var(--accent)]/20 outline outline-1 outline-[var(--accent)]" : picked ? "bg-[var(--accent)]/10 outline outline-1 outline-dashed outline-[var(--accent)]" : "hover:bg-[var(--hover)]"}`}
     >
       <button
         type="button"
         data-page-thumb={index}
         onClick={(e) => {
-          setCurrentPage(index);
+          // Ctrl/Cmd+click picks pages one by one and Shift+click a run of them, to remove or skip together.
+          const selection = usePageSelectionStore.getState();
+          if (e.ctrlKey || e.metaKey) selection.toggle(index, viewed);
+          else if (e.shiftKey) {
+            const { groups } = useLayoutStore.getState();
+            const shown = Array.from({ length: useDocumentStore.getState().pages.length }, (_, p) => p);
+            selection.range(
+              viewed,
+              index,
+              shown.filter((p) => !isRemoved(groups, p)),
+            );
+          } else {
+            selection.clear();
+            setCurrentPage(index);
+          }
           // Some web views do not focus a button on a click; the focus is what Delete acts on.
           e.currentTarget.focus();
         }}
         onKeyDown={(e) => {
+          if (e.key === "Escape") usePageSelectionStore.getState().clear();
           if (e.key !== "Delete" && e.key !== "Backspace") return;
           // The page, not the picked pieces the same key deletes elsewhere (App.tsx).
           e.preventDefault();
           e.stopPropagation();
-          if (removePages([index])) focusViewedThumb();
+          if (removePages(pagesFor(index))) {
+            usePageSelectionStore.getState().clear();
+            focusViewedThumb();
+          }
         }}
         onContextMenu={(e) => {
           const total = useDocumentStore.getState().pages.length;
           const { groups } = useLayoutStore.getState();
+          const pages = pagesFor(index);
           // The last page in view stays: removing it, or the others when there are none, is off.
           const alone = Array.from({ length: total }, (_, p) => p).every((p) => p === index || isRemoved(groups, p));
+          if (pages.length > 1) {
+            const done = () => usePageSelectionStore.getState().clear();
+            const skips = (skip: boolean) => Object.fromEntries(pages.map((p) => [p, skip]));
+            openContextMenu(e, [
+              {
+                label: t("pages.menu.removeSelected", { count: pages.length }),
+                onSelect: () => removePages(pages) && done(),
+              },
+              "separator",
+              {
+                label: t("pages.menu.skipSelected", { count: pages.length }),
+                onSelect: () => useLayoutStore.getState().applySkips(skips(true)),
+              },
+              {
+                label: t("pages.menu.includeSelected", { count: pages.length }),
+                onSelect: () => useLayoutStore.getState().applySkips(skips(false)),
+              },
+            ]);
+            return;
+          }
           openContextMenu(e, [
             { label: t("pages.menu.remove"), disabled: alone, onSelect: () => removePages([index]) },
             {

@@ -5,6 +5,25 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.4.0 (2026-11-05)
+
+### Added
+
+- CMYK export, for print shops: Print settings › Sheet › Colors › CMYK writes the cut marks, fold lines, background and Edge color fills in CMYK, and turns the pictures Gutterberg put in the file (images added as pieces, Fill with AI pictures) into CMYK too, for coated paper (FOGRA39). Black and gray go on the black ink only, so a cut mark is one clean line. Source PDFs keep their own colors, as before: a PDF that is already CMYK stays CMYK. A JPEG stays a JPEG and a PNG stays lossless. RGB stays the default, which suits home printers and most online print services. The preview still shows screen colors, and the command line exports it as saved.
+- Remove or skip several pages at once: in the Pages panel, `Ctrl`+click (`Cmd`+click on macOS) picks pages one by one and `Shift`+click a run of them from the viewed page. `Delete` removes every picked page, and the right-click menu removes, skips or includes them, each as one undo step. `Esc` or a plain click drops the pick.
+- Copies from a list: Copies from a list… in the piece library takes a list pasted from a rulebook or a spreadsheet, one line per piece in the library's order, such as `3x Ember Drake`, `Ember Drake, 3` or just `3`, and gives those copies to the picked pieces (or every piece shown) from the first. Before applying, it shows which piece gets which line, so a list out of step is easy to spot; a header line without a number is left out. One undo step.
+- Scale check: Print settings › Sheet › Scale check prints a 50 mm ruler, with a tick every 10 mm, in the bottom margin of each sheet (the top one when the bottom is full). Measure it on paper: if it is not 50 mm, the printer scaled the page, so print at actual size. It is a thin black line (black ink only in CMYK), shows in the preview, and the command line exports it as saved. A sheet with no room for it says so. Projects open with it off; older versions ignore it.
+- Trim and bleed boxes for print shops: a sheet that holds one piece is written with a TrimBox (the piece) and a BleedBox (the piece with its bleed), which print shops' software reads to know where to cut. For a file of one piece per page, set Rows and Columns to 1, the page to Auto-fit to pieces and each margin to the bleed. Sheets of several pieces are written as before.
+- Crop for sleeves: the Source tab's new Crop section cuts the same amount off the top, right, bottom and left of every piece of a grid, for art a little larger than the sleeve it goes in (such as 69 × 94 mm cards in 66 × 91 mm sleeves). The pieces print smaller, at their new size, and never scaled; the page shows the band that is cut off. What is cut off stays on the page, so a bleed taken from the source uses it. The command line exports it as saved.
+- Zoom on the Print tab: the zoom buttons above the sheet, `+`, `-` and `0` (fit), or `Ctrl`+wheel (`Cmd`+wheel on macOS, or a pinch) at the cursor, to look closely at cut marks, gaps and bleed. Drag the sheet or use the wheel to move round it. The zoom stays while you go to another sheet or to the Source tab, and the status bar shows it.
+- A list of questions and answers, [docs/FAQ.md](docs/FAQ.md), explains things that look wrong but are not, such as short ticks in narrow gaps, pieces that are not shrunk to fit and back sheets that need lining up, and the README points to it.
+
+### Changed
+
+- Print settings show what most people change first: Line width, Color, the ticks' distance, Also where gaps cross, Also in the gaps and Also on back sheets (Cut marks), Auto-fill and Order (Plan), and Group pieces by size, Colors and Scale check (Sheet) are under More options. It opens by itself when one of its options is changed, and folded it says how many are. Duplex details, freeform pieces and skipped pages already only show when they are in use.
+- Projects are saved as version 9, for the crop. Gutterberg 1.3 and earlier say a version 9 project needs a newer Gutterberg instead of printing its pieces uncropped; 1.4.0 opens every older project as before.
+- Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
+
 ## 1.3.1 (2026-11-03)
 
 ### Added

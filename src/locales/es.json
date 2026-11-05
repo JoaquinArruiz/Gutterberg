@@ -98,7 +98,11 @@
     "width": "Ancho",
     "height": "Alto",
     "columns": "Columnas",
-    "rows": "Filas"
+    "rows": "Filas",
+    "moreOptions": "Más opciones",
+    "fewerOptions": "Menos opciones",
+    "optionsChanged_one": "{{count}} cambiada",
+    "optionsChanged_other": "{{count}} cambiadas"
   },
   "status": {
     "page": "Página {{current}} / {{total}}",
@@ -188,7 +192,8 @@
       "layout": "Disposición de origen",
       "gap": "Separación de origen",
       "output": "Salida",
-      "selection": "Posición de la selección"
+      "selection": "Posición de la selección",
+      "crop": "Recorte"
     },
     "size": "Tamaño",
     "total": "Total",
@@ -283,6 +288,15 @@
         "delete": "Eliminar",
         "clear": "Borrar región"
       }
+    },
+    "crop": {
+      "note": "Recorta lo mismo de cada pieza de esta cuadrícula, para arte un poco más grande que la funda donde va. La pieza se imprime más chica, en su nuevo tamaño; lo recortado queda en la página, así que un sangrado tomado del origen lo usa.",
+      "topMm": "Arriba",
+      "rightMm": "Derecha",
+      "bottomMm": "Abajo",
+      "leftMm": "Izquierda",
+      "result": "Las piezas se imprimen a {{width}} × {{height}}.",
+      "clear": "Sin recorte"
     }
   },
   "freeform": {
@@ -328,7 +342,13 @@
       "skip": "Omitir página",
       "include": "Incluir página",
       "restore": "Recuperar",
-      "restoreAll": "Recuperar todas"
+      "restoreAll": "Recuperar todas",
+      "removeSelected_one": "Quitar {{count}} página",
+      "removeSelected_other": "Quitar {{count}} páginas",
+      "skipSelected_one": "Omitir {{count}} página",
+      "skipSelected_other": "Omitir {{count}} páginas",
+      "includeSelected_one": "Incluir {{count}} página",
+      "includeSelected_other": "Incluir {{count}} páginas"
     }
   },
   "applyGrid": {
@@ -392,7 +412,25 @@
     },
     "allOfDocument": "Todas las piezas de {{name}}",
     "groupIn": "{{name}}: {{range}} ({{grids}})",
-    "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela."
+    "pickingBack": "Haz clic en la pieza que será el dorso de la selección. Esc cancela.",
+    "copiesListButton": "Copias desde una lista…",
+    "copiesListTitle": "Da copias a las piezas elegidas, o a todas las que se muestran, desde una lista pegada de un reglamento o una planilla",
+    "copiesList": {
+      "title": "Copias desde una lista",
+      "intro_one": "Pega una línea por pieza, en el orden de la biblioteca de piezas, cada una con su cantidad de copias, como «3x Ember Drake», «Ember Drake, 3» o solo «3». Se aplica a {{count}} pieza elegida, desde la primera.",
+      "intro_other": "Pega una línea por pieza, en el orden de la biblioteca de piezas, cada una con su cantidad de copias, como «3x Ember Drake», «Ember Drake, 3» o solo «3». Se aplica a las {{count}} piezas (las elegidas, o todas las que se muestran), desde la primera.",
+      "paste": "Lista de copias",
+      "placeholder": "3x Ember Drake\n2x Tide Caller\n4 Mossback Elder",
+      "check": "Qué pieza recibe cada línea",
+      "piece": "Pieza",
+      "line": "Línea",
+      "noPiece": "(no quedan piezas)",
+      "unchanged": "(queda como está)",
+      "skipped_one": "Se dejó afuera {{count}} línea sin número.",
+      "skipped_other": "Se dejaron afuera {{count}} líneas sin número.",
+      "extra_one": "{{count}} línea no tiene pieza y no se usa.",
+      "extra_other": "{{count}} líneas no tienen pieza y no se usan."
+    }
   },
   "print": {
     "error": {
@@ -531,6 +569,13 @@
       "piecesColor": "Color detrás de las piezas",
       "note": "Colores lisos impresos debajo del arte. Solo se ven donde el origen deja la página vacía, y siguen siendo vectoriales."
     },
+    "colors": {
+      "label": "Colores",
+      "hint": "RGB es lo indicado para imprimir en casa y para la mayoría de los servicios de impresión en línea. CMYK es para una imprenta que lo pida.",
+      "rgb": "RGB",
+      "cmyk": "CMYK",
+      "cmykNote": "Las marcas de corte, los colores lisos, las imágenes agregadas como piezas y las imágenes de Rellenar con IA se escriben en CMYK para papel estucado (FOGRA39), con el negro y los grises solo en tinta negra. Los PDF de origen conservan sus propios colores, y la vista previa sigue mostrando los colores de pantalla."
+    },
     "duplex": {
       "on": "Imprimir dorsos",
       "onHint": "Imprime el dorso de cada pieza: en una hoja de dorsos después de cada hoja de frentes (doble cara), o junto al frente para doblar (gutterfold).",
@@ -650,7 +695,8 @@
       "bleed_overlaps_neighbour": "Los sangrados de piezas vecinas se superponen: haz la separación de salida de al menos el doble del sangrado.",
       "bleed_off_page": "El sangrado pasa del borde de la página: deja márgenes más grandes.",
       "back_size_differs": "Un dorso no tiene el mismo tamaño que su frente, así que los cortes no coincidirán.",
-      "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado."
+      "bleed_exceeds_source_gap": "El origen tiene menos espacio entre algunas piezas que el sangrado.",
+      "no_room_for_scale_check": "No hay lugar para el control de escala en los márgenes de la hoja: necesita unos 10 mm libres arriba o abajo de las piezas."
     },
     "aiFill": {
       "title": "Rellenar con IA",
@@ -683,9 +729,16 @@
       "discard": "Descartar",
       "apply_one": "Usar {{count}} relleno",
       "apply_other": "Usar {{count}} rellenos"
+    },
+    "scaleCheck": {
+      "label": "Control de escala",
+      "hint": "Imprime una regla de 50 mm, con una marca cada 10 mm, en el margen inferior de cada hoja (en el superior si el de abajo está ocupado). Mídela en la hoja impresa: si no mide 50 mm, la impresora escaló la página, así que imprime a tamaño real (100 %), no «ajustar a la página»."
     }
   },
   "sheets": {
+    "zoomIn": "Acercar (+)",
+    "zoomOut": "Alejar (-)",
+    "fit": "Ajustar la hoja (0)",
     "hide": "Ocultar las vistas previas de las hojas",
     "show": "Mostrar las vistas previas de las hojas",
     "previous": "Hoja anterior",
@@ -1106,7 +1159,7 @@
       },
       "line": {
         "title": "Continua, discontinua o punteada",
-        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Debajo están el Grosor de la línea y el Color, y las marcas en los márgenes también tienen un largo y una distancia a la pieza."
+        "text": "Elige cómo se dibuja la línea: Continua, Discontinua o Punteada. Las marcas en los márgenes también tienen un largo; el Grosor de la línea, el Color y la distancia a la pieza están en Más opciones."
       },
       "sheet": {
         "title": "Revisa la hoja",
@@ -1548,6 +1601,11 @@
       "selectMore": "Agregar o quitar una pieza de la selección",
       "selectRange": "Seleccionar un rango de piezas",
       "cancelBack": "Dejar de elegir un dorso",
+      "sheetZoomIn": "Acercar la hoja",
+      "sheetZoomOut": "Alejar la hoja",
+      "sheetFit": "Ajustar la hoja entera",
+      "sheetZoomCursor": "Acercar o alejar la hoja en el cursor",
+      "sheetPan": "Mover la hoja ampliada (la rueda con Mayús: de lado)",
       "commitNumber": "Aceptar el número",
       "revertNumber": "Volver al número anterior",
       "nudgeNumber": "Subir o bajar el número",

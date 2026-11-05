@@ -162,6 +162,7 @@ fn a_mixed_sheet_is_exported_from_both_files() {
         &[(0, first.as_path()), (7, second.as_path())],
         &out,
         &sheets,
+        &Default::default(),
     )
     .unwrap();
     let written = Document::load(&out).unwrap();

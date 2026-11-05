@@ -95,6 +95,8 @@ function state(): ProjectState {
           commonBack: "g:3:0:0:0",
         },
         background: { sheet: "#000000", pieces: "#ffffff" },
+        colors: "cmyk",
+        scaleCheck: true,
       },
     },
   };

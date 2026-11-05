@@ -8,9 +8,11 @@ import { useDocumentStore } from "../../stores/document-store";
 import { useLayoutStore } from "../../stores/layout-store";
 import { usePreferencesStore } from "../../stores/preferences-store";
 import { usePrintStore } from "../../stores/print-store";
+import { useSheetViewStore } from "../../stores/sheet-view-store";
 import { useUiStore } from "../../stores/ui-store";
 import { ApplyGridDialog } from "../sidebar/ApplyGridDialog";
 import { EditorToolbar } from "../toolbar/EditorToolbar";
+import { StatusBar } from "../toolbar/StatusBar";
 import { CollapsibleSection } from "../ui/CollapsibleSection";
 import { HintToast } from "../ui/HintToast";
 import { CardLibrary } from "./CardLibrary";
@@ -109,14 +111,14 @@ describe("Print inspector", () => {
   it("opens Plan and Sheet and folds Page, and each folds on click", () => {
     render(<PrintInspector />);
     expect(screen.getByText("All pieces in order")).toBeTruthy();
-    expect(screen.getByText("Group pieces by size")).toBeTruthy();
+    expect(screen.getByText("Output gap")).toBeTruthy();
     expect(screen.queryByText("Margin top")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: /^Page$/ }));
     expect(screen.getByText("Margin top")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /^Plan$/ }));
     expect(screen.queryByText("All pieces in order")).toBeNull();
-    expect(screen.getByText("Group pieces by size")).toBeTruthy();
+    expect(screen.getByText("Output gap")).toBeTruthy();
   });
 
   it("remembers which sections are open across a restart of the view", () => {
@@ -126,7 +128,7 @@ describe("Print inspector", () => {
     first.unmount();
     render(<PrintInspector />);
     expect(screen.getByText("Margin top")).toBeTruthy();
-    expect(screen.queryByText("Group pieces by size")).toBeNull();
+    expect(screen.queryByText("Output gap")).toBeNull();
     expect(usePreferencesStore.getState().prefs.inspector.sections).toMatchObject({
       "print.page": true,
       "print.sheet": false,
@@ -135,6 +137,8 @@ describe("Print inspector", () => {
 
   it("switches the plan and its options", () => {
     render(<PrintInspector />);
+    for (const id of ["print.plan", "print.sheet"])
+      fireEvent.click(within(screen.getByTestId(`section-${id}`)).getByRole("button", { name: /More options/ }));
     // The order only matters once the sheet grid is not the source's.
     expect(screen.getByRole("radio", { name: /Interleaved/ }).hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByRole("radio", { name: /Custom selection/ }));
@@ -334,6 +338,85 @@ describe("Sheet preview", () => {
     print().setSheets(null, "pieces do not fit");
     render(<SheetPreview />);
     expect(screen.getByText(/pieces do not fit/)).toBeTruthy();
+  });
+});
+
+describe("Sheet preview zoom", () => {
+  const one: OutputSheet = {
+    page: A4,
+    placements: [
+      {
+        card_id: gridCardId(0, 0, 0, 0),
+        source: card(0, 0, 0).source,
+        destination: { x: 0, y: 0, width: 50, height: 70 },
+        turn: 0,
+        scale: 1,
+      },
+    ],
+  };
+  const page = () => screen.getByTestId("sheet-page").style;
+  const px = (v: string) => Number.parseFloat(v);
+  beforeEach(() => useSheetViewStore.getState().fit());
+
+  it("zooms in and out from the middle of the pane, and fits the sheet again", async () => {
+    print().setSheets([one], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    const fitted = px(page().width);
+    // A4 in a 400 × 500 pane, 24 px round it: the height decides.
+    expect(px(page().height)).toBeCloseTo(452, 0);
+    fireEvent.click(screen.getByRole("button", { name: "Zoom in (+)" }));
+    expect(px(page().width)).toBeCloseTo(fitted * 1.25, 3);
+    // The middle of the pane stays where it was.
+    expect(px(page().left) + px(page().width) / 2).toBeCloseTo(200, 3);
+    expect(px(page().top) + px(page().height) / 2).toBeCloseTo(250, 3);
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out (-)" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zoom out (-)" }));
+    expect(px(page().width)).toBeCloseTo(fitted / 1.25, 3);
+    fireEvent.click(screen.getByRole("button", { name: "Fit the sheet (0)" }));
+    expect(px(page().width)).toBeCloseTo(fitted, 3);
+    expect(screen.getByRole("button", { name: "Fit the sheet (0)" }).getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("zooms at the cursor with Ctrl+wheel, and moves the sheet with the wheel or a drag", async () => {
+    print().setSheets([one, one], null);
+    render(<SheetPreview />);
+    await act(async () => {});
+    const pane = screen.getByTestId("sheet-pane");
+    const before = { left: px(page().left), top: px(page().top), width: px(page().width) };
+    // The pane is at 0,0 in jsdom; the sheet's top-left corner stays under the cursor.
+    fireEvent.wheel(pane, { deltaY: -100, ctrlKey: true, clientX: before.left, clientY: before.top });
+    expect(px(page().width)).toBeGreaterThan(before.width);
+    expect(px(page().left)).toBeCloseTo(before.left, 3);
+    expect(px(page().top)).toBeCloseTo(before.top, 3);
+    fireEvent.wheel(pane, { deltaY: 30 });
+    expect(px(page().top)).toBeCloseTo(before.top - 30, 3);
+    fireEvent.pointerDown(screen.getByTestId("sheet-page"), { button: 0, pointerId: 1, clientX: 10, clientY: 10 });
+    fireEvent.pointerMove(pane, { pointerId: 1, clientX: 50, clientY: 30 });
+    fireEvent.pointerUp(pane, { pointerId: 1 });
+    expect(px(page().left)).toBeCloseTo(before.left + 40, 3);
+    expect(px(page().top)).toBeCloseTo(before.top - 10, 3);
+    // Another sheet keeps the zoom, to compare the same corner.
+    const zoomed = px(page().width);
+    fireEvent.click(screen.getByRole("button", { name: "Next sheet" }));
+    expect(px(page().width)).toBeCloseTo(zoomed, 3);
+  });
+
+  it("shows the sheet's zoom in the status bar on the Print tab", async () => {
+    useUiStore.setState({ stage: "print" });
+    print().setSheets([one], null);
+    render(
+      <>
+        <SheetPreview />
+        <StatusBar />
+      </>,
+    );
+    await act(async () => {});
+    // Fitted, A4 is 452 px high in the pane: 100% is 96 px per inch.
+    const fitted = Math.round((452 / (A4.height_pt * (96 / 72))) * 100);
+    expect(screen.getByText(`Zoom ${fitted}%`)).toBeTruthy();
+    act(() => useSheetViewStore.getState().zoomIn());
+    expect(screen.getByText(`Zoom ${Math.round(fitted * 1.25)}%`)).toBeTruthy();
   });
 });
 
