@@ -69,14 +69,16 @@ pub struct MarkOptions {
     /// Duplex on the other side: marks on the back sheets too, round the backs, for backs that are
     /// cut on their own instead of through both sides at once. Off, a back sheet has none.
     pub on_backs: bool,
-    /// Ticks: also a small cross, its arms `length_mm` long, in the middle of each place where a gap
+    /// Ticks: also a small cross, its arms `gap_length_mm` long, in the middle of each place where a gap
     /// between columns crosses a gap between rows, so the inside can be cut without a ruler across
     /// the sheet.
     pub inner_crosses: bool,
     /// Ticks: also ticks in the gaps between pieces, where a gap between columns crosses one
     /// between rows: the margin ticks again, each in line with a piece edge and `offset_mm` (plus
-    /// the bleed) from the piece, `length_mm` long or as much as the gap leaves.
+    /// the bleed) from the piece, `gap_length_mm` long or as much as the gap leaves.
     pub gap_ticks: bool,
+    /// The length of the marks inside the sheet: the arms of the inner crosses and the gap ticks.
+    pub gap_length_mm: f64,
 }
 
 impl Default for MarkOptions {
@@ -91,6 +93,7 @@ impl Default for MarkOptions {
             on_backs: false,
             inner_crosses: false,
             gap_ticks: false,
+            gap_length_mm: 3.0,
         }
     }
 }
@@ -655,10 +658,11 @@ fn marks_for(
                 lines.push([left - start - length, y, left - start, y]);
                 lines.push([right + start, y, right + start + length, y]);
             }
-            if options.inner_crosses && !inner_crosses(rects, options, length, &mut lines) {
+            let gap_length = mm_to_pt(options.gap_length_mm);
+            if options.inner_crosses && !inner_crosses(rects, options, gap_length, &mut lines) {
                 push_unique(warnings, SheetWarning::GapTooNarrowForLine);
             }
-            if options.gap_ticks && !gap_ticks(rects, options, start, length, &mut lines) {
+            if options.gap_ticks && !gap_ticks(rects, options, start, gap_length, &mut lines) {
                 push_unique(warnings, SheetWarning::GapTooNarrowForLine);
             }
         }
