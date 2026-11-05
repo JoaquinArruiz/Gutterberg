@@ -3,7 +3,8 @@
 # Usage: scripts/check-release.sh v1.1.0 [notes-file]
 # Fails when the tag is not vX.Y.Z (or vX.Y.Z-pre.N), when package.json, src-tauri/Cargo.toml and the tag
 # disagree (tauri.conf.json reads package.json), when CHANGELOG.md has no "## X.Y.Z (date)" section, or when a
-# release (not a pre-release) has no valid summary in release-notes/X.Y.Z.md (scripts/release-summary.mjs).
+# release (not a pre-release) has no valid summary in release-notes/en/X.Y.Z.md and release-notes/es/X.Y.Z.md
+# (scripts/release-summary.mjs).
 set -euo pipefail
 tag="${1:?usage: scripts/check-release.sh vX.Y.Z [notes-file]}"
 notes="${2:-}"

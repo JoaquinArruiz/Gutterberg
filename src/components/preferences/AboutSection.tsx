@@ -26,7 +26,7 @@ const ORG_LINK = { id: "refractionHub", url: EXTERNAL_LINKS.refractionHub, Icon:
  * opens the web browser), where to download it and what changed, how to report a bug, and the license.
  */
 export function AboutSection() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const name = useAppName();
   const [version, setVersion] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -37,7 +37,7 @@ export function AboutSection() {
   const store = useUpdateStore((s) => s.store);
   const [notesOpen, setNotesOpen] = useState(false);
   // A released version's summary, or for a development build the changelog's notes.
-  const summary = version ? versionSummary(version) : null;
+  const summary = version ? versionSummary(version, i18n.resolvedLanguage ?? i18n.language) : null;
   const notes = summary ?? (version ? versionNotes(version) : null);
 
   useEffect(() => {

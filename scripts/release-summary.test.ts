@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error a plain Node script with no types
-import { markdown, parseSummary, readSummary, STORE_LIMIT, storeText } from "./release-summary.mjs";
+import { LANGUAGES, markdown, parseSummary, readSummary, STORE_LIMIT, storeText } from "./release-summary.mjs";
 
 const SUMMARY = [
   "### Added",
@@ -68,9 +68,29 @@ describe("the forms of a summary", () => {
 });
 
 describe("the summaries in release-notes/", () => {
-  it("are all valid", () => {
-    const files = Object.keys(import.meta.glob("../release-notes/*.md"));
+  const files = Object.keys(import.meta.glob("../release-notes/*/*.md"));
+  const versions = (lang: string) =>
+    files.flatMap((f) => f.match(new RegExp(`/${lang}/([^/]+)\\.md$`))?.[1] ?? []).sort();
+
+  it("are all valid, in their language", () => {
     expect(files.length).toBeGreaterThan(0);
-    for (const file of files) expect(() => readSummary(file.match(/([^/]+)\.md$/)?.[1])).not.toThrow();
+    for (const file of files) {
+      const [, lang, version] = file.match(/\/([^/]+)\/([^/]+)\.md$/) ?? [];
+      expect(LANGUAGES).toContain(lang);
+      expect(() => readSummary(version, lang)).not.toThrow();
+    }
+  });
+
+  it("are in every language for every version", () => {
+    for (const lang of LANGUAGES) expect(versions(lang)).toEqual(versions("en"));
+  });
+});
+
+describe("a Spanish summary", () => {
+  it("uses the Spanish headings, and not the English ones", () => {
+    expect(parseSummary("### Corregido\n\n- Un arreglo.\n", "es").problems).toEqual([]);
+    expect(parseSummary("### Fixed\n\n- A fix.\n", "es").problems).toEqual([
+      'line 1: "Fixed" is not one of Agregado, Cambiado, Obsoleto, Eliminado, Corregido, Seguridad',
+    ]);
   });
 });

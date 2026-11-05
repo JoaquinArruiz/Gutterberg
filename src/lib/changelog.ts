@@ -1,16 +1,22 @@
-// The changes of the version that is running, from its summary in release-notes/ or else CHANGELOG.md, as they were
-// when the app was built, so they can be read without a network. English only, like the release notes.
+// The changes of the version that is running, from its summary in release-notes/ (in the app's language when there is
+// one) or else CHANGELOG.md (English only), as they were when the app was built, so they can be read without a network.
 
 import changelog from "../../CHANGELOG.md?raw";
 
-const summaries = import.meta.glob<string>("/release-notes/*.md", { query: "?raw", import: "default", eager: true });
+const summaries = import.meta.glob<string>("/release-notes/*/*.md", { query: "?raw", import: "default", eager: true });
 
 /**
- * The short notes of `version` (release-notes/x.y.z.md, written with the release), as Discord and the Microsoft Store
- * show them. Null for a version without one, such as a development build.
+ * The short notes of `version` in `language` (release-notes/<language>/x.y.z.md, written with the release), as
+ * Discord and the Microsoft Store show them, or the English ones when that language has none. Null for a version
+ * without one, such as a development build.
  */
-export function versionSummary(version: string, files: Record<string, string> = summaries): string | null {
-  return files[`/release-notes/${version}.md`]?.trim() || null;
+export function versionSummary(
+  version: string,
+  language = "en",
+  files: Record<string, string> = summaries,
+): string | null {
+  const read = (lang: string) => files[`/release-notes/${lang}/${version}.md`]?.trim() || null;
+  return read(language.split("-")[0]) ?? read("en");
 }
 
 /**

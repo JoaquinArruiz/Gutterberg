@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Posts a published GitHub release in the Discord server's #announcements channel, pinging the Release pings role,
 // and publishes the post so servers that follow the channel get it too. Run by .github/workflows/discord-release.yml.
-// The post is the version's summary from release-notes/, as checked out, so a release's summary comes from its tag.
+// The post is the version's English summary from release-notes/en/, as checked out, so a release's summary comes from its tag.
 // Env: TAG (v1.1.0), GITHUB_REPOSITORY, GITHUB_TOKEN, DISCORD_BOT_TOKEN, DISCORD_ANNOUNCEMENTS_CHANNEL_ID,
 // DISCORD_RELEASE_ROLE_ID; DRY_RUN=true prints the post instead of sending it.
 import { pathToFileURL } from "node:url";
@@ -12,7 +12,7 @@ const LIMIT = 2000;
 
 const EMOJI = { Added: "✨", Changed: "🔄", Deprecated: "⚠️", Removed: "🗑️", Fixed: "🛠️", Security: "🔒" };
 
-// The post: the role ping, a heading, the version's summary (release-notes/<x.y.z>.md, see release-summary.mjs) and
+// The post: the role ping, a heading, the version's summary (release-notes/en/<x.y.z>.md, see release-summary.mjs) and
 // a link to the full notes on the release page. The summary is short by rule (the Store's 1500 characters), so the
 // post is never cut; one that is too long anyway is refused rather than sent cut.
 export function buildPost({ tag, url, sections, roleId }) {
