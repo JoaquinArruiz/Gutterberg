@@ -1,0 +1,39 @@
+name: Translation
+description: Translate Gutterberg into a language, or take care of one that is already in.
+labels: ["translation"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for wanting to translate Gutterberg. Please read [TRANSLATING.md](https://github.com/JoaquinArruiz/Gutterberg/blob/main/TRANSLATING.md) first, and look at the open issues with the `translation` label: if someone already took your language, say hello there instead, and you can review each other's work.
+  - type: input
+    id: language
+    attributes:
+      label: Language
+      description: Its name in English and in itself, and its code, for example "German, Deutsch (de)" or "Brazilian Portuguese, Português do Brasil (pt-BR)".
+    validations:
+      required: true
+  - type: dropdown
+    id: what
+    attributes:
+      label: What you want to do
+      options:
+        - Translate it (the language is not in the app yet)
+        - Update it (texts are missing or could be better)
+        - Review it (check someone else's translation)
+    validations:
+      required: true
+  - type: checkboxes
+    id: native
+    attributes:
+      label: About you
+      options:
+        - label: I speak this language natively or at that level.
+        - label: I am happy to be asked when new texts need translating, a few times a year.
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Which country's variant, words you are not sure of, or a question.
+    validations:
+      required: false

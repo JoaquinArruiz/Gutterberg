@@ -5,6 +5,10 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+### Added
+
+- Translations are welcome: [TRANSLATING.md](TRANSLATING.md) says how to bring Gutterberg to a new language and keep it up to date, with a Translation issue form to start. A language that falls behind shows the texts it does not have yet in English.
+
 ## 1.4.0 (2026-11-05)
 
 ### Added

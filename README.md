@@ -190,7 +190,7 @@ For an idea instead of a bug, pick **Feature request** on the same page.
 
 **Languages and help**
 
-- English and Spanish, a welcome tour, help tips, a keyboard shortcuts sheet and a bug report form that
+- English and Spanish (more are welcome: see [Translations](#translations)), a welcome tour, help tips, a keyboard shortcuts sheet and a bug report form that
   fills in your version and system.
 - Twelve tutorials, from the `?` Help menu, walk you through a task on the real controls: marking pieces and
   exporting, lining up fronts and backs, gutterfold, cut marks, images as pieces and more.
@@ -302,6 +302,17 @@ Questions, a PDF that will not cooperate, a layout you are proud of: join the
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). Found a bug? Use the
 [issue form](https://github.com/JoaquinArruiz/Gutterberg/issues/new/choose), or Preferences › About › Report on
 GitHub in the app, which fills in your version and system.
+
+## Translations
+
+All translations are welcome. Gutterberg speaks English and Spanish today, and any language can join: you translate
+one file, the texts of the app, and look after your language as new texts come. How it works, from saying which
+language you take to keeping it up to date, is in [TRANSLATING.md](TRANSLATING.md). To start, open a
+[Translation issue](https://github.com/JoaquinArruiz/Gutterberg/issues/new?template=translation.yml).
+
+Thanks to the people who translate Gutterberg:
+
+- Español: Joaquin Arruiz
 
 ## Credits
 

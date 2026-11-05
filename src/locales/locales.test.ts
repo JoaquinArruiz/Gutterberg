@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
+// @ts-expect-error a plain Node script with no types
+import { compare, leaves, problems } from "../../scripts/i18n-status.mjs";
+import { resources } from "../i18n";
 import { HINT_IDS, HINTS, type HintDef, type HintStep } from "../lib/hints";
+import { LANGUAGE_NAME, LANGUAGES } from "../lib/locale";
 import {
   NEEDS_STEPS,
   TUTORIAL_GROUPS,
@@ -14,45 +18,35 @@ import es from "./es.json";
 
 type Tree = { [key: string]: string | Tree };
 
-/** Every leaf as a dotted key -> its text. */
-function leaves(tree: Tree, prefix = ""): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [k, v] of Object.entries(tree)) {
-    const key = prefix ? `${prefix}.${k}` : k;
-    if (typeof v === "string") out[key] = v;
-    else Object.assign(out, leaves(v, key));
-  }
-  return out;
-}
+const english: Record<string, string> = leaves(en as Tree);
+const spanish: Record<string, string> = leaves(es as Tree);
 
-const placeholders = (text: string) => [...text.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)].map((m) => m[1]).sort();
-
-const english = leaves(en as Tree);
-const spanish = leaves(es as Tree);
+/** Every catalog in this folder, by language code. */
+const files = import.meta.glob<Tree>("./*.json", { eager: true, import: "default" });
+const all = Object.fromEntries(Object.entries(files).map(([path, tree]) => [path.slice(2, -".json".length), tree]));
 
 describe("translation catalogs", () => {
-  it("es.json has exactly the keys of en.json", () => {
-    const missing = Object.keys(english).filter((k) => !(k in spanish));
-    const extra = Object.keys(spanish).filter((k) => !(k in english));
-    expect({ missing, extra }).toEqual({ missing: [], extra: [] });
+  it("are all registered, each with its own name", () => {
+    const codes = Object.keys(all).sort();
+    expect([...LANGUAGES].sort()).toEqual(codes);
+    expect(Object.keys(resources).sort()).toEqual(codes);
+    for (const code of codes) expect(LANGUAGE_NAME[code as keyof typeof LANGUAGE_NAME], code).toBeTruthy();
   });
 
-  it("keeps the same {{placeholders}} in every translated text", () => {
-    const mismatched = Object.keys(english)
-      .filter((k) => k in spanish)
-      .filter((k) => placeholders(english[k]).join() !== placeholders(spanish[k]).join());
-    expect(mismatched).toEqual([]);
+  // Spanish is kept complete; any other language may fall behind, and its missing texts show in English.
+  it("es.json has every text of en.json", () => {
+    expect(compare(en, es, "es").missing).toEqual([]);
   });
 
-  it("has no empty text", () => {
-    for (const [k, v] of [...Object.entries(english), ...Object.entries(spanish)]) expect(v.trim(), k).not.toBe("");
-  });
+  it.each(Object.keys(all).filter((code) => code !== "en"))(
+    "%s.json has no unknown key, wrong {{placeholder}}, empty text or incomplete plural",
+    (code) => {
+      expect(problems(compare(en, all[code], code))).toEqual([]);
+    },
+  );
 
-  it("gives every plural both forms in both languages", () => {
-    for (const keys of [Object.keys(english), Object.keys(spanish)]) {
-      for (const k of keys.filter((x) => x.endsWith("_one"))) expect(keys, k).toContain(k.replace(/_one$/, "_other"));
-      for (const k of keys.filter((x) => x.endsWith("_other"))) expect(keys, k).toContain(k.replace(/_other$/, "_one"));
-    }
+  it("en.json has no empty text, and every plural has both forms", () => {
+    expect(problems(compare(en, en, "en"))).toEqual([]);
   });
 
   it("has the text of every step of every hint", () => {

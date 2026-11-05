@@ -10,7 +10,8 @@
     "test": "vitest run",
     "tauri": "tauri",
     "lint": "biome check",
-    "lint:fix": "biome check --write"
+    "lint:fix": "biome check --write",
+    "i18n:status": "node scripts/i18n-status.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.12.1",

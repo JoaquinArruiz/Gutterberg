@@ -51,6 +51,10 @@ How the code is organised, and why, is in [docs/architecture.md](docs/architectu
 (a **piece**, not a card; **Source** and **Print** tabs; **source gap** and **output gap**) are in the glossary in
 [AGENTS.md](AGENTS.md).
 
+## Translate
+
+Translations are welcome, into any language: see [TRANSLATING.md](TRANSLATING.md).
+
 ## Before you open a pull request
 
 Run all of these; CI runs them too:
@@ -67,7 +71,9 @@ cargo test --workspace         # the render tests need pdfium: PDFIUM_LIB_PATH=<
 - Keep the change focused, with tests next to the code it covers (`*.test.ts`, `crates/card-core/tests/`).
 - Geometry lives in `card-core` only; the interface asks it and draws the answer. Pieces keep their size unless the
   user explicitly sets another, and nothing is rasterised on export.
-- Every text the user sees goes in both `src/locales/en.json` and `src/locales/es.json`, never in a component.
+- Every text the user sees goes in both `src/locales/en.json` and `src/locales/es.json`, never in a component. Other
+  languages may fall behind and show the English text until their translators catch up. When an English text changes
+  its meaning, give it a new key, so an old translation is not shown for it.
 - A user-facing change gets a line under `Unreleased` in [CHANGELOG.md](CHANGELOG.md).
 - The commit message is one sentence that says what the change does.
 - Branch from the version branch the change belongs to (`release/<x.y.z>`, the next version in

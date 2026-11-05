@@ -11,7 +11,7 @@ export const LANGUAGE_PREFERENCES: LanguagePreference[] = ["system", ...LANGUAGE
 export const LANGUAGE_NAME: Record<Language, string> = { en: "English", es: "Español" };
 
 export type DecimalSeparator = "." | ",";
-/** "auto" = the language's own: comma for Spanish, dot for English. */
+/** "auto" = the language's own: comma for Spanish, dot for English (what `Intl` says for any other). */
 export type DecimalPreference = "auto" | "dot" | "comma";
 export const DECIMAL_PREFERENCES: DecimalPreference[] = ["auto", "dot", "comma"];
 
@@ -27,7 +27,9 @@ export function resolveLanguage(pref: LanguagePreference, systemLanguage?: strin
 export function resolveSeparator(pref: DecimalPreference, language: Language): DecimalSeparator {
   if (pref === "dot") return ".";
   if (pref === "comma") return ",";
-  return language === "es" ? "," : ".";
+  return new Intl.NumberFormat(language).formatToParts(1.5).find((p) => p.type === "decimal")?.value === ","
+    ? ","
+    : ".";
 }
 
 let separator: DecimalSeparator = ".";

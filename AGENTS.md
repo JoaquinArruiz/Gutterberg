@@ -26,6 +26,7 @@ included. `CONTRIBUTING.md` is the human version.
 - `docs/`: `architecture.md` (how it fits together), `controls.md`, `FAQ.md` (answers to "why does it do that?"
   questions; add one when a question comes up twice), `releasing.md` (how a version is released).
   `docs/milestones/` holds the brief of a feature while it is being built (see "Planning" below).
+- `TRANSLATING.md`: how a community translation gets in and stays up to date.
 - `examples/`: sample PDFs, with a guide in `examples/README.md`.
 - `release-notes/`: each version's short summary, which Discord, the app and the Microsoft Store show (see
   `docs/releasing.md`).
@@ -94,7 +95,10 @@ and type names) stay as they are.
 
 User-facing text lives in `src/locales/en.json` and `src/locales/es.json`: add
 every new string to both, never hard-code text in components. Spanish is neutral Latin
-American Spanish (`tú`, no voseo, no `vosotros`); I review it.
+American Spanish (`tú`, no voseo, no `vosotros`); I review it. Other languages come from
+translators (see `TRANSLATING.md`) and may fall behind: leave them to their translators, and when an
+English text changes its meaning, give it a new key so the old translation shows as missing.
+`pnpm i18n:status` reports each language.
 
 Pieces are rectangles (optionally rotated). Round or custom shapes are not supported; a round
 token is marked and printed with its rectangle.
