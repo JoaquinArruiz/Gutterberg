@@ -738,6 +738,9 @@
     }
   },
   "sheets": {
+    "zoomIn": "Acercar (+)",
+    "zoomOut": "Alejar (-)",
+    "fit": "Ajustar la hoja (0)",
     "hide": "Ocultar las vistas previas de las hojas",
     "show": "Mostrar las vistas previas de las hojas",
     "previous": "Hoja anterior",
@@ -1600,6 +1603,11 @@
       "selectMore": "Agregar o quitar una pieza de la selección",
       "selectRange": "Seleccionar un rango de piezas",
       "cancelBack": "Dejar de elegir un dorso",
+      "sheetZoomIn": "Acercar la hoja",
+      "sheetZoomOut": "Alejar la hoja",
+      "sheetFit": "Ajustar la hoja entera",
+      "sheetZoomCursor": "Acercar o alejar la hoja en el cursor",
+      "sheetPan": "Mover la hoja ampliada (la rueda con Mayús: de lado)",
       "commitNumber": "Aceptar el número",
       "revertNumber": "Volver al número anterior",
       "nudgeNumber": "Subir o bajar el número",

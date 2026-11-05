@@ -48,6 +48,11 @@ export type ShortcutId =
   | "selectMore"
   | "selectRange"
   | "cancelBack"
+  | "sheetZoomIn"
+  | "sheetZoomOut"
+  | "sheetFit"
+  | "sheetZoomCursor"
+  | "sheetPan"
   | "commitNumber"
   | "revertNumber"
   | "nudgeNumber"
@@ -115,6 +120,11 @@ export const SHORTCUTS: Record<ShortcutArea, Shortcut[]> = {
     { id: "selectMore", keys: [["Mod", "Click"]] },
     { id: "selectRange", keys: [["Shift", "Click"]] },
     { id: "cancelBack", keys: [["Esc"]] },
+    { id: "sheetZoomIn", keys: [["+"]] },
+    { id: "sheetZoomOut", keys: [["-"]] },
+    { id: "sheetFit", keys: [["0"]] },
+    { id: "sheetZoomCursor", keys: [["Mod", "Wheel"]] },
+    { id: "sheetPan", keys: [["Drag"], ["Wheel"]] },
   ],
   fields: [
     { id: "commitNumber", keys: [["Enter"]] },

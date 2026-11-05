@@ -45,6 +45,7 @@ import { useEditorStore } from "./stores/editor-store";
 import { redo, undo } from "./stores/history";
 import { useLayoutStore } from "./stores/layout-store";
 import { usePreferencesStore } from "./stores/preferences-store";
+import { useSheetViewStore } from "./stores/sheet-view-store";
 import { useUiStore } from "./stores/ui-store";
 
 /** The direction each arrow key moves what is picked. */
@@ -129,8 +130,15 @@ export default function App() {
         void (e.shiftKey ? saveProjectAs() : saveProject());
         return;
       }
-      // The single-key shortcuts drive the page editor (tools, zoom, paging): the Print stage has none.
-      if (useUiStore.getState().stage !== "cards") return;
+      // The Print stage has only the zoom keys, for its large sheet; the rest drive the page editor.
+      if (useUiStore.getState().stage !== "cards") {
+        if (typing || mod || e.altKey) return;
+        const view = useSheetViewStore.getState();
+        if (e.key === "+" || e.key === "=") view.zoomIn();
+        else if (e.key === "-") view.zoomOut();
+        else if (e.key === "0") view.fit();
+        return;
+      }
       if (typing) return;
       // Pick every piece of the page, and copy the picked ones.
       if (mod && !e.shiftKey && !e.altKey && key === "a" && pickAllPieces()) {

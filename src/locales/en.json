@@ -738,6 +738,9 @@
     }
   },
   "sheets": {
+    "zoomIn": "Zoom in (+)",
+    "zoomOut": "Zoom out (-)",
+    "fit": "Fit the sheet (0)",
     "hide": "Hide sheet previews",
     "show": "Show sheet previews",
     "previous": "Previous sheet",
@@ -1600,6 +1603,11 @@
       "selectMore": "Add or remove a piece from the selection",
       "selectRange": "Select a range of pieces",
       "cancelBack": "Stop picking a back",
+      "sheetZoomIn": "Zoom in on the sheet",
+      "sheetZoomOut": "Zoom out of the sheet",
+      "sheetFit": "Fit the whole sheet",
+      "sheetZoomCursor": "Zoom the sheet at the cursor",
+      "sheetPan": "Move the zoomed sheet (the wheel with Shift: sideways)",
       "commitNumber": "Accept the number",
       "revertNumber": "Go back to the previous number",
       "nudgeNumber": "Raise or lower the number",
