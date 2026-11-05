@@ -17,15 +17,9 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ### Changed
 
-- Print settings show what most people change first: Line width, Color, the ticks' distance, Also where gaps cross, Also in the gaps, Length in the gaps and Also on back sheets (Cut marks), Auto-fill and Order (Plan), and Group pieces by size, Colors and Scale check (Sheet) are under More options. It opens by itself when one of its options is changed, and folded it says how many are. Duplex details, freeform pieces and skipped pages already only show when they are in use.
+- Print settings show what most people change first: Line width, Color, the ticks' distance, Also where gaps cross, Also in the gaps and Also on back sheets (Cut marks), Auto-fill and Order (Plan), and Group pieces by size, Colors and Scale check (Sheet) are under More options. It opens by itself when one of its options is changed, and folded it says how many are. Duplex details, freeform pieces and skipped pages already only show when they are in use.
 - Projects are saved as version 9, for the crop. Gutterberg 1.3 and earlier say a version 9 project needs a newer Gutterberg instead of printing its pieces uncropped; 1.4.0 opens every older project as before.
 - Faster with big decks: the Print tab draws each source page once and cuts its pieces from that drawing, instead of drawing the page again for every piece, and the piece library and sheet preview are worked out without freezing the window. Releases are built smaller and faster too.
-
-## 1.3.2 (2026-11-05)
-
-### Added
-
-- Length in the gaps: Print settings › Cut marks › Length in the gaps sets how long the marks inside the sheet are (the ticks of Also in the gaps and the arms of Also where gaps cross), apart from Tick length, which now sets only the marks in the margins. It shows once either of those is on. Projects saved before open with it at their tick length, so they export as before, and the command line exports it as saved.
 
 ## 1.3.1 (2026-11-03)
 

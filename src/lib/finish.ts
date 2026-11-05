@@ -51,8 +51,6 @@ export type Finish = {
     innerCrosses: boolean;
     /** Ticks: also the margin ticks in the gaps, in line with the piece edges, where the gaps cross. */
     gapTicks: boolean;
-    /** The length of the marks inside the sheet: the arms of the crosses and the gap ticks. */
-    gapLengthMm: number;
   };
   bleed: {
     mm: number;
@@ -105,7 +103,6 @@ export const DEFAULT_FINISH: Finish = {
     onBacks: false,
     innerCrosses: false,
     gapTicks: false,
-    gapLengthMm: 3,
   },
   bleed: { mm: 0, source: "mirror", edgeColors: {}, aiFills: {} },
   duplex: {
@@ -126,21 +123,17 @@ export const DEFAULT_FINISH: Finish = {
 };
 
 export const FinishSchema = z.object({
-  marks: z
-    .object({
-      style: z.enum(MARK_STYLES),
-      line: z.enum(MARK_LINES).default("solid"),
-      widthMm: z.number(),
-      color: z.string(),
-      lengthMm: z.number(),
-      offsetMm: z.number(),
-      onBacks: z.boolean().default(false),
-      innerCrosses: z.boolean().default(false),
-      gapTicks: z.boolean().default(false),
-      // A project from before 1.3.2 has none: the marks in the gaps were the tick length.
-      gapLengthMm: z.number().optional(),
-    })
-    .transform((m) => ({ ...m, gapLengthMm: m.gapLengthMm ?? m.lengthMm })),
+  marks: z.object({
+    style: z.enum(MARK_STYLES),
+    line: z.enum(MARK_LINES).default("solid"),
+    widthMm: z.number(),
+    color: z.string(),
+    lengthMm: z.number(),
+    offsetMm: z.number(),
+    onBacks: z.boolean().default(false),
+    innerCrosses: z.boolean().default(false),
+    gapTicks: z.boolean().default(false),
+  }),
   bleed: z.object({
     mm: z.number(),
     source: z.enum(BLEED_SOURCES),
@@ -194,7 +187,6 @@ export function cleanFinish(f: Finish): Finish {
       onBacks: f.marks.onBacks,
       innerCrosses: f.marks.innerCrosses,
       gapTicks: f.marks.gapTicks,
-      gapLengthMm: clampTo(f.marks.gapLengthMm, ...MARK_LENGTH_RANGE, d.marks.gapLengthMm),
     },
     bleed: {
       mm: clampTo(f.bleed.mm, 0, MAX_BLEED_MM, 0),

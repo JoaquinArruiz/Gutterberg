@@ -294,9 +294,6 @@ pub struct FinishMarks {
     pub inner_crosses: bool,
     #[serde(default)]
     pub gap_ticks: bool,
-    /// The length of the inner crosses and gap ticks; a project without it uses `length_mm`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub gap_length_mm: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -819,12 +816,6 @@ fn finishing(
                 on_backs: m.on_backs,
                 inner_crosses: m.inner_crosses,
                 gap_ticks: m.gap_ticks,
-                gap_length_mm: clamp_to(
-                    m.gap_length_mm.unwrap_or(m.length_mm),
-                    MARK_LENGTH_RANGE.0,
-                    MARK_LENGTH_RANGE.1,
-                    defaults.gap_length_mm,
-                ),
             },
             bleed: BleedOptions {
                 mm: clamp_to(finish.bleed.mm, 0.0, MAX_BLEED_MM, 0.0),
@@ -1225,7 +1216,6 @@ mod tests {
                 on_backs: true,
                 inner_crosses: false,
                 gap_ticks: false,
-                gap_length_mm: None,
             },
             bleed: FinishBleed::default(),
             duplex: FinishDuplex {
@@ -1284,21 +1274,6 @@ mod tests {
         let options = finishing(&f, &PieceEdits::default(), &known(), None).options;
         assert_eq!(options.background.sheet.as_deref(), Some("#00ff00"));
         assert_eq!(options.background.pieces, None);
-    }
-
-    #[test]
-    fn the_gap_mark_length_follows_the_tick_length_when_a_project_has_none() {
-        let mut f = finish();
-        let marks = |f: &Finish| {
-            finishing(f, &PieceEdits::default(), &known(), None)
-                .options
-                .marks
-        };
-        assert_eq!(marks(&f).gap_length_mm, 4.0);
-        f.marks.gap_length_mm = Some(1.5);
-        assert_eq!(marks(&f).gap_length_mm, 1.5);
-        f.marks.gap_length_mm = Some(50.0);
-        assert_eq!(marks(&f).gap_length_mm, 10.0);
     }
 
     fn known() -> HashSet<String> {

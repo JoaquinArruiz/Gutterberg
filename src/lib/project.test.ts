@@ -84,7 +84,6 @@ function state(): ProjectState {
           onBacks: true,
           innerCrosses: true,
           gapTicks: true,
-          gapLengthMm: 1.5,
         },
         bleed: { mm: 2, source: "source", edgeColors: {}, aiFills: {} },
         duplex: {
@@ -311,13 +310,6 @@ describe("cut marks, bleed and duplex in the file", () => {
     expect(fromProject(parseProject(f)).plan.finish.marks.line).toBe("dashed");
     delete (f.plan.finish.marks as { line?: string }).line;
     expect(fromProject(parseProject(f)).plan.finish.marks.line).toBe("solid");
-  });
-
-  it("give the marks in the gaps the tick length when the file has no length for them", () => {
-    const f = file(state());
-    expect(fromProject(parseProject(f)).plan.finish.marks.gapLengthMm).toBe(1.5);
-    delete (f.plan.finish.marks as { gapLengthMm?: number }).gapLengthMm;
-    expect(fromProject(parseProject(f)).plan.finish.marks.gapLengthMm).toBe(4);
   });
 
   it("are pulled back into range, and backs that are not pieces are dropped", () => {
