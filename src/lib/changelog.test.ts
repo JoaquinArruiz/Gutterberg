@@ -41,13 +41,25 @@ describe("the notes of the running version", () => {
 });
 
 describe("the summary of the running version", () => {
-  it("is its file in release-notes/, and none for a version without one", () => {
-    const files = { "/release-notes/1.3.0.md": "### Added\n\n- New.\n" };
-    expect(versionSummary("1.3.0", files)).toBe("### Added\n\n- New.");
-    expect(versionSummary("1.3.1", files)).toBeNull();
+  it("is its file in release-notes/<language>/, and none for a version without one", () => {
+    const files = {
+      "/release-notes/en/1.3.0.md": "### Added\n\n- New.\n",
+      "/release-notes/es/1.3.0.md": "### Agregado\n\n- Nuevo.\n",
+      "/release-notes/en/1.3.1.md": "### Fixed\n\n- Fixed.\n",
+    };
+    expect(versionSummary("1.3.0", "en", files)).toBe("### Added\n\n- New.");
+    expect(versionSummary("1.3.0", "es", files)).toBe("### Agregado\n\n- Nuevo.");
+    expect(versionSummary("1.3.0", "es-AR", files)).toBe("### Agregado\n\n- Nuevo.");
+    expect(versionSummary("1.3.2", "en", files)).toBeNull();
   });
 
-  it("comes from the release-notes/ the app was built with", () => {
+  it("is the English one when the language has none", () => {
+    const files = { "/release-notes/en/1.3.1.md": "### Fixed\n\n- Fixed.\n" };
+    expect(versionSummary("1.3.1", "es", files)).toBe("### Fixed\n\n- Fixed.");
+  });
+
+  it("comes from the release-notes/ the app was built with, in English and Spanish", () => {
     expect(versionSummary("1.3.0")).toContain("### Added");
+    expect(versionSummary("1.3.0", "es")).toContain("### Agregado");
   });
 });

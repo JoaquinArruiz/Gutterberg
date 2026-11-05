@@ -70,8 +70,8 @@ A version has its own branch, `release/1.1.0`, started from `main`; features and
    once and `cargo audit`, and `cargo update -p <crate>` whatever it reports with a fix.
 1. On `release/1.1.0`, merge `main` into it. Move the `Unreleased` notes under the new version in `CHANGELOG.md`;
    bump `version` in `package.json` and `src-tauri/Cargo.toml`; run `cargo build` to refresh `Cargo.lock`; write the
-   version's summary in `release-notes/1.1.0.md` (see "The summary" below); delete the version's brief from
-   `docs/milestones/` and its row from `roadmap.md`. To check before pushing:
+   version's summary in `release-notes/en/1.1.0.md` and `release-notes/es/1.1.0.md` (see "The summary" below);
+   delete the version's brief from `docs/milestones/` and its row from `roadmap.md`. To check before pushing:
    `scripts/check-release.sh v1.1.0`. Commit it as "Release 1.1.0".
 2. Once CI has passed on `release/1.1.0` and I have tested it, merge it into `main` with a **merge commit**:
    `git switch main && git pull && git merge --no-ff release/1.1.0 && git push`.
@@ -97,7 +97,7 @@ updater signatures), so a build that only fails there shows up before the tag.
 ## The summary
 
 `CHANGELOG.md` and the GitHub release have the full notes. Everywhere else a version shows a short summary that I
-write with the release, `release-notes/x.y.z.md`:
+write with the release, in English in `release-notes/en/x.y.z.md` and in Spanish in `release-notes/es/x.y.z.md`:
 
 ```md
 ### Added
@@ -110,19 +110,21 @@ write with the release, `release-notes/x.y.z.md`:
 - Another sentence.
 ```
 
-Only the Keep a Changelog headings are allowed (Added, Changed, Deprecated, Removed, Fixed, Security), each with at
-least one bullet. It is short by rule: its Store text must fit the Microsoft Store's 1500 characters, so when a version
-has too much I keep the main changes and end the list with "...and more!". `scripts/check-release.sh` refuses a
-release tag whose summary is missing or breaks these rules (`node scripts/release-summary.mjs check x.y.z` checks it
-alone); a pre-release needs none. It is used by:
+Only the Keep a Changelog headings are allowed (Added, Changed, Deprecated, Removed, Fixed, Security; in Spanish
+Agregado, Cambiado, Obsoleto, Eliminado, Corregido, Seguridad), each with at least one bullet. The Spanish one says the
+same as the English one, with the words of the glossary in `AGENTS.md`. It is short by rule: its Store text must fit
+the Microsoft Store's 1500 characters, so when a version has too much I keep the main changes and end the list with
+"...and more!" ("...¡y más!"). `scripts/check-release.sh` refuses a release tag whose summary is missing in either
+language or breaks these rules (`node scripts/release-summary.mjs check x.y.z` checks both alone); a pre-release
+needs none. It is used by:
 
-- **Discord**: the post is the summary, then "See the full changelog: <release link>".
-- **The app**: the Release workflow's last job puts the summary in `latest.json`, so the update prompt shows it, and
-  the app has every summary built in for What's new; both end with a "See the full changelog" link to the release.
+- **Discord**: the post is the English summary, then "See the full changelog: <release link>".
+- **The app**: the Release workflow's last job puts the English summary in `latest.json`, so the update prompt shows
+  it, and the app has every summary built in for What's new, in the app's language; both end with a "See the full changelog" link to the release.
   A development build, which has no summary, shows the changelog's Unreleased notes.
-- **The Microsoft Store**: `whats-new.txt`, in the run's `microsoft-store` artifact beside the `.msix`, is the
-  summary as plain text without the link, to paste into "What's new in this version"
-  (`node scripts/release-summary.mjs store x.y.z` prints it too).
+- **The Microsoft Store**: `whats-new.txt` and `whats-new-es.txt`, in the run's `microsoft-store` artifact beside the
+  `.msix`, are the summaries as plain text without the link, to paste into "What's new in this version" of the English
+  and Spanish listings (`node scripts/release-summary.mjs store x.y.z "" es` prints the Spanish one too).
 
 To fix the notes after a release, edit `CHANGELOG.md` (and the summary), turn the release back into a draft on GitHub (Edit, then
 Save draft), re-run the workflow for that tag (it replaces the release's files) and publish it again. tauri-action
@@ -146,8 +148,8 @@ since an unsigned MSIX does not install by double-clicking. Pre-releases get non
 the script. If the artifact is missing, the
 "Pack the Microsoft Store package" step's log says why; the rest of the release is not affected. After publishing the
 GitHub release: in Partner Center, open Gutterberg, **Start update** (or the open submission), **Packages**, drop the
-`.msix`, remove the previous one, paste `whats-new.txt` (in the same zip) into **Store listings** › **What's new
-in this version**, and **Submit to the Store**. Certification usually takes one to three days; the
+`.msix`, remove the previous one, paste `whats-new.txt` (in the same zip) into **Store listings** › English ›
+**What's new in this version** and `whats-new-es.txt` into the Spanish listing's, and **Submit to the Store**. Certification usually takes one to three days; the
 Store then updates installed copies by itself.
 
 **Before the first submission, or after changing the manifest**, try the package on a Windows PC. It has to be signed

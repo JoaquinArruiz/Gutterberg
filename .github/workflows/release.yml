@@ -132,8 +132,10 @@ jobs:
           version=$(node -p "require('./package.json').version")
           echo "MSIX=Gutterberg_${version}_x64.msix" >> "$GITHUB_ENV"
           node scripts/make-msix.mjs --exe target/release/gutterberg.exe --cli "$CLI_ASSET" --out "Gutterberg_${version}_x64.msix"
-          # The Store's "What's new in this version", from the version's summary, to paste with the upload.
-          node scripts/release-summary.mjs store "$version" whats-new.txt
+          # The Store's "What's new in this version", from the version's summaries, to paste with the upload: one for
+          # the English listing and one for the Spanish listing.
+          node scripts/release-summary.mjs store "$version" whats-new.txt en
+          node scripts/release-summary.mjs store "$version" whats-new-es.txt es
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: matrix.platform == 'windows-latest' && !contains(github.ref_name, '-')
         continue-on-error: true
@@ -142,10 +144,11 @@ jobs:
           path: |
             ${{ env.MSIX }}
             whats-new.txt
+            whats-new-es.txt
           if-no-files-found: error
 
   # The update prompt shows latest.json's notes, which tauri-action takes from the release's (the full changelog).
-  # Once every build has added itself to latest.json, its notes become the version's summary from release-notes/;
+  # Once every build has added itself to latest.json, its notes become the version's English summary from release-notes/en/;
   # the release page keeps the full notes. A pre-release keeps them too, since it has no summary.
   updater-notes:
     needs: release

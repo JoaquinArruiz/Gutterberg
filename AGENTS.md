@@ -27,8 +27,8 @@ included. `CONTRIBUTING.md` is the human version.
   questions; add one when a question comes up twice), `releasing.md` (how a version is released).
   `docs/milestones/` holds the brief of a feature while it is being built (see "Planning" below).
 - `examples/`: sample PDFs, with a guide in `examples/README.md`.
-- `release-notes/`: each version's short summary, which Discord, the app and the Microsoft Store show (see
-  `docs/releasing.md`).
+- `release-notes/`: each version's short summary, which Discord, the app and the Microsoft Store show, in
+  `release-notes/en/` and `release-notes/es/` (see `docs/releasing.md`).
 
 ## Commands
 
