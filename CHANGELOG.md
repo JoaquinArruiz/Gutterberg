@@ -5,6 +5,8 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## Unreleased
 
+## 1.4.0 (2026-11-05)
+
 ### Added
 
 - CMYK export, for print shops: Print settings › Sheet › Colors › CMYK writes the cut marks, fold lines, background and Edge color fills in CMYK, and turns the pictures Gutterberg put in the file (images added as pieces, Fill with AI pictures) into CMYK too, for coated paper (FOGRA39). Black and gray go on the black ink only, so a cut mark is one clean line. Source PDFs keep their own colors, as before: a PDF that is already CMYK stays CMYK. A JPEG stays a JPEG and a PNG stays lossless. RGB stays the default, which suits home printers and most online print services. The preview still shows screen colors, and the command line exports it as saved.
@@ -14,6 +16,7 @@ the format follows [Keep a Changelog](https://keepachangelog.com/).
 - Trim and bleed boxes for print shops: a sheet that holds one piece is written with a TrimBox (the piece) and a BleedBox (the piece with its bleed), which print shops' software reads to know where to cut. For a file of one piece per page, set Rows and Columns to 1, the page to Auto-fit to pieces and each margin to the bleed. Sheets of several pieces are written as before.
 - Crop for sleeves: the Source tab's new Crop section cuts the same amount off the top, right, bottom and left of every piece of a grid, for art a little larger than the sleeve it goes in (such as 69 × 94 mm cards in 66 × 91 mm sleeves). The pieces print smaller, at their new size, and never scaled; the page shows the band that is cut off. What is cut off stays on the page, so a bleed taken from the source uses it. The command line exports it as saved.
 - Zoom on the Print tab: the zoom buttons above the sheet, `+`, `-` and `0` (fit), or `Ctrl`+wheel (`Cmd`+wheel on macOS, or a pinch) at the cursor, to look closely at cut marks, gaps and bleed. Drag the sheet or use the wheel to move round it. The zoom stays while you go to another sheet or to the Source tab, and the status bar shows it.
+- A list of questions and answers, [docs/FAQ.md](docs/FAQ.md), explains things that look wrong but are not, such as short ticks in narrow gaps, pieces that are not shrunk to fit and back sheets that need lining up, and the README points to it.
 
 ### Changed
 
