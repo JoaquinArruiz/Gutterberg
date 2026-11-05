@@ -240,6 +240,40 @@ fn ticks_can_repeat_in_the_gaps_in_line_with_the_edges() {
 }
 
 #[test]
+fn the_marks_in_the_gaps_have_their_own_length() {
+    let docs = [source()];
+    let sheets = plan(&docs, spec(2, 2, 10.0, 15.0), &[]);
+    let mut o = marks(MarkStyle::Ticks);
+    o.marks.gap_ticks = true;
+    o.marks.inner_crosses = true;
+    o.marks.length_mm = 5.0;
+    o.marks.gap_length_mm = 1.5;
+    let (out, _) = finish_sheets(sheets.clone(), &docs, &finishing(o)).unwrap();
+    let lines = &out[0].marks.as_ref().unwrap().lines;
+    let (a, d) = (
+        sheets[0].placements[0].destination,
+        sheets[0].placements[3].destination,
+    );
+    let (x0, y0) = (a.x + a.width, a.y + a.height);
+    let (start, inner) = (mm_to_pt(1.0), mm_to_pt(1.5));
+    // A gap tick, 1.5 mm long.
+    assert!(lines.iter().any(|l| close(l[0], x0)
+        && close(l[1], y0 + start)
+        && close(l[2], x0)
+        && close(l[3], y0 + start + inner)));
+    // The cross's arms, 1.5 mm.
+    let (mx, my) = ((x0 + d.x) / 2.0, (y0 + d.y) / 2.0);
+    assert!(lines.iter().any(|l| close(l[0], mx - inner)
+        && close(l[1], my)
+        && close(l[2], mx + inner)
+        && close(l[3], my)));
+    // The margin ticks keep their 5 mm.
+    assert!(lines
+        .iter()
+        .any(|l| close(l[0], a.x) && close((l[3] - l[1]).abs(), mm_to_pt(5.0))));
+}
+
+#[test]
 fn gap_lines_run_down_the_middle_of_wide_gaps_only() {
     let docs = [source()];
     let sheets = plan(&docs, spec(2, 2, 6.0, 15.0), &[]);

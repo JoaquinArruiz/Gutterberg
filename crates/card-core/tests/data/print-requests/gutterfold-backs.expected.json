@@ -212,7 +212,8 @@
           "width_mm": 0.3,
           "color": "#ff0000",
           "length_mm": 4,
-          "offset_mm": 1.5
+          "offset_mm": 1.5,
+          "gap_length_mm": 4
         },
         "bleed": {
           "mm": 2,

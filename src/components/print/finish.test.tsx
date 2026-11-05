@@ -94,6 +94,13 @@ describe("Print inspector: cut marks, bleed and duplex", () => {
     expect(print().finish.marks.widthMm).toBe(2);
     typeNumber(screen.getByRole("textbox", { name: "Tick length" }), "5");
     expect(print().finish.marks.lengthMm).toBe(5);
+    // The length in the gaps shows once there are marks in the gaps, and is its own.
+    expect(screen.queryByRole("textbox", { name: "Length in the gaps" })).toBeNull();
+    fireEvent.click(screen.getByRole("switch", { name: "Also in the gaps" }));
+    typeNumber(screen.getByRole("textbox", { name: "Length in the gaps" }), "1.5");
+    expect(print().finish.marks.gapLengthMm).toBe(1.5);
+    expect(print().finish.marks.lengthMm).toBe(5);
+    fireEvent.click(screen.getByRole("switch", { name: "Also in the gaps" }));
     fireEvent.change(screen.getByLabelText("Color"), { target: { value: "#ff0000" } });
     expect(print().finish.marks.color).toBe("#ff0000");
     expect(print().finish.marks.line).toBe("solid");
